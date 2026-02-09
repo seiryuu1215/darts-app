@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -32,6 +32,14 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 export default function DartsListPage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+      <DartsListContent />
+    </Suspense>
+  );
+}
+
+function DartsListContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
