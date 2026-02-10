@@ -11,8 +11,6 @@ import {
   TextField,
   InputAdornment,
   Chip,
-  Collapse,
-  IconButton,
 } from '@mui/material';
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,16 +18,11 @@ import { useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DartCard from '@/components/darts/DartCard';
-import BarrelCard from '@/components/barrels/BarrelCard';
-import type { Dart, BarrelProduct } from '@/types';
-import { recommendBarrels } from '@/lib/recommend-barrels';
+import type { Dart } from '@/types';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
-import RecommendIcon from '@mui/icons-material/AutoAwesome';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 export default function DartsListPage() {
   return (
@@ -48,13 +41,6 @@ function DartsListContent() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
-
-  // おすすめ関連
-  const [myDarts, setMyDarts] = useState<Dart[]>([]);
-  const [allBarrels, setAllBarrels] = useState<BarrelProduct[]>([]);
-  const [recommendType, setRecommendType] = useState<'soft' | 'steel'>('soft');
-  const [recommendOpen, setRecommendOpen] = useState(true);
-  const [recommendLoading, setRecommendLoading] = useState(false);
 
   useEffect(() => {
     const fetchDarts = async () => {
@@ -83,41 +69,6 @@ function DartsListContent() {
     fetchDarts();
   }, [mineOnly, session]);
 
-  // ログインユーザーの自分のダーツ + 全バレルを取得（おすすめ用）
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    setRecommendLoading(true);
-
-    const fetchMyDarts = async () => {
-      try {
-        const q = query(collection(db, 'darts'), where('userId', '==', session.user.id));
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Dart[];
-        setMyDarts(data);
-      } catch (err) {
-        console.error('マイダーツ取得エラー:', err);
-      }
-    };
-
-    const fetchBarrels = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'barrels'));
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as BarrelProduct[];
-        setAllBarrels(data);
-      } catch (err) {
-        console.error('バレル取得エラー:', err);
-      }
-    };
-
-    Promise.all([fetchMyDarts(), fetchBarrels()]).finally(() => setRecommendLoading(false));
-  }, [session]);
-
   const filteredDarts = useMemo(() => {
     if (!searchQuery.trim()) return darts;
     const q = searchQuery.toLowerCase();
@@ -129,11 +80,6 @@ function DartsListContent() {
         (dart.userName && dart.userName.toLowerCase().includes(q))
     );
   }, [darts, searchQuery]);
-
-  const recommendedBarrels = useMemo(() => {
-    if (myDarts.length === 0 || allBarrels.length === 0) return [];
-    return recommendBarrels(myDarts, allBarrels, recommendType, 50);
-  }, [myDarts, allBarrels, recommendType]);
 
   const handleToggleMine = () => {
     if (mineOnly) {
@@ -192,65 +138,6 @@ function DartsListContent() {
             color={mineOnly ? 'primary' : 'default'}
             variant={mineOnly ? 'filled' : 'outlined'}
           />
-        </Box>
-      )}
-
-      {/* おすすめバレルセクション */}
-      {session && myDarts.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, cursor: 'pointer' }}
-            onClick={() => setRecommendOpen(!recommendOpen)}
-          >
-            <RecommendIcon color="primary" />
-            <Typography variant="h6">あなたへのおすすめバレル</Typography>
-            <IconButton size="small">
-              {recommendOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Box>
-          <Collapse in={recommendOpen}>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <Chip
-                label="ソフト"
-                onClick={() => setRecommendType('soft')}
-                color={recommendType === 'soft' ? 'primary' : 'default'}
-                variant={recommendType === 'soft' ? 'filled' : 'outlined'}
-                size="small"
-              />
-              <Chip
-                label="スティール"
-                onClick={() => setRecommendType('steel')}
-                color={recommendType === 'steel' ? 'primary' : 'default'}
-                variant={recommendType === 'steel' ? 'filled' : 'outlined'}
-                size="small"
-              />
-            </Box>
-            {recommendLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={32} />
-              </Box>
-            ) : recommendedBarrels.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                おすすめバレルが見つかりませんでした
-              </Typography>
-            ) : (
-              <Box sx={{
-                display: 'flex',
-                gap: 2,
-                overflowX: 'auto',
-                pb: 1,
-                scrollSnapType: 'x mandatory',
-                '&::-webkit-scrollbar': { height: 6 },
-                '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
-              }}>
-                {recommendedBarrels.map((barrel) => (
-                  <Box key={barrel.id} sx={{ minWidth: 240, maxWidth: 240, flexShrink: 0, scrollSnapAlign: 'start' }}>
-                    <BarrelCard barrel={barrel} />
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Collapse>
         </Box>
       )}
 
