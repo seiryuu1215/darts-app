@@ -1,10 +1,38 @@
 'use client';
 
 import { ReactNode, createContext, useMemo, useState, useEffect } from 'react';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { ThemeProvider, createTheme, CssBaseline, useMediaQuery } from '@mui/material';
+import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { auth as firebaseAuth } from '@/lib/firebase';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
+
+/** NextAuthセッションに連動してFirebase Authにもサインインする */
+function FirebaseAuthSync() {
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !session?.user?.id) return;
+
+    // 既にFirebase Authにサインイン済みならスキップ
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+      if (user) return; // 既にサインイン済み
+      try {
+        const res = await fetch('/api/firebase-token');
+        if (!res.ok) return;
+        const { token } = await res.json();
+        await signInWithCustomToken(firebaseAuth, token);
+      } catch (err) {
+        console.error('Firebase Auth sync error:', err);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [session, status]);
+
+  return null;
+}
 
 export default function Providers({ children }: { children: ReactNode }) {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
@@ -35,6 +63,7 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   return (
     <SessionProvider>
+      <FirebaseAuthSync />
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
