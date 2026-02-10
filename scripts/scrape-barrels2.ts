@@ -8,9 +8,13 @@
  * - --nuke フラグで全消し＋再取得
  *
  * 使い方:
- *   npx tsx scripts/scrape-barrels2.ts           # 差分取得
+ *   npx tsx scripts/scrape-barrels2.ts           # 差分取得（現行品・在庫ありのみ）
+ *   npx tsx scripts/scrape-barrels2.ts --all     # 廃盤・在庫なし含む全商品
  *   npx tsx scripts/scrape-barrels2.ts --nuke    # 全消し＋再取得
- *   nohup npx tsx scripts/scrape-barrels2.ts --nuke > scrape-log.txt 2>&1 &
+ *   npx tsx scripts/scrape-barrels2.ts --nuke --all  # 全消し＋全商品取得
+ *
+ * PCスリープ防止（Mac）:
+ *   caffeinate -i nohup npx tsx scripts/scrape-barrels2.ts --nuke --all > scrape-log.txt 2>&1 &
  */
 
 import 'dotenv/config';
@@ -233,7 +237,11 @@ async function main() {
   const listPage = await browser.newPage();
   await listPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-  const base = 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
+  // --all: 廃盤・在庫なし含む全商品取得
+  const allMode = process.argv.includes('--all');
+  const base = allMode
+    ? 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010'
+    : 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
   const stats = { saved: 0, skipped: 0 };
 
   for (let p = startPage; p < 9999; p++) {
