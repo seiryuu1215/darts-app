@@ -8,12 +8,22 @@ function initAdmin() {
     return getApps()[0];
   }
 
+  // Vercel環境: FIREBASE_SERVICE_ACCOUNT_KEY (JSON文字列) を使用
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    return initializeApp({
+      credential: cert(serviceAccount),
+    });
+  }
+
+  // ローカル環境: サービスアカウントファイルパスを使用
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     return initializeApp({
       credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS),
     });
   }
 
+  // フォールバック: projectIdのみ (Firestoreアクセスが制限される可能性あり)
   return initializeApp({ projectId });
 }
 
