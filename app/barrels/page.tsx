@@ -27,6 +27,8 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import RecommendIcon from '@mui/icons-material/AutoAwesome';
+import Link from 'next/link';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { BarrelProduct } from '@/types';
@@ -79,7 +81,7 @@ export default function BarrelsPage() {
     // ランキング取得
     const fetchRanking = async () => {
       try {
-        const rq = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(20));
+        const rq = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(50));
         const snapshot = await getDocs(rq);
         setRanking(snapshot.docs.map((d) => d.data() as RankedBarrel));
       } catch {
@@ -169,7 +171,17 @@ export default function BarrelsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>バレル検索</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+        <Typography variant="h4">バレル検索</Typography>
+        <Button
+          component={Link}
+          href="/barrels/recommend"
+          variant="outlined"
+          startIcon={<RecommendIcon />}
+        >
+          おすすめを探す
+        </Button>
+      </Box>
 
       {/* 人気バレルランキング */}
       {ranking.length > 0 && (

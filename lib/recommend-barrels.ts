@@ -150,6 +150,71 @@ function getBarrelType(name: string): 'soft' | 'steel' | '' {
   return '';
 }
 
+export function recommendFromBarrels(
+  selectedBarrels: BarrelProduct[],
+  allBarrels: BarrelProduct[],
+  limit = 10
+): BarrelProduct[] {
+  if (selectedBarrels.length === 0) return [];
+
+  // 重量平均
+  const weights = selectedBarrels.map((b) => b.weight).filter((w) => w > 0);
+  const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
+
+  // 最大径平均
+  const diameters = selectedBarrels.map((b) => b.maxDiameter).filter((v): v is number => v != null && v > 0);
+  const avgDiameter = diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
+
+  // 全長平均
+  const lengths = selectedBarrels.map((b) => b.length).filter((v): v is number => v != null && v > 0);
+  const avgLength = lengths.length > 0 ? lengths.reduce((a, b) => a + b, 0) / lengths.length : null;
+
+  // カット集計
+  const cutCount = new Map<string, number>();
+  selectedBarrels.forEach((b) => {
+    if (b.cut) {
+      b.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean).forEach((c) => {
+        cutCount.set(c, (cutCount.get(c) || 0) + 1);
+      });
+    }
+  });
+  const favoriteCuts = Array.from(cutCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([cut]) => cut);
+
+  // ブランド集計
+  const brandCount = new Map<string, number>();
+  selectedBarrels.forEach((b) => {
+    if (b.brand) {
+      brandCount.set(b.brand, (brandCount.get(b.brand) || 0) + 1);
+    }
+  });
+  const favoriteBrands = Array.from(brandCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([brand]) => brand);
+
+  const pref: UserPreference = {
+    avgWeight,
+    avgDiameter,
+    avgLength,
+    favoriteCuts,
+    favoriteBrands,
+    keywords: [],
+    ownedBarrelNames: selectedBarrels.map((b) => b.name),
+  };
+
+  const ownedNames = new Set(pref.ownedBarrelNames.map((n) => n.toLowerCase()));
+
+  return allBarrels
+    .filter((b) => !ownedNames.has(b.name.toLowerCase()))
+    .map((b) => ({ barrel: b, score: scoreBarrel(b, pref) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((item) => item.barrel);
+}
+
 export function recommendBarrels(
   darts: Dart[],
   barrels: BarrelProduct[],
