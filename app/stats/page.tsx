@@ -50,26 +50,7 @@ import {
   ComposedChart,
 } from 'recharts';
 
-// === Color constants ===
-const COLOR_01 = '#e53935';       // 01 - 赤
-const COLOR_CRICKET = '#1e88e5';  // Cricket - 青
-const COLOR_COUNTUP = '#43a047';  // Count-Up - 緑
-const COLOR_RATING = '#ff9800';   // Rating accent
-
-// Flight colors (DARTSLIVE inspired)
-const FLIGHT_COLORS: Record<string, string> = {
-  C: '#9e9e9e',
-  CC: '#78909c',
-  B: '#66bb6a',
-  BB: '#29b6f6',
-  A: '#ab47bc',
-  AA: '#ff7043',
-  SA: '#e53935',
-};
-
-function getFlightColor(flight: string): string {
-  return FLIGHT_COLORS[flight] || '#ff9800';
-}
+import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
 function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | undefined; prev: number | null | undefined; fixed?: number }) {
   if (current == null || prev == null) return null;
@@ -121,8 +102,8 @@ interface DartsliveData {
 
 type MonthlyTab = 'rating' | 'zeroOne' | 'cricket' | 'countUp';
 
-const MONTHLY_CONFIG: Record<MonthlyTab, { label: string; color: string }> = {
-  rating: { label: 'RATING', color: COLOR_RATING },
+const MONTHLY_CONFIG_BASE: Record<MonthlyTab, { label: string; color: string }> = {
+  rating: { label: 'RATING', color: '#808080' },
   zeroOne: { label: '01 GAMES', color: COLOR_01 },
   cricket: { label: 'CRICKET', color: COLOR_CRICKET },
   countUp: { label: 'COUNT-UP', color: COLOR_COUNTUP },
@@ -219,7 +200,8 @@ export default function StatsPage() {
 
   const c = dlData?.current;
   const prev = dlData?.prev;
-  const flightColor = c?.flight ? getFlightColor(c.flight) : COLOR_RATING;
+  const flightColor = c?.flight ? getFlightColor(c.flight) : '#808080';
+  const monthlyConfig = { ...MONTHLY_CONFIG_BASE, rating: { label: 'RATING', color: flightColor } };
   const monthlyChartData = dlData?.monthly[monthlyTab]?.slice().reverse() || [];
   const selectedGame = dlData?.recentGames?.games?.find((g) => g.category === gameChartCategory);
   const gameChartData = selectedGame?.scores.map((score, i) => {
@@ -339,7 +321,7 @@ export default function StatsPage() {
                 href={`/darts/${activeSoftDart.id}`}
                 sx={{
                   textDecoration: 'none', display: 'flex', flexDirection: 'row', mb: 2,
-                  height: 72, borderRadius: 2, borderLeft: `3px solid ${COLOR_RATING}`,
+                  height: 72, borderRadius: 2, borderLeft: `3px solid ${flightColor}`,
                 }}
               >
                 {activeSoftDart.imageUrls.length > 0 ? (
@@ -371,7 +353,7 @@ export default function StatsPage() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>月間推移</Typography>
                   <ToggleButtonGroup value={monthlyTab} exclusive onChange={(_, v) => { if (v) setMonthlyTab(v); }} size="small">
-                    <ToggleButton value="rating" sx={{ '&.Mui-selected': { color: COLOR_RATING } }}>Rt</ToggleButton>
+                    <ToggleButton value="rating" sx={{ '&.Mui-selected': { color: flightColor } }}>Rt</ToggleButton>
                     <ToggleButton value="zeroOne" sx={{ '&.Mui-selected': { color: COLOR_01 } }}>01</ToggleButton>
                     <ToggleButton value="cricket" sx={{ '&.Mui-selected': { color: COLOR_CRICKET } }}>Cri</ToggleButton>
                     <ToggleButton value="countUp" sx={{ '&.Mui-selected': { color: COLOR_COUNTUP } }}>CU</ToggleButton>
@@ -386,10 +368,10 @@ export default function StatsPage() {
                     <Line
                       type="monotone"
                       dataKey="value"
-                      name={MONTHLY_CONFIG[monthlyTab].label}
-                      stroke={MONTHLY_CONFIG[monthlyTab].color}
+                      name={monthlyConfig[monthlyTab].label}
+                      stroke={monthlyConfig[monthlyTab].color}
                       strokeWidth={2.5}
-                      dot={{ r: 3, fill: MONTHLY_CONFIG[monthlyTab].color }}
+                      dot={{ r: 3, fill: monthlyConfig[monthlyTab].color }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>

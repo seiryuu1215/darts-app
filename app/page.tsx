@@ -32,14 +32,7 @@ import DartCard from '@/components/darts/DartCard';
 import ArticleCard from '@/components/articles/ArticleCard';
 import type { Dart, Article } from '@/types';
 
-// DARTSLIVE colors
-const COLOR_01 = '#e53935';
-const COLOR_CRICKET = '#1e88e5';
-const COLOR_COUNTUP = '#43a047';
-const FLIGHT_COLORS: Record<string, string> = {
-  C: '#9e9e9e', CC: '#78909c', B: '#66bb6a', BB: '#29b6f6',
-  A: '#ab47bc', AA: '#ff7043', SA: '#e53935',
-};
+import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
 interface DartsliveCache {
   rating: number | null;
@@ -298,81 +291,44 @@ export default function HomePage() {
       )}
 
       {/* DARTSLIVE Stats Summary */}
-      {session && dlCache && (
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <BarChartIcon color="primary" />
-              <Typography variant="h5">DARTSLIVE Stats</Typography>
+      {session && dlCache && (() => {
+        const fc = getFlightColor(dlCache.flight);
+        return (
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BarChartIcon color="primary" />
+                <Typography variant="h5">DARTSLIVE Stats</Typography>
+              </Box>
+              <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">詳細</Button>
             </Box>
-            <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">詳細</Button>
+            <Card
+              component={Link}
+              href="/stats"
+              sx={{ textDecoration: 'none', borderRadius: 2, overflow: 'hidden' }}
+            >
+              <Box sx={{ display: 'flex' }}>
+                {[
+                  { label: `Rt`, sub: dlCache.flight, value: dlCache.rating?.toFixed(2) ?? '--', color: fc },
+                  { label: '01', value: dlCache.stats01Avg?.toFixed(2) ?? '--', color: COLOR_01 },
+                  { label: 'Cricket', value: dlCache.statsCriAvg?.toFixed(2) ?? '--', color: COLOR_CRICKET },
+                  { label: 'CU', value: dlCache.statsPraAvg?.toFixed(0) ?? '--', color: COLOR_COUNTUP },
+                ].map((item) => (
+                  <Box key={item.label} sx={{ flex: 1, textAlign: 'center', py: 1.5, borderTop: `3px solid ${item.color}` }}>
+                    <Typography variant="caption" sx={{ color: item.color, fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>
+                      {item.label}
+                      {item.sub && <Typography component="span" variant="caption" sx={{ ml: 0.5, opacity: 0.7 }}>{item.sub}</Typography>}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.3 }}>
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Card>
           </Box>
-          <Card
-            component={Link}
-            href="/stats"
-            sx={{
-              textDecoration: 'none',
-              p: 2,
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${FLIGHT_COLORS[dlCache.flight] || '#ff9800'}15, transparent)`,
-              border: `1px solid ${FLIGHT_COLORS[dlCache.flight] || '#ff9800'}33`,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Chip
-                label={`Rt ${dlCache.rating?.toFixed(2) ?? '--'}`}
-                size="small"
-                sx={{
-                  bgcolor: FLIGHT_COLORS[dlCache.flight] || '#ff9800',
-                  color: '#fff',
-                  fontWeight: 'bold',
-                }}
-              />
-              <Chip label={dlCache.flight} size="small" variant="outlined" sx={{ borderColor: FLIGHT_COLORS[dlCache.flight], color: FLIGHT_COLORS[dlCache.flight] }} />
-              {dlCache.prevRating != null && dlCache.rating != null && dlCache.rating !== dlCache.prevRating && (
-                <Typography variant="caption" sx={{ color: dlCache.rating > dlCache.prevRating ? '#4caf50' : '#f44336', fontWeight: 'bold' }}>
-                  {dlCache.rating > dlCache.prevRating ? '+' : ''}{(dlCache.rating - dlCache.prevRating).toFixed(2)}
-                </Typography>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Box>
-                <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>01</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {dlCache.stats01Avg?.toFixed(2) ?? '--'}
-                  {dlCache.prevStats01Avg != null && dlCache.stats01Avg != null && dlCache.stats01Avg !== dlCache.prevStats01Avg && (
-                    <Typography component="span" variant="caption" sx={{ color: dlCache.stats01Avg > dlCache.prevStats01Avg ? '#4caf50' : '#f44336', ml: 0.5 }}>
-                      {dlCache.stats01Avg > dlCache.prevStats01Avg ? '+' : ''}{(dlCache.stats01Avg - dlCache.prevStats01Avg).toFixed(2)}
-                    </Typography>
-                  )}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: COLOR_CRICKET, fontWeight: 'bold' }}>CRICKET</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {dlCache.statsCriAvg?.toFixed(2) ?? '--'}
-                  {dlCache.prevStatsCriAvg != null && dlCache.statsCriAvg != null && dlCache.statsCriAvg !== dlCache.prevStatsCriAvg && (
-                    <Typography component="span" variant="caption" sx={{ color: dlCache.statsCriAvg > dlCache.prevStatsCriAvg ? '#4caf50' : '#f44336', ml: 0.5 }}>
-                      {dlCache.statsCriAvg > dlCache.prevStatsCriAvg ? '+' : ''}{(dlCache.statsCriAvg - dlCache.prevStatsCriAvg).toFixed(2)}
-                    </Typography>
-                  )}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: COLOR_COUNTUP, fontWeight: 'bold' }}>COUNT-UP</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {dlCache.statsPraAvg?.toFixed(0) ?? '--'}
-                  {dlCache.prevStatsPraAvg != null && dlCache.statsPraAvg != null && dlCache.statsPraAvg !== dlCache.prevStatsPraAvg && (
-                    <Typography component="span" variant="caption" sx={{ color: dlCache.statsPraAvg > dlCache.prevStatsPraAvg ? '#4caf50' : '#f44336', ml: 0.5 }}>
-                      {dlCache.statsPraAvg > dlCache.prevStatsPraAvg ? '+' : ''}{(dlCache.statsPraAvg - dlCache.prevStatsPraAvg).toFixed(0)}
-                    </Typography>
-                  )}
-                </Typography>
-              </Box>
-            </Box>
-          </Card>
-        </Box>
-      )}
+        );
+      })()}
 
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
