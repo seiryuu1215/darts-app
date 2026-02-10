@@ -132,7 +132,7 @@ function DartsListContent() {
 
   const recommendedBarrels = useMemo(() => {
     if (myDarts.length === 0 || allBarrels.length === 0) return [];
-    return recommendBarrels(myDarts, allBarrels, recommendType, 10);
+    return recommendBarrels(myDarts, allBarrels, recommendType, 50);
   }, [myDarts, allBarrels, recommendType]);
 
   const handleToggleMine = () => {

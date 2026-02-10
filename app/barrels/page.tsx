@@ -81,7 +81,7 @@ export default function BarrelsPage() {
     // ランキング取得
     const fetchRanking = async () => {
       try {
-        const rq = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(50));
+        const rq = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(20));
         const snapshot = await getDocs(rq);
         setRanking(snapshot.docs.map((d) => d.data() as RankedBarrel));
       } catch {
