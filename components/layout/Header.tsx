@@ -22,7 +22,6 @@ import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -86,9 +85,14 @@ export default function Header() {
               記事
             </Button>
             {session && (
-              <Button color="inherit" component={Link} href="/stats" size="small">
-                スタッツ
-              </Button>
+              <>
+                <Button color="inherit" component={Link} href="/darts/compare" size="small">
+                  比較
+                </Button>
+                <Button color="inherit" component={Link} href="/stats" size="small">
+                  スタッツ
+                </Button>
+              </>
             )}
 
             <IconButton color="inherit" onClick={colorMode.toggleColorMode} size="small" sx={{ ml: 0.5 }}>
@@ -119,10 +123,6 @@ export default function Header() {
                   <MenuItem component={Link} href="/profile/edit">
                     <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                     プロフィール
-                  </MenuItem>
-                  <MenuItem component={Link} href="/darts/compare">
-                    <ListItemIcon><CompareArrowsIcon fontSize="small" /></ListItemIcon>
-                    セッティング比較
                   </MenuItem>
                   <MenuItem component={Link} href="/bookmarks">
                     <ListItemIcon><BookmarkIcon fontSize="small" /></ListItemIcon>

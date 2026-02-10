@@ -153,9 +153,25 @@ export default function StatsPage() {
     }
   }, [status, router]);
 
-  // 使用中ソフトダーツ取得
+  // キャッシュ済みスタッツ + 使用中ダーツを取得
   useEffect(() => {
     if (!session?.user?.id) return;
+
+    // キャッシュからスタッツをロード
+    const fetchCachedStats = async () => {
+      try {
+        const res = await fetch('/api/dartslive-stats');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.data) {
+          setDlData(json.data);
+          if (json.data.recentGames?.games?.length > 0) {
+            setGameChartCategory(json.data.recentGames.games[0].category);
+          }
+        }
+      } catch { /* ignore */ }
+    };
+
     const fetchActiveDart = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', session.user.id));
@@ -169,6 +185,8 @@ export default function StatsPage() {
         }
       } catch { /* ignore */ }
     };
+
+    fetchCachedStats();
     fetchActiveDart();
   }, [session]);
 

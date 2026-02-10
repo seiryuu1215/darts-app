@@ -218,6 +218,60 @@ async function scrapeRecentGames(page: Awaited<ReturnType<Awaited<ReturnType<typ
   });
 }
 
+/** キャッシュ済みスタッツを返す */
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: '未ログインです' }, { status: 401 });
+  }
+
+  try {
+    const cacheRef = adminDb.doc(`users/${session.user.id}/dartsliveCache/latest`);
+    const doc = await cacheRef.get();
+    if (!doc.exists) {
+      return NextResponse.json({ data: null });
+    }
+    const data = doc.data();
+
+    // フルデータがあればパースして返す
+    if (data?.fullData) {
+      return NextResponse.json({ data: JSON.parse(data.fullData), cached: true });
+    }
+
+    // フルデータがない場合はサマリーのみ返す
+    return NextResponse.json({
+      data: {
+        current: {
+          cardName: data?.cardName || '',
+          rating: data?.rating ?? null,
+          ratingInt: data?.ratingInt ?? null,
+          flight: data?.flight || '',
+          stats01Avg: data?.stats01Avg ?? null,
+          statsCriAvg: data?.statsCriAvg ?? null,
+          statsPraAvg: data?.statsPraAvg ?? null,
+          stats01Best: null,
+          statsCriBest: null,
+          statsPraBest: null,
+          awards: {},
+        },
+        monthly: {},
+        recentGames: { dayStats: {}, games: [], shops: [] },
+        prev: data?.prevRating != null ? {
+          rating: data.prevRating,
+          stats01Avg: data.prevStats01Avg,
+          statsCriAvg: data.prevStatsCriAvg,
+          statsPraAvg: data.prevStatsPraAvg,
+        } : null,
+      },
+      cached: true,
+      summaryOnly: true,
+    });
+  } catch (err) {
+    console.error('Stats cache read error:', err);
+    return NextResponse.json({ error: 'キャッシュ読み込みエラー' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -263,12 +317,26 @@ export async function POST(request: NextRequest) {
     const monthly = await scrapeMonthlyData(page);
     const recentGames = await scrapeRecentGames(page);
 
-    // Firestoreに最新スタッツを保存（トップページ表示用）
+    // Firestoreに最新スタッツを保存
     const cacheRef = adminDb.doc(`users/${session.user.id}/dartsliveCache/latest`);
     const prevDoc = await cacheRef.get();
     const prevData = prevDoc.exists ? prevDoc.data() : null;
 
+    const responseData = {
+      current: currentStats,
+      monthly,
+      recentGames,
+      prev: prevData ? {
+        rating: prevData.rating ?? prevData.current?.rating ?? null,
+        stats01Avg: prevData.stats01Avg ?? prevData.current?.stats01Avg ?? null,
+        statsCriAvg: prevData.statsCriAvg ?? prevData.current?.statsCriAvg ?? null,
+        statsPraAvg: prevData.statsPraAvg ?? prevData.current?.statsPraAvg ?? null,
+      } : null,
+    };
+
+    // フルデータ + サマリーを保存
     const cacheData = {
+      // サマリー（トップページ表示用）
       rating: currentStats.rating,
       ratingInt: currentStats.ratingInt,
       flight: currentStats.flight,
@@ -277,28 +345,17 @@ export async function POST(request: NextRequest) {
       statsCriAvg: currentStats.statsCriAvg,
       statsPraAvg: currentStats.statsPraAvg,
       // 前回との差分
-      prevRating: prevData?.rating ?? null,
-      prevStats01Avg: prevData?.stats01Avg ?? null,
-      prevStatsCriAvg: prevData?.statsCriAvg ?? null,
-      prevStatsPraAvg: prevData?.statsPraAvg ?? null,
+      prevRating: responseData.prev?.rating ?? null,
+      prevStats01Avg: responseData.prev?.stats01Avg ?? null,
+      prevStatsCriAvg: responseData.prev?.statsCriAvg ?? null,
+      prevStatsPraAvg: responseData.prev?.statsPraAvg ?? null,
+      // フルデータ（スタッツページ用）
+      fullData: JSON.stringify(responseData),
       updatedAt: FieldValue.serverTimestamp(),
     };
     await cacheRef.set(cacheData);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        current: currentStats,
-        monthly,
-        recentGames,
-        prev: prevData ? {
-          rating: prevData.rating,
-          stats01Avg: prevData.stats01Avg,
-          statsCriAvg: prevData.statsCriAvg,
-          statsPraAvg: prevData.statsPraAvg,
-        } : null,
-      },
-    });
+    return NextResponse.json({ success: true, data: responseData });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : '';

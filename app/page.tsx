@@ -157,8 +157,25 @@ export default function HomePage() {
     };
     const fetchDlCache = async () => {
       try {
-        const cacheDoc = await getDoc(doc(db, 'users', session.user.id, 'dartsliveCache', 'latest'));
-        if (cacheDoc.exists()) setDlCache(cacheDoc.data() as DartsliveCache);
+        const res = await fetch('/api/dartslive-stats');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.data?.current) {
+          const c = json.data.current;
+          const prev = json.data.prev;
+          setDlCache({
+            rating: c.rating,
+            flight: c.flight,
+            cardName: c.cardName,
+            stats01Avg: c.stats01Avg,
+            statsCriAvg: c.statsCriAvg,
+            statsPraAvg: c.statsPraAvg,
+            prevRating: prev?.rating ?? null,
+            prevStats01Avg: prev?.stats01Avg ?? null,
+            prevStatsCriAvg: prev?.statsCriAvg ?? null,
+            prevStatsPraAvg: prev?.statsPraAvg ?? null,
+          });
+        }
       } catch { /* ignore */ }
     };
     fetchActiveDarts();
