@@ -243,6 +243,7 @@ async function main() {
     ? 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010'
     : 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
   const stats = { saved: 0, skipped: 0 };
+  let emptyStreak = 0; // 新規0が連続した回数
 
   for (let p = startPage; p < 9999; p++) {
     console.log(`\n--- ページ ${p} ---`);
@@ -264,10 +265,17 @@ async function main() {
     console.log(`リンク数: ${links.length}, 新規: ${queue.length}`);
 
     if (queue.length > 0) {
+      emptyStreak = 0;
       const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
         worker(browser, queue, i + 1, stats)
       );
       await Promise.all(workers);
+    } else {
+      emptyStreak++;
+      if (emptyStreak >= 3) {
+        console.log('新規商品が3ページ連続で0件のため終了');
+        break;
+      }
     }
 
     fs.writeFileSync(PROGRESS_FILE, String(p + 1));
