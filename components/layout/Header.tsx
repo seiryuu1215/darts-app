@@ -15,12 +15,18 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import PersonIcon from '@mui/icons-material/Person';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
@@ -29,25 +35,27 @@ import { ColorModeContext } from '@/components/Providers';
 export default function Header() {
   const { data: session } = useSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
 
   const isAdmin = session?.user?.role === 'admin';
 
-  const menuItems = session
+  // モバイルドロワー用メニュー（よく使う順）
+  const drawerItems = session
     ? [
+        { label: 'セッティング', href: '/darts' },
         { label: 'バレル検索', href: '/barrels' },
-        { label: 'みんなのセッティング', href: '/darts' },
+        { label: 'スタッツ記録', href: '/stats' },
         { label: '記事', href: '/articles' },
         { label: 'セッティング比較', href: '/darts/compare' },
-        { label: 'スタッツ記録', href: '/stats' },
         { label: 'ブックマーク', href: '/bookmarks' },
         { label: 'プロフィール', href: '/profile/edit' },
         ...(isAdmin ? [{ label: 'ユーザ管理', href: '/admin/users' }] : []),
       ]
     : [
+        { label: 'セッティング', href: '/darts' },
         { label: 'バレル検索', href: '/barrels' },
-        { label: 'みんなのセッティング', href: '/darts' },
         { label: '記事', href: '/articles' },
         { label: 'ログイン', href: '/login' },
         { label: '新規登録', href: '/register' },
@@ -67,55 +75,78 @@ export default function Header() {
           </Typography>
 
           {/* PC表示 */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-            <IconButton color="inherit" onClick={colorMode.toggleColorMode} size="small">
-              {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-            <Button color="inherit" component={Link} href="/barrels" startIcon={<SearchIcon />}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5, alignItems: 'center' }}>
+            <Button color="inherit" component={Link} href="/darts" size="small">
+              セッティング
+            </Button>
+            <Button color="inherit" component={Link} href="/barrels" size="small">
               バレル検索
             </Button>
-            <Button color="inherit" component={Link} href="/darts">
-              みんなのセッティング
-            </Button>
-            <Button color="inherit" component={Link} href="/articles">
+            <Button color="inherit" component={Link} href="/articles" size="small">
               記事
             </Button>
+            {session && (
+              <Button color="inherit" component={Link} href="/stats" size="small">
+                スタッツ
+              </Button>
+            )}
+
+            <IconButton color="inherit" onClick={colorMode.toggleColorMode} size="small" sx={{ ml: 0.5 }}>
+              {theme.palette.mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+            </IconButton>
+
             {session ? (
               <>
-                <Button color="inherit" component={Link} href="/darts/compare">
-                  セッティング比較
-                </Button>
-                <Button color="inherit" component={Link} href="/stats">
-                  スタッツ記録
-                </Button>
-                <Button color="inherit" component={Link} href="/bookmarks">
-                  ブックマーク
-                </Button>
-                {isAdmin && (
-                  <Button color="inherit" component={Link} href="/admin/users">
-                    ユーザ管理
-                  </Button>
-                )}
-                <Link href="/profile/edit" style={{ display: 'flex' }}>
-                  <Box sx={{ p: 0.5, border: '2px solid rgba(255,255,255,0.5)', borderRadius: '50%', ml: 0.5, cursor: 'pointer', '&:hover': { opacity: 0.8 } }}>
-                    <UserAvatar
-                      userId={session.user.id}
-                      avatarUrl={null}
-                      userName={session.user.name || ''}
-                      size={32}
-                    />
-                  </Box>
-                </Link>
-                <Button color="inherit" onClick={() => signOut()}>
-                  ログアウト
-                </Button>
+                <IconButton
+                  onClick={(e) => setAnchorEl(e.currentTarget)}
+                  sx={{ p: 0.5, ml: 0.5, border: '2px solid rgba(255,255,255,0.5)', '&:hover': { opacity: 0.8 } }}
+                >
+                  <UserAvatar
+                    userId={session.user.id}
+                    avatarUrl={null}
+                    userName={session.user.name || ''}
+                    size={30}
+                  />
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={() => setAnchorEl(null)}
+                  onClick={() => setAnchorEl(null)}
+                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                >
+                  <MenuItem component={Link} href="/profile/edit">
+                    <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                    プロフィール
+                  </MenuItem>
+                  <MenuItem component={Link} href="/darts/compare">
+                    <ListItemIcon><CompareArrowsIcon fontSize="small" /></ListItemIcon>
+                    セッティング比較
+                  </MenuItem>
+                  <MenuItem component={Link} href="/bookmarks">
+                    <ListItemIcon><BookmarkIcon fontSize="small" /></ListItemIcon>
+                    ブックマーク
+                  </MenuItem>
+                  {isAdmin && (
+                    <MenuItem component={Link} href="/admin/users">
+                      <ListItemIcon><AdminPanelSettingsIcon fontSize="small" /></ListItemIcon>
+                      ユーザ管理
+                    </MenuItem>
+                  )}
+                  <Divider />
+                  <MenuItem onClick={() => signOut()}>
+                    <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+                    ログアウト
+                  </MenuItem>
+                </Menu>
               </>
             ) : (
               <>
-                <Button color="inherit" component={Link} href="/login">
+                <Button color="inherit" component={Link} href="/login" size="small">
                   ログイン
                 </Button>
-                <Button color="inherit" component={Link} href="/register">
+                <Button variant="outlined" color="inherit" component={Link} href="/register" size="small">
                   新規登録
                 </Button>
               </>
@@ -147,6 +178,7 @@ export default function Header() {
         </Toolbar>
       </AppBar>
 
+      {/* モバイルドロワー */}
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box sx={{ width: 250 }}>
           {session && (
@@ -165,7 +197,7 @@ export default function Header() {
                 <ListItemText primary={theme.palette.mode === 'dark' ? 'ライトモード' : 'ダークモード'} />
               </ListItemButton>
             </ListItem>
-            {menuItems.map((item) => (
+            {drawerItems.map((item) => (
               <ListItem key={item.href} disablePadding>
                 <ListItemButton component={Link} href={item.href}>
                   <ListItemText primary={item.label} />
