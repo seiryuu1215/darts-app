@@ -9,9 +9,9 @@ export const FLIGHT_COLORS: Record<string, string> = {
   CC: '#00ACC1', // シアン
   B:  '#1E88E5', // ブルー
   BB: '#7B1FA2', // パープル
-  A:  '#E53935', // レッド
-  AA: '#F4511E', // ディープオレンジ
-  SA: '#F9A825', // ゴールド
+  A:  '#FF9800', // オレンジ
+  AA: '#E65100', // 濃いめオレンジ
+  SA: '#FDD835', // イエロー
 };
 
 export function getFlightColor(flight: string): string {
