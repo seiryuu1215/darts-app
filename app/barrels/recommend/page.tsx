@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -13,25 +13,33 @@ import {
   CardContent,
   Chip,
   Checkbox,
-  Alert,
+  TextField,
+  InputAdornment,
+  Paper,
+  LinearProgress,
+  Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import BarrelCard from '@/components/barrels/BarrelCard';
-import { recommendFromBarrels } from '@/lib/recommend-barrels';
+import { recommendFromBarrelsWithAnalysis } from '@/lib/recommend-barrels';
+import type { BarrelAnalysis } from '@/lib/recommend-barrels';
 import type { BarrelProduct } from '@/types';
 
 export default function RecommendPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [bookmarkedBarrels, setBookmarkedBarrels] = useState<BarrelProduct[]>([]);
+  const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(new Set());
+  const [allBarrels, setAllBarrels] = useState<BarrelProduct[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [results, setResults] = useState<BarrelProduct[] | null>(null);
+  const [results, setResults] = useState<BarrelAnalysis[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -41,28 +49,53 @@ export default function RecommendPage() {
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    const fetchBookmarks = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
+        // ブックマークID取得
         const barrelBmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
-        const barrelPromises = barrelBmSnap.docs.map(async (bmDoc) => {
-          const barrelId = bmDoc.data().barrelId;
-          const barrelSnap = await getDoc(doc(db, 'barrels', barrelId));
-          if (barrelSnap.exists()) {
-            return { id: barrelSnap.id, ...barrelSnap.data() } as BarrelProduct;
-          }
-          return null;
-        });
-        const barrels = (await Promise.all(barrelPromises)).filter(Boolean) as BarrelProduct[];
-        setBookmarkedBarrels(barrels);
+        const bmIds = new Set(barrelBmSnap.docs.map((d) => d.data().barrelId as string));
+        setBookmarkIds(bmIds);
+
+        // 全バレル取得
+        const snapshot = await getDocs(collection(db, 'barrels'));
+        const barrels = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as BarrelProduct[];
+        setAllBarrels(barrels);
       } catch (err) {
-        console.error('ブックマーク取得エラー:', err);
+        console.error('データ取得エラー:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBookmarks();
+    fetchData();
   }, [session]);
+
+  // ブックマーク優先 + 検索フィルター付きバレル一覧
+  const displayBarrels = useMemo(() => {
+    let filtered = allBarrels;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = allBarrels.filter(
+        (b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q)
+      );
+    }
+    // ブックマーク済みを上に
+    return [...filtered].sort((a, b) => {
+      const aBookmarked = a.id ? bookmarkIds.has(a.id) : false;
+      const bBookmarked = b.id ? bookmarkIds.has(b.id) : false;
+      if (aBookmarked && !bBookmarked) return -1;
+      if (!aBookmarked && bBookmarked) return 1;
+      return 0;
+    });
+  }, [allBarrels, bookmarkIds, searchQuery]);
+
+  const bookmarkedCount = useMemo(() => {
+    if (!searchQuery.trim()) return bookmarkIds.size;
+    return displayBarrels.filter((b) => b.id && bookmarkIds.has(b.id)).length;
+  }, [displayBarrels, bookmarkIds, searchQuery]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -79,14 +112,9 @@ export default function RecommendPage() {
   const handleSearch = async () => {
     setSearching(true);
     try {
-      const selectedBarrels = bookmarkedBarrels.filter((b) => b.id && selectedIds.has(b.id));
-      const snapshot = await getDocs(collection(db, 'barrels'));
-      const allBarrels = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as BarrelProduct[];
-      const recommended = recommendFromBarrels(selectedBarrels, allBarrels, 30);
-      setResults(recommended);
+      const selectedBarrels = allBarrels.filter((b) => b.id && selectedIds.has(b.id));
+      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, 30);
+      setResults(analyzed);
     } catch (err) {
       console.error('おすすめ検索エラー:', err);
     } finally {
@@ -101,20 +129,16 @@ export default function RecommendPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 1 }}>おすすめバレルを探す</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        ブックマークしたバレルから好みの3つを選んで、似たスペックのバレルを提案します。
+        好みのバレルを3つ選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。
       </Typography>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
-      ) : bookmarkedBarrels.length === 0 ? (
-        <Alert severity="info">
-          ブックマークしたバレルがありません。まずバレル検索からお気に入りをブックマークしてください。
-        </Alert>
       ) : (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
             <Typography variant="h6">バレルを3つ選択</Typography>
             <Chip
               label={`${selectedIds.size} / 3`}
@@ -123,11 +147,46 @@ export default function RecommendPage() {
             />
           </Box>
 
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {bookmarkedBarrels.map((barrel) => {
+          <TextField
+            placeholder="バレル名、ブランドで検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {bookmarkedCount > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+              <BookmarkIcon fontSize="small" color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                ブックマーク済み ({bookmarkedCount}件)
+              </Typography>
+            </Box>
+          )}
+
+          <Grid container spacing={1.5} sx={{ mb: 3, maxHeight: 480, overflowY: 'auto' }}>
+            {displayBarrels.map((barrel, index) => {
+              const isBookmarked = barrel.id ? bookmarkIds.has(barrel.id) : false;
               const isSelected = barrel.id ? selectedIds.has(barrel.id) : false;
+              // ブックマーク → 非ブックマーク境界にDivider表示
+              const showDivider = index > 0 && !isBookmarked && bookmarkedCount > 0 &&
+                displayBarrels[index - 1]?.id && bookmarkIds.has(displayBarrels[index - 1].id!);
+
               return (
-                <Grid size={{ xs: 6, sm: 4, md: 3 }} key={barrel.id}>
+                <Grid size={{ xs: 6, sm: 4, md: 3 }} key={barrel.id} sx={showDivider ? { pt: 1 } : undefined}>
+                  {showDivider && (
+                    <Divider sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary">すべてのバレル</Typography>
+                    </Divider>
+                  )}
                   <Card
                     onClick={() => barrel.id && toggleSelect(barrel.id)}
                     sx={{
@@ -144,6 +203,12 @@ export default function RecommendPage() {
                       sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1 }}
                       size="small"
                     />
+                    {isBookmarked && (
+                      <BookmarkIcon
+                        sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1, fontSize: 18 }}
+                        color="primary"
+                      />
+                    )}
                     {barrel.imageUrl ? (
                       <CardMedia
                         component="img"
@@ -193,10 +258,78 @@ export default function RecommendPage() {
               類似バレルが見つかりませんでした
             </Typography>
           ) : (
-            <Grid container spacing={2}>
-              {results.map((barrel) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
-                  <BarrelCard barrel={barrel} />
+            <Grid container spacing={3}>
+              {results.map((analysis) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={analysis.barrel.id}>
+                  <Box>
+                    <BarrelCard barrel={analysis.barrel} />
+                    {/* 分析カード */}
+                    <Paper variant="outlined" sx={{ mt: -0.5, borderTopLeftRadius: 0, borderTopRightRadius: 0, p: 1.5 }}>
+                      {/* 一致度バー */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 48 }}>
+                          一致度
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={analysis.matchPercent}
+                          sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
+                          color={analysis.matchPercent >= 70 ? 'success' : analysis.matchPercent >= 40 ? 'primary' : 'warning'}
+                        />
+                        <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 32, textAlign: 'right' }}>
+                          {analysis.matchPercent}%
+                        </Typography>
+                      </Box>
+
+                      {/* スペック差分チップ */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                        {analysis.diffs.weightDiff != null && (
+                          <Chip
+                            label={`重量 ${analysis.diffs.weightDiff > 0 ? '+' : ''}${analysis.diffs.weightDiff}g`}
+                            size="small"
+                            variant="outlined"
+                            color={Math.abs(analysis.diffs.weightDiff) <= 0.5 ? 'success' : Math.abs(analysis.diffs.weightDiff) <= 2 ? 'default' : 'warning'}
+                          />
+                        )}
+                        {analysis.diffs.diameterDiff != null && (
+                          <Chip
+                            label={`径 ${analysis.diffs.diameterDiff > 0 ? '+' : ''}${analysis.diffs.diameterDiff.toFixed(1)}mm`}
+                            size="small"
+                            variant="outlined"
+                            color={Math.abs(analysis.diffs.diameterDiff) <= 0.2 ? 'success' : Math.abs(analysis.diffs.diameterDiff) <= 0.5 ? 'default' : 'warning'}
+                          />
+                        )}
+                        {analysis.diffs.lengthDiff != null && (
+                          <Chip
+                            label={`長さ ${analysis.diffs.lengthDiff > 0 ? '+' : ''}${analysis.diffs.lengthDiff}mm`}
+                            size="small"
+                            variant="outlined"
+                            color={Math.abs(analysis.diffs.lengthDiff) <= 1 ? 'success' : Math.abs(analysis.diffs.lengthDiff) <= 3 ? 'default' : 'warning'}
+                          />
+                        )}
+                        {analysis.diffs.cutMatch !== 'none' && (
+                          <Chip
+                            label={analysis.diffs.cutMatch === 'exact' ? 'カット一致' : 'カット近似'}
+                            size="small"
+                            variant="outlined"
+                            color={analysis.diffs.cutMatch === 'exact' ? 'success' : 'info'}
+                          />
+                        )}
+                        {analysis.diffs.brandMatch && (
+                          <Chip label="同ブランド" size="small" variant="outlined" color="info" />
+                        )}
+                      </Box>
+
+                      {/* 感覚の違い */}
+                      <Box>
+                        {analysis.insights.map((insight, i) => (
+                          <Typography key={i} variant="caption" display="block" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                            ・{insight}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Paper>
+                  </Box>
                 </Grid>
               ))}
             </Grid>

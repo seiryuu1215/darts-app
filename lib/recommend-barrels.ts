@@ -150,26 +150,33 @@ function getBarrelType(name: string): 'soft' | 'steel' | '' {
   return '';
 }
 
-export function recommendFromBarrels(
-  selectedBarrels: BarrelProduct[],
-  allBarrels: BarrelProduct[],
-  limit = 10
-): BarrelProduct[] {
-  if (selectedBarrels.length === 0) return [];
+export interface BarrelAnalysis {
+  barrel: BarrelProduct;
+  score: number;
+  maxScore: number;
+  matchPercent: number;
+  diffs: SpecDiff;
+  insights: string[];
+}
 
-  // 重量平均
+export interface SpecDiff {
+  weightDiff: number | null;
+  diameterDiff: number | null;
+  lengthDiff: number | null;
+  cutMatch: 'exact' | 'partial' | 'none';
+  brandMatch: boolean;
+}
+
+function buildPrefFromBarrels(selectedBarrels: BarrelProduct[]): UserPreference {
   const weights = selectedBarrels.map((b) => b.weight).filter((w) => w > 0);
   const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
 
-  // 最大径平均
   const diameters = selectedBarrels.map((b) => b.maxDiameter).filter((v): v is number => v != null && v > 0);
   const avgDiameter = diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
 
-  // 全長平均
   const lengths = selectedBarrels.map((b) => b.length).filter((v): v is number => v != null && v > 0);
   const avgLength = lengths.length > 0 ? lengths.reduce((a, b) => a + b, 0) / lengths.length : null;
 
-  // カット集計
   const cutCount = new Map<string, number>();
   selectedBarrels.forEach((b) => {
     if (b.cut) {
@@ -183,7 +190,6 @@ export function recommendFromBarrels(
     .slice(0, 5)
     .map(([cut]) => cut);
 
-  // ブランド集計
   const brandCount = new Map<string, number>();
   selectedBarrels.forEach((b) => {
     if (b.brand) {
@@ -195,7 +201,7 @@ export function recommendFromBarrels(
     .slice(0, 5)
     .map(([brand]) => brand);
 
-  const pref: UserPreference = {
+  return {
     avgWeight,
     avgDiameter,
     avgLength,
@@ -204,15 +210,91 @@ export function recommendFromBarrels(
     keywords: [],
     ownedBarrelNames: selectedBarrels.map((b) => b.name),
   };
+}
 
+function analyzeBarrel(barrel: BarrelProduct, pref: UserPreference): BarrelAnalysis {
+  const score = scoreBarrel(barrel, pref);
+  // 最大スコア: 重量3 + 最大径2 + 全長2 + カット2 + ブランド1 = 10 (キーワードは選択バレルでは0なので除外)
+  const maxScore = 10;
+  const matchPercent = Math.round((score / maxScore) * 100);
+
+  // スペック差分
+  const weightDiff = pref.avgWeight > 0 ? Math.round((barrel.weight - pref.avgWeight) * 10) / 10 : null;
+  const diameterDiff = pref.avgDiameter != null && barrel.maxDiameter != null
+    ? Math.round((barrel.maxDiameter - pref.avgDiameter) * 100) / 100
+    : null;
+  const lengthDiff = pref.avgLength != null && barrel.length != null
+    ? Math.round((barrel.length - pref.avgLength) * 10) / 10
+    : null;
+
+  let cutMatch: 'exact' | 'partial' | 'none' = 'none';
+  if (barrel.cut && pref.favoriteCuts.length > 0) {
+    const barrelCuts = barrel.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean);
+    if (barrelCuts.some((c) => pref.favoriteCuts.includes(c))) {
+      cutMatch = 'exact';
+    } else if (barrelCuts.some((bc) => pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc)))) {
+      cutMatch = 'partial';
+    }
+  }
+
+  const brandMatch = pref.favoriteBrands.includes(barrel.brand);
+
+  const diffs: SpecDiff = { weightDiff, diameterDiff, lengthDiff, cutMatch, brandMatch };
+
+  // 感覚の違いを言語化
+  const insights: string[] = [];
+
+  if (weightDiff != null) {
+    if (weightDiff > 1) insights.push(`${Math.abs(weightDiff)}g重く、飛びに力強さが増す傾向`);
+    else if (weightDiff > 0.3) insights.push(`やや重め。安定感が増す可能性あり`);
+    else if (weightDiff < -1) insights.push(`${Math.abs(weightDiff)}g軽く、スピード感のある飛びに`);
+    else if (weightDiff < -0.3) insights.push(`やや軽め。取り回しが楽になる可能性あり`);
+    else insights.push('重量はほぼ同じ。違和感なく移行できそう');
+  }
+
+  if (diameterDiff != null) {
+    if (diameterDiff > 0.3) insights.push(`太め（+${diameterDiff.toFixed(1)}mm）。グリップの存在感が増す`);
+    else if (diameterDiff < -0.3) insights.push(`細め（${diameterDiff.toFixed(1)}mm）。指離れが良くなる傾向`);
+    else insights.push('最大径は近いサイズ感');
+  }
+
+  if (lengthDiff != null) {
+    if (lengthDiff > 2) insights.push(`長め（+${lengthDiff.toFixed(1)}mm）。グリップポイントの選択肢が広がる`);
+    else if (lengthDiff < -2) insights.push(`短め（${lengthDiff.toFixed(1)}mm）。コンパクトな振り感に`);
+    else insights.push('全長は近い。持ち替え時の違和感が少なそう');
+  }
+
+  if (cutMatch === 'exact') insights.push('カットが一致。グリップ感の親和性が高い');
+  else if (cutMatch === 'partial') insights.push('カット系統が近い。似たグリップ感が期待できる');
+  else if (barrel.cut) insights.push('カットが異なる。グリップ感に変化あり');
+
+  return { barrel, score, maxScore, matchPercent, diffs, insights };
+}
+
+export function recommendFromBarrels(
+  selectedBarrels: BarrelProduct[],
+  allBarrels: BarrelProduct[],
+  limit = 10
+): BarrelProduct[] {
+  const results = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, limit);
+  return results.map((r) => r.barrel);
+}
+
+export function recommendFromBarrelsWithAnalysis(
+  selectedBarrels: BarrelProduct[],
+  allBarrels: BarrelProduct[],
+  limit = 10
+): BarrelAnalysis[] {
+  if (selectedBarrels.length === 0) return [];
+
+  const pref = buildPrefFromBarrels(selectedBarrels);
   const ownedNames = new Set(pref.ownedBarrelNames.map((n) => n.toLowerCase()));
 
   return allBarrels
     .filter((b) => !ownedNames.has(b.name.toLowerCase()))
-    .map((b) => ({ barrel: b, score: scoreBarrel(b, pref) }))
+    .map((b) => analyzeBarrel(b, pref))
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((item) => item.barrel);
+    .slice(0, limit);
 }
 
 export function recommendBarrels(

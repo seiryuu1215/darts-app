@@ -285,6 +285,9 @@ export default function BarrelsPage() {
             </IconButton>
           </Box>
           <Collapse in={recommendOpen}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              登録済みのセッティングの重量・最大径・全長・カット・ブランドをもとに、近いスペックのバレルを提案しています。
+            </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <Chip
                 label="ソフト"
