@@ -8,6 +8,9 @@ export interface UserPreference {
   favoriteBrands: string[];
   keywords: string[];
   ownedBarrelNames: string[];
+  weightOffset: number;
+  diameterOffset: number;
+  lengthOffset: number;
 }
 
 const KEYWORD_LIST = [
@@ -26,6 +29,9 @@ export function analyzeUserDarts(darts: Dart[]): UserPreference {
       favoriteBrands: [],
       keywords: [],
       ownedBarrelNames: [],
+      weightOffset: 0,
+      diameterOffset: 0,
+      lengthOffset: 0,
     };
   }
 
@@ -88,56 +94,76 @@ export function analyzeUserDarts(darts: Dart[]): UserPreference {
     favoriteBrands,
     keywords: Array.from(keywordSet),
     ownedBarrelNames,
+    weightOffset: 0,
+    diameterOffset: 0,
+    lengthOffset: 0,
   };
+}
+
+/** テキストから好みオフセットをパースする */
+export function parsePreferenceText(text: string): { weightOffset: number; diameterOffset: number; lengthOffset: number } {
+  let weightOffset = 0;
+  let diameterOffset = 0;
+  let lengthOffset = 0;
+
+  if (/重[くいめ]/.test(text)) weightOffset = +1;
+  if (/軽[くいめ]/.test(text)) weightOffset = -1;
+  if (/太[くいめ]/.test(text)) diameterOffset = +0.3;
+  if (/細[くいめ]/.test(text)) diameterOffset = -0.3;
+  if (/長[くいめ]/.test(text)) lengthOffset = +2;
+  if (/短[くいめ]/.test(text)) lengthOffset = -2;
+
+  return { weightOffset, diameterOffset, lengthOffset };
+}
+
+/** 線形減衰スコア: 差が0なら満点、maxDiffを超えたら0点 */
+function linearDecayScore(diff: number, maxDiff: number, maxPoints: number): number {
+  if (maxDiff <= 0) return maxPoints;
+  const ratio = Math.max(0, 1 - Math.abs(diff) / maxDiff);
+  return Math.round(ratio * maxPoints);
 }
 
 export function scoreBarrel(barrel: BarrelProduct, pref: UserPreference): number {
   let score = 0;
 
-  // 重量がレンジ内 (平均 ± 2g) → +3
-  if (pref.avgWeight > 0 && barrel.weight >= pref.avgWeight - 2 && barrel.weight <= pref.avgWeight + 2) {
-    score += 3;
+  // 重量: 0〜30点（差3g以上で0点）
+  if (pref.avgWeight > 0) {
+    const target = pref.avgWeight + pref.weightOffset;
+    const diff = barrel.weight - target;
+    score += linearDecayScore(diff, 3, 30);
   }
 
-  // 最大径がレンジ内 (平均 ± 0.5mm) → +2
+  // 最大径: 0〜25点（差1mm以上で0点）
   if (pref.avgDiameter != null && barrel.maxDiameter != null) {
-    if (barrel.maxDiameter >= pref.avgDiameter - 0.5 && barrel.maxDiameter <= pref.avgDiameter + 0.5) {
-      score += 2;
-    }
+    const target = pref.avgDiameter + pref.diameterOffset;
+    const diff = barrel.maxDiameter - target;
+    score += linearDecayScore(diff, 1, 25);
   }
 
-  // 全長がレンジ内 (平均 ± 3mm) → +2
+  // 全長: 0〜25点（差6mm以上で0点）
   if (pref.avgLength != null && barrel.length != null) {
-    if (barrel.length >= pref.avgLength - 3 && barrel.length <= pref.avgLength + 3) {
-      score += 2;
-    }
+    const target = pref.avgLength + pref.lengthOffset;
+    const diff = barrel.length - target;
+    score += linearDecayScore(diff, 6, 25);
   }
 
-  // カット一致 → 完全一致 +2, 部分一致 +1
+  // カット: 完全一致+15、部分一致+8、不一致0
   if (barrel.cut && pref.favoriteCuts.length > 0) {
     const barrelCuts = barrel.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean);
     const hasExact = barrelCuts.some((c) => pref.favoriteCuts.includes(c));
     if (hasExact) {
-      score += 2;
+      score += 15;
     } else {
       const hasPartial = barrelCuts.some((bc) =>
         pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc))
       );
-      if (hasPartial) score += 1;
+      if (hasPartial) score += 8;
     }
   }
 
-  // ブランド一致 → +1
+  // ブランド一致: +5
   if (pref.favoriteBrands.includes(barrel.brand)) {
-    score += 1;
-  }
-
-  // テキストキーワード一致 → +1
-  if (pref.keywords.length > 0) {
-    const barrelText = `${barrel.name} ${barrel.brand} ${barrel.cut}`.toLowerCase();
-    if (pref.keywords.some((kw) => barrelText.includes(kw.toLowerCase()))) {
-      score += 1;
-    }
+    score += 5;
   }
 
   return score;
@@ -167,7 +193,7 @@ export interface SpecDiff {
   brandMatch: boolean;
 }
 
-function buildPrefFromBarrels(selectedBarrels: BarrelProduct[]): UserPreference {
+function buildPrefFromBarrels(selectedBarrels: BarrelProduct[], userText?: string): UserPreference {
   const weights = selectedBarrels.map((b) => b.weight).filter((w) => w > 0);
   const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
 
@@ -201,6 +227,8 @@ function buildPrefFromBarrels(selectedBarrels: BarrelProduct[]): UserPreference 
     .slice(0, 5)
     .map(([brand]) => brand);
 
+  const offsets = userText ? parsePreferenceText(userText) : { weightOffset: 0, diameterOffset: 0, lengthOffset: 0 };
+
   return {
     avgWeight,
     avgDiameter,
@@ -209,13 +237,16 @@ function buildPrefFromBarrels(selectedBarrels: BarrelProduct[]): UserPreference 
     favoriteBrands,
     keywords: [],
     ownedBarrelNames: selectedBarrels.map((b) => b.name),
+    weightOffset: offsets.weightOffset,
+    diameterOffset: offsets.diameterOffset,
+    lengthOffset: offsets.lengthOffset,
   };
 }
 
 function analyzeBarrel(barrel: BarrelProduct, pref: UserPreference): BarrelAnalysis {
   const score = scoreBarrel(barrel, pref);
-  // 最大スコア: 重量3 + 最大径2 + 全長2 + カット2 + ブランド1 = 10 (キーワードは選択バレルでは0なので除外)
-  const maxScore = 10;
+  // 最大スコア: 重量30 + 最大径25 + 全長25 + カット15 + ブランド5 = 100
+  const maxScore = 100;
   const matchPercent = Math.round((score / maxScore) * 100);
 
   // スペック差分
@@ -274,20 +305,22 @@ function analyzeBarrel(barrel: BarrelProduct, pref: UserPreference): BarrelAnaly
 export function recommendFromBarrels(
   selectedBarrels: BarrelProduct[],
   allBarrels: BarrelProduct[],
-  limit = 10
+  limit = 10,
+  userText?: string
 ): BarrelProduct[] {
-  const results = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, limit);
+  const results = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, limit, userText);
   return results.map((r) => r.barrel);
 }
 
 export function recommendFromBarrelsWithAnalysis(
   selectedBarrels: BarrelProduct[],
   allBarrels: BarrelProduct[],
-  limit = 10
+  limit = 10,
+  userText?: string
 ): BarrelAnalysis[] {
   if (selectedBarrels.length === 0) return [];
 
-  const pref = buildPrefFromBarrels(selectedBarrels);
+  const pref = buildPrefFromBarrels(selectedBarrels, userText);
   const ownedNames = new Set(pref.ownedBarrelNames.map((n) => n.toLowerCase()));
 
   return allBarrels

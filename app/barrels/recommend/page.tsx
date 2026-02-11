@@ -40,6 +40,7 @@ export default function RecommendPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [preferenceText, setPreferenceText] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -113,7 +114,7 @@ export default function RecommendPage() {
     setSearching(true);
     try {
       const selectedBarrels = allBarrels.filter((b) => b.id && selectedIds.has(b.id));
-      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, 30);
+      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, 30, preferenceText || undefined);
       setResults(analyzed);
     } catch (err) {
       console.error('おすすめ検索エラー:', err);
@@ -129,7 +130,7 @@ export default function RecommendPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 1 }}>おすすめバレルを探す</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        好みのバレルを3つ選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。
+        好みのバレルを1〜3個選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。
       </Typography>
 
       {loading ? (
@@ -139,7 +140,7 @@ export default function RecommendPage() {
       ) : (
         <>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-            <Typography variant="h6">バレルを3つ選択</Typography>
+            <Typography variant="h6">バレルを1〜3個選択</Typography>
             <Chip
               label={`${selectedIds.size} / 3`}
               color={selectedIds.size === 3 ? 'success' : 'default'}
@@ -236,12 +237,21 @@ export default function RecommendPage() {
             })}
           </Grid>
 
+          <TextField
+            placeholder="好みを入力（例: もう少し重く、細めがいい）"
+            value={preferenceText}
+            onChange={(e) => setPreferenceText(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+          />
+
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
             <Button
               variant="contained"
               size="large"
               startIcon={<SearchIcon />}
-              disabled={selectedIds.size !== 3 || searching}
+              disabled={selectedIds.size === 0 || searching}
               onClick={handleSearch}
             >
               {searching ? 'おすすめを検索中...' : 'おすすめを探す'}
