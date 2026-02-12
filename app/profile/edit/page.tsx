@@ -285,7 +285,7 @@ export default function ProfileEditPage() {
                   <Button
                     variant="contained"
                     size="small"
-                    href="https://lin.ee/your-bot-link"
+                    href="https://line.me/R/ti/p/@411qccwd"
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{ bgcolor: '#06c755', '&:hover': { bgcolor: '#05b34c' }, textTransform: 'none' }}
