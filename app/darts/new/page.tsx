@@ -3,9 +3,9 @@
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Container, CircularProgress, Box, Paper, Typography, Chip, Button } from '@mui/material';
-import LockIcon from '@mui/icons-material/Lock';
+import { Container, CircularProgress, Box, Button } from '@mui/material';
 import DartForm from '@/components/darts/DartForm';
+import ProPaywall from '@/components/ProPaywall';
 import type { Dart } from '@/types';
 import { Timestamp, doc, getDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -112,37 +112,16 @@ function NewDartContent() {
 
   if (limitReached) {
     return (
-      <Container maxWidth="md">
-        <Paper sx={{ textAlign: 'center', py: 6, px: 3, mt: 4, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-          <LockIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-          <Typography variant="h6" sx={{ mb: 1 }}>セッティング登録数の上限に達しました</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            無料プランではセッティングを最大{SETTINGS_LIMIT_GENERAL}件まで登録できます。PROプランにアップグレードすると無制限に登録できます。
-          </Typography>
-          <Chip label="PRO" color="primary" size="small" sx={{ mb: 2 }} />
-          <Box>
-            <Button variant="outlined" size="small" onClick={() => router.push('/darts')}>
-              セッティング一覧へ戻る
-            </Button>
-          </Box>
-          {process.env.NEXT_PUBLIC_BMC_USERNAME && (
-            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                Darts Lab の開発を応援しませんか？
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                href={`https://buymeacoffee.com/${process.env.NEXT_PUBLIC_BMC_USERNAME}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ textTransform: 'none', borderRadius: 2, color: '#FFDD00', borderColor: '#FFDD00', '&:hover': { borderColor: '#e6c800', bgcolor: '#FFDD0011' } }}
-              >
-                Buy Me a Coffee
-              </Button>
-            </Box>
-          )}
-        </Paper>
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <ProPaywall
+          title="セッティング登録数の上限に達しました"
+          description={`無料プランではセッティングを最大${SETTINGS_LIMIT_GENERAL}件まで登録できます。PROプランにアップグレードすると無制限に登録できます。`}
+        />
+        <Box sx={{ textAlign: 'center' }}>
+          <Button variant="outlined" size="small" onClick={() => router.push('/darts')}>
+            セッティング一覧へ戻る
+          </Button>
+        </Box>
       </Container>
     );
   }

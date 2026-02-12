@@ -49,13 +49,35 @@ export default function TermsPage() {
         <Typography component="ul" variant="body1" sx={{ mb: 2, pl: 2 }}>
           <li>本機能はDARTSLIVE公式が提供するものではなく、当サイトが独自に実装したものです。</li>
           <li>DARTSLIVEの仕様変更・メンテナンス等により、予告なく機能が利用できなくなる場合があります。</li>
+          <li>本機能の利用がDARTSLIVEの利用規約に抵触する可能性があります。ご自身の判断と責任のもとでご利用ください。</li>
+          <li>自動取得によるアクセス頻度等により、DARTSLIVEアカウントが制限・停止される可能性があります。</li>
           <li>手動連携で入力されたDARTSLIVEアカウント情報は、スタッツ取得の目的にのみ使用し、サーバーに永続保存しません。ブラウザへの保存はユーザーの任意選択によるものです。</li>
           <li>LINE連携の自動チェック機能を有効にした場合、DARTSLIVEアカウント情報はAES-256-GCMで暗号化の上サーバーに保存されます。この情報はスタッツ自動取得の目的にのみ使用され、連携解除時に完全に削除されます。</li>
           <li>本機能の利用により、DARTSLIVEアカウントに何らかの影響が生じた場合、当サイトは一切の責任を負いません。</li>
           <li>取得頻度はサーバー負荷軽減のため制限される場合があります。</li>
         </Typography>
 
-        <Typography variant="h6" gutterBottom>7. 規約の変更</Typography>
+        <Typography variant="h6" gutterBottom>7. バレルデータベースについて</Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          本サービスで提供しているバレル製品データは、外部ショップサイト（ダーツハイブ等）から自動取得した情報を含みます。
+        </Typography>
+        <Typography component="ul" variant="body1" sx={{ mb: 2, pl: 2 }}>
+          <li>データの正確性・最新性は保証いたしません。商品の購入にあたっては各公式サイトで最新情報をご確認ください。</li>
+          <li>掲載されている製品画像・製品情報の著作権は各権利者に帰属します。</li>
+          <li>データの更新頻度には制限があり、実際の在庫状況や価格と異なる場合があります。</li>
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>8. 有料プラン・サブスクリプション</Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          PROプランは月額制サブスクリプションです。決済にはStripeを利用します。
+        </Typography>
+        <Typography component="ul" variant="body1" sx={{ mb: 2, pl: 2 }}>
+          <li>無料トライアル期間中は課金されません。トライアル期間終了後、自動的に課金が開始されます。</li>
+          <li>解約はStripeカスタマーポータルからいつでも可能です。解約後も、現在の請求期間終了まではPRO機能をご利用いただけます。</li>
+          <li>返金ポリシー: トライアル期間中の解約は無料です。課金開始後の返金には対応しておりません。</li>
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>9. 規約の変更</Typography>
         <Typography variant="body1">
           本規約は予告なく変更される場合があります。変更後の規約は、本ページに掲載した時点で効力を生じます。
         </Typography>

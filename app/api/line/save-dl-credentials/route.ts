@@ -4,6 +4,12 @@ import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { encrypt } from '@/lib/crypto';
+import { z } from 'zod';
+
+const credentialsSchema = z.object({
+  email: z.string().email().max(256),
+  password: z.string().min(1).max(256),
+});
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -11,10 +17,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
 
-  const { email, password } = await request.json();
-  if (!email || !password) {
-    return NextResponse.json({ error: 'メールアドレスとパスワードを入力してください' }, { status: 400 });
+  const body = await request.json();
+  const parsed = credentialsSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'メールアドレスとパスワードを正しく入力してください' }, { status: 400 });
   }
+  const { email, password } = parsed.data;
 
   await adminDb.doc(`users/${session.user.id}`).update({
     dlCredentialsEncrypted: {

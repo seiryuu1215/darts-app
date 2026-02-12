@@ -26,6 +26,8 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import StarIcon from '@mui/icons-material/Star';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -45,6 +47,7 @@ export default function Header() {
   const colorMode = useContext(ColorModeContext);
 
   const isAdmin = session?.user?.role === 'admin';
+  const userIsPro = session?.user?.role === 'pro' || isAdmin;
 
   // モバイルドロワー用メニュー（よく使う順）
   const drawerItems = session
@@ -60,7 +63,8 @@ export default function Header() {
         { label: 'セッティング比較', href: '/darts/compare' },
         { label: 'ブックマーク', href: '/bookmarks' },
         { label: 'プロフィール', href: '/profile/edit' },
-        ...(isAdmin ? [{ label: 'ユーザ管理', href: '/admin/users' }] : []),
+        ...(userIsPro ? [{ label: 'サブスクリプション', href: '/profile/subscription' }] : [{ label: 'PROプラン', href: '/pricing' }]),
+        ...(isAdmin ? [{ label: 'ユーザ管理', href: '/admin/users' }, { label: '料金設定', href: '/admin/pricing' }] : []),
       ]
     : [
         { label: 'セッティング', href: '/darts' },
@@ -121,6 +125,18 @@ export default function Header() {
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
                 </Button>
+                {!userIsPro && (
+                  <Button
+                    component={Link}
+                    href="/pricing"
+                    size="small"
+                    variant="outlined"
+                    sx={{ color: '#ffc107', borderColor: '#ffc107', '&:hover': { borderColor: '#ffb300', bgcolor: '#ffc10711' }, ml: 0.5 }}
+                    startIcon={<StarIcon sx={{ fontSize: 16 }} />}
+                  >
+                    PRO
+                  </Button>
+                )}
               </>
             )}
 
@@ -157,6 +173,12 @@ export default function Header() {
                     <ListItemIcon><BookmarkIcon fontSize="small" /></ListItemIcon>
                     ブックマーク
                   </MenuItem>
+                  {userIsPro && (
+                    <MenuItem component={Link} href="/profile/subscription">
+                      <ListItemIcon><CreditCardIcon fontSize="small" /></ListItemIcon>
+                      サブスクリプション
+                    </MenuItem>
+                  )}
                   {isAdmin && (
                     <MenuItem component={Link} href="/admin/users">
                       <ListItemIcon><AdminPanelSettingsIcon fontSize="small" /></ListItemIcon>

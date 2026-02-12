@@ -15,6 +15,7 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
+  Chip,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { collection, getDocs } from 'firebase/firestore';
@@ -27,6 +28,8 @@ interface UserRow {
   email: string;
   displayName: string;
   role: UserRole;
+  subscriptionStatus: string | null;
+  subscriptionId: string | null;
 }
 
 export default function AdminUsersPage() {
@@ -54,6 +57,8 @@ export default function AdminUsersPage() {
           email: doc.data().email || '',
           displayName: doc.data().displayName || '',
           role: doc.data().role || 'general',
+          subscriptionStatus: doc.data().subscriptionStatus || null,
+          subscriptionId: doc.data().subscriptionId || null,
         }));
         // admin を先頭、次にpro、最後にgeneral
         userList.sort((a, b) => {
@@ -133,6 +138,7 @@ export default function AdminUsersPage() {
               <TableCell>表示名</TableCell>
               <TableCell>メール</TableCell>
               <TableCell>権限</TableCell>
+              <TableCell>サブスク</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -152,6 +158,21 @@ export default function AdminUsersPage() {
                     <MenuItem value="pro">pro</MenuItem>
                     <MenuItem value="general">general</MenuItem>
                   </Select>
+                </TableCell>
+                <TableCell>
+                  {user.role === 'pro' && !user.subscriptionId ? (
+                    <Chip label="手動" size="small" variant="outlined" />
+                  ) : user.subscriptionStatus === 'active' ? (
+                    <Chip label="active" size="small" color="success" variant="outlined" />
+                  ) : user.subscriptionStatus === 'trialing' ? (
+                    <Chip label="trial" size="small" color="info" variant="outlined" />
+                  ) : user.subscriptionStatus === 'past_due' ? (
+                    <Chip label="past_due" size="small" color="error" variant="outlined" />
+                  ) : user.subscriptionStatus === 'canceled' ? (
+                    <Chip label="canceled" size="small" variant="outlined" />
+                  ) : (
+                    <Typography variant="caption" color="text.disabled">-</Typography>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

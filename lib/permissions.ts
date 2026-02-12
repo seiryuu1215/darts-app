@@ -1,6 +1,6 @@
 import type { UserRole } from '@/types';
 
-export const SETTINGS_LIMIT_GENERAL = 3;
+export const SETTINGS_LIMIT_GENERAL = 1;
 
 export function isPro(role: UserRole | undefined): boolean {
   return role === 'pro' || role === 'admin';
@@ -31,4 +31,17 @@ export function canUseDartslive(role: UserRole | undefined): boolean {
 export function getSettingsLimit(role: UserRole | undefined): number | null {
   if (role === 'pro' || role === 'admin') return null;
   return SETTINGS_LIMIT_GENERAL;
+}
+
+export function canViewDetailedAnalysis(role: UserRole | undefined): boolean {
+  return role === 'pro' || role === 'admin';
+}
+
+export function getStatsRetentionDays(role: UserRole | undefined): number | null {
+  if (role === 'pro' || role === 'admin') return null;
+  return 30;
+}
+
+export function canExportCsv(role: UserRole | undefined): boolean {
+  return role === 'pro' || role === 'admin';
 }

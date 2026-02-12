@@ -16,8 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Darts Lab",
-  description: "ダーツのセットアップを登録・管理・共有できるアプリ",
+  title: {
+    default: "Darts Lab - ダーツセッティング管理・バレル検索・スタッツ分析",
+    template: "%s | Darts Lab",
+  },
+  description: "ダーツのセッティングを登録・管理・共有。7,000種以上のバレル検索、診断クイズ、DARTSLIVEスタッツ連携でダーツライフをサポート。",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -27,6 +30,14 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icons/icon-192.png",
     apple: "/icons/icon-192.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    siteName: "Darts Lab",
+  },
+  twitter: {
+    card: "summary",
   },
 };
 

@@ -6,6 +6,12 @@ import chromium from '@sparticuz/chromium';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { canUseDartslive } from '@/lib/permissions';
+import { z } from 'zod';
+
+const dartsliveLoginSchema = z.object({
+  email: z.string().email().max(256),
+  password: z.string().min(1).max(256),
+});
 
 export const maxDuration = 60;
 
@@ -313,10 +319,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'DARTSLIVE連携はPROプラン以上で利用できます' }, { status: 403 });
   }
 
-  const { email, password } = await request.json();
-  if (!email || !password) {
-    return NextResponse.json({ error: 'メールアドレスとパスワードを入力してください' }, { status: 400 });
+  const body = await request.json();
+  const parsed = dartsliveLoginSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'メールアドレスとパスワードを正しく入力してください' }, { status: 400 });
   }
+  const { email, password } = parsed.data;
 
   let browser;
   try {

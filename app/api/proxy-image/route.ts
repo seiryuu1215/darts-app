@@ -28,6 +28,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '許可されていないドメインです' }, { status: 403 });
   }
 
+  const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
   try {
     const res = await fetch(url, {
       headers: {
@@ -40,7 +43,19 @@ export async function GET(req: NextRequest) {
     }
 
     const contentType = res.headers.get('content-type') || 'image/jpeg';
+    if (!VALID_IMAGE_TYPES.some((t) => contentType.includes(t))) {
+      return NextResponse.json({ error: '画像形式が不正です' }, { status: 400 });
+    }
+
+    const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
+    if (contentLength > MAX_SIZE) {
+      return NextResponse.json({ error: 'ファイルサイズが大きすぎます' }, { status: 413 });
+    }
+
     const buffer = await res.arrayBuffer();
+    if (buffer.byteLength > MAX_SIZE) {
+      return NextResponse.json({ error: 'ファイルサイズが大きすぎます' }, { status: 413 });
+    }
 
     return new NextResponse(buffer, {
       headers: {

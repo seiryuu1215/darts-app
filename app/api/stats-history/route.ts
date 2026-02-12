@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
-import { canUseDartslive } from '@/lib/permissions';
+import { canUseDartslive, getStatsRetentionDays } from '@/lib/permissions';
 
 /** JST (UTC+9) の現在時刻を返す */
 function nowJST(): Date {
@@ -46,18 +46,25 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
-  if (!canUseDartslive(session.user.role)) {
-    return NextResponse.json({ error: 'PROプラン以上で利用できます' }, { status: 403 });
-  }
+  const rawPeriod = request.nextUrl.searchParams.get('period') || 'all';
+  const VALID_PERIODS = ['today', 'week', 'month', 'all'] as const;
+  const period = VALID_PERIODS.includes(rawPeriod as typeof VALID_PERIODS[number]) ? rawPeriod : 'all';
+  let { start, end } = getDateRange(period);
 
-  const period = request.nextUrl.searchParams.get('period') || 'all';
-  const { start, end } = getDateRange(period);
+  // DARTSLIVE連携自体はPROのみだが、履歴参照はFreeでも可能（30日制限）
+  const retentionDays = getStatsRetentionDays(session.user.role);
+  if (retentionDays !== null) {
+    const retentionStart = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    if (start < retentionStart) {
+      start = retentionStart;
+    }
+  }
 
   try {
     const colRef = adminDb.collection(`users/${session.user.id}/dartsLiveStats`);
     let query = colRef.orderBy('date', 'asc');
 
-    if (period !== 'all') {
+    if (period !== 'all' || retentionDays !== null) {
       query = query.where('date', '>=', start).where('date', '<', end);
     }
 

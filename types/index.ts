@@ -2,6 +2,8 @@ import { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'admin' | 'pro' | 'general';
 
+export type StripeSubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
+
 export interface User {
   displayName: string;
   email: string;
@@ -23,6 +25,11 @@ export interface User {
     email: string;   // AES-256-GCM encrypted
     password: string; // AES-256-GCM encrypted
   } | null;
+  stripeCustomerId?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: StripeSubscriptionStatus | null;
+  subscriptionCurrentPeriodEnd?: Timestamp | null;
+  subscriptionTrialEnd?: Timestamp | null;
   dartsHistory: string;
   homeShop: string;
   createdAt: Timestamp;

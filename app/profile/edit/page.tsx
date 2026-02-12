@@ -348,7 +348,7 @@ export default function ProfileEditPage() {
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>Botにコードを送信</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    発行した6桁のコードをLINE Botのトーク画面に送信すると連携完了です。
+                    発行した8桁のコードをLINE Botのトーク画面に送信すると連携完了です。
                   </Typography>
                 </Box>
               </Box>

@@ -359,12 +359,8 @@ export function recommendBarrels(
     .map((item) => item.barrel);
 }
 
-// クイズ回答からレコメンドを生成
-export function recommendFromQuiz(
-  answers: QuizAnswer,
-  allBarrels: BarrelProduct[],
-  limit = 10,
-): { barrel: BarrelProduct; score: number; matchPercent: number }[] {
+// クイズ回答から好みを構築
+function buildPrefFromQuiz(answers: QuizAnswer): UserPreference {
   const weightMap = { light: 16.5, medium: 19.0, heavy: 22.0 };
   const lengthMap = { short: 40, standard: 45, long: 50 };
   const diameterMap = {
@@ -373,7 +369,7 @@ export function recommendFromQuiz(
     rear: 6.8,    // リアグリップ → やや細め
   };
 
-  const pref: UserPreference = {
+  return {
     avgWeight: weightMap[answers.weightPreference],
     avgDiameter: diameterMap[answers.gripPosition],
     avgLength: lengthMap[answers.lengthPreference],
@@ -385,6 +381,15 @@ export function recommendFromQuiz(
     diameterOffset: 0,
     lengthOffset: 0,
   };
+}
+
+// クイズ回答からレコメンドを生成
+export function recommendFromQuiz(
+  answers: QuizAnswer,
+  allBarrels: BarrelProduct[],
+  limit = 10,
+): { barrel: BarrelProduct; score: number; matchPercent: number }[] {
+  const pref = buildPrefFromQuiz(answers);
 
   return allBarrels
     .filter((b) => b.isDiscontinued !== true)
@@ -392,6 +397,21 @@ export function recommendFromQuiz(
       const score = scoreBarrel(b, pref);
       return { barrel: b, score, matchPercent: score };
     })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+// クイズ回答からレコメンドを生成（詳細分析付き - PRO向け）
+export function recommendFromQuizWithAnalysis(
+  answers: QuizAnswer,
+  allBarrels: BarrelProduct[],
+  limit = 10,
+): BarrelAnalysis[] {
+  const pref = buildPrefFromQuiz(answers);
+
+  return allBarrels
+    .filter((b) => b.isDiscontinued !== true)
+    .map((b) => analyzeBarrel(b, pref))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }

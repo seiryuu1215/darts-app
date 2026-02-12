@@ -62,11 +62,12 @@ import {
   Cell,
 } from 'recharts';
 
-import LockIcon from '@mui/icons-material/Lock';
+import DownloadIcon from '@mui/icons-material/Download';
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import { getRatingTarget, calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import { canUseDartslive } from '@/lib/permissions';
+import { canUseDartslive, canExportCsv } from '@/lib/permissions';
+import ProPaywall from '@/components/ProPaywall';
 
 function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | undefined; prev: number | null | undefined; fixed?: number }) {
   if (current == null || prev == null) return null;
@@ -371,31 +372,10 @@ export default function StatsPage() {
 
         {/* PRO アップグレード案内（general ユーザー） */}
         {!canDartslive && (
-          <Paper sx={{ textAlign: 'center', py: 6, px: 3, mb: 2, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-            <LockIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-            <Typography variant="h6" sx={{ mb: 1 }}>DARTSLIVE連携はPROプラン限定です</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              PROプランにアップグレードすると、DARTSLIVEアカウントと連携してスタッツの自動取得・推移グラフ・レーティング目標分析が利用できます。
-            </Typography>
-            <Chip label="PRO" color="primary" size="small" />
-            {process.env.NEXT_PUBLIC_BMC_USERNAME && (
-              <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Darts Lab の開発を応援しませんか？
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  href={`https://buymeacoffee.com/${process.env.NEXT_PUBLIC_BMC_USERNAME}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ textTransform: 'none', borderRadius: 2, color: '#FFDD00', borderColor: '#FFDD00', '&:hover': { borderColor: '#e6c800', bgcolor: '#FFDD0011' } }}
-                >
-                  Buy Me a Coffee
-                </Button>
-              </Box>
-            )}
-          </Paper>
+          <ProPaywall
+            title="DARTSLIVE連携はPROプラン限定です"
+            description="PROプランにアップグレードすると、DARTSLIVEアカウントと連携してスタッツの自動取得・推移グラフ・レーティング目標分析が利用できます。"
+          />
         )}
 
         {/* 未取得 */}
@@ -1053,6 +1033,26 @@ export default function StatsPage() {
             )}
 
           </>
+        )}
+
+        {/* CSVエクスポート（PRO向け） */}
+        {canExportCsv(session?.user?.role) && (
+          <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
+            <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: '12px !important' }}>
+              <Box>
+                <Typography variant="body2">スタッツをエクスポート</Typography>
+                <Typography variant="caption" color="text.secondary">全履歴をCSVファイルでダウンロード</Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<DownloadIcon />}
+                href="/api/stats-history/export"
+              >
+                CSV出力
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {/* 手動記録リンク（全ユーザー共通） */}

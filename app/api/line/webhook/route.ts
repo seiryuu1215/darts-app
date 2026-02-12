@@ -52,9 +52,9 @@ function parseCondition(text: string): number | null {
   return match ? parseInt(match[1], 10) : null;
 }
 
-/** 6桁コードかどうか判定 */
+/** 8桁コードかどうか判定 */
 function isLinkCode(text: string): boolean {
-  return /^\d{6}$/.test(text.trim());
+  return /^\d{8}$/.test(text.trim());
 }
 
 export async function POST(request: NextRequest) {
@@ -95,7 +95,7 @@ async function handleFollow(event: LineEvent, lineUserId: string) {
   await replyLineMessage(event.replyToken, [
     {
       type: 'text',
-      text: 'Darts Lab へようこそ！🎯\n\nWebサイトのプロフィール編集ページから「LINE連携コードを発行」して、ここに6桁のコードを送信するとアカウントが連携されます。',
+      text: 'Darts Lab へようこそ！🎯\n\nWebサイトのプロフィール編集ページから「LINE連携コードを発行」して、ここに8桁のコードを送信するとアカウントが連携されます。',
     },
   ]);
 }
@@ -118,7 +118,7 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
   if (!event.replyToken) return;
   const trimmed = text.trim();
 
-  // 6桁コード → アカウント連携
+  // 8桁コード → アカウント連携
   if (isLinkCode(trimmed)) {
     await handleLinkCode(event.replyToken, lineUserId, trimmed);
     return;
@@ -220,7 +220,7 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
   ]);
 }
 
-/** 6桁コードでアカウント連携 */
+/** 8桁コードでアカウント連携 */
 async function handleLinkCode(replyToken: string, lineUserId: string, code: string) {
   const codeRef = adminDb.doc(`lineLinkCodes/${code}`);
   const codeSnap = await codeRef.get();
