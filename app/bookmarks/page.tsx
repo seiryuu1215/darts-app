@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Tabs,
   Tab,
+  Alert,
 } from '@mui/material';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -25,6 +26,7 @@ export default function BookmarksPage() {
   const [barrelBookmarks, setBarrelBookmarks] = useState<BarrelProduct[]>([]);
   const [dartBookmarks, setDartBookmarks] = useState<Dart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -64,6 +66,7 @@ export default function BookmarksPage() {
         setDartBookmarks(darts);
       } catch (err) {
         console.error('ブックマーク取得エラー:', err);
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -77,6 +80,8 @@ export default function BookmarksPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>ブックマーク</Typography>
+
+      {fetchError && <Alert severity="error" sx={{ mb: 2 }}>ブックマークの取得に失敗しました</Alert>}
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab label={`バレル (${barrelBookmarks.length})`} />

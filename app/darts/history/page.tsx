@@ -10,6 +10,7 @@ import {
   CircularProgress,
   ToggleButton,
   ToggleButtonGroup,
+  Alert,
 } from '@mui/material';
 import Link from 'next/link';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
@@ -42,6 +43,7 @@ export default function SettingHistoryPage() {
   const router = useRouter();
   const [history, setHistory] = useState<SettingHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [dartType, setDartType] = useState<'soft' | 'steel'>('soft');
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function SettingHistoryPage() {
         setHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as SettingHistory[]);
       } catch (err) {
         console.error('履歴取得エラー:', err);
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -79,6 +82,8 @@ export default function SettingHistoryPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         使用中セッティングの変更履歴を時系列で表示します。
       </Typography>
+
+      {fetchError && <Alert severity="error" sx={{ mb: 2 }}>履歴の取得に失敗しました</Alert>}
 
       <ToggleButtonGroup
         value={dartType}

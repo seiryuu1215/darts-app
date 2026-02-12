@@ -22,6 +22,8 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  FormControlLabel,
+  Checkbox,
   Table,
   TableBody,
   TableCell,
@@ -125,15 +127,31 @@ export default function StatsPage() {
   const [dlPassword, setDlPassword] = useState('');
   const [dlLoading, setDlLoading] = useState(false);
   const [dlError, setDlError] = useState('');
+  const [dlSaveCredentials, setDlSaveCredentials] = useState(true);
+  const [dlHasSaved, setDlHasSaved] = useState(false);
   const [monthlyTab, setMonthlyTab] = useState<MonthlyTab>('rating');
   const [gameChartCategory, setGameChartCategory] = useState<string>('');
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
+  const [dlUpdatedAt, setDlUpdatedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // localStorageからDARTSLIVE認証情報を復元
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dartslive_credentials');
+      if (saved) {
+        const { email, password } = JSON.parse(saved);
+        if (email) setDlEmail(email);
+        if (password) setDlPassword(password);
+        setDlHasSaved(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // キャッシュ済みスタッツ + 使用中ダーツを取得
   useEffect(() => {
@@ -147,6 +165,7 @@ export default function StatsPage() {
         const json = await res.json();
         if (json.data) {
           setDlData(json.data);
+          if (json.updatedAt) setDlUpdatedAt(json.updatedAt);
           if (json.data.recentGames?.games?.length > 0) {
             const games = json.data.recentGames.games;
             const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
@@ -191,6 +210,15 @@ export default function StatsPage() {
       if (!res.ok) { setDlError(json.error || '取得に失敗しました'); return; }
       setDlData(json.data);
       setDlOpen(false);
+      setDlUpdatedAt(new Date().toISOString());
+      // 認証情報をlocalStorageに保存/削除
+      if (dlSaveCredentials) {
+        localStorage.setItem('dartslive_credentials', JSON.stringify({ email: dlEmail, password: dlPassword }));
+        setDlHasSaved(true);
+      } else {
+        localStorage.removeItem('dartslive_credentials');
+        setDlHasSaved(false);
+      }
       if (json.data.recentGames?.games?.length > 0) {
         const games = json.data.recentGames.games;
         const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
@@ -229,7 +257,14 @@ export default function StatsPage() {
       <Box sx={{ mt: 3, p: { xs: 1, sm: 2 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>DARTSLIVE Stats</Typography>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>DARTSLIVE Stats</Typography>
+            {dlUpdatedAt && (
+              <Typography variant="caption" color="text.secondary">
+                最終取得: {new Date(dlUpdatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </Typography>
+            )}
+          </Box>
           <Button
             variant={dlData ? 'outlined' : 'contained'}
             startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
@@ -572,11 +607,32 @@ export default function StatsPage() {
         <DialogTitle>ダーツライブ連携</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            ダーツライブのアカウント情報でログインし、メインカードのスタッツを取得します。認証情報はサーバーに保存されません。
+            ダーツライブのアカウント情報でログインし、メインカードのスタッツを取得します。
+            {dlSaveCredentials && '認証情報はこの端末のブラウザにのみ保存されます。'}
           </Typography>
           {dlError && <Alert severity="error" sx={{ mb: 2 }}>{dlError}</Alert>}
           <TextField label="メールアドレス" type="email" value={dlEmail} onChange={(e) => setDlEmail(e.target.value)} fullWidth disabled={dlLoading} sx={{ mb: 2, mt: 1 }} />
           <TextField label="パスワード" type="password" value={dlPassword} onChange={(e) => setDlPassword(e.target.value)} fullWidth disabled={dlLoading} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetch(); } }} />
+          <FormControlLabel
+            control={<Checkbox checked={dlSaveCredentials} onChange={(e) => setDlSaveCredentials(e.target.checked)} size="small" />}
+            label="この端末に認証情報を保存する"
+            sx={{ mt: 1 }}
+          />
+          {dlHasSaved && (
+            <Button
+              size="small"
+              color="error"
+              onClick={() => {
+                localStorage.removeItem('dartslive_credentials');
+                setDlEmail('');
+                setDlPassword('');
+                setDlHasSaved(false);
+              }}
+              sx={{ ml: 1 }}
+            >
+              保存済み情報を削除
+            </Button>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDlOpen(false)} disabled={dlLoading}>キャンセル</Button>

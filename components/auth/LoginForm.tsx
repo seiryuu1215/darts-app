@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TextField, Button, Box, Alert, Typography, Divider } from '@mui/material';
-import GoogleIcon from '@mui/icons-material/Google';
+import { TextField, Button, Box, Alert, Typography } from '@mui/material';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -36,10 +35,6 @@ export default function LoginForm() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    signIn('google', { callbackUrl: '/' });
-  };
-
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}>
       <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
@@ -64,18 +59,8 @@ export default function LoginForm() {
         required
         sx={{ mb: 3 }}
       />
-      <Button type="submit" variant="contained" fullWidth disabled={loading} sx={{ mb: 2 }}>
+      <Button type="submit" variant="contained" fullWidth disabled={loading} sx={{ mb: 3 }}>
         {loading ? 'ログイン中...' : 'ログイン'}
-      </Button>
-      <Divider sx={{ my: 2 }}>または</Divider>
-      <Button
-        variant="outlined"
-        fullWidth
-        startIcon={<GoogleIcon />}
-        onClick={handleGoogleLogin}
-        sx={{ mb: 2 }}
-      >
-        Googleでログイン
       </Button>
       <Typography variant="body2" textAlign="center">
         アカウントをお持ちでない方は

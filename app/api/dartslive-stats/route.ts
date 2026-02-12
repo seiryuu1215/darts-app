@@ -233,9 +233,11 @@ export async function GET() {
     }
     const data = doc.data();
 
+    const updatedAt = data?.updatedAt?.toDate?.()?.toISOString() || null;
+
     // フルデータがあればパースして返す
     if (data?.fullData) {
-      return NextResponse.json({ data: JSON.parse(data.fullData), cached: true });
+      return NextResponse.json({ data: JSON.parse(data.fullData), cached: true, updatedAt });
     }
 
     // フルデータがない場合はサマリーのみ返す
@@ -265,6 +267,7 @@ export async function GET() {
       },
       cached: true,
       summaryOnly: true,
+      updatedAt,
     });
   } catch (err) {
     console.error('Stats cache read error:', err);
