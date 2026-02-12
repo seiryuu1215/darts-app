@@ -17,12 +17,13 @@ import Link from 'next/link';
 import ArticleCard from '@/components/articles/ArticleCard';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Article } from '@/types';
+import { canWriteArticles } from '@/lib/permissions';
 
 export default function ArticlesPage() {
   const { data: session } = useSession();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const isAdmin = session?.user?.role === 'admin';
+  const canWrite = canWriteArticles(session?.user?.role);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -54,7 +55,7 @@ export default function ArticlesPage() {
       <Breadcrumbs items={[{ label: '記事' }]} />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">記事</Typography>
-        {isAdmin && (
+        {canWrite && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}

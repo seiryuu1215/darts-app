@@ -55,9 +55,11 @@ import {
   Cell,
 } from 'recharts';
 
+import LockIcon from '@mui/icons-material/Lock';
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import { getRatingTarget, calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import { canUseDartslive } from '@/lib/permissions';
 
 function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | undefined; prev: number | null | undefined; fixed?: number }) {
   if (current == null || prev == null) return null;
@@ -126,6 +128,7 @@ export default function StatsPage() {
   const router = useRouter();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const canDartslive = canUseDartslive(session?.user?.role);
   // テーマ対応チャートカラー
   const chartGrid = isDark ? '#333' : '#ddd';
   const chartText = isDark ? '#ccc' : '#666';
@@ -169,23 +172,26 @@ export default function StatsPage() {
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    // キャッシュからスタッツをロード
-    const fetchCachedStats = async () => {
-      try {
-        const res = await fetch('/api/dartslive-stats');
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json.data) {
-          setDlData(json.data);
-          if (json.updatedAt) setDlUpdatedAt(json.updatedAt);
-          if (json.data.recentGames?.games?.length > 0) {
-            const games = json.data.recentGames.games;
-            const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
-            setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
+    // キャッシュからスタッツをロード（pro/admin のみ）
+    if (canDartslive) {
+      const fetchCachedStats = async () => {
+        try {
+          const res = await fetch('/api/dartslive-stats');
+          if (!res.ok) return;
+          const json = await res.json();
+          if (json.data) {
+            setDlData(json.data);
+            if (json.updatedAt) setDlUpdatedAt(json.updatedAt);
+            if (json.data.recentGames?.games?.length > 0) {
+              const games = json.data.recentGames.games;
+              const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
+              setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
+            }
           }
-        }
-      } catch { /* ignore */ }
-    };
+        } catch { /* ignore */ }
+      };
+      fetchCachedStats();
+    }
 
     const fetchActiveDart = async () => {
       try {
@@ -201,9 +207,8 @@ export default function StatsPage() {
       } catch { /* ignore */ }
     };
 
-    fetchCachedStats();
     fetchActiveDart();
-  }, [session]);
+  }, [session, canDartslive]);
 
   const handleFetch = async () => {
     if (!dlEmail || !dlPassword) {
@@ -281,25 +286,56 @@ export default function StatsPage() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>DARTSLIVE Stats</Typography>
-            {dlUpdatedAt && (
+            {canDartslive && dlUpdatedAt && (
               <Typography variant="caption" color="text.secondary">
                 最終取得: {new Date(dlUpdatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </Typography>
             )}
           </Box>
-          <Button
-            variant={dlData ? 'outlined' : 'contained'}
-            startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
-            onClick={() => (dlData && dlEmail && dlPassword ? handleFetch() : setDlOpen(true))}
-            disabled={dlLoading}
-            size="small"
-          >
-            {dlLoading ? '取得中...' : dlData ? '更新' : 'ダーツライブ連携'}
-          </Button>
+          {canDartslive && (
+            <Button
+              variant={dlData ? 'outlined' : 'contained'}
+              startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
+              onClick={() => (dlData && dlEmail && dlPassword ? handleFetch() : setDlOpen(true))}
+              disabled={dlLoading}
+              size="small"
+            >
+              {dlLoading ? '取得中...' : dlData ? '更新' : 'ダーツライブ連携'}
+            </Button>
+          )}
         </Box>
 
+        {/* PRO アップグレード案内（general ユーザー） */}
+        {!canDartslive && (
+          <Paper sx={{ textAlign: 'center', py: 6, px: 3, mb: 2, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+            <LockIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+            <Typography variant="h6" sx={{ mb: 1 }}>DARTSLIVE連携はPROプラン限定です</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              PROプランにアップグレードすると、DARTSLIVEアカウントと連携してスタッツの自動取得・推移グラフ・レーティング目標分析が利用できます。
+            </Typography>
+            <Chip label="PRO" color="primary" size="small" />
+            {process.env.NEXT_PUBLIC_BMC_USERNAME && (
+              <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Darts Lab の開発を応援しませんか？
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  href={`https://buymeacoffee.com/${process.env.NEXT_PUBLIC_BMC_USERNAME}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textTransform: 'none', borderRadius: 2, color: '#FFDD00', borderColor: '#FFDD00', '&:hover': { borderColor: '#e6c800', bgcolor: '#FFDD0011' } }}
+                >
+                  Buy Me a Coffee
+                </Button>
+              </Box>
+            )}
+          </Paper>
+        )}
+
         {/* 未取得 */}
-        {!dlData && !dlLoading && (
+        {canDartslive && !dlData && !dlLoading && (
           <Paper sx={{ textAlign: 'center', py: 8, px: 2, bgcolor: 'background.default', border: '1px dashed', borderColor: 'divider' }}>
             <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>ダーツライブと連携</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -311,14 +347,14 @@ export default function StatsPage() {
           </Paper>
         )}
 
-        {dlLoading && !dlData && (
+        {canDartslive && dlLoading && !dlData && (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <CircularProgress sx={{ mb: 2 }} />
             <Typography color="text.secondary">ダーツライブからスタッツ取得中...</Typography>
           </Box>
         )}
 
-        {dlData && c && (
+        {canDartslive && dlData && c && (
           <>
             {/* === Rating & Flight Hero === */}
             <Paper
@@ -755,22 +791,23 @@ export default function StatsPage() {
               </Paper>
             )}
 
-            {/* 手動記録リンク */}
-            <Card variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: '12px !important' }}>
-                <Box>
-                  <Typography variant="body2">調子やメモを記録</Typography>
-                  <Typography variant="caption" color="text.secondary">手動でスタッツを記録・管理</Typography>
-                </Box>
-                <Button variant="outlined" size="small" onClick={() => router.push('/stats/new')}>手動記録</Button>
-              </CardContent>
-            </Card>
           </>
         )}
+
+        {/* 手動記録リンク（全ユーザー共通） */}
+        <Card variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
+          <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: '12px !important' }}>
+            <Box>
+              <Typography variant="body2">調子やメモを記録</Typography>
+              <Typography variant="caption" color="text.secondary">手動でスタッツを記録・管理</Typography>
+            </Box>
+            <Button variant="outlined" size="small" onClick={() => router.push('/stats/new')}>手動記録</Button>
+          </CardContent>
+        </Card>
       </Box>
 
-      {/* ログインダイアログ */}
-      <Dialog open={dlOpen} onClose={() => !dlLoading && setDlOpen(false)} maxWidth="xs" fullWidth>
+      {/* ログインダイアログ（pro/admin のみ） */}
+      {canDartslive && <Dialog open={dlOpen} onClose={() => !dlLoading && setDlOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>ダーツライブ連携</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -807,7 +844,7 @@ export default function StatsPage() {
             {dlLoading ? '取得中...' : '取得'}
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog>}
     </Container>
   );
 }

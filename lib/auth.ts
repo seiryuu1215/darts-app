@@ -60,6 +60,20 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.role = (user as unknown as { role: UserRole }).role;
+      } else if (token.sub) {
+        // セッション更新時にFirestoreから最新のroleを取得
+        try {
+          const userDoc = await adminDb.doc(`users/${token.sub}`).get();
+          if (userDoc.exists) {
+            token.role = userDoc.data()?.role || 'general';
+          }
+          // ADMIN_EMAIL チェック
+          if (token.email === ADMIN_EMAIL && token.role !== 'admin') {
+            token.role = 'admin';
+          }
+        } catch {
+          // Firestore読み取りエラー時は既存のroleを維持
+        }
       }
       return token;
     },

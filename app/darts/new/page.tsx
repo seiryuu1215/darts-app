@@ -3,11 +3,13 @@
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Container, CircularProgress, Box } from '@mui/material';
+import { Container, CircularProgress, Box, Paper, Typography, Chip, Button } from '@mui/material';
+import LockIcon from '@mui/icons-material/Lock';
 import DartForm from '@/components/darts/DartForm';
 import type { Dart } from '@/types';
-import { Timestamp, doc, getDoc } from 'firebase/firestore';
+import { Timestamp, doc, getDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getSettingsLimit, SETTINGS_LIMIT_GENERAL } from '@/lib/permissions';
 
 function NewDartContent() {
   const { data: session, status } = useSession();
@@ -16,12 +18,36 @@ function NewDartContent() {
   const copyFromId = searchParams.get('copyFrom');
   const [copyData, setCopyData] = useState<Dart | null>(null);
   const [copyLoading, setCopyLoading] = useState(!!copyFromId);
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitChecking, setLimitChecking] = useState(true);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // セッティング登録数の上限チェック
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const limit = getSettingsLimit(session.user.role);
+    if (limit === null) {
+      setLimitChecking(false);
+      return;
+    }
+    const checkLimit = async () => {
+      try {
+        const q = query(collection(db, 'darts'), where('userId', '==', session.user.id));
+        const snapshot = await getCountFromServer(q);
+        if (snapshot.data().count >= limit) {
+          setLimitReached(true);
+        }
+      } catch { /* ignore */ } finally {
+        setLimitChecking(false);
+      }
+    };
+    checkLimit();
+  }, [session]);
 
   // コピー元のダーツデータを取得
   useEffect(() => {
@@ -75,7 +101,7 @@ function NewDartContent() {
 
   const draftImageUrl = searchParams.get('draft') === '1' ? searchParams.get('barrelImageUrl') : null;
 
-  if (status === 'loading' || copyLoading) {
+  if (status === 'loading' || copyLoading || limitChecking) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
@@ -83,6 +109,43 @@ function NewDartContent() {
     );
   }
   if (!session) return null;
+
+  if (limitReached) {
+    return (
+      <Container maxWidth="md">
+        <Paper sx={{ textAlign: 'center', py: 6, px: 3, mt: 4, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+          <LockIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+          <Typography variant="h6" sx={{ mb: 1 }}>セッティング登録数の上限に達しました</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            無料プランではセッティングを最大{SETTINGS_LIMIT_GENERAL}件まで登録できます。PROプランにアップグレードすると無制限に登録できます。
+          </Typography>
+          <Chip label="PRO" color="primary" size="small" sx={{ mb: 2 }} />
+          <Box>
+            <Button variant="outlined" size="small" onClick={() => router.push('/darts')}>
+              セッティング一覧へ戻る
+            </Button>
+          </Box>
+          {process.env.NEXT_PUBLIC_BMC_USERNAME && (
+            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Darts Lab の開発を応援しませんか？
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                href={`https://buymeacoffee.com/${process.env.NEXT_PUBLIC_BMC_USERNAME}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ textTransform: 'none', borderRadius: 2, color: '#FFDD00', borderColor: '#FFDD00', '&:hover': { borderColor: '#e6c800', bgcolor: '#FFDD0011' } }}
+              >
+                Buy Me a Coffee
+              </Button>
+            </Box>
+          )}
+        </Paper>
+      </Container>
+    );
+  }
 
   const initialData = copyData || draftData;
 

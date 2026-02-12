@@ -27,13 +27,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
 import type { Article } from '@/types';
+import { canEditArticle, isAdmin } from '@/lib/permissions';
 
 export default function EditArticlePage() {
   const params = useParams();
   const slug = params.slug as string;
   const { data: session, status } = useSession();
   const router = useRouter();
-  const isAdmin = session?.user?.role === 'admin';
+  const userRole = session?.user?.role;
 
   const [article, setArticle] = useState<Article | null>(null);
   const [articleId, setArticleId] = useState('');
@@ -88,11 +89,6 @@ export default function EditArticlePage() {
     );
   }
 
-  if (!isAdmin) {
-    router.replace('/articles');
-    return null;
-  }
-
   if (!article) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -101,6 +97,11 @@ export default function EditArticlePage() {
         </Typography>
       </Container>
     );
+  }
+
+  if (!session?.user?.id || !canEditArticle(userRole, article.userId, session.user.id)) {
+    router.replace('/articles');
+    return null;
   }
 
   const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,11 +207,13 @@ export default function EditArticlePage() {
         sx={{ mb: 2 }}
       />
 
-      <FormControlLabel
-        control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
-        label="トップページにおすすめ表示"
-        sx={{ mb: 2, display: 'block' }}
-      />
+      {isAdmin(userRole) && (
+        <FormControlLabel
+          control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+          label="トップページにおすすめ表示"
+          sx={{ mb: 2, display: 'block' }}
+        />
+      )}
 
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
         カバー画像

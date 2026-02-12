@@ -10,6 +10,7 @@
 - バレル・チップ・シャフト・フライトの組み合わせを登録
 - 主要メーカーの製品プリセットから選択、またはカスタム入力
 - CONDOR AXE（一体型パーツ）対応
+- パーツ互換性チェック（シャフト × フライトの組み合わせ検証）
 - スペック（重量・全長）の自動計算
 - 2つのセッティングを横並びで比較
 - セッティング変更履歴の記録・追跡
@@ -22,11 +23,17 @@
 - ユーザーの傾向に基づくレコメンドエンジン（マルチファクタースコアリング）
 - ブックマーク＆検索結果からセッティング下書き作成
 
-### DARTSLIVE スタッツ連携
+### DARTSLIVE スタッツ連携（PRO）
 - DARTSLIVE アカウントからスタッツを自動取得（Puppeteer によるサーバーサイドスクレイピング）
 - Rating / 01 / Cricket / COUNT-UP の月間推移グラフ（Recharts）
 - 直近プレイデータの可視化
 - 前回との比較（±表示）
+- レーティング目標分析（次のRt到達に必要なPPD/MPRを算出）
+- カウントアップのRt期待値基準カラー表示
+
+### 手動スタッツ記録
+- 練習の調子やメモを手動で記録・管理
+- 全ユーザーが利用可能
 
 ### アフィリエイト連携 & 収益化
 - ダーツハイブ（A8.net）・楽天・Amazon への購入導線
@@ -35,11 +42,27 @@
 
 ### ソーシャル & コンテンツ
 - セッティングへのいいね・コメント・ブックマーク
-- Markdown ベースのナレッジ記事投稿
+- Markdown ベースのナレッジ記事投稿（PRO/admin）
+- プロフィール公開/非公開設定
 
 ### PWA
 - Service Worker によるオフラインキャッシュ
 - モバイルでホーム画面に追加して使用可能
+
+## ロール別機能一覧
+
+| 機能 | general（無料） | pro（有料） | admin |
+|------|:---:|:---:|:---:|
+| セッティング登録 | 最大3件 | 無制限 | 無制限 |
+| セッティング閲覧・いいね・コメント | o | o | o |
+| バレル検索・クイズ・シミュレーター | o | o | o |
+| セッティング比較・履歴 | o | o | o |
+| プロフィール編集 | o | o | o |
+| 手動スタッツ記録 | o | o | o |
+| DARTSLIVE連携（自動取得・グラフ・Rt目標） | x | o | o |
+| 記事投稿・編集（自分の記事） | x | o | o |
+| 記事のおすすめフラグ設定 | x | x | o |
+| ユーザーロール管理 | x | x | o |
 
 ## 技術スタック
 
@@ -47,7 +70,7 @@
 |----------|------|
 | フレームワーク | Next.js 16 (App Router) |
 | 言語 | TypeScript 5 (strict) |
-| UI | React 19, MUI v7, Tailwind CSS v4 |
+| UI | React 19, MUI v7 |
 | 認証 | NextAuth.js 4 + Firebase Authentication |
 | データベース | Cloud Firestore |
 | ストレージ | Firebase Storage |
@@ -78,7 +101,6 @@ graph TB
 
     subgraph External
         DL["DARTSLIVE"]
-        DH["ダーツハイブ"]
     end
 
     subgraph Affiliate
@@ -96,8 +118,10 @@ graph TB
 
 - **サーバーレスアーキテクチャ**: Vercel + Firebase による完全マネージド構成
 - **JWT 認証**: NextAuth.js によるセッション管理、ロールベースアクセス制御（admin/pro/general）
+- **権限管理**: `lib/permissions.ts` による一元的なロール判定（セッティング上限・DARTSLIVE連携・記事投稿）
 - **独自レコメンドエンジン**: 重量(30点)・径(25点)・長さ(25点)・カット(15点)・ブランド(5点)の100点スコアリング
 - **SVGシミュレーター**: バレル寸法からベジエ曲線でシルエットを推定描画
+- **レーティング分析**: DARTSLIVE Rt計算式に基づく目標PPD/MPR算出・均等目標提案
 - **アフィリエイト基盤**: `lib/affiliate.ts` による環境変数ベースのURL変換
 - **PWA**: Serwist による Workbox ベースのキャッシュ戦略
 
@@ -176,6 +200,7 @@ darts-app/
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
 ├── lib/                        # ビジネスロジック・ユーティリティ
+│   ├── permissions.ts          #   ロール別権限判定ユーティリティ
 │   ├── affiliate.ts            #   アフィリエイトURL変換
 │   ├── recommend-barrels.ts    #   レコメンドエンジン + クイズスコアリング
 │   ├── calc-totals.ts          #   スペック合計計算
@@ -213,7 +238,8 @@ darts-app/
 - Firebase セキュリティルールによるデータアクセス制御
 - 環境変数による秘密情報管理（`.env.local` は Git 管理外）
 - 画像プロキシはホワイトリスト方式（許可ドメインのみ中継）
-- DARTSLIVE 連携は認証済みユーザーのみ利用可能
+- DARTSLIVE 連携は PRO/admin ユーザーのみ利用可能
+- ロールベースのAPI保護（`lib/permissions.ts` による一元管理）
 
 ## ライセンス
 

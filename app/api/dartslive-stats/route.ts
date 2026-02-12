@@ -5,6 +5,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { canUseDartslive } from '@/lib/permissions';
 
 export const maxDuration = 60;
 
@@ -224,6 +225,9 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
+  if (!canUseDartslive(session.user.role)) {
+    return NextResponse.json({ error: 'DARTSLIVE連携はPROプラン以上で利用できます' }, { status: 403 });
+  }
 
   try {
     const cacheRef = adminDb.doc(`users/${session.user.id}/dartsliveCache/latest`);
@@ -279,6 +283,9 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
+  }
+  if (!canUseDartslive(session.user.role)) {
+    return NextResponse.json({ error: 'DARTSLIVE連携はPROプラン以上で利用できます' }, { status: 403 });
   }
 
   const { email, password } = await request.json();

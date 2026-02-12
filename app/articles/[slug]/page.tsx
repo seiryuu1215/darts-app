@@ -21,6 +21,7 @@ import MarkdownContent from '@/components/articles/MarkdownContent';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import type { Article } from '@/types';
+import { canEditArticle } from '@/lib/permissions';
 
 export default function ArticleDetailPage() {
   const params = useParams();
@@ -28,7 +29,9 @@ export default function ArticleDetailPage() {
   const { data: session } = useSession();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
-  const isAdmin = session?.user?.role === 'admin';
+  const canEdit = article && session?.user?.id
+    ? canEditArticle(session.user.role, article.userId, session.user.id)
+    : false;
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -116,7 +119,7 @@ export default function ArticleDetailPage() {
           {dateStr}
           {article.userName && ` ・ ${article.userName}`}
         </Typography>
-        {isAdmin && (
+        {canEdit && (
           <Button
             size="small"
             startIcon={<EditIcon />}

@@ -24,6 +24,7 @@ import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
+import { canWriteArticles, isAdmin } from '@/lib/permissions';
 
 function toSlug(title: string): string {
   return title
@@ -38,7 +39,7 @@ function toSlug(title: string): string {
 export default function NewArticlePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const isAdmin = session?.user?.role === 'admin';
+  const userRole = session?.user?.role;
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -52,7 +53,7 @@ export default function NewArticlePage() {
   const [loading, setLoading] = useState(false);
 
   if (status === 'loading') return null;
-  if (!isAdmin) {
+  if (!canWriteArticles(userRole)) {
     router.replace('/articles');
     return null;
   }
@@ -170,11 +171,13 @@ export default function NewArticlePage() {
         sx={{ mb: 2 }}
       />
 
-      <FormControlLabel
-        control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
-        label="トップページにおすすめ表示"
-        sx={{ mb: 2, display: 'block' }}
-      />
+      {isAdmin(userRole) && (
+        <FormControlLabel
+          control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+          label="トップページにおすすめ表示"
+          sx={{ mb: 2, display: 'block' }}
+        />
+      )}
 
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
         カバー画像
