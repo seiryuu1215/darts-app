@@ -38,5 +38,4 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(withSerwist(nextConfig), {
   silent: true,
-  disableLogger: true,
 });
