@@ -78,7 +78,7 @@ export default function SettingHistoryPage() {
   const filtered = history.filter((h) => h.dartType === dartType);
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: 'セッティング', href: '/darts' }, { label: '履歴' }]} />
       <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>セッティング履歴</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
