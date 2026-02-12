@@ -56,7 +56,7 @@ import {
 } from 'recharts';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
-import { getRatingTarget } from '@/lib/dartslive-rating';
+import { getRatingTarget, calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
 function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | undefined; prev: number | null | undefined; fixed?: number }) {
@@ -262,6 +262,10 @@ export default function StatsPage() {
 
   // カウントアップ期待値 = 01平均スタッツ(PPR) × 8ラウンド
   const expectedCountUp = c?.stats01Avg != null ? Math.round(c.stats01Avg * 8) : null;
+  // Rt-2相当のカウントアップスコア（例: Rt.10→PPD80→640, Rt.8→PPD70→560）
+  const dangerCountUp = c?.stats01Avg != null
+    ? Math.round(ppdForRating(Math.floor(calc01Rating(c.stats01Avg)) - 2) * 8)
+    : null;
   const isCountUpCategory = gameChartCategory.includes('COUNT');
 
   return (
@@ -560,8 +564,7 @@ export default function StatsPage() {
                   const baseColor = getGameColor(gameChartCategory);
                   // COUNT-UP: 期待値基準、それ以外: ゲーム内平均基準
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
-                  // Rt期待値の2段階下（カウントアップ用: PPR-2相当×8ラウンド = 期待値-16）
-                  const dangerThreshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp - 16 : null;
+                  const dangerThreshold = isCountUpCategory ? dangerCountUp : null;
                   const getBarColor = (score: number) => {
                     if (score >= threshold) return '#4caf50'; // 基準以上: 緑
                     if (dangerThreshold != null && score <= dangerThreshold) return '#f44336'; // Rt-2以下: 赤
@@ -617,7 +620,7 @@ export default function StatsPage() {
                 {selectedGame && (() => {
                   const gameAvg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
-                  const chipDanger = isCountUpCategory && expectedCountUp != null ? expectedCountUp - 16 : null;
+                  const chipDanger = isCountUpCategory ? dangerCountUp : null;
                   return (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
                       {selectedGame.scores.map((s, i) => {
