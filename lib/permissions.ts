@@ -45,3 +45,29 @@ export function getStatsRetentionDays(role: UserRole | undefined): number | null
 export function canExportCsv(role: UserRole | undefined): boolean {
   return role === 'pro' || role === 'admin';
 }
+
+export function canCreateDiscussion(role: UserRole | undefined): boolean {
+  return role === 'pro' || role === 'admin';
+}
+
+export function canEditDiscussion(
+  role: UserRole | undefined,
+  authorId: string,
+  currentId: string,
+): boolean {
+  if (role === 'admin') return true;
+  if (role === 'pro') return authorId === currentId;
+  return false;
+}
+
+export function canReplyDiscussion(role: UserRole | undefined): boolean {
+  return role !== undefined;
+}
+
+export function canPinDiscussion(role: UserRole | undefined): boolean {
+  return role === 'admin';
+}
+
+export function canLockDiscussion(role: UserRole | undefined): boolean {
+  return role === 'admin';
+}

@@ -218,6 +218,56 @@ export interface BarrelContour {
   lowerProfile: [number, number][];
 }
 
+// Discussion
+export const DISCUSSION_CATEGORIES = [
+  'setting',
+  'rating',
+  'barrel',
+  'practice',
+  'gear',
+  'general',
+] as const;
+
+export type DiscussionCategory = (typeof DISCUSSION_CATEGORIES)[number];
+
+export const CATEGORY_LABELS: Record<DiscussionCategory, string> = {
+  setting: 'セッティング相談',
+  rating: 'レーティング・上達',
+  barrel: 'バレル選び',
+  practice: '練習法',
+  gear: 'シャフト・フライト・チップ',
+  general: '雑談',
+};
+
+export interface Discussion {
+  id?: string;
+  title: string;
+  content: string;
+  category: DiscussionCategory;
+  userId: string;
+  userName: string;
+  userAvatarUrl: string | null;
+  userRating: number | null;
+  userBarrelName: string | null;
+  isPinned: boolean;
+  isLocked: boolean;
+  replyCount: number;
+  lastRepliedAt: Timestamp | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface DiscussionReply {
+  id?: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl: string | null;
+  userRating: number | null;
+  userBarrelName: string | null;
+  text: string;
+  createdAt: Timestamp;
+}
+
 // Affiliate
 export type ShopType = 'dartshive' | 'rakuten' | 'amazon';
 

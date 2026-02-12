@@ -14,18 +14,20 @@ import {
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ArticleIcon from '@mui/icons-material/Article';
+import ForumIcon from '@mui/icons-material/Forum';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import NextLink from 'next/link';
 import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toDartshiveAffiliateUrl, getAffiliateConfig, toRakutenSearchUrl } from '@/lib/affiliate';
-import type { BarrelProduct, Article } from '@/types';
+import type { BarrelProduct, Article, Discussion } from '@/types';
 import AffiliateButton from '@/components/affiliate/AffiliateButton';
 
 interface SidebarProps {
   showPopularBarrels?: boolean;
   showRecentArticles?: boolean;
+  showRecentDiscussions?: boolean;
   showShopBanners?: boolean;
   relatedBarrels?: BarrelProduct[];
 }
@@ -40,11 +42,13 @@ interface RankedBarrel {
 export default function Sidebar({
   showPopularBarrels = true,
   showRecentArticles = true,
+  showRecentDiscussions = true,
   showShopBanners = true,
   relatedBarrels,
 }: SidebarProps) {
   const [popularBarrels, setPopularBarrels] = useState<RankedBarrel[]>([]);
   const [articles, setArticles] = useState<(Article & { id: string })[]>([]);
+  const [discussions, setDiscussions] = useState<(Discussion & { id: string })[]>([]);
   const affConfig = getAffiliateConfig();
 
   useEffect(() => {
@@ -73,7 +77,22 @@ export default function Sidebar({
         })
         .catch(() => {});
     }
-  }, [showPopularBarrels, showRecentArticles]);
+    if (showRecentDiscussions) {
+      getDocs(
+        query(
+          collection(db, 'discussions'),
+          orderBy('lastRepliedAt', 'desc'),
+          limit(5),
+        ),
+      )
+        .then((snap) => {
+          setDiscussions(
+            snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion & { id: string }),
+          );
+        })
+        .catch(() => {});
+    }
+  }, [showPopularBarrels, showRecentArticles, showRecentDiscussions]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -164,6 +183,35 @@ export default function Sidebar({
               >
                 <ListItemText
                   primary={article.title}
+                  primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
+      )}
+
+      {/* 最近のディスカッション */}
+      {showRecentDiscussions && discussions.length > 0 && (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
+            <ForumIcon fontSize="small" color="primary" />
+            最近のディスカッション
+          </Typography>
+          <List dense disablePadding>
+            {discussions.map((d) => (
+              <ListItemButton
+                key={d.id}
+                component={NextLink}
+                href={`/discussions/${d.id}`}
+                sx={{ px: 1, borderRadius: 1 }}
+              >
+                <ListItemText
+                  primary={d.title}
                   primaryTypographyProps={{ variant: 'body2', noWrap: true }}
                 />
               </ListItemButton>

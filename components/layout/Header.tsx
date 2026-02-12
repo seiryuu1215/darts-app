@@ -60,6 +60,7 @@ export default function Header() {
         { label: '診断クイズ', href: '/barrels/quiz' },
         { label: 'スタッツ記録', href: '/stats' },
         { label: '記事', href: '/articles' },
+        { label: 'ディスカッション', href: '/discussions' },
         { label: 'セッティング比較', href: '/darts/compare' },
         { label: 'ブックマーク', href: '/bookmarks' },
         { label: 'プロフィール', href: '/profile/edit' },
@@ -80,6 +81,7 @@ export default function Header() {
         { label: 'シミュレーター', href: '/barrels/simulator' },
         { label: '診断クイズ', href: '/barrels/quiz' },
         { label: '記事', href: '/articles' },
+        { label: 'ディスカッション', href: '/discussions' },
         { label: 'ログイン', href: '/login' },
         { label: '新規登録', href: '/register' },
       ];
@@ -131,6 +133,9 @@ export default function Header() {
             </Menu>
             <Button color="inherit" component={Link} href="/articles" size="small">
               記事
+            </Button>
+            <Button color="inherit" component={Link} href="/discussions" size="small">
+              ディスカッション
             </Button>
             {session && (
               <>
