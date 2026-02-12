@@ -83,10 +83,7 @@ export default function RecommendPage() {
   const displayBarrels = useMemo(() => {
     let filtered = allBarrels;
     if (selectedType) {
-      filtered = filtered.filter((b) => {
-        const t = getBarrelType(b.name);
-        return t === selectedType || t === '';
-      });
+      filtered = filtered.filter((b) => getBarrelType(b.name) === selectedType);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -126,10 +123,7 @@ export default function RecommendPage() {
     try {
       const selectedBarrels = allBarrels.filter((b) => b.id && selectedIds.has(b.id));
       const candidateBarrels = selectedType
-        ? allBarrels.filter((b) => {
-            const t = getBarrelType(b.name);
-            return t === selectedType || t === '';
-          })
+        ? allBarrels.filter((b) => getBarrelType(b.name) === selectedType)
         : allBarrels;
       const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, candidateBarrels, 30, preferenceText || undefined);
       setResults(analyzed);

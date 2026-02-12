@@ -348,8 +348,7 @@ export function recommendBarrels(
       if (ownedNames.has(b.name.toLowerCase())) return false;
       // タイプフィルター
       const bType = getBarrelType(b.name);
-      if (type === 'soft') return bType === 'soft' || bType === '';
-      if (type === 'steel') return bType === 'steel' || bType === '';
+      if (bType !== type) return false;
       return true;
     })
     .map((b) => ({ barrel: b, score: scoreBarrel(b, pref) }))
