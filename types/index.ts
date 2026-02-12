@@ -178,3 +178,24 @@ export interface Article {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+// Ranking
+export type RankingPeriod = 'weekly' | 'monthly' | 'all';
+
+// Barrel Quiz
+export interface QuizAnswer {
+  playStyle: 'beginner' | 'intermediate' | 'advanced';
+  gripPosition: 'front' | 'center' | 'rear';
+  weightPreference: 'light' | 'medium' | 'heavy';
+  lengthPreference: 'short' | 'standard' | 'long';
+  cutPreference: string[];
+}
+
+// Affiliate
+export type ShopType = 'dartshive' | 'rakuten' | 'amazon';
+
+export interface ShopLink {
+  shop: ShopType;
+  label: string;
+  url: string;
+}

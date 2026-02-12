@@ -25,6 +25,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import ArticleIcon from '@mui/icons-material/Article';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
+import QuizIcon from '@mui/icons-material/Quiz';
 import { collection, getDocs, orderBy, query, limit, doc, getDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -80,6 +82,18 @@ const featureCards: FeatureCard[] = [
     description: 'ダーツの知見・ノウハウ記事',
     href: '/articles',
     icon: <ArticleIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'シミュレーター',
+    description: 'バレル形状を可視化・比較',
+    href: '/barrels/simulator',
+    icon: <ViewInArIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'バレル診断',
+    description: '質問に答えておすすめを探す',
+    href: '/barrels/quiz',
+    icon: <QuizIcon sx={{ fontSize: 40 }} />,
   },
   {
     title: 'セッティング比較',

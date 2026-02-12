@@ -1,4 +1,4 @@
-import type { Dart, BarrelProduct } from '@/types';
+import type { Dart, BarrelProduct, QuizAnswer } from '@/types';
 
 export interface UserPreference {
   avgWeight: number;
@@ -355,4 +355,40 @@ export function recommendBarrels(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((item) => item.barrel);
+}
+
+// クイズ回答からレコメンドを生成
+export function recommendFromQuiz(
+  answers: QuizAnswer,
+  allBarrels: BarrelProduct[],
+  limit = 10,
+): { barrel: BarrelProduct; score: number; matchPercent: number }[] {
+  const weightMap = { light: 16.5, medium: 19.0, heavy: 22.0 };
+  const lengthMap = { short: 40, standard: 45, long: 50 };
+  const diameterMap = {
+    front: 7.2,   // フロントグリップ → やや太め
+    center: 7.0,  // センターグリップ → 標準
+    rear: 6.8,    // リアグリップ → やや細め
+  };
+
+  const pref: UserPreference = {
+    avgWeight: weightMap[answers.weightPreference],
+    avgDiameter: diameterMap[answers.gripPosition],
+    avgLength: lengthMap[answers.lengthPreference],
+    favoriteCuts: answers.cutPreference,
+    favoriteBrands: [],
+    keywords: [],
+    ownedBarrelNames: [],
+    weightOffset: 0,
+    diameterOffset: 0,
+    lengthOffset: 0,
+  };
+
+  return allBarrels
+    .map((b) => {
+      const score = scoreBarrel(b, pref);
+      return { barrel: b, score, matchPercent: score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }

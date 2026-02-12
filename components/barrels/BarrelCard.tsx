@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import BuildIcon from '@mui/icons-material/Build';
+import AffiliateButton from '@/components/affiliate/AffiliateButton';
 import { doc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -102,15 +102,7 @@ export default function BarrelCard({ barrel }: BarrelCardProps) {
       </CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, pb: 1 }}>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Button
-            size="small"
-            startIcon={<OpenInNewIcon />}
-            href={barrel.productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ショップ
-          </Button>
+          <AffiliateButton barrel={barrel} size="small" />
           {session && (
             <Button size="small" startIcon={<BuildIcon />} onClick={handleDraft}>
               セッティング

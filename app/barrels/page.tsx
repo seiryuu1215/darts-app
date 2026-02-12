@@ -24,7 +24,11 @@ import {
   CardContent,
   CardMedia,
   IconButton,
+  Tabs,
+  Tab,
 } from '@mui/material';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import QuizIcon from '@mui/icons-material/Quiz';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -35,10 +39,11 @@ import Link from 'next/link';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
-import type { BarrelProduct, Dart } from '@/types';
+import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
 import BarrelCard from '@/components/barrels/BarrelCard';
 import { BARREL_CUTS } from '@/lib/darts-parts';
 import { recommendBarrels } from '@/lib/recommend-barrels';
+import { toDartshiveAffiliateUrl, getAffiliateConfig } from '@/lib/affiliate';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -57,6 +62,7 @@ export default function BarrelsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [ranking, setRanking] = useState<RankedBarrel[]>([]);
+  const [rankingTab, setRankingTab] = useState<RankingPeriod>('weekly');
 
   // おすすめ関連
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
@@ -208,29 +214,41 @@ export default function BarrelsPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">バレル検索</Typography>
-        <Button
-          component={Link}
-          href="/barrels/recommend"
-          variant="outlined"
-          startIcon={<RecommendIcon />}
-        >
-          おすすめを探す
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button component={Link} href="/barrels/recommend" variant="outlined" startIcon={<RecommendIcon />} size="small">
+            おすすめ
+          </Button>
+          <Button component={Link} href="/barrels/simulator" variant="outlined" startIcon={<StraightenIcon />} size="small">
+            シミュレーター
+          </Button>
+          <Button component={Link} href="/barrels/quiz" variant="outlined" startIcon={<QuizIcon />} size="small">
+            診断クイズ
+          </Button>
+        </Box>
       </Box>
 
       {/* 人気バレルランキング */}
       {ranking.length > 0 && (
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <TrendingUpIcon color="primary" />
             <Typography variant="h6">人気バレル</Typography>
             <Typography variant="caption" color="text.secondary">ダーツハイブ売上ランキング</Typography>
           </Box>
+          <Tabs
+            value={rankingTab}
+            onChange={(_, v) => setRankingTab(v)}
+            sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
+          >
+            <Tab label="週間" value="weekly" />
+            <Tab label="月間" value="monthly" />
+            <Tab label="総合" value="all" />
+          </Tabs>
           <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, scrollSnapType: 'x mandatory', '&::-webkit-scrollbar': { height: 6 }, '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' } }}>
             {ranking.map((item) => (
               <Card key={item.rank} sx={{ minWidth: 150, maxWidth: 150, flexShrink: 0, position: 'relative', scrollSnapAlign: 'start' }}>
                 <CardActionArea
-                  href={item.productUrl}
+                  href={toDartshiveAffiliateUrl(item.productUrl, getAffiliateConfig())}
                   target="_blank"
                   rel="noopener noreferrer"
                   sx={{ height: '100%' }}

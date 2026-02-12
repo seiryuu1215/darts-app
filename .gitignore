@@ -50,6 +50,11 @@ scrape-full-log.txt
 visited.json
 visited-full.json
 
+# PWA
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
 # vercel
 .vercel
 

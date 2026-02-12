@@ -140,9 +140,14 @@ export default function RecommendPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 1 }}>おすすめバレルを探す</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         好みのバレルを1〜3個選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。
       </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Button component="a" href="/barrels/quiz" variant="outlined" size="small">
+          質問に答えておすすめを探す（初心者向け）
+        </Button>
+      </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>

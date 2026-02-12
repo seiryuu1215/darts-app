@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Container,
   Typography,
   Box,
   CircularProgress,
   Chip,
   Button,
   CardMedia,
+  Container,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -18,6 +18,9 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import MarkdownContent from '@/components/articles/MarkdownContent';
+import TwoColumnLayout from '@/components/layout/TwoColumnLayout';
+import Sidebar from '@/components/layout/Sidebar';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Article } from '@/types';
 
 export default function ArticleDetailPage() {
@@ -77,8 +80,23 @@ export default function ArticleDetailPage() {
     ? article.createdAt.toDate().toLocaleDateString('ja-JP')
     : '';
 
+  const sidebar = (
+    <Sidebar
+      showPopularBarrels
+      showRecentArticles
+      showShopBanners
+    />
+  );
+
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <TwoColumnLayout sidebar={sidebar}>
+      <Breadcrumbs
+        items={[
+          { label: '記事', href: '/articles' },
+          { label: article.title },
+        ]}
+      />
+
       <Button component={Link} href="/articles" startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
         記事一覧
       </Button>
@@ -120,6 +138,6 @@ export default function ArticleDetailPage() {
       </Box>
 
       <MarkdownContent content={article.content} />
-    </Container>
+    </TwoColumnLayout>
   );
 }

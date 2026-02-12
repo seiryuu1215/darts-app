@@ -17,6 +17,7 @@ import {
   Divider,
   Menu,
   MenuItem,
+  Collapse,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -26,6 +27,9 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
@@ -35,6 +39,8 @@ export default function Header() {
   const { data: session } = useSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [barrelMenuEl, setBarrelMenuEl] = useState<null | HTMLElement>(null);
+  const [barrelDrawerOpen, setBarrelDrawerOpen] = useState(false);
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
 
@@ -46,6 +52,9 @@ export default function Header() {
         { label: 'セッティング', href: '/darts' },
         { label: 'セッティング履歴', href: '/darts/history' },
         { label: 'バレル検索', href: '/barrels' },
+        { label: 'おすすめバレル', href: '/barrels/recommend' },
+        { label: 'シミュレーター', href: '/barrels/simulator' },
+        { label: '診断クイズ', href: '/barrels/quiz' },
         { label: 'スタッツ記録', href: '/stats' },
         { label: '記事', href: '/articles' },
         { label: 'セッティング比較', href: '/darts/compare' },
@@ -56,6 +65,9 @@ export default function Header() {
     : [
         { label: 'セッティング', href: '/darts' },
         { label: 'バレル検索', href: '/barrels' },
+        { label: 'おすすめバレル', href: '/barrels/recommend' },
+        { label: 'シミュレーター', href: '/barrels/simulator' },
+        { label: '診断クイズ', href: '/barrels/quiz' },
         { label: '記事', href: '/articles' },
         { label: 'ログイン', href: '/login' },
         { label: '新規登録', href: '/register' },
@@ -79,9 +91,25 @@ export default function Header() {
             <Button color="inherit" component={Link} href="/darts" size="small">
               セッティング
             </Button>
-            <Button color="inherit" component={Link} href="/barrels" size="small">
-              バレル検索
+            <Button
+              color="inherit"
+              size="small"
+              endIcon={<ArrowDropDownIcon />}
+              onClick={(e) => setBarrelMenuEl(e.currentTarget)}
+            >
+              バレル
             </Button>
+            <Menu
+              anchorEl={barrelMenuEl}
+              open={Boolean(barrelMenuEl)}
+              onClose={() => setBarrelMenuEl(null)}
+              onClick={() => setBarrelMenuEl(null)}
+            >
+              <MenuItem component={Link} href="/barrels">バレル検索</MenuItem>
+              <MenuItem component={Link} href="/barrels/recommend">おすすめ</MenuItem>
+              <MenuItem component={Link} href="/barrels/simulator">シミュレーター</MenuItem>
+              <MenuItem component={Link} href="/barrels/quiz">診断クイズ</MenuItem>
+            </Menu>
             <Button color="inherit" component={Link} href="/articles" size="small">
               記事
             </Button>

@@ -49,6 +49,10 @@ import CommentList from '@/components/comment/CommentList';
 import CommentForm from '@/components/comment/CommentForm';
 import UserAvatar from '@/components/UserAvatar';
 import { calcDartTotals, hasCompleteSpecs } from '@/lib/calc-totals';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import SearchIcon from '@mui/icons-material/Search';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { getShopLinks } from '@/lib/affiliate';
 
 interface DartDetailProps {
   dart: Dart;
@@ -460,6 +464,61 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
             </Box>
           </>
         )}
+      </Paper>
+
+      {/* このバレルを探す */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <ShoppingCartIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} />
+          このバレルを探す
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {(() => {
+            const barrelProduct = {
+              id: dart.sourceBarrelId || '',
+              name: dart.barrel.name,
+              brand: dart.barrel.brand,
+              weight: dart.barrel.weight,
+              maxDiameter: dart.barrel.maxDiameter,
+              length: dart.barrel.length,
+              cut: dart.barrel.cut,
+              imageUrl: null,
+              productUrl: `https://www.dartshive.jp/`,
+              source: 'dartshive' as const,
+              scrapedAt: dart.createdAt,
+            };
+            return getShopLinks(barrelProduct).map((link) => (
+              <Button
+                key={link.shop}
+                size="small"
+                variant="outlined"
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </Button>
+            ));
+          })()}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<StraightenIcon />}
+            component={Link}
+            href={`/barrels/simulator?barrel=${encodeURIComponent(dart.barrel.name)}`}
+          >
+            シミュレーター
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<SearchIcon />}
+            component={Link}
+            href="/barrels/recommend"
+          >
+            似たバレル
+          </Button>
+        </Box>
       </Paper>
 
       {dart.description && (
