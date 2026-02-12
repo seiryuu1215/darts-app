@@ -42,10 +42,13 @@ docs/test-accounts.md
 files-list.txt
 progress.json
 progress.txt
+progress-full.json
 project-structure.txt
 scrape-log.txt
 scrape-log-new.txt
+scrape-full-log.txt
 visited.json
+visited-full.json
 
 # vercel
 .vercel
