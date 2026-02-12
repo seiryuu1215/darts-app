@@ -263,8 +263,13 @@ export default function StatsPage() {
   // カウントアップ期待値 = 01平均スタッツ(PPR) × 8ラウンド
   const expectedCountUp = c?.stats01Avg != null ? Math.round(c.stats01Avg * 8) : null;
   // Rt-2相当のカウントアップスコア（例: Rt.10→PPD80→640, Rt.8→PPD70→560）
-  const dangerCountUp = c?.stats01Avg != null
-    ? Math.round(ppdForRating(Math.floor(calc01Rating(c.stats01Avg)) - 2) * 8)
+  const current01RtInt = c?.stats01Avg != null ? Math.floor(calc01Rating(c.stats01Avg)) : null;
+  const dangerCountUp = current01RtInt != null
+    ? Math.round(ppdForRating(current01RtInt - 2) * 8)
+    : null;
+  // Rt+2相当のカウントアップスコア（例: Rt.10→Rt.12→PPD90→720）
+  const excellentCountUp = current01RtInt != null
+    ? Math.round(ppdForRating(current01RtInt + 2) * 8)
     : null;
   const isCountUpCategory = gameChartCategory.includes('COUNT');
 
@@ -565,7 +570,9 @@ export default function StatsPage() {
                   // COUNT-UP: 期待値基準、それ以外: ゲーム内平均基準
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
                   const dangerThreshold = isCountUpCategory ? dangerCountUp : null;
+                  const excellentThreshold = isCountUpCategory ? excellentCountUp : null;
                   const getBarColor = (score: number) => {
+                    if (excellentThreshold != null && score >= excellentThreshold) return '#2e7d32'; // Rt+2以上: 濃い緑
                     if (score >= threshold) return '#4caf50'; // 基準以上: 緑
                     if (dangerThreshold != null && score <= dangerThreshold) return '#f44336'; // Rt-2以下: 赤
                     return `${baseColor}66`; // 通常: 薄いカテゴリ色
@@ -616,27 +623,51 @@ export default function StatsPage() {
                     </ResponsiveContainer>
                   );
                 })()}
+                {/* 色凡例 */}
+                {isCountUpCategory && expectedCountUp != null && (
+                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1, mb: 0.5 }}>
+                    {excellentCountUp != null && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#2e7d32' }} />
+                        <Typography variant="caption" color="text.secondary">Rt+2以上 ({excellentCountUp}+)</Typography>
+                      </Box>
+                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#4caf50' }} />
+                      <Typography variant="caption" color="text.secondary">期待値以上 ({expectedCountUp}+)</Typography>
+                    </Box>
+                    {dangerCountUp != null && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f44336' }} />
+                        <Typography variant="caption" color="text.secondary">Rt-2以下 ({dangerCountUp}以下)</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
                 {/* Scores chips */}
                 {selectedGame && (() => {
                   const gameAvg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
                   const chipDanger = isCountUpCategory ? dangerCountUp : null;
+                  const chipExcellent = isCountUpCategory ? excellentCountUp : null;
                   return (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
                       {selectedGame.scores.map((s, i) => {
-                        const isGood = s >= threshold;
+                        const isExcellent = chipExcellent != null && s >= chipExcellent;
+                        const isGood = !isExcellent && s >= threshold;
                         const isDanger = chipDanger != null && s <= chipDanger;
+                        const chipColor = isExcellent ? '#2e7d32' : isGood ? '#4caf50' : isDanger ? '#f44336' : undefined;
                         return (
                           <Chip
                             key={i}
                             label={gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT') ? s.toFixed(2) : s}
                             size="small"
-                            variant={isGood || isDanger ? 'filled' : 'outlined'}
+                            variant={chipColor ? 'filled' : 'outlined'}
                             sx={{
-                              bgcolor: isGood ? '#4caf5022' : isDanger ? '#f4433622' : undefined,
-                              borderColor: isGood ? '#4caf50' : isDanger ? '#f44336' : 'divider',
-                              color: isGood ? '#4caf50' : isDanger ? '#f44336' : 'text.secondary',
-                              fontWeight: isGood || isDanger ? 'bold' : 'normal',
+                              bgcolor: chipColor ? `${chipColor}22` : undefined,
+                              borderColor: chipColor ?? 'divider',
+                              color: chipColor ?? 'text.secondary',
+                              fontWeight: chipColor ? 'bold' : 'normal',
                             }}
                           />
                         );
