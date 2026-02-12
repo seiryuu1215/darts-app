@@ -113,6 +113,33 @@ const userMap: Record<string, { userId: string; userName: string }> = {
   haruka: { userId: 'dummy-user-haruka', userName: 'ハルカ' },
 };
 
+const userProfiles: Record<string, Record<string, unknown>> = {
+  takumi: {
+    height: 175,
+    fourStanceType: 'A1',
+    dominantEye: 'right',
+    gripType: '3フィンガー',
+    throwingImage: 'プッシュ',
+    twitterHandle: '@takumi_darts',
+    dartsHistory: '5年',
+    homeShop: 'ダーツハイブ渋谷',
+    isProfilePublic: true,
+    role: 'pro',
+  },
+  haruka: {
+    height: 162,
+    fourStanceType: 'B2',
+    dominantEye: 'left',
+    gripType: '4フィンガー',
+    throwingImage: 'スイング',
+    twitterHandle: '@haruka_arrows',
+    dartsHistory: '2年',
+    homeShop: 'Bee新宿',
+    isProfilePublic: true,
+    role: 'general',
+  },
+};
+
 async function main() {
   // バレルDBロード
   const barrelSnap = await db.collection('barrels').get();
@@ -135,6 +162,23 @@ async function main() {
     }
   }
   console.log(`${deleted}件削除\n`);
+
+  // テストユーザープロフィール更新
+  for (const [key, { userId, userName }] of Object.entries(userMap)) {
+    const profile = userProfiles[key];
+    if (!profile) continue;
+    await db.collection('users').doc(userId).set({
+      displayName: userName,
+      email: `${key}@example.com`,
+      photoURL: null,
+      avatarUrl: null,
+      ...profile,
+      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    console.log(`✓ プロフィール更新: ${userName} (${userId})`);
+  }
+  console.log('');
 
   // 作成
   for (const def of dartDefs) {

@@ -324,7 +324,7 @@ export function recommendFromBarrelsWithAnalysis(
   const ownedNames = new Set(pref.ownedBarrelNames.map((n) => n.toLowerCase()));
 
   return allBarrels
-    .filter((b) => !ownedNames.has(b.name.toLowerCase()))
+    .filter((b) => !ownedNames.has(b.name.toLowerCase()) && b.isDiscontinued !== true)
     .map((b) => analyzeBarrel(b, pref))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
@@ -344,6 +344,8 @@ export function recommendBarrels(
 
   return barrels
     .filter((b) => {
+      // 廃盤バレル除外
+      if (b.isDiscontinued === true) return false;
       // 所持バレル除外
       if (ownedNames.has(b.name.toLowerCase())) return false;
       // タイプフィルター
@@ -385,6 +387,7 @@ export function recommendFromQuiz(
   };
 
   return allBarrels
+    .filter((b) => b.isDiscontinued !== true)
     .map((b) => {
       const score = scoreBarrel(b, pref);
       return { barrel: b, score, matchPercent: score };

@@ -67,21 +67,29 @@ export default function BarrelCard({ barrel }: BarrelCardProps) {
   };
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
+      {barrel.isDiscontinued && (
+        <Chip
+          label="廃盤"
+          size="small"
+          color="error"
+          sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1, fontWeight: 'bold' }}
+        />
+      )}
       {barrel.imageUrl ? (
         <CardMedia
           component="img"
           height="160"
           image={barrel.imageUrl}
           alt={barrel.name}
-          sx={{ objectFit: 'cover' }}
+          sx={{ objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
         />
       ) : (
         <Box
           component="img"
           src="/dart-placeholder.svg"
           alt="No Image"
-          sx={{ height: 160, width: '100%', objectFit: 'cover' }}
+          sx={{ height: 160, width: '100%', objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
         />
       )}
       <CardContent sx={{ flexGrow: 1, pb: 1 }}>

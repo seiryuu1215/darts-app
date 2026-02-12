@@ -73,6 +73,7 @@ interface BarrelData {
   cut: string;
   imageUrl: string;
   productUrl: string;
+  isDiscontinued?: boolean;
 }
 
 async function save(barrel: BarrelData) {
@@ -81,6 +82,7 @@ async function save(barrel: BarrelData) {
     ...barrel,
     source: 'dartshive',
     scrapedAt: Timestamp.now(),
+    ...(barrel.isDiscontinued !== undefined && { isDiscontinued: barrel.isDiscontinued }),
   }, { merge: true });
 }
 
@@ -222,33 +224,30 @@ async function worker(browser: Browser, queue: string[], id: number, stats: { sa
 
 // ---------------- main ----------------
 
-async function main() {
-  if (nukeMode) {
-    await nukeBarrels();
-  }
+/** 1フェーズ分のスクレイプを実行し、保存したURLセットを返す */
+async function scrapePhase(
+  browser: Browser,
+  baseUrl: string,
+  phaseLabel: string,
+  stats: { saved: number; skipped: number },
+  isDiscontinued?: boolean,
+): Promise<Set<string>> {
+  const listPage = await browser.newPage();
+  await listPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+  const savedUrls = new Set<string>();
+  let emptyStreak = 0;
 
   const startPage = fs.existsSync(PROGRESS_FILE)
     ? Number(fs.readFileSync(PROGRESS_FILE, 'utf-8'))
     : 1;
 
-  console.log(`\nスクレイピング開始 (ページ${startPage}〜)`);
-
-  const browser = await puppeteer.launch({ headless: true });
-  const listPage = await browser.newPage();
-  await listPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-
-  // --all: 廃盤・在庫なし含む全商品取得
-  const allMode = process.argv.includes('--all');
-  const base = allMode
-    ? 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010'
-    : 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
-  const stats = { saved: 0, skipped: 0 };
-  let emptyStreak = 0; // 新規0が連続した回数
+  console.log(`\n[${phaseLabel}] スクレイピング開始 (ページ${startPage}〜)`);
 
   for (let p = startPage; p < 9999; p++) {
-    console.log(`\n--- ページ ${p} ---`);
+    console.log(`\n--- [${phaseLabel}] ページ ${p} ---`);
 
-    const url = `${base}&page=${p}`;
+    const url = `${baseUrl}&page=${p}`;
     const links = await scrapeList(listPage, url);
 
     if (links.length === 0) {
@@ -262,12 +261,17 @@ async function main() {
       return true;
     });
 
+    // URLを記録（visited とは別に、フェーズ判定用）
+    links.forEach(u => savedUrls.add(u));
+
     console.log(`リンク数: ${links.length}, 新規: ${queue.length}`);
 
     if (queue.length > 0) {
       emptyStreak = 0;
+      // isDiscontinued フラグを付与
+      const taggedQueue = queue.map(u => ({ url: u, isDiscontinued }));
       const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
-        worker(browser, queue, i + 1, stats)
+        workerWithFlag(browser, taggedQueue, i + 1, stats)
       );
       await Promise.all(workers);
     } else {
@@ -284,6 +288,122 @@ async function main() {
   }
 
   await listPage.close();
+  // フェーズ終了時に進捗リセット
+  if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
+
+  return savedUrls;
+}
+
+/** isDiscontinuedフラグ付きワーカー */
+async function workerWithFlag(
+  browser: Browser,
+  queue: { url: string; isDiscontinued?: boolean }[],
+  id: number,
+  stats: { saved: number; skipped: number },
+) {
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+  while (true) {
+    const item = queue.shift();
+    if (!item) break;
+
+    const data = await scrapeDetail(page, item.url);
+
+    if (data) {
+      if (item.isDiscontinued !== undefined) {
+        data.isDiscontinued = item.isDiscontinued;
+      }
+      await save(data);
+      stats.saved++;
+      const cuts = data.cut ? ` [${data.cut}]` : '';
+      const disc = data.isDiscontinued ? ' [廃盤]' : '';
+      console.log(`  [w${id}] saved: ${data.name} (${data.weight}g)${cuts}${disc}`);
+    } else {
+      stats.skipped++;
+    }
+
+    await sleep(300);
+  }
+
+  await page.close();
+}
+
+async function main() {
+  if (nukeMode) {
+    await nukeBarrels();
+  }
+
+  const allMode = process.argv.includes('--all');
+  const BASE_CURRENT = 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
+  const BASE_ALL = 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010';
+
+  const browser = await puppeteer.launch({ headless: true });
+  const stats = { saved: 0, skipped: 0 };
+
+  if (allMode) {
+    // --all: 2フェーズで廃盤判定
+    // フェーズ1: 現行品のみスクレイプ → URLをSetで保持
+    const currentUrls = await scrapePhase(browser, BASE_CURRENT, 'フェーズ1: 現行品', stats, false);
+    console.log(`\nフェーズ1完了: 現行品URL ${currentUrls.size}件`);
+
+    // visited をリセットしてフェーズ2へ（全商品を再スキャン）
+    visited = new Set();
+    if (fs.existsSync(VISITED_FILE)) fs.unlinkSync(VISITED_FILE);
+
+    // フェーズ2: 全商品スクレイプ → フェーズ1に含まれないものは廃盤
+    const allListPage = await browser.newPage();
+    await allListPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+    let emptyStreak = 0;
+    for (let p = 1; p < 9999; p++) {
+      console.log(`\n--- [フェーズ2: 全商品] ページ ${p} ---`);
+
+      const url = `${BASE_ALL}&page=${p}`;
+      const links = await scrapeList(allListPage, url);
+
+      if (links.length === 0) {
+        console.log('商品がないため終了');
+        break;
+      }
+
+      const queue = links.filter(u => {
+        if (visited.has(u)) return false;
+        visited.add(u);
+        return true;
+      });
+
+      console.log(`リンク数: ${links.length}, 新規: ${queue.length}`);
+
+      if (queue.length > 0) {
+        emptyStreak = 0;
+        // フェーズ1のSetに含まれないURL → 廃盤
+        const taggedQueue = queue.map(u => ({
+          url: u,
+          isDiscontinued: !currentUrls.has(u),
+        }));
+        const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
+          workerWithFlag(browser, taggedQueue, i + 1, stats)
+        );
+        await Promise.all(workers);
+      } else {
+        emptyStreak++;
+        if (emptyStreak >= 3) {
+          console.log('新規商品が3ページ連続で0件のため終了');
+          break;
+        }
+      }
+
+      saveVisited();
+      console.log(`累計: 保存${stats.saved}件 / スキップ${stats.skipped}件`);
+    }
+
+    await allListPage.close();
+  } else {
+    // デフォルト: 現行品のみ差分取得（既存動作）
+    await scrapePhase(browser, BASE_CURRENT, '現行品', stats, false);
+  }
+
   await browser.close();
 
   console.log(`\n完了！合計 ${stats.saved} 件保存、${stats.skipped} 件スキップ`);

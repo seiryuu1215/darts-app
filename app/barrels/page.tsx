@@ -26,6 +26,8 @@ import {
   IconButton,
   Tabs,
   Tab,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import QuizIcon from '@mui/icons-material/Quiz';
@@ -80,6 +82,7 @@ export default function BarrelsPage() {
   const [lengthRange, setLengthRange] = useState<[number, number]>([43, 48]);
   const [selectedCut, setSelectedCut] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'current' | 'discontinued'>('current');
 
   useEffect(() => {
     const fetchBarrels = async () => {
@@ -156,6 +159,9 @@ export default function BarrelsPage() {
   // フィルタリング
   const filteredBarrels = useMemo(() => {
     return barrels.filter((b) => {
+      // 販売状態フィルタ
+      if (statusFilter === 'current' && b.isDiscontinued === true) return false;
+      if (statusFilter === 'discontinued' && b.isDiscontinued !== true) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!b.name.toLowerCase().includes(q) && !b.brand.toLowerCase().includes(q)) return false;
@@ -174,12 +180,12 @@ export default function BarrelsPage() {
       }
       return true;
     });
-  }, [barrels, searchQuery, selectedBrand, selectedType, weightRange, diameterRange, lengthRange, selectedCut]);
+  }, [barrels, searchQuery, selectedBrand, selectedType, statusFilter, weightRange, diameterRange, lengthRange, selectedCut]);
 
   // フィルター変更時にページを1に戻す
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedBrand, selectedType, weightRange, diameterRange, lengthRange, selectedCut]);
+  }, [searchQuery, selectedBrand, selectedType, statusFilter, weightRange, diameterRange, lengthRange, selectedCut]);
 
   // ページネーション
   const totalPages = Math.ceil(filteredBarrels.length / ITEMS_PER_PAGE);
@@ -196,6 +202,7 @@ export default function BarrelsPage() {
   const activeFilterCount = [
     selectedBrand,
     selectedType,
+    statusFilter !== 'current',
     weightRange[0] !== 18 || weightRange[1] !== 20,
     diameterRange[0] !== 6.5 || diameterRange[1] !== 7.5,
     lengthRange[0] !== 43 || lengthRange[1] !== 48,
@@ -206,6 +213,7 @@ export default function BarrelsPage() {
     setSearchQuery('');
     setSelectedBrand('');
     setSelectedType('');
+    setStatusFilter('current');
     setWeightRange([18, 20]);
     setDiameterRange([6.5, 7.5]);
     setLengthRange([43, 48]);
@@ -407,6 +415,19 @@ export default function BarrelsPage() {
 
       <Collapse in={filterOpen}>
         <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" gutterBottom>販売状態</Typography>
+            <ToggleButtonGroup
+              value={statusFilter}
+              exclusive
+              onChange={(_, v) => { if (v !== null) setStatusFilter(v); }}
+              size="small"
+            >
+              <ToggleButton value="all">すべて</ToggleButton>
+              <ToggleButton value="current">現行品のみ</ToggleButton>
+              <ToggleButton value="discontinued">廃盤のみ</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">

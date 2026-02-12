@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Button,
   Grid,
+  IconButton,
 } from '@mui/material';
 import { doc, getDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -18,8 +19,12 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import DartCard from '@/components/darts/DartCard';
 import type { User, Dart } from '@/types';
 import EditIcon from '@mui/icons-material/Edit';
+import XIcon from '@mui/icons-material/X';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import HistoryIcon from '@mui/icons-material/History';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -85,19 +90,37 @@ export default function UserProfilePage() {
     );
   }
 
+  const activeDartId = user.activeSoftDartId || user.activeSteelDartId;
+  const activeDart = activeDartId ? darts.find((d) => d.id === activeDartId) : null;
+  const otherDarts = activeDart ? darts.filter((d) => d.id !== activeDartId) : darts;
+
+  const profileItems = [
+    user.height && { label: '身長', value: `${user.height}cm` },
+    user.fourStanceType && { label: '4スタンス', value: user.fourStanceType },
+    user.dominantEye && { label: '利き目', value: user.dominantEye === 'right' ? '右' : '左' },
+    user.gripType && { label: 'グリップ', value: user.gripType },
+    user.throwingImage && { label: 'スロー', value: user.throwingImage },
+  ].filter(Boolean) as { label: string; value: string }[];
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: user.displayName }]} />
 
       {/* プロフィールカード */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <UserAvatar userId={userId} avatarUrl={user.avatarUrl} userName={user.displayName} size={72} />
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5, mb: 2 }}>
+          <UserAvatar userId={userId} avatarUrl={user.avatarUrl} userName={user.displayName} size={120} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {user.displayName}
               </Typography>
+              {user.role === 'admin' && (
+                <Chip label="Admin" size="small" color="error" />
+              )}
+              {user.role === 'pro' && (
+                <Chip label="PRO" size="small" color="primary" />
+              )}
               {isOwner && (
                 <Button
                   size="small"
@@ -109,43 +132,68 @@ export default function UserProfilePage() {
                 </Button>
               )}
             </Box>
-            {user.twitterHandle && (
-              <Typography
-                variant="body2"
-                component="a"
-                href={`https://x.com/${user.twitterHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-              >
-                @{user.twitterHandle}
-              </Typography>
-            )}
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+              {user.twitterHandle && (
+                <IconButton
+                  size="small"
+                  component="a"
+                  href={`https://x.com/${user.twitterHandle.replace(/^@/, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <XIcon fontSize="small" />
+                </IconButton>
+              )}
+              {user.homeShop && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <StorefrontIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    {user.homeShop}
+                  </Typography>
+                </Box>
+              )}
+              {user.dartsHistory && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <HistoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    ダーツ歴 {user.dartsHistory}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
 
-        {/* プロフィール詳細 */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {user.height && (
-            <Chip label={`${user.height}cm`} size="small" variant="outlined" />
-          )}
-          {user.fourStanceType && (
-            <Chip label={`4スタンス: ${user.fourStanceType}`} size="small" variant="outlined" />
-          )}
-          {user.dominantEye && (
-            <Chip label={`利き目: ${user.dominantEye === 'right' ? '右' : '左'}`} size="small" variant="outlined" />
-          )}
-          {user.gripType && (
-            <Chip label={user.gripType} size="small" variant="outlined" />
-          )}
-        </Box>
-
-        {user.throwingImage && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-            {user.throwingImage}
-          </Typography>
+        {/* プロフィール詳細 — ラベル付きGrid */}
+        {profileItems.length > 0 && (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            {profileItems.map((item) => (
+              <Grid size={{ xs: 6, sm: 4 }} key={item.label}>
+                <Typography variant="caption" color="text.secondary">
+                  {item.label}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  {item.value}
+                </Typography>
+              </Grid>
+            ))}
+          </Grid>
         )}
       </Paper>
+
+      {/* アクティブダーツ */}
+      {activeDart && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+            アクティブダーツ
+          </Typography>
+          <Box sx={{ mb: 3, maxWidth: 400 }}>
+            <DartCard dart={activeDart} />
+          </Box>
+        </>
+      )}
 
       {/* セッティング一覧 */}
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
@@ -158,7 +206,7 @@ export default function UserProfilePage() {
         </Paper>
       ) : (
         <Grid container spacing={2}>
-          {darts.map((dart) => (
+          {otherDarts.map((dart) => (
             <Grid size={{ xs: 12, sm: 6 }} key={dart.id}>
               <Paper
                 component={Link}
@@ -178,7 +226,7 @@ export default function UserProfilePage() {
                     component="img"
                     src={dart.imageUrls[0]}
                     alt={dart.title}
-                    sx={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
+                    sx={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
                   />
                 )}
                 <Box sx={{ minWidth: 0 }}>
@@ -190,6 +238,8 @@ export default function UserProfilePage() {
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {dart.barrel.weight}g
+                    {dart.barrel.maxDiameter && ` / ${dart.barrel.maxDiameter}mm`}
+                    {dart.barrel.length && ` / ${dart.barrel.length}mm`}
                   </Typography>
                 </Box>
               </Paper>

@@ -23,6 +23,8 @@ export interface User {
     email: string;   // AES-256-GCM encrypted
     password: string; // AES-256-GCM encrypted
   } | null;
+  dartsHistory: string;
+  homeShop: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -116,6 +118,7 @@ export interface BarrelProduct {
   imageUrl: string | null;
   productUrl: string;
   source: 'dartshive';
+  isDiscontinued?: boolean;
   scrapedAt: Timestamp;
 }
 
