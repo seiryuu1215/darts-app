@@ -1,110 +1,86 @@
 'use client';
 
-import { Box, Typography, Chip, Skeleton } from '@mui/material';
+import { Box, Typography, Chip } from '@mui/material';
 import type { BarrelProduct } from '@/types';
-import { useProcessedBarrelImage } from './useProcessedBarrelImage';
-import { getProxyImageUrl } from '@/lib/image-proxy';
 
 interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
 }
 
-const TINT_COLORS: [number, number, number][] = [
-  [25, 118, 210], // #1976d2 blue
-  [220, 0, 78], // #dc004e red
-];
 const HEX_COLORS = ['#1976d2', '#dc004e'];
-const TARGET_PX_PER_MM = 8;
+const BORDER_COLORS = ['rgba(25,118,210,0.5)', 'rgba(220,0,78,0.5)'];
+const PX_PER_MM = 8;
 
-/** Single barrel image — background removed, scaled to mm, tinted */
-function BarrelOverlayImage({
+/**
+ * Pure CSS barrel comparison — no proxy or Canvas needed.
+ * Each barrel image is loaded directly from the source (browser handles CORS for <img>).
+ * Scaled by spec-based length so both are at the same mm→px ratio.
+ */
+function BarrelImage({
   barrel,
   index,
+  yOffset,
 }: {
   barrel: BarrelProduct;
   index: number;
+  yOffset: number;
 }) {
-  const tint = TINT_COLORS[index % TINT_COLORS.length];
-  const { image, loading } = useProcessedBarrelImage(barrel, tint);
-
   const len = barrel.length ?? 45;
-  const dia = barrel.maxDiameter ?? 7;
+  const displayWidth = len * PX_PER_MM;
+  const color = HEX_COLORS[index % HEX_COLORS.length];
+  const borderColor = BORDER_COLORS[index % BORDER_COLORS.length];
 
-  if (loading) {
-    return (
-      <Skeleton
-        variant="rectangular"
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: len * TARGET_PX_PER_MM,
-          height: dia * TARGET_PX_PER_MM,
-          borderRadius: 1,
-        }}
-      />
-    );
-  }
-
-  // Fallback: if processing failed, show original image with CSS tint
-  if (!image) {
-    if (!barrel.imageUrl) return null;
-    const color = HEX_COLORS[index % HEX_COLORS.length];
-    const fallbackWidth = len * TARGET_PX_PER_MM;
-    const fallbackHeight = (dia / len) * fallbackWidth * 3;
+  if (!barrel.imageUrl) {
     return (
       <Box
         sx={{
           position: 'absolute',
           left: '50%',
-          top: '50%',
+          top: `calc(50% + ${yOffset}px)`,
           transform: 'translate(-50%, -50%)',
-          width: fallbackWidth,
-          height: fallbackHeight,
-          overflow: 'hidden',
+          width: displayWidth,
+          height: 40,
+          border: `2px dashed ${color}`,
           borderRadius: 1,
-          border: `2px solid ${color}`,
-          opacity: 0.7,
-          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: 0.5,
         }}
       >
-        <Box
-          component="img"
-          src={getProxyImageUrl(barrel.imageUrl)}
-          alt={`${barrel.brand} ${barrel.name}`}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-          }}
-        />
+        <Typography variant="caption" color="text.secondary">
+          画像なし
+        </Typography>
       </Box>
     );
   }
 
-  // Scale image so barrel.length maps to the target px/mm
-  const pxPerMm = image.widthPx / len;
-  const displayScale = TARGET_PX_PER_MM / pxPerMm;
-  const displayWidth = image.widthPx * displayScale;
-  const displayHeight = image.heightPx * displayScale;
-
   return (
     <Box
-      component="img"
-      src={image.dataUrl}
-      alt={`${barrel.brand} ${barrel.name}`}
       sx={{
         position: 'absolute',
         left: '50%',
-        top: '50%',
+        top: `calc(50% + ${yOffset}px)`,
         transform: 'translate(-50%, -50%)',
         width: displayWidth,
-        height: displayHeight,
-        opacity: 0.75,
+        opacity: 0.8,
+        border: `2px solid ${borderColor}`,
+        borderRadius: '4px',
+        overflow: 'hidden',
         pointerEvents: 'none',
       }}
-    />
+    >
+      <Box
+        component="img"
+        src={barrel.imageUrl}
+        alt={`${barrel.brand} ${barrel.name}`}
+        sx={{
+          display: 'block',
+          width: '100%',
+          height: 'auto',
+        }}
+      />
+    </Box>
   );
 }
 
@@ -120,13 +96,14 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
   }
 
   const maxLen = Math.max(...barrels.map((b) => b.length ?? 45));
-  const maxDia = Math.max(...barrels.map((b) => b.maxDiameter ?? 7));
-  const containerWidth = maxLen * TARGET_PX_PER_MM + 60;
-  const containerHeight = Math.max(120, maxDia * TARGET_PX_PER_MM * 3 + 40);
+  const containerWidth = maxLen * PX_PER_MM + 80;
+  // Stack vertically with slight offset for comparison
+  const containerHeight = barrels.length === 1 ? 160 : 240;
+  const offsets = barrels.length === 1 ? [0] : [-30, 30];
 
   return (
     <Box>
-      {/* Legend chips */}
+      {/* Legend */}
       <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
         {barrels.map((b, i) => (
           <Chip
@@ -142,7 +119,7 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
         ))}
       </Box>
 
-      {/* Overlay comparison area */}
+      {/* Comparison area */}
       <Box
         sx={{
           position: 'relative',
@@ -157,7 +134,7 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
           bgcolor: 'background.paper',
         }}
       >
-        {/* Center axis guide line */}
+        {/* Center guide line */}
         <Box
           sx={{
             position: 'absolute',
@@ -166,15 +143,16 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
             top: '50%',
             borderTop: '1px dashed',
             borderColor: 'divider',
-            opacity: 0.4,
+            opacity: 0.3,
           }}
         />
 
         {barrels.map((barrel, i) => (
-          <BarrelOverlayImage
+          <BarrelImage
             key={barrel.id ?? i}
             barrel={barrel}
             index={i}
+            yOffset={offsets[i] ?? 0}
           />
         ))}
       </Box>
