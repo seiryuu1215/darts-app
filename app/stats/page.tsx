@@ -48,6 +48,7 @@ import {
   Bar,
   ReferenceLine,
   ComposedChart,
+  Cell,
 } from 'recharts';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
@@ -147,7 +148,9 @@ export default function StatsPage() {
         if (json.data) {
           setDlData(json.data);
           if (json.data.recentGames?.games?.length > 0) {
-            setGameChartCategory(json.data.recentGames.games[0].category);
+            const games = json.data.recentGames.games;
+            const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
+            setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
           }
         }
       } catch { /* ignore */ }
@@ -189,7 +192,9 @@ export default function StatsPage() {
       setDlData(json.data);
       setDlOpen(false);
       if (json.data.recentGames?.games?.length > 0) {
-        setGameChartCategory(json.data.recentGames.games[0].category);
+        const games = json.data.recentGames.games;
+        const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
+        setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
       }
     } catch { setDlError('通信エラーが発生しました'); } finally { setDlLoading(false); }
   };
@@ -214,6 +219,10 @@ export default function StatsPage() {
     if (cat.includes('COUNT')) return COLOR_COUNTUP;
     return COLOR_01;
   };
+
+  // カウントアップ期待値 = 01平均スタッツ(PPR) × 8ラウンド
+  const expectedCountUp = c?.stats01Avg != null ? Math.round(c.stats01Avg * 8) : null;
+  const isCountUpCategory = gameChartCategory.includes('COUNT');
 
   return (
     <Container maxWidth="md">
@@ -311,6 +320,11 @@ export default function StatsPage() {
                   {c.statsPraAvg?.toFixed(0) ?? '--'}
                 </Typography>
                 <DiffLabel current={c.statsPraAvg} prev={prev?.statsPraAvg} fixed={0} />
+                {expectedCountUp != null && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    期待値: {expectedCountUp}
+                  </Typography>
+                )}
               </Paper>
             </Box>
 
@@ -400,8 +414,27 @@ export default function StatsPage() {
                       <YAxis domain={['auto', 'auto']} fontSize={11} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="score" name="スコア" fill={getGameColor(gameChartCategory)} opacity={0.7} />
+                      <Bar dataKey="score" name="スコア" opacity={0.7}>
+                        {gameChartData.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={
+                              isCountUpCategory && expectedCountUp != null
+                                ? entry.score >= expectedCountUp ? '#4caf50' : '#f44336'
+                                : getGameColor(gameChartCategory)
+                            }
+                          />
+                        ))}
+                      </Bar>
                       <Line type="monotone" dataKey="avg" name="累計平均" stroke="#fff" strokeWidth={2} dot={false} />
+                      {isCountUpCategory && expectedCountUp != null && (
+                        <ReferenceLine
+                          y={expectedCountUp}
+                          stroke="#ff9800"
+                          strokeDasharray="6 3"
+                          label={{ value: `期待値 ${expectedCountUp}`, position: 'right', fill: '#ff9800', fontSize: 11 }}
+                        />
+                      )}
                       {selectedGame && (
                         <ReferenceLine
                           y={selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length}
@@ -417,17 +450,23 @@ export default function StatsPage() {
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
                     {selectedGame.scores.map((s, i) => {
                       const avg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
+                      // COUNT-UP系は01期待値で判定、それ以外はゲーム内平均で判定
+                      const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : avg;
+                      const isGood = s >= threshold;
+                      const chipColor = isCountUpCategory && expectedCountUp != null
+                        ? (isGood ? '#4caf50' : '#f44336')
+                        : getGameColor(gameChartCategory);
                       return (
                         <Chip
                           key={i}
                           label={gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT') ? s.toFixed(2) : s}
                           size="small"
-                          variant={s >= avg ? 'filled' : 'outlined'}
+                          variant={isGood ? 'filled' : 'outlined'}
                           sx={{
-                            bgcolor: s >= avg ? `${getGameColor(gameChartCategory)}22` : undefined,
-                            borderColor: getGameColor(gameChartCategory),
-                            color: s >= avg ? getGameColor(gameChartCategory) : 'text.secondary',
-                            fontWeight: s >= avg * 1.1 ? 'bold' : 'normal',
+                            bgcolor: isGood ? `${chipColor}22` : undefined,
+                            borderColor: chipColor,
+                            color: isGood ? chipColor : 'text.secondary',
+                            fontWeight: isGood ? 'bold' : 'normal',
                           }}
                         />
                       );
