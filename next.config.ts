@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/dartslive-stats': ['./node_modules/@sparticuz/chromium/bin/**'],
   },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.dartshive.jp' },
+      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+    ],
+  },
 };
 
 export default withSerwist(nextConfig);

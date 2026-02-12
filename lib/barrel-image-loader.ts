@@ -1,5 +1,7 @@
+import { fetchImageWithFallback } from './image-proxy';
+
 /**
- * Load an image from a URL via the proxy API and return its pixel data.
+ * Load an image from a URL via proxy and return its pixel data.
  * Resizes to maxWidth for performance.
  */
 export async function loadImageAsCanvas(
@@ -7,11 +9,8 @@ export async function loadImageAsCanvas(
   maxWidth = 800,
 ): Promise<ImageData | null> {
   try {
-    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-    const res = await fetch(proxyUrl);
-    if (!res.ok) return null;
-
-    const blob = await res.blob();
+    const blob = await fetchImageWithFallback(imageUrl);
+    if (!blob) return null;
 
     // Use createImageBitmap (widely supported in modern browsers)
     const bitmap = await createImageBitmap(blob);

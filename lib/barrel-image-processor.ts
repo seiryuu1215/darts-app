@@ -108,11 +108,9 @@ export async function processBarrelImage(
   tintStrength = 0.3,
 ): Promise<ProcessedBarrelImage | null> {
   try {
-    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-    const res = await fetch(proxyUrl);
-    if (!res.ok) return null;
-
-    const blob = await res.blob();
+    const { fetchImageWithFallback } = await import('./image-proxy');
+    const blob = await fetchImageWithFallback(imageUrl);
+    if (!blob) return null;
     const bitmap = await createImageBitmap(blob);
 
     const maxWidth = 800;

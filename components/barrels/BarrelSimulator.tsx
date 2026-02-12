@@ -3,6 +3,7 @@
 import { Box, Typography, Chip, Skeleton } from '@mui/material';
 import type { BarrelProduct } from '@/types';
 import { useProcessedBarrelImage } from './useProcessedBarrelImage';
+import { getProxyImageUrl } from '@/lib/image-proxy';
 
 interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
@@ -70,7 +71,7 @@ function BarrelOverlayImage({
       >
         <Box
           component="img"
-          src={`/api/proxy-image?url=${encodeURIComponent(barrel.imageUrl)}`}
+          src={getProxyImageUrl(barrel.imageUrl)}
           alt={`${barrel.brand} ${barrel.name}`}
           sx={{
             width: '100%',

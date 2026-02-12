@@ -200,14 +200,16 @@ export default function DartForm({ initialData, dartId, isDraft, draftBarrelImag
   // ドラフトモード: バレル画像を自動取得
   useEffect(() => {
     if (draftBarrelImageUrl && newImages.length === 0 && imageUrls.length === 0) {
-      fetch(`/api/proxy-image?url=${encodeURIComponent(draftBarrelImageUrl)}`)
-        .then((res) => res.blob())
-        .then((blob) => {
+      (async () => {
+        try {
+          const { fetchImageWithFallback } = await import('@/lib/image-proxy');
+          const blob = await fetchImageWithFallback(draftBarrelImageUrl);
+          if (!blob) return;
           const fileName = draftBarrelImageUrl.split('/').pop() || 'barrel.jpg';
           const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
           setNewImages([file]);
-        })
-        .catch(() => {});
+        } catch { /* ignore */ }
+      })();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftBarrelImageUrl]);
@@ -256,12 +258,13 @@ export default function DartForm({ initialData, dartId, isDraft, draftBarrelImag
 
     if (result.imageUrl && imageUrls.length + newImages.length < 3) {
       try {
-        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(result.imageUrl)}`;
-        const res = await fetch(proxyUrl);
-        const blob = await res.blob();
-        const fileName = result.imageUrl.split('/').pop() || 'barrel.jpg';
-        const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-        setNewImages((prev) => [file, ...prev]);
+        const { fetchImageWithFallback } = await import('@/lib/image-proxy');
+        const blob = await fetchImageWithFallback(result.imageUrl);
+        if (blob) {
+          const fileName = result.imageUrl.split('/').pop() || 'barrel.jpg';
+          const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+          setNewImages((prev) => [file, ...prev]);
+        }
       } catch {
         // 画像取得失敗は無視
       }
