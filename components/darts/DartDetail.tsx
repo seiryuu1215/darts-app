@@ -291,7 +291,11 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box
+          component={Link}
+          href={`/users/${dart.userId}`}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.8 } }}
+        >
           <UserAvatar userId={dart.userId} avatarUrl={dart.userAvatarUrl} userName={dart.userName} size={36} />
           <Typography variant="subtitle1">{dart.userName || '匿名'}</Typography>
         </Box>

@@ -55,6 +55,8 @@ import {
 } from 'recharts';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
+import { getRatingTarget } from '@/lib/dartslive-rating';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
 function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | undefined; prev: number | null | undefined; fixed?: number }) {
   if (current == null || prev == null) return null;
@@ -364,6 +366,57 @@ export default function StatsPage() {
                 )}
               </Paper>
             </Box>
+
+            {/* === 次のレーティング目標 === */}
+            {c.stats01Avg != null && c.statsCriAvg != null && (() => {
+              const target = getRatingTarget(c.stats01Avg, c.statsCriAvg);
+              return (
+                <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+                    <ArrowUpwardIcon sx={{ fontSize: 18, color: flightColor }} />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                      次の目標: Rt.{target.nextRating.toFixed(1)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                      現在 01 Fl.{target.current01Flight} + Cri Fl.{target.currentCriFlgiht}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    {target.ppdGap !== null && target.ppdGap > 0 && (
+                      <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_01 + '44' }}>
+                        <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>
+                          01を上げる場合
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                          PPD {target.next01Ppd?.toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          あと +{target.ppdGap.toFixed(2)} 必要
+                        </Typography>
+                      </Paper>
+                    )}
+                    {target.mprGap !== null && target.mprGap > 0 && (
+                      <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_CRICKET + '44' }}>
+                        <Typography variant="caption" sx={{ color: COLOR_CRICKET, fontWeight: 'bold' }}>
+                          Cricketを上げる場合
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                          MPR {target.nextCriMpr?.toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          あと +{target.mprGap.toFixed(2)} 必要
+                        </Typography>
+                      </Paper>
+                    )}
+                  </Box>
+                  {(target.ppdGap === null || target.ppdGap <= 0) && (target.mprGap === null || target.mprGap <= 0) && (
+                    <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 1 }}>
+                      両方のフライトが最大レベルです
+                    </Typography>
+                  )}
+                </Paper>
+              );
+            })()}
 
             {/* === 使用中ソフトダーツ === */}
             {activeSoftDart && (

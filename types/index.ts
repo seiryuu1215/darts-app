@@ -12,6 +12,8 @@ export interface User {
   throwingImage: string;
   dominantEye: 'right' | 'left' | null;
   gripType: string;
+  twitterHandle: string | null;
+  isProfilePublic: boolean;
   role: UserRole;
   activeSoftDartId?: string | null;
   activeSteelDartId?: string | null;

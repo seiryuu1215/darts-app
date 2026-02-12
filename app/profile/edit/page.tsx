@@ -13,6 +13,9 @@ import {
   Alert,
   CircularProgress,
   IconButton,
+  FormControlLabel,
+  Switch,
+  InputAdornment,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -31,6 +34,8 @@ export default function ProfileEditPage() {
   const [throwingImage, setThrowingImage] = useState('');
   const [dominantEye, setDominantEye] = useState('');
   const [gripType, setGripType] = useState('');
+  const [twitterHandle, setTwitterHandle] = useState('');
+  const [isProfilePublic, setIsProfilePublic] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +59,8 @@ export default function ProfileEditPage() {
             setThrowingImage(data.throwingImage || '');
             setDominantEye(data.dominantEye || '');
             setGripType(data.gripType || '');
+            setTwitterHandle(data.twitterHandle || '');
+            setIsProfilePublic(data.isProfilePublic !== false);
           }
         } catch (err) {
           console.error('プロフィール取得エラー:', err);
@@ -101,6 +108,8 @@ export default function ProfileEditPage() {
         throwingImage,
         dominantEye: dominantEye || null,
         gripType,
+        twitterHandle: twitterHandle || null,
+        isProfilePublic,
         updatedAt: serverTimestamp(),
       });
       setSuccess('プロフィールを更新しました');
@@ -203,7 +212,32 @@ export default function ProfileEditPage() {
           onChange={(e) => setGripType(e.target.value)}
           fullWidth
           placeholder="例：3フィンガー、ペンシルグリップ等"
-          sx={{ mb: 3 }}
+          sx={{ mb: 2 }}
+        />
+
+        <TextField
+          label="X (Twitter) アカウント"
+          value={twitterHandle}
+          onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ''))}
+          fullWidth
+          placeholder="username"
+          slotProps={{
+            input: {
+              startAdornment: <InputAdornment position="start">@</InputAdornment>,
+            },
+          }}
+          sx={{ mb: 2 }}
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isProfilePublic}
+              onChange={(e) => setIsProfilePublic(e.target.checked)}
+            />
+          }
+          label="プロフィールを公開する"
+          sx={{ mb: 3, display: 'block' }}
         />
 
         <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">
