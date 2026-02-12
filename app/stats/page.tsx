@@ -34,6 +34,13 @@ import {
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import Avatar from '@mui/material/Avatar';
+import LinearProgress from '@mui/material/LinearProgress';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import StarIcon from '@mui/icons-material/Star';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
@@ -74,9 +81,36 @@ function DiffLabel({ current, prev, fixed = 2 }: { current: number | null | unde
 }
 
 // === Types ===
+interface StatsHistorySummary {
+  avgRating: number | null;
+  avgPpd: number | null;
+  avgMpr: number | null;
+  avgCondition: number | null;
+  totalGames: number;
+  playDays: number;
+  ratingChange: number | null;
+  bestRating: number | null;
+  bestPpd: number | null;
+  bestMpr: number | null;
+  streak: number;
+}
+
+interface StatsHistoryRecord {
+  id: string;
+  date: string;
+  rating: number | null;
+  ppd: number | null;
+  mpr: number | null;
+  gamesPlayed: number;
+  condition: number | null;
+  memo: string;
+}
+
 interface DartsliveData {
   current: {
     cardName: string;
+    toorina: string;
+    cardImageUrl: string;
     rating: number | null;
     ratingInt: number | null;
     flight: string;
@@ -119,8 +153,10 @@ const MONTHLY_CONFIG_BASE: Record<MonthlyTab, { label: string; color: string }> 
 };
 
 const AWARD_ORDER = [
-  'LOW TON', 'HIGH TON', 'HAT TRICK', 'TON 80', '3 IN A BED',
-  '3 - BLACK', 'WHITE HRS', '9 COUNT', '8 COUNT', '7 COUNT', '6 COUNT', '5 COUNT',
+  'D-BULL', 'S-BULL',
+  'LOW TON', 'HIGH TON', 'HAT TRICK', 'TON 80',
+  '3 IN A BED', '3 - BLACK', 'WHITE HRS',
+  '9 COUNT', '8 COUNT', '7 COUNT', '6 COUNT', '5 COUNT',
 ];
 
 export default function StatsPage() {
@@ -149,6 +185,10 @@ export default function StatsPage() {
   const [gameChartCategory, setGameChartCategory] = useState<string>('');
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
   const [dlUpdatedAt, setDlUpdatedAt] = useState<string | null>(null);
+  const [periodTab, setPeriodTab] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [periodSummary, setPeriodSummary] = useState<StatsHistorySummary | null>(null);
+  const [periodRecords, setPeriodRecords] = useState<StatsHistoryRecord[]>([]);
+  const [periodLoading, setPeriodLoading] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -213,6 +253,24 @@ export default function StatsPage() {
 
     fetchActiveDart();
   }, [session, canDartslive]);
+
+  // 期間別スタッツ取得
+  useEffect(() => {
+    if (!session?.user?.id || !canDartslive) return;
+    const fetchPeriodStats = async () => {
+      setPeriodLoading(true);
+      try {
+        const res = await fetch(`/api/stats-history?period=${periodTab}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        setPeriodSummary(json.summary ?? null);
+        setPeriodRecords(json.records ?? []);
+      } catch { /* ignore */ } finally {
+        setPeriodLoading(false);
+      }
+    };
+    fetchPeriodStats();
+  }, [session, canDartslive, periodTab]);
 
   const handleFetch = async () => {
     if (!dlEmail || !dlPassword) {
@@ -370,10 +428,51 @@ export default function StatsPage() {
                 border: `1px solid ${flightColor}44`,
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              {/* プロフィール行 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                {c.cardImageUrl ? (
+                  <Avatar src={c.cardImageUrl} alt={c.cardName} sx={{ width: 48, height: 48 }} />
+                ) : (
+                  <Avatar sx={{ width: 48, height: 48, bgcolor: flightColor, fontSize: '1.2rem', fontWeight: 'bold' }}>
+                    {c.cardName?.charAt(0) || 'D'}
+                  </Avatar>
+                )}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }} noWrap>
+                    {c.cardName}
+                  </Typography>
+                  {c.toorina && (
+                    <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      {c.toorina}
+                    </Typography>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                  <Chip
+                    label={`FLIGHT ${c.flight}`}
+                    sx={{
+                      bgcolor: flightColor,
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      fontSize: '0.9rem',
+                      height: 32,
+                    }}
+                  />
+                  {periodSummary && periodSummary.streak > 0 && periodTab === 'all' && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                      <WhatshotIcon sx={{ fontSize: 16, color: '#ff6d00' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#ff6d00' }}>
+                        {periodSummary.streak}日連続
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              {/* レーティング */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">{c.cardName}</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                     <Typography variant="h3" sx={{ fontWeight: 'bold', color: flightColor, lineHeight: 1 }}>
                       {c.rating?.toFixed(2) ?? '--'}
                     </Typography>
@@ -381,17 +480,174 @@ export default function StatsPage() {
                   </Box>
                   <Typography variant="caption" color="text.secondary">RATING</Typography>
                 </Box>
-                <Chip
-                  label={`FLIGHT ${c.flight}`}
-                  sx={{
-                    bgcolor: flightColor,
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    fontSize: '0.9rem',
-                    height: 32,
-                  }}
-                />
               </Box>
+
+              {/* レーティング進捗バー */}
+              {c.rating != null && (() => {
+                const currentRt = c.rating!;
+                const floorRt = Math.floor(currentRt);
+                const nextRt = floorRt + 1;
+                const progress = (currentRt - floorRt) * 100;
+                return (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
+                      <Typography variant="caption" color="text.secondary">Rt.{floorRt}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 'bold', color: flightColor }}>
+                        {progress.toFixed(0)}%
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Rt.{nextRt}</Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={progress}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                        bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                        '& .MuiLinearProgress-bar': { bgcolor: flightColor, borderRadius: 3 },
+                      }}
+                    />
+                  </Box>
+                );
+              })()}
+            </Paper>
+
+            {/* === 期間別スタッツ === */}
+            <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+              <Tabs
+                value={periodTab}
+                onChange={(_, v) => setPeriodTab(v)}
+                variant="fullWidth"
+                sx={{ minHeight: 36, mb: 1.5, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem' } }}
+              >
+                <Tab label="今日" value="today" />
+                <Tab label="今週" value="week" />
+                <Tab label="今月" value="month" />
+                <Tab label="累計" value="all" />
+              </Tabs>
+
+              {periodLoading ? (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : periodSummary && (periodRecords.length > 0 || periodTab === 'all') ? (
+                <>
+                  {/* サマリー */}
+                  <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                    <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">Avg Rt</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                        {periodSummary.avgRating?.toFixed(2) ?? '--'}
+                      </Typography>
+                      {periodSummary.ratingChange != null && (
+                        <Typography variant="caption" sx={{ color: periodSummary.ratingChange >= 0 ? '#4caf50' : '#f44336', fontWeight: 'bold' }}>
+                          {periodSummary.ratingChange >= 0 ? '+' : ''}{periodSummary.ratingChange.toFixed(2)}
+                        </Typography>
+                      )}
+                    </Paper>
+                    <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">Avg PPD</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                        {periodSummary.avgPpd?.toFixed(2) ?? '--'}
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">Avg MPR</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                        {periodSummary.avgMpr?.toFixed(2) ?? '--'}
+                      </Typography>
+                    </Paper>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                    <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">ゲーム数</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{periodSummary.totalGames}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">プレイ日数</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{periodSummary.playDays}</Typography>
+                    </Paper>
+                    {periodSummary.avgCondition != null && (
+                      <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary">コンディション</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3 }}>
+                          <StarIcon sx={{ fontSize: 16, color: '#ffc107' }} />
+                          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                            {periodSummary.avgCondition.toFixed(1)}
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    )}
+                  </Box>
+
+                  {/* 自己ベスト（累計のみ） */}
+                  {periodTab === 'all' && (periodSummary.bestRating != null || periodSummary.bestPpd != null || periodSummary.bestMpr != null) && (
+                    <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                        <EmojiEventsIcon sx={{ fontSize: 18, color: '#ffc107' }} />
+                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>自己ベスト（記録内）</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 2 }}>
+                        {periodSummary.bestRating != null && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Rating</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{periodSummary.bestRating.toFixed(2)}</Typography>
+                          </Box>
+                        )}
+                        {periodSummary.bestPpd != null && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">PPD</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{periodSummary.bestPpd.toFixed(2)}</Typography>
+                          </Box>
+                        )}
+                        {periodSummary.bestMpr != null && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">MPR</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{periodSummary.bestMpr.toFixed(2)}</Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  )}
+
+                  {/* レコード一覧 */}
+                  {periodRecords.length > 0 && (
+                    <TableContainer sx={{ maxHeight: 300 }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>日付</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>Rt</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>PPD</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>MPR</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>調子</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {periodRecords.slice().reverse().map((r) => (
+                            <TableRow key={r.id}>
+                              <TableCell sx={{ fontSize: '0.75rem' }}>
+                                {r.date ? new Date(r.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : '--'}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.75rem' }}>{r.rating?.toFixed(2) ?? '--'}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.75rem' }}>{r.ppd?.toFixed(2) ?? '--'}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.75rem' }}>{r.mpr?.toFixed(2) ?? '--'}</TableCell>
+                              <TableCell align="center" sx={{ fontSize: '0.75rem' }}>
+                                {r.condition ? `${'★'.repeat(r.condition)}` : '--'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                  この期間のデータはありません
+                </Typography>
+              )}
             </Paper>
 
             {/* === 3カテゴリ Stats Cards === */}
@@ -403,6 +659,11 @@ export default function StatsPage() {
                   {c.stats01Avg?.toFixed(2) ?? '--'}
                 </Typography>
                 <DiffLabel current={c.stats01Avg} prev={prev?.stats01Avg} />
+                {c.stats01Best != null && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    BEST: {c.stats01Best.toFixed(2)}
+                  </Typography>
+                )}
               </Paper>
               {/* Cricket */}
               <Paper sx={{ flex: 1, p: 1.5, borderRadius: 2, borderTop: `3px solid ${COLOR_CRICKET}` }}>
@@ -411,6 +672,11 @@ export default function StatsPage() {
                   {c.statsCriAvg?.toFixed(2) ?? '--'}
                 </Typography>
                 <DiffLabel current={c.statsCriAvg} prev={prev?.statsCriAvg} />
+                {c.statsCriBest != null && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    BEST: {c.statsCriBest.toFixed(2)}
+                  </Typography>
+                )}
               </Paper>
               {/* COUNT-UP */}
               <Paper sx={{ flex: 1, p: 1.5, borderRadius: 2, borderTop: `3px solid ${COLOR_COUNTUP}` }}>
@@ -419,6 +685,11 @@ export default function StatsPage() {
                   {c.statsPraAvg?.toFixed(0) ?? '--'}
                 </Typography>
                 <DiffLabel current={c.statsPraAvg} prev={prev?.statsPraAvg} fixed={0} />
+                {c.statsPraBest != null && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    BEST: {c.statsPraBest.toFixed(0)}
+                  </Typography>
+                )}
                 {expectedCountUp != null && (
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
                     期待値: {expectedCountUp}
@@ -775,22 +1046,6 @@ export default function StatsPage() {
                           <TableCell align="right" sx={{ fontWeight: 'bold' }}>{c.awards[key].total.toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
-                      {c.awards['D-BULL'] && (
-                        <>
-                          <TableRow>
-                            <TableCell>D-BULL</TableCell>
-                            <TableCell align="right">{c.awards['D-BULL'].monthly.toLocaleString()}</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>{c.awards['D-BULL'].total.toLocaleString()}</TableCell>
-                          </TableRow>
-                          {c.awards['S-BULL'] && (
-                            <TableRow>
-                              <TableCell>S-BULL</TableCell>
-                              <TableCell align="right">{c.awards['S-BULL'].monthly.toLocaleString()}</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 'bold' }}>{c.awards['S-BULL'].total.toLocaleString()}</TableCell>
-                            </TableRow>
-                          )}
-                        </>
-                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>

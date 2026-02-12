@@ -24,6 +24,29 @@ async function login(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppetee
   }
 }
 
+/** top.jsp からプレイヤープロフィール（通り名・カードアイコン）を取得 */
+async function scrapeProfile(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
+  await page.goto('https://card.dartslive.com/t/top.jsp', {
+    waitUntil: 'networkidle2',
+    timeout: 15000,
+  });
+
+  return page.evaluate(() => {
+    // 通り名（プレイヤータイトル/ニックネーム）
+    const toorina =
+      document.querySelector('.toorina, .player-nickname, [class*="title"]')?.textContent?.trim() || '';
+    // カードアイコン/テーマ画像
+    const iconEl = document.querySelector('.card-icon img, .player-icon img, [class*="icon"] img');
+    const rawUrl = iconEl?.getAttribute('src') || '';
+    const cardImageUrl = rawUrl.startsWith('http')
+      ? rawUrl
+      : rawUrl
+        ? `https://card.dartslive.com${rawUrl}`
+        : '';
+    return { toorina, cardImageUrl };
+  });
+}
+
 /** play/index.jsp から現在スタッツ + Awards を取得 */
 async function scrapeCurrentStats(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
   await page.goto('https://card.dartslive.com/t/play/index.jsp', {
@@ -249,6 +272,8 @@ export async function GET() {
       data: {
         current: {
           cardName: data?.cardName || '',
+          toorina: data?.toorina || '',
+          cardImageUrl: data?.cardImageUrl || '',
           rating: data?.rating ?? null,
           ratingInt: data?.ratingInt ?? null,
           flight: data?.flight || '',
@@ -323,6 +348,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 順次取得（同一ページインスタンスなので）
+    const profile = await scrapeProfile(page);
     const currentStats = await scrapeCurrentStats(page);
     const monthly = await scrapeMonthlyData(page);
     const recentGames = await scrapeRecentGames(page);
@@ -333,7 +359,7 @@ export async function POST(request: NextRequest) {
     const prevData = prevDoc.exists ? prevDoc.data() : null;
 
     const responseData = {
-      current: currentStats,
+      current: { ...currentStats, toorina: profile.toorina, cardImageUrl: profile.cardImageUrl },
       monthly,
       recentGames,
       prev: prevData ? {
@@ -351,6 +377,8 @@ export async function POST(request: NextRequest) {
       ratingInt: currentStats.ratingInt,
       flight: currentStats.flight,
       cardName: currentStats.cardName,
+      toorina: profile.toorina,
+      cardImageUrl: profile.cardImageUrl,
       stats01Avg: currentStats.stats01Avg,
       statsCriAvg: currentStats.statsCriAvg,
       statsPraAvg: currentStats.statsPraAvg,
