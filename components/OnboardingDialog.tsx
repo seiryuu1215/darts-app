@@ -79,8 +79,8 @@ export default function OnboardingDialog({ open, userId, onClose }: OnboardingDi
       fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
-        <Typography variant="h5" fontWeight="bold">
+      <DialogTitle component="div" sx={{ textAlign: 'center', pt: 3 }}>
+        <Typography variant="h5" component="h2" fontWeight="bold">
           Darts Lab へようこそ
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
