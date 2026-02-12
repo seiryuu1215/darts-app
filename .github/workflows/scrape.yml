@@ -1,0 +1,57 @@
+name: Scrape Barrels & Ranking
+
+on:
+  schedule:
+    # 毎日 3:00 JST (18:00 UTC)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Firebase認証情報をファイルに書き出し
+      - name: Setup Firebase credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > /tmp/firebase-sa.json
+
+      # visited.json を復元して差分スクレイピング
+      - name: Restore scraping state
+        uses: actions/cache@v4
+        with:
+          path: |
+            visited.json
+            progress.txt
+          key: scrape-state-${{ github.run_id }}
+          restore-keys: |
+            scrape-state-
+
+      # ランキング取得 (ステートレス、20件全置換)
+      - name: Scrape ranking
+        run: npx tsx scripts/scrape-ranking.ts
+        env:
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-sa.json
+
+      # バレル差分取得
+      - name: Scrape barrels (differential)
+        run: npx tsx scripts/scrape-barrels2.ts
+        timeout-minutes: 20
+        env:
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-sa.json
+
+      # 認証情報を削除
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/firebase-sa.json
