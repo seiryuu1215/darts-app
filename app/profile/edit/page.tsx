@@ -16,8 +16,13 @@ import {
   FormControlLabel,
   Switch,
   InputAdornment,
+  Divider,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import LinkIcon from '@mui/icons-material/Link';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -36,6 +41,16 @@ export default function ProfileEditPage() {
   const [gripType, setGripType] = useState('');
   const [twitterHandle, setTwitterHandle] = useState('');
   const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [lineUserId, setLineUserId] = useState<string | null>(null);
+  const [lineNotifyEnabled, setLineNotifyEnabled] = useState(false);
+  const [hasDlCredentials, setHasDlCredentials] = useState(false);
+  const [linkCode, setLinkCode] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [unlinkLoading, setUnlinkLoading] = useState(false);
+  const [dlEmail, setDlEmail] = useState('');
+  const [dlPassword, setDlPassword] = useState('');
+  const [dlSaving, setDlSaving] = useState(false);
+  const [dlDeleting, setDlDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -61,6 +76,9 @@ export default function ProfileEditPage() {
             setGripType(data.gripType || '');
             setTwitterHandle(data.twitterHandle || '');
             setIsProfilePublic(data.isProfilePublic !== false);
+            setLineUserId(data.lineUserId || null);
+            setLineNotifyEnabled(data.lineNotifyEnabled || false);
+            setHasDlCredentials(!!data.dlCredentialsEncrypted);
           }
         } catch (err) {
           console.error('プロフィール取得エラー:', err);
@@ -243,6 +261,185 @@ export default function ProfileEditPage() {
         <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">
           {saving ? '保存中...' : '保存'}
         </Button>
+
+        {/* LINE連携セクション */}
+        <Divider sx={{ my: 4 }} />
+        <Typography variant="h6" sx={{ mb: 2 }}>LINE連携</Typography>
+
+        {!lineUserId ? (
+          <>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              LINE Botと連携すると、毎朝DARTSLIVEのスタッツを自動チェックしてLINEに通知します。
+            </Alert>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                1. 下のボタンで連携コードを発行{'\n'}
+                2. LINE Bot「Darts Lab」を友だち追加{'\n'}
+                3. Botに6桁のコードを送信
+              </Typography>
+            </Box>
+            {linkCode ? (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                連携コード: <strong>{linkCode}</strong>（10分間有効）
+                <br />
+                LINE Botにこのコードを送信してください。
+              </Alert>
+            ) : (
+              <Button
+                variant="outlined"
+                startIcon={linkLoading ? <CircularProgress size={18} /> : <LinkIcon />}
+                disabled={linkLoading}
+                onClick={async () => {
+                  setLinkLoading(true);
+                  try {
+                    const res = await fetch('/api/line/link', { method: 'POST' });
+                    const json = await res.json();
+                    if (res.ok) setLinkCode(json.code);
+                    else setError(json.error || 'コード発行に失敗しました');
+                  } catch { setError('通信エラー'); }
+                  finally { setLinkLoading(false); }
+                }}
+              >
+                連携コードを発行
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 2 }}>
+              LINE連携済み
+            </Alert>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={lineNotifyEnabled}
+                  onChange={async (e) => {
+                    const enabled = e.target.checked;
+                    setLineNotifyEnabled(enabled);
+                    if (session?.user?.id) {
+                      await updateDoc(doc(db, 'users', session.user.id), {
+                        lineNotifyEnabled: enabled,
+                        updatedAt: serverTimestamp(),
+                      });
+                    }
+                  }}
+                />
+              }
+              label="LINE通知を有効にする"
+              sx={{ mb: 2, display: 'block' }}
+            />
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={unlinkLoading ? <CircularProgress size={18} /> : <LinkOffIcon />}
+              disabled={unlinkLoading}
+              onClick={async () => {
+                if (!confirm('LINE連携を解除しますか？DARTSLIVE自動チェック設定も削除されます。')) return;
+                setUnlinkLoading(true);
+                try {
+                  const res = await fetch('/api/line/unlink', { method: 'POST' });
+                  if (res.ok) {
+                    setLineUserId(null);
+                    setLineNotifyEnabled(false);
+                    setHasDlCredentials(false);
+                    setSuccess('LINE連携を解除しました');
+                  } else {
+                    setError('連携解除に失敗しました');
+                  }
+                } catch { setError('通信エラー'); }
+                finally { setUnlinkLoading(false); }
+              }}
+            >
+              連携解除
+            </Button>
+
+            {/* DARTSLIVE自動チェック設定 */}
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" sx={{ mb: 2 }}>DARTSLIVE自動チェック設定</Typography>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              毎朝10時にDARTSLIVEをチェックし、プレイがあればLINEに通知します。
+            </Alert>
+
+            {hasDlCredentials ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Alert severity="success" sx={{ flex: 1 }} icon={<CheckCircleIcon />}>
+                  DARTSLIVE認証情報 設定済み
+                </Alert>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={dlDeleting ? <CircularProgress size={18} /> : <DeleteIcon />}
+                  disabled={dlDeleting}
+                  onClick={async () => {
+                    if (!confirm('DARTSLIVE認証情報を削除しますか？')) return;
+                    setDlDeleting(true);
+                    try {
+                      const res = await fetch('/api/line/save-dl-credentials', { method: 'DELETE' });
+                      if (res.ok) {
+                        setHasDlCredentials(false);
+                        setSuccess('認証情報を削除しました');
+                      } else setError('削除に失敗しました');
+                    } catch { setError('通信エラー'); }
+                    finally { setDlDeleting(false); }
+                  }}
+                >
+                  削除
+                </Button>
+              </Box>
+            ) : (
+              <>
+                <TextField
+                  label="DARTSLIVEメールアドレス"
+                  type="email"
+                  value={dlEmail}
+                  onChange={(e) => setDlEmail(e.target.value)}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  label="DARTSLIVEパスワード"
+                  type="password"
+                  value={dlPassword}
+                  onChange={(e) => setDlPassword(e.target.value)}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  認証情報はAES-256-GCMで暗号化してサーバーに保存されます。連携解除時に完全に削除されます。
+                </Typography>
+                <Button
+                  variant="contained"
+                  disabled={dlSaving || !dlEmail || !dlPassword}
+                  startIcon={dlSaving ? <CircularProgress size={18} /> : undefined}
+                  onClick={async () => {
+                    setDlSaving(true);
+                    try {
+                      const res = await fetch('/api/line/save-dl-credentials', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: dlEmail, password: dlPassword }),
+                      });
+                      if (res.ok) {
+                        setHasDlCredentials(true);
+                        setDlEmail('');
+                        setDlPassword('');
+                        setSuccess('DARTSLIVE認証情報を保存しました');
+                      } else {
+                        const json = await res.json();
+                        setError(json.error || '保存に失敗しました');
+                      }
+                    } catch { setError('通信エラー'); }
+                    finally { setDlSaving(false); }
+                  }}
+                >
+                  {dlSaving ? '保存中...' : '保存'}
+                </Button>
+              </>
+            )}
+          </>
+        )}
       </Box>
     </Container>
   );

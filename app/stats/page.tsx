@@ -805,7 +805,7 @@ export default function StatsPage() {
           <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: '12px !important' }}>
             <Box>
               <Typography variant="body2">調子やメモを記録</Typography>
-              <Typography variant="caption" color="text.secondary">手動でスタッツを記録・管理</Typography>
+              <Typography variant="caption" color="text.secondary">手動でスタッツを記録・管理（LINE Botからも記録できます）</Typography>
             </Box>
             <Button variant="outlined" size="small" onClick={() => router.push('/stats/new')}>手動記録</Button>
           </CardContent>

@@ -17,6 +17,12 @@ export interface User {
   role: UserRole;
   activeSoftDartId?: string | null;
   activeSteelDartId?: string | null;
+  lineUserId?: string | null;
+  lineNotifyEnabled?: boolean;
+  dlCredentialsEncrypted?: {
+    email: string;   // AES-256-GCM encrypted
+    password: string; // AES-256-GCM encrypted
+  } | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
