@@ -20,6 +20,7 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HistoryIcon from '@mui/icons-material/History';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -239,7 +240,10 @@ export default function HomePage() {
 
       {session && (
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>使用中セッティング</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5">使用中セッティング</Typography>
+            <Button component={Link} href="/darts/history" size="small" startIcon={<HistoryIcon />}>履歴</Button>
+          </Box>
           <Grid container spacing={2}>
             {([
               { label: 'ソフト', dart: activeSoftDart, color: 'info' as const },

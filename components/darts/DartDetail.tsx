@@ -66,6 +66,9 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
   const [isActiveDart, setIsActiveDart] = useState(false);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [newMemoText, setNewMemoText] = useState('');
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyMemo, setHistoryMemo] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(false);
   const isOwner = session?.user?.id === dart.userId;
   const activeField = dart.tip.type === 'soft' ? 'activeSoftDartId' : 'activeSteelDartId';
 
@@ -157,10 +160,100 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
 
   const handleToggleActive = async () => {
     if (!session?.user?.id || !isOwner) return;
-    const userRef = doc(db, 'users', session.user.id);
-    const newValue = isActiveDart ? null : dartId;
-    await setDoc(userRef, { [activeField]: newValue }, { merge: true });
-    setIsActiveDart(!isActiveDart);
+    if (isActiveDart) {
+      // 使用中を解除 → 現在の履歴エントリを閉じる
+      const histRef = collection(db, 'users', session.user.id, 'settingHistory');
+      const q = query(histRef, orderBy('startedAt', 'desc'));
+      const snap = await getDocs(q);
+      const current = snap.docs.find(
+        (d) => d.data().dartId === dartId && d.data().endedAt === null
+      );
+      if (current) {
+        await updateDoc(doc(db, 'users', session.user.id, 'settingHistory', current.id), {
+          endedAt: serverTimestamp(),
+        });
+      }
+      await setDoc(doc(db, 'users', session.user.id), { [activeField]: null }, { merge: true });
+      setIsActiveDart(false);
+    } else {
+      // 使用中にする → ダイアログを開く
+      setHistoryMemo('');
+      setHistoryDialogOpen(true);
+    }
+  };
+
+  const handleConfirmActivate = async () => {
+    if (!session?.user?.id) return;
+    setHistoryLoading(true);
+    try {
+      const userId = session.user.id;
+      const userRef = doc(db, 'users', userId);
+      const histRef = collection(db, 'users', userId, 'settingHistory');
+
+      // 現在のアクティブダーツを取得
+      const userDoc = await getDoc(userRef);
+      const currentActiveId = userDoc.data()?.[activeField] as string | null;
+
+      let changeType: 'initial' | 'barrel' | 'minor' = 'initial';
+      const changedParts: string[] = [];
+      let prevDart: Dart | null = null;
+
+      if (currentActiveId) {
+        // 前のアクティブダーツの履歴を閉じる
+        const q = query(histRef, orderBy('startedAt', 'desc'));
+        const snap = await getDocs(q);
+        const currentEntry = snap.docs.find(
+          (d) => d.data().dartId === currentActiveId && d.data().endedAt === null
+        );
+        if (currentEntry) {
+          await updateDoc(doc(db, 'users', userId, 'settingHistory', currentEntry.id), {
+            endedAt: serverTimestamp(),
+          });
+        }
+
+        // 差分検出
+        const prevDartDoc = await getDoc(doc(db, 'darts', currentActiveId));
+        if (prevDartDoc.exists()) {
+          prevDart = prevDartDoc.data() as Dart;
+          if (prevDart.barrel.name !== dart.barrel.name || prevDart.barrel.brand !== dart.barrel.brand) {
+            changeType = 'barrel';
+            changedParts.push('バレル');
+          } else {
+            changeType = 'minor';
+          }
+          if (prevDart.tip.name !== dart.tip.name) changedParts.push('チップ');
+          if (prevDart.shaft.name !== dart.shaft.name) changedParts.push('シャフト');
+          if (prevDart.flight.name !== dart.flight.name) changedParts.push('フライト');
+        }
+      }
+
+      // 新しい履歴エントリ作成
+      await addDoc(histRef, {
+        dartId,
+        dartType: dart.tip.type,
+        dartTitle: dart.title,
+        barrel: dart.barrel,
+        tip: dart.tip,
+        shaft: dart.shaft,
+        flight: dart.flight,
+        imageUrl: dart.imageUrls[0] || null,
+        startedAt: serverTimestamp(),
+        endedAt: null,
+        changeType,
+        changedParts,
+        memo: historyMemo.trim(),
+        createdAt: serverTimestamp(),
+      });
+
+      // アクティブダーツを更新
+      await setDoc(userRef, { [activeField]: dartId }, { merge: true });
+      setIsActiveDart(true);
+      setHistoryDialogOpen(false);
+    } catch (err) {
+      console.error('履歴記録エラー:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const handleAddMemo = async () => {
@@ -445,6 +538,31 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>キャンセル</Button>
           <Button onClick={handleDelete} color="error">削除</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={historyDialogOpen} onClose={() => !historyLoading && setHistoryDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>セッティング変更を記録</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            「{dart.title}」を使用中にします。変更理由を記録できます（任意）。
+          </DialogContentText>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={2}
+            placeholder="変更理由（例: もう少し重めにしたかった）"
+            value={historyMemo}
+            onChange={(e) => setHistoryMemo(e.target.value)}
+            disabled={historyLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryDialogOpen(false)} disabled={historyLoading}>キャンセル</Button>
+          <Button onClick={handleConfirmActivate} variant="contained" disabled={historyLoading}>
+            {historyLoading ? '記録中...' : '確定'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

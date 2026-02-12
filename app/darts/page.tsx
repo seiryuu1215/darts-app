@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
+import HistoryIcon from '@mui/icons-material/History';
 
 export default function DartsListPage() {
   return (
@@ -101,14 +102,25 @@ function DartsListContent() {
       }}>
         <Typography variant="h4">{mineOnly ? 'マイセッティング' : 'みんなのセッティング'}</Typography>
         {session && (
-          <Button
-            variant="contained"
-            component={Link}
-            href="/darts/new"
-            startIcon={<AddIcon />}
-          >
-            新規登録
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              component={Link}
+              href="/darts/history"
+              startIcon={<HistoryIcon />}
+              size="small"
+            >
+              履歴
+            </Button>
+            <Button
+              variant="contained"
+              component={Link}
+              href="/darts/new"
+              startIcon={<AddIcon />}
+            >
+              新規登録
+            </Button>
+          </Box>
         )}
       </Box>
 

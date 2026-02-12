@@ -124,6 +124,24 @@ export interface Memo {
   updatedAt: Timestamp;
 }
 
+export interface SettingHistory {
+  id?: string;
+  dartId: string;
+  dartType: 'soft' | 'steel';
+  dartTitle: string;
+  barrel: Barrel;
+  tip: Tip;
+  shaft: Shaft;
+  flight: Flight;
+  imageUrl: string | null;
+  startedAt: Timestamp;
+  endedAt: Timestamp | null;
+  changeType: 'initial' | 'barrel' | 'minor';
+  changedParts: string[];
+  memo: string;
+  createdAt: Timestamp;
+}
+
 export interface DartsLiveStats {
   id?: string;
   date: Timestamp;
