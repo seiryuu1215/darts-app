@@ -1,8 +1,38 @@
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%7C%20Auth%20%7C%20Storage-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![MUI](https://img.shields.io/badge/MUI-v7-007FFF?logo=mui&logoColor=white)](https://mui.com/)
+[![Stripe](https://img.shields.io/badge/Stripe-Subscription-635BFF?logo=stripe&logoColor=white)](https://stripe.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)](https://vercel.com/)
+[![CI](https://github.com/seiryuu1215/darts-app/actions/workflows/ci.yml/badge.svg)](https://github.com/seiryuu1215/darts-app/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 # Darts Lab
+
+> **Darts setup management, stats tracking & barrel discovery platform for darts players.**
+>
+> Register your dart setups (barrel, shaft, flight, tip), auto-fetch DARTSLIVE stats with graph visualization, find your ideal barrel with a simulator & quiz, and purchase seamlessly via affiliate links.
+
+**Demo:** [https://darts-app-lime.vercel.app](https://darts-app-lime.vercel.app)
+
+---
 
 ダーツプレイヤー向けのセッティング管理・スタッツ記録・バレル探索 Web アプリケーション。
 
 自身のダーツセッティング（バレル・シャフト・フライト・チップ）を登録・共有し、DARTSLIVE のスタッツを自動取得してグラフで成長を可視化。バレルシミュレーターや診断クイズでぴったりのバレルを見つけ、アフィリエイト連携で購入までシームレスに繋げます。
+
+## Screenshots
+
+<!-- TODO: スクリーンショットを docs/screenshots/ に追加してパスを更新 -->
+
+| ホーム | バレル検索 | スタッツ |
+|:---:|:---:|:---:|
+| ![Home](docs/screenshots/home.png) | ![Barrels](docs/screenshots/barrels.png) | ![Stats](docs/screenshots/stats.png) |
+
+| セッティング登録 | バレルシミュレーター | 診断クイズ |
+|:---:|:---:|:---:|
+| ![Setup](docs/screenshots/setup.png) | ![Simulator](docs/screenshots/simulator.png) | ![Quiz](docs/screenshots/quiz.png) |
 
 ## 主な機能
 
@@ -74,8 +104,13 @@
 | 認証 | NextAuth.js 4 + Firebase Authentication |
 | データベース | Cloud Firestore |
 | ストレージ | Firebase Storage |
+| 決済 | Stripe (Subscription / Webhook) |
 | グラフ | Recharts 3 |
 | スクレイピング | Puppeteer 24 |
+| エラー監視 | Sentry |
+| テスト | Vitest (38 tests) |
+| フォーマッター | Prettier |
+| CI | GitHub Actions (lint / format / test / build) |
 | PWA | Serwist (Workbox ベース) |
 | ホスティング | Vercel |
 
@@ -99,6 +134,14 @@ graph TB
         ST["Storage"]
     end
 
+    subgraph Payments
+        Stripe["Stripe"]
+    end
+
+    subgraph Monitoring
+        Sentry["Sentry"]
+    end
+
     subgraph External
         DL["DARTSLIVE"]
     end
@@ -112,16 +155,20 @@ graph TB
     Client --> Vercel
     SF --> Firebase
     SF -->|Puppeteer| DL
+    SF -->|Webhook| Stripe
+    SF -->|Error tracking| Sentry
     App --> Firebase
     App -->|購入リンク| Affiliate
 ```
 
 - **サーバーレスアーキテクチャ**: Vercel + Firebase による完全マネージド構成
 - **JWT 認証**: NextAuth.js によるセッション管理、ロールベースアクセス制御（admin/pro/general）
+- **APIミドルウェア**: `lib/api-middleware.ts` による認証・権限・エラーハンドリングの共通化
 - **権限管理**: `lib/permissions.ts` による一元的なロール判定（セッティング上限・DARTSLIVE連携・記事投稿）
 - **独自レコメンドエンジン**: 重量(30点)・径(25点)・長さ(25点)・カット(15点)・ブランド(5点)の100点スコアリング
 - **SVGシミュレーター**: バレル寸法からベジエ曲線でシルエットを推定描画
 - **レーティング分析**: DARTSLIVE Rt計算式に基づく目標PPD/MPR算出・均等目標提案
+- **Stripe課金**: Checkout Session → Webhook → Firestore ロール更新のサーバーサイド完結フロー
 - **アフィリエイト基盤**: `lib/affiliate.ts` による環境変数ベースのURL変換
 - **PWA**: Serwist による Workbox ベースのキャッシュ戦略
 
@@ -136,7 +183,7 @@ graph TB
 ### インストール
 
 ```bash
-git clone https://github.com/<your-username>/darts-app.git
+git clone https://github.com/seiryuu1215/darts-app.git
 cd darts-app
 npm install
 ```
@@ -155,6 +202,9 @@ cp .env.example .env.local
 | `NEXTAUTH_SECRET` | NextAuth JWT 署名キー（`openssl rand -base64 32` で生成） |
 | `NEXTAUTH_URL` | アプリの URL（開発: `http://localhost:3000`） |
 | `ADMIN_EMAIL` | 管理者メールアドレス |
+| `STRIPE_SECRET_KEY` | Stripe シークレットキー |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook 署名シークレット |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe 公開キー |
 | `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID` | 楽天アフィリエイトID（任意） |
 | `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` | AmazonアソシエイトTag（任意） |
 | `NEXT_PUBLIC_A8_MEDIA_ID` | A8.net メディアID（任意） |
@@ -166,6 +216,13 @@ npm run dev
 ```
 
 `http://localhost:3000` でアプリが起動します。
+
+### テスト
+
+```bash
+npm run test        # 全テスト実行
+npm run test:watch  # ウォッチモード
+```
 
 ### ビルド
 
@@ -200,6 +257,7 @@ darts-app/
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
 ├── lib/                        # ビジネスロジック・ユーティリティ
+│   ├── api-middleware.ts       #   API認証・権限・エラーハンドリング共通化
 │   ├── permissions.ts          #   ロール別権限判定ユーティリティ
 │   ├── affiliate.ts            #   アフィリエイトURL変換
 │   ├── recommend-barrels.ts    #   レコメンドエンジン + クイズスコアリング
@@ -240,7 +298,9 @@ darts-app/
 - 画像プロキシはホワイトリスト方式（許可ドメインのみ中継）
 - DARTSLIVE 連携は PRO/admin ユーザーのみ利用可能
 - ロールベースのAPI保護（`lib/permissions.ts` による一元管理）
+- Stripe Webhook 署名検証 + イベント重複排除
+- セキュリティヘッダー（HSTS, X-Frame-Options, CSP 相当）
 
 ## ライセンス
 
-MIT
+[MIT](./LICENSE)
