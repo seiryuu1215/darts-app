@@ -169,7 +169,7 @@ export function scoreBarrel(barrel: BarrelProduct, pref: UserPreference): number
   return score;
 }
 
-function getBarrelType(name: string): 'soft' | 'steel' | '' {
+export function getBarrelType(name: string): 'soft' | 'steel' | '' {
   const n = name.toLowerCase();
   if (n.includes('steel') || n.includes('スティール')) return 'steel';
   if (n.includes('2ba') || n.includes('4ba')) return 'soft';

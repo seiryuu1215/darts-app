@@ -18,6 +18,10 @@ import {
   Paper,
   LinearProgress,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -26,7 +30,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import BarrelCard from '@/components/barrels/BarrelCard';
-import { recommendFromBarrelsWithAnalysis } from '@/lib/recommend-barrels';
+import { recommendFromBarrelsWithAnalysis, getBarrelType } from '@/lib/recommend-barrels';
 import type { BarrelAnalysis } from '@/lib/recommend-barrels';
 import type { BarrelProduct } from '@/types';
 
@@ -41,6 +45,7 @@ export default function RecommendPage() {
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [preferenceText, setPreferenceText] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('soft');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -77,9 +82,15 @@ export default function RecommendPage() {
   // ブックマーク優先 + 検索フィルター付きバレル一覧
   const displayBarrels = useMemo(() => {
     let filtered = allBarrels;
+    if (selectedType) {
+      filtered = filtered.filter((b) => {
+        const t = getBarrelType(b.name);
+        return t === selectedType || t === '';
+      });
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      filtered = allBarrels.filter(
+      filtered = filtered.filter(
         (b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q)
       );
     }
@@ -91,7 +102,7 @@ export default function RecommendPage() {
       if (!aBookmarked && bBookmarked) return 1;
       return 0;
     });
-  }, [allBarrels, bookmarkIds, searchQuery]);
+  }, [allBarrels, bookmarkIds, searchQuery, selectedType]);
 
   const bookmarkedCount = useMemo(() => {
     if (!searchQuery.trim()) return bookmarkIds.size;
@@ -114,7 +125,13 @@ export default function RecommendPage() {
     setSearching(true);
     try {
       const selectedBarrels = allBarrels.filter((b) => b.id && selectedIds.has(b.id));
-      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, 30, preferenceText || undefined);
+      const candidateBarrels = selectedType
+        ? allBarrels.filter((b) => {
+            const t = getBarrelType(b.name);
+            return t === selectedType || t === '';
+          })
+        : allBarrels;
+      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, candidateBarrels, 30, preferenceText || undefined);
       setResults(analyzed);
     } catch (err) {
       console.error('おすすめ検索エラー:', err);
@@ -147,6 +164,23 @@ export default function RecommendPage() {
               size="small"
             />
           </Box>
+
+          <FormControl size="small" sx={{ mb: 2, minWidth: 180 }}>
+            <InputLabel>タイプ</InputLabel>
+            <Select
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setSelectedIds(new Set());
+                setResults(null);
+              }}
+              label="タイプ"
+            >
+              <MenuItem value="">すべて</MenuItem>
+              <MenuItem value="soft">ソフト (2BA/4BA)</MenuItem>
+              <MenuItem value="steel">スティール</MenuItem>
+            </Select>
+          </FormControl>
 
           <TextField
             placeholder="バレル名、ブランドで検索..."
