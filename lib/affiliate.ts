@@ -20,6 +20,21 @@ export function toDartshiveAffiliateUrl(productUrl: string, config: AffiliateCon
   return `https://px.a8.net/svt/ejp?a8mat=${config.a8MediaId}&a8ejpredirect=${encoded}`;
 }
 
+export function toSdartsSearchUrl(barrelName: string): string {
+  const query = encodeURIComponent(barrelName);
+  return `https://www.s-darts.com/search?q=${query}`;
+}
+
+export function toMaximSearchUrl(barrelName: string): string {
+  const query = encodeURIComponent(barrelName);
+  return `https://www.and-maxim.com/search?q=${query}`;
+}
+
+export function toTitoSearchUrl(barrelName: string): string {
+  const query = encodeURIComponent(barrelName);
+  return `https://tito-online.com/?s=${query}&post_type=product`;
+}
+
 export function toRakutenSearchUrl(barrelName: string, config: AffiliateConfig): string {
   const query = encodeURIComponent(barrelName);
   if (!config.rakutenAffiliateId) {
@@ -45,6 +60,21 @@ export function getShopLinks(barrel: BarrelProduct, config?: AffiliateConfig): S
       shop: 'dartshive',
       label: 'ダーツハイブ',
       url: toDartshiveAffiliateUrl(barrel.productUrl, c),
+    },
+    {
+      shop: 'sdarts',
+      label: 'エスダーツ',
+      url: toSdartsSearchUrl(searchName),
+    },
+    {
+      shop: 'maxim',
+      label: 'MAXIM',
+      url: toMaximSearchUrl(searchName),
+    },
+    {
+      shop: 'tito',
+      label: 'TiTO Online',
+      url: toTitoSearchUrl(searchName),
     },
     {
       shop: 'rakuten',

@@ -85,10 +85,19 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
     >
       {barrel.isDiscontinued && (
         <Chip
-          label="廃盤"
+          label="販売終了の可能性"
           size="small"
-          color="error"
-          sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1, fontWeight: 'bold' }}
+          variant="outlined"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            zIndex: 1,
+            fontSize: 10,
+            height: 22,
+            bgcolor: 'background.paper',
+            opacity: 0.9,
+          }}
         />
       )}
       {barrel.imageUrl ? (

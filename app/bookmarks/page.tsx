@@ -106,13 +106,33 @@ export default function BookmarksPage() {
             ブックマークしたバレルはありません
           </Typography>
         ) : (
-          <Grid container spacing={2}>
-            {barrelBookmarks.map((barrel) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
-                <BarrelCard barrel={barrel} isBookmarked={true} />
-              </Grid>
-            ))}
-          </Grid>
+          <>
+            <Grid container spacing={2}>
+              {barrelBookmarks
+                .filter((b) => !b.isDiscontinued)
+                .map((barrel) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
+                    <BarrelCard barrel={barrel} isBookmarked={true} />
+                  </Grid>
+                ))}
+            </Grid>
+            {barrelBookmarks.some((b) => b.isDiscontinued) && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  販売終了の可能性があるバレル
+                </Typography>
+                <Grid container spacing={2}>
+                  {barrelBookmarks
+                    .filter((b) => b.isDiscontinued)
+                    .map((barrel) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
+                        <BarrelCard barrel={barrel} isBookmarked={true} />
+                      </Grid>
+                    ))}
+                </Grid>
+              </Box>
+            )}
+          </>
         )
       ) : dartBookmarks.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>

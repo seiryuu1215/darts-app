@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Grid, Typography, Link as MuiLink, Divider } from '@mui/material';
+import { Box, Container, Grid, Typography, Link as MuiLink, Divider, Chip } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import NextLink from 'next/link';
 import {
@@ -72,6 +72,7 @@ export default function Footer() {
     { label: 'シミュレーター', href: '/barrels/simulator' },
     { label: '診断クイズ', href: '/barrels/quiz' },
     { label: '記事', href: '/articles' },
+    { label: 'ディスカッション', href: '/discussions' },
   ];
 
   const shopLinks: FooterLink[] = [
@@ -80,7 +81,9 @@ export default function Footer() {
       href: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config),
       external: true,
     },
-    { label: 'S-DARTS', href: 'https://www.s-darts.com/', external: true },
+    { label: 'エスダーツ', href: 'https://www.s-darts.com/', external: true },
+    { label: 'MAXIM', href: 'https://www.and-maxim.com/', external: true },
+    { label: 'TiTO Online', href: 'https://tito-online.com/', external: true },
     { label: '楽天ダーツ', href: toRakutenSearchUrl('ダーツ バレル', config), external: true },
     { label: 'Amazon ダーツ', href: toAmazonSearchUrl('ダーツ バレル', config), external: true },
   ];
@@ -110,7 +113,35 @@ export default function Footer() {
             <FooterSection title="サービス" links={serviceLinks} />
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
-            <FooterSection title="ショップ" links={shopLinks} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                ショップ
+              </Typography>
+              <Chip label="PR" size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+            </Box>
+            <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+              {shopLinks.map((link) => (
+                <MuiLink
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                  color="text.secondary"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    fontSize: 14,
+                    transition: 'color 0.2s',
+                    '&:hover': { color: 'primary.main' },
+                  }}
+                >
+                  {link.label}
+                  <OpenInNewIcon sx={{ fontSize: 12 }} />
+                </MuiLink>
+              ))}
+            </Box>
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
             <FooterSection title="About" links={aboutLinks} />

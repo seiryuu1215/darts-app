@@ -34,7 +34,9 @@ import DartCard from '@/components/darts/DartCard';
 import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import ArticleCard from '@/components/articles/ArticleCard';
 import OnboardingDialog from '@/components/OnboardingDialog';
-import type { Dart, Article } from '@/types';
+import ForumIcon from '@mui/icons-material/Forum';
+import type { Dart, Article, Discussion } from '@/types';
+import { CATEGORY_LABELS } from '@/types';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -97,6 +99,12 @@ const featureCards: FeatureCard[] = [
     icon: <QuizIcon sx={{ fontSize: 40 }} />,
   },
   {
+    title: 'ディスカッション',
+    description: 'テーマ別掲示板で知見を共有',
+    href: '/discussions',
+    icon: <ForumIcon sx={{ fontSize: 40 }} />,
+  },
+  {
     title: 'セッティング比較',
     description: '自分のセッティングを並べて比較',
     href: '/darts/compare',
@@ -121,6 +129,7 @@ export default function HomePage() {
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
+  const [recentDiscussions, setRecentDiscussions] = useState<Discussion[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // ユーザーデータ統合取得（オンボーディング判定 + アクティブダーツ）
@@ -218,7 +227,23 @@ export default function HomePage() {
         setLoading(false);
       }
     };
+    const fetchDiscussions = async () => {
+      try {
+        const q = query(
+          collection(db, 'discussions'),
+          orderBy('lastRepliedAt', 'desc'),
+          limit(5),
+        );
+        const snap = await getDocs(q);
+        setRecentDiscussions(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion),
+        );
+      } catch {
+        /* ignore */
+      }
+    };
     fetchRecent();
+    fetchDiscussions();
   }, []);
 
   // おすすめ記事取得
@@ -504,6 +529,54 @@ export default function HomePage() {
               </Grid>
             ))}
           </Grid>
+        </Box>
+      )}
+
+      {/* 最新ディスカッション */}
+      {recentDiscussions.length > 0 && (
+        <Box sx={{ mb: 5 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ForumIcon color="primary" />
+              <Typography variant="h5">最新ディスカッション</Typography>
+            </Box>
+            <Button component={Link} href="/discussions" endIcon={<ArrowForwardIcon />}>
+              すべて見る
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {recentDiscussions.map((d) => (
+              <Card
+                key={d.id}
+                component={Link}
+                href={`/discussions/${d.id}`}
+                sx={{
+                  textDecoration: 'none',
+                  px: 2,
+                  py: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  '&:hover': { boxShadow: 4 },
+                }}
+              >
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="subtitle2" noWrap>
+                    {d.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {CATEGORY_LABELS[d.category]} · {d.userName} · 返信 {d.replyCount}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                  {d.lastRepliedAt?.toDate?.()?.toLocaleDateString('ja-JP') || ''}
+                </Typography>
+              </Card>
+            ))}
+          </Box>
         </Box>
       )}
 

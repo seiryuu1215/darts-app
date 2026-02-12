@@ -269,7 +269,7 @@ export interface DiscussionReply {
 }
 
 // Affiliate
-export type ShopType = 'dartshive' | 'rakuten' | 'amazon';
+export type ShopType = 'dartshive' | 'sdarts' | 'maxim' | 'tito' | 'rakuten' | 'amazon';
 
 export interface ShopLink {
   shop: ShopType;
