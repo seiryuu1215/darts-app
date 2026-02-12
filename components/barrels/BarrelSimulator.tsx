@@ -9,7 +9,7 @@ interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
 }
 
-const COLORS = ['#1976d2', '#dc004e', '#9e9e9e'];
+const COLORS = ['#1976d2', '#dc004e'];
 const SVG_WIDTH = 600;
 const SVG_HEIGHT = 200;
 const PADDING = 40;

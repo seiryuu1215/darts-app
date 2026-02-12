@@ -12,12 +12,72 @@ interface RawContour {
   imageHeight: number;
 }
 
+/** A detected barrel region in the image */
+interface BarrelRegion {
+  yStart: number;
+  yEnd: number;
+  height: number;
+}
+
+/**
+ * Scan rows to find individual barrel regions separated by background gaps.
+ * Product images from dartshive.jp typically show 3 barrels stacked vertically.
+ * Returns sorted regions by height (largest first).
+ */
+function detectBarrelRegions(
+  imageData: ImageData,
+  threshold: number,
+): BarrelRegion[] {
+  const { width, height, data } = imageData;
+  // For each row, count non-background pixels
+  const rowFill: boolean[] = [];
+  const minFill = width * 0.05; // at least 5% of row width must be filled
+
+  for (let y = 0; y < height; y++) {
+    let count = 0;
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const a = data[idx + 3];
+      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (brightness <= threshold && a >= 128) count++;
+    }
+    rowFill.push(count >= minFill);
+  }
+
+  // Find contiguous filled regions
+  const regions: BarrelRegion[] = [];
+  let inRegion = false;
+  let regionStart = 0;
+
+  for (let y = 0; y <= height; y++) {
+    const filled = y < height ? rowFill[y] : false;
+    if (filled && !inRegion) {
+      inRegion = true;
+      regionStart = y;
+    } else if (!filled && inRegion) {
+      inRegion = false;
+      const regionHeight = y - regionStart;
+      // Ignore tiny regions (noise) — must be at least 5% of image height
+      if (regionHeight >= height * 0.05) {
+        regions.push({ yStart: regionStart, yEnd: y - 1, height: regionHeight });
+      }
+    }
+  }
+
+  // Sort by height descending — largest region is most likely a clean barrel
+  regions.sort((a, b) => b.height - a.height);
+  return regions;
+}
+
 /**
  * Extract barrel outline from image pixel data.
+ * Detects individual barrels in the image and extracts the largest one.
  * Expects a white-background, horizontally-oriented barrel photo.
  *
- * Returns null if the image doesn't contain a recognizable barrel shape
- * (barrel width < 30% of image height).
+ * Returns null if the image doesn't contain a recognizable barrel shape.
  */
 export function extractContourFromImageData(
   imageData: ImageData,
@@ -26,14 +86,24 @@ export function extractContourFromImageData(
   const { width, height, data } = imageData;
   const threshold = options?.brightnessThreshold ?? 230;
 
+  // Step 1: Detect barrel regions (isolate one barrel from a 3-barrel photo)
+  const regions = detectBarrelRegions(imageData, threshold);
+  if (regions.length === 0) return null;
+
+  // Use the largest region (most pixels = clearest barrel)
+  const target = regions[0];
+  const yMin = target.yStart;
+  const yMax = target.yEnd;
+
+  // Step 2: For each column x, find the top-most and bottom-most non-background pixel
+  //         within the target region only
   const topEdge: number[] = [];
   const bottomEdge: number[] = [];
 
-  // For each column x, find the top-most and bottom-most non-background pixel
   for (let x = 0; x < width; x++) {
     let top = -1;
     let bottom = -1;
-    for (let y = 0; y < height; y++) {
+    for (let y = yMin; y <= yMax; y++) {
       const idx = (y * width + x) * 4;
       const r = data[idx];
       const g = data[idx + 1];
@@ -60,7 +130,7 @@ export function extractContourFromImageData(
   const trimmedTop = topEdge.slice(startX, endX + 1);
   const trimmedBottom = bottomEdge.slice(startX, endX + 1);
 
-  // Check barrel height vs image height (must be at least 30%)
+  // Check barrel height — must be reasonable
   let maxBarrelHeight = 0;
   for (let i = 0; i < trimmedTop.length; i++) {
     if (trimmedTop[i] !== -1) {
@@ -68,12 +138,11 @@ export function extractContourFromImageData(
       if (h > maxBarrelHeight) maxBarrelHeight = h;
     }
   }
-  if (maxBarrelHeight < height * 0.15) return null;
+  if (maxBarrelHeight < 3) return null;
 
   // Interpolate internal gaps (columns where detection failed)
   for (let i = 0; i < trimmedTop.length; i++) {
     if (trimmedTop[i] === -1) {
-      // Find prev and next valid
       let prev = i - 1;
       while (prev >= 0 && trimmedTop[prev] === -1) prev--;
       let next = i + 1;
@@ -112,6 +181,7 @@ export function extractContourFromImageData(
 
 /**
  * Normalize raw pixel contour to mm-based coordinate system.
+ * Uses known length and maxDiameter specs to accurately scale.
  * Downsamples to ~90 points per side.
  */
 export function normalizeContourToMm(
@@ -122,19 +192,20 @@ export function normalizeContourToMm(
   const barrelLengthPx = raw.topEdge.length;
   const pxPerMm = barrelLengthPx / lengthMm;
 
-  // Calculate center axis
+  // Calculate center axis per column
   const centerY: number[] = [];
   for (let i = 0; i < barrelLengthPx; i++) {
     centerY.push((raw.topEdge[i] + raw.bottomEdge[i]) / 2);
   }
 
-  // Find max pixel radius for scaling
+  // Find max pixel radius for diameter scaling
   let maxRadiusPx = 0;
   for (let i = 0; i < barrelLengthPx; i++) {
     const r = (raw.bottomEdge[i] - raw.topEdge[i]) / 2;
     if (r > maxRadiusPx) maxRadiusPx = r;
   }
 
+  // Scale factor: map max pixel radius to known maxDiameter/2
   const radiusScale = maxRadiusPx > 0 ? (maxDiaMm / 2) / maxRadiusPx : 1;
 
   // Downsample to ~90 points

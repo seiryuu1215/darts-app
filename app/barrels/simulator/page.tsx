@@ -35,7 +35,7 @@ import BarrelSimulator from '@/components/barrels/BarrelSimulator';
 import AffiliateButton from '@/components/affiliate/AffiliateButton';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
-const MAX_BARRELS = 3;
+const MAX_BARRELS = 2;
 
 export default function SimulatorPage() {
   return (
@@ -164,7 +164,7 @@ function SimulatorContent() {
                 <TableRow key={b.id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: ['#1976d2', '#dc004e', '#9e9e9e'][i] }} />
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: ['#1976d2', '#dc004e'][i] }} />
                       <Box>
                         <Typography variant="body2" fontWeight="bold">{b.name}</Typography>
                         <Typography variant="caption" color="text.secondary">{b.brand}</Typography>
