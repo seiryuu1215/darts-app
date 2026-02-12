@@ -138,25 +138,30 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 0.5,
           px: 1,
           pb: 1,
+          flexWrap: 'wrap',
         }}
       >
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <AffiliateButton barrel={barrel} size="small" />
-          {session && (
-            <Button size="small" startIcon={<BuildIcon />} onClick={handleDraft}>
-              セッティング
-            </Button>
-          )}
-        </Box>
+        <AffiliateButton barrel={barrel} size="small" />
+        {session && (
+          <Button
+            size="small"
+            startIcon={<BuildIcon />}
+            onClick={handleDraft}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            セッティング
+          </Button>
+        )}
         {session && (
           <IconButton
             size="small"
             onClick={handleBookmark}
             color={bookmarked ? 'primary' : 'default'}
             aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}
+            sx={{ ml: 'auto' }}
           >
             {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>

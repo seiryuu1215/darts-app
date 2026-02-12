@@ -30,6 +30,7 @@ export default function AffiliateButton({
         startIcon={<ShoppingCartIcon />}
         endIcon={<ArrowDropDownIcon />}
         onClick={(e) => setAnchorEl(e.currentTarget)}
+        sx={{ whiteSpace: 'nowrap' }}
       >
         購入する
       </Button>
