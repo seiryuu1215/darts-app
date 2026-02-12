@@ -375,43 +375,43 @@ export default function StatsPage() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
                     <ArrowUpwardIcon sx={{ fontSize: 18, color: flightColor }} />
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                      次の目標: Rt.{target.nextRating.toFixed(1)}
+                      次の目標: Rt.{target.nextRating}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-                      現在 01 Fl.{target.current01Flight} + Cri Fl.{target.currentCriFlgiht}
+                      01 Rt: {target.current01Rt.toFixed(2)} / Cri Rt: {target.currentCriRt.toFixed(2)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
-                    {target.ppdGap !== null && target.ppdGap > 0 && (
+                    {target.ppd01Only != null && target.ppdGap01Only != null && (
                       <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_01 + '44' }}>
                         <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>
-                          01を上げる場合
+                          01だけで上げる場合
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                          PPD {target.next01Ppd?.toFixed(2)}
+                          PPD {target.ppd01Only.toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          あと +{target.ppdGap.toFixed(2)} 必要
+                          あと +{target.ppdGap01Only.toFixed(2)} 必要
                         </Typography>
                       </Paper>
                     )}
-                    {target.mprGap !== null && target.mprGap > 0 && (
+                    {target.mprCriOnly != null && target.mprGapCriOnly != null && (
                       <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_CRICKET + '44' }}>
                         <Typography variant="caption" sx={{ color: COLOR_CRICKET, fontWeight: 'bold' }}>
-                          Cricketを上げる場合
+                          Cricketだけで上げる場合
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                          MPR {target.nextCriMpr?.toFixed(2)}
+                          MPR {target.mprCriOnly.toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          あと +{target.mprGap.toFixed(2)} 必要
+                          あと +{target.mprGapCriOnly.toFixed(2)} 必要
                         </Typography>
                       </Paper>
                     )}
                   </Box>
-                  {(target.ppdGap === null || target.ppdGap <= 0) && (target.mprGap === null || target.mprGap <= 0) && (
+                  {target.ppd01Only == null && target.mprCriOnly == null && (
                     <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 1 }}>
-                      両方のフライトが最大レベルです
+                      最大レーティングに到達しています
                     </Typography>
                   )}
                 </Paper>
