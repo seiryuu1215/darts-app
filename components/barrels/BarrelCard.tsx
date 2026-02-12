@@ -67,7 +67,7 @@ export default function BarrelCard({ barrel }: BarrelCardProps) {
   };
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
       {barrel.imageUrl ? (
         <CardMedia
           component="img"

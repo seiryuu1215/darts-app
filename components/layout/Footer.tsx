@@ -1,7 +1,6 @@
 'use client';
 
 import { Box, Container, Grid, Typography, Link as MuiLink, Divider } from '@mui/material';
-import XIcon from '@mui/icons-material/X';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import NextLink from 'next/link';
 import { toDartshiveAffiliateUrl, toRakutenSearchUrl, toAmazonSearchUrl, getAffiliateConfig } from '@/lib/affiliate';
@@ -28,7 +27,7 @@ function FooterSection({ title, links }: { title: string; links: FooterLink[] })
               rel="noopener noreferrer"
               underline="hover"
               color="text.secondary"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 14, '&:hover': { color: 'primary.main' } }}
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 14, transition: 'color 0.2s', '&:hover': { color: 'primary.main' } }}
             >
               {link.label}
               <OpenInNewIcon sx={{ fontSize: 12 }} />
@@ -40,7 +39,7 @@ function FooterSection({ title, links }: { title: string; links: FooterLink[] })
               href={link.href}
               underline="hover"
               color="text.secondary"
-              sx={{ fontSize: 14, '&:hover': { color: 'primary.main' } }}
+              sx={{ fontSize: 14, transition: 'color 0.2s', '&:hover': { color: 'primary.main' } }}
             >
               {link.label}
             </MuiLink>
@@ -70,14 +69,11 @@ export default function Footer() {
     { label: 'Amazon ダーツ', href: toAmazonSearchUrl('ダーツ バレル', config), external: true },
   ];
 
-  const communityLinks: FooterLink[] = [
-    { label: 'X (@seiryuu_darts)', href: 'https://x.com/seiryuu_darts', external: true },
-  ];
-
   const aboutLinks: FooterLink[] = [
     { label: 'このサイトについて', href: '/about' },
     { label: 'プライバシーポリシー', href: '/privacy' },
     { label: '利用規約', href: '/terms' },
+    { label: 'X (@seiryuu_darts)', href: 'https://x.com/seiryuu_darts', external: true },
   ];
 
   return (
@@ -94,35 +90,22 @@ export default function Footer() {
     >
       <Container maxWidth="lg">
         <Grid container spacing={4}>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <FooterSection title="サービス" links={serviceLinks} />
           </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <FooterSection title="ショップ" links={shopLinks} />
           </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <FooterSection title="コミュニティ" links={communityLinks} />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <FooterSection title="About" links={aboutLinks} />
           </Grid>
         </Grid>
 
         <Divider sx={{ my: 3 }} />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            &copy; {new Date().getFullYear()} Darts Lab
-          </Typography>
-          <MuiLink
-            href="https://x.com/seiryuu_darts"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, textDecoration: 'none', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
-          >
-            <XIcon sx={{ fontSize: 16 }} />
-          </MuiLink>
-        </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+          &copy; {new Date().getFullYear()} Darts Lab
+        </Typography>
       </Container>
     </Box>
   );

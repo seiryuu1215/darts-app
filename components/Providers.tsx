@@ -59,6 +59,22 @@ export default function Providers({ children }: { children: ReactNode }) {
       primary: { main: '#1976d2' },
       secondary: { main: '#dc004e' },
     },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+          },
+        },
+      },
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            transition: 'background-color 0.3s ease, color 0.3s ease',
+          },
+        },
+      },
+    },
   }), [mode]);
 
   return (

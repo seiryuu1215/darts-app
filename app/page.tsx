@@ -351,7 +351,7 @@ export default function HomePage() {
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
           <Grid size={{ xs: 6, sm: 6, md: 3 }} key={card.href}>
-            <Card sx={{ height: '100%' }}>
+            <Card sx={{ height: '100%', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
               <CardActionArea
                 component={Link}
                 href={card.href}

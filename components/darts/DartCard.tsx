@@ -21,7 +21,7 @@ export default function DartCard({ dart }: DartCardProps) {
     <Card
       component={Link}
       href={`/darts/${dart.id}`}
-      sx={{ textDecoration: 'none', height: '100%', display: 'flex', flexDirection: 'column' }}
+      sx={{ textDecoration: 'none', height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
     >
       {dart.imageUrls.length > 0 ? (
         <CardMedia

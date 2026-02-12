@@ -2,52 +2,89 @@ import type { BarrelContour } from '@/types';
 
 /** Raw pixel-level contour before normalization */
 interface RawContour {
-  /** Per-column top edge y-coordinate */
   topEdge: number[];
-  /** Per-column bottom edge y-coordinate */
   bottomEdge: number[];
-  /** Starting x offset in the source image */
   xOffset: number;
-  /** Image height used for extraction */
   imageHeight: number;
 }
 
-/** A detected barrel region in the image */
 interface BarrelRegion {
   yStart: number;
   yEnd: number;
   height: number;
+  centerY: number;
 }
 
 /**
- * Scan rows to find individual barrel regions separated by background gaps.
- * Product images from dartshive.jp typically show 3 barrels stacked vertically.
- * Returns sorted regions by height (largest first).
+ * Otsu's method: compute optimal brightness threshold from image histogram.
+ * Separates foreground (barrel) from background automatically.
+ */
+function computeOtsuThreshold(imageData: ImageData): number {
+  const { width, height, data } = imageData;
+  const histogram = new Array(256).fill(0);
+  const total = width * height;
+
+  for (let i = 0; i < total; i++) {
+    const idx = i * 4;
+    const brightness = Math.round(
+      0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2],
+    );
+    histogram[brightness]++;
+  }
+
+  let sumAll = 0;
+  for (let i = 0; i < 256; i++) sumAll += i * histogram[i];
+
+  let sumBg = 0;
+  let weightBg = 0;
+  let maxVariance = 0;
+  let bestThreshold = 200;
+
+  for (let t = 0; t < 256; t++) {
+    weightBg += histogram[t];
+    if (weightBg === 0) continue;
+    const weightFg = total - weightBg;
+    if (weightFg === 0) break;
+
+    sumBg += t * histogram[t];
+    const meanBg = sumBg / weightBg;
+    const meanFg = (sumAll - sumBg) / weightFg;
+    const variance = weightBg * weightFg * (meanBg - meanFg) ** 2;
+
+    if (variance > maxVariance) {
+      maxVariance = variance;
+      bestThreshold = t;
+    }
+  }
+
+  // For white-background barrel images, the threshold should be high.
+  // Clamp to reasonable range for barrel detection.
+  return Math.max(150, Math.min(240, bestThreshold));
+}
+
+/**
+ * Scan rows to detect individual barrel regions separated by background gaps.
+ * Returns regions sorted by proximity to image center (center-most first).
  */
 function detectBarrelRegions(
   imageData: ImageData,
   threshold: number,
 ): BarrelRegion[] {
   const { width, height, data } = imageData;
-  // For each row, count non-background pixels
+  const minFill = width * 0.05;
   const rowFill: boolean[] = [];
-  const minFill = width * 0.05; // at least 5% of row width must be filled
 
   for (let y = 0; y < height; y++) {
     let count = 0;
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      const a = data[idx + 3];
-      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-      if (brightness <= threshold && a >= 128) count++;
+      const brightness =
+        0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      if (brightness <= threshold && data[idx + 3] >= 128) count++;
     }
     rowFill.push(count >= minFill);
   }
 
-  // Find contiguous filled regions
   const regions: BarrelRegion[] = [];
   let inRegion = false;
   let regionStart = 0;
@@ -60,43 +97,42 @@ function detectBarrelRegions(
     } else if (!filled && inRegion) {
       inRegion = false;
       const regionHeight = y - regionStart;
-      // Ignore tiny regions (noise) — must be at least 5% of image height
       if (regionHeight >= height * 0.05) {
-        regions.push({ yStart: regionStart, yEnd: y - 1, height: regionHeight });
+        regions.push({
+          yStart: regionStart,
+          yEnd: y - 1,
+          height: regionHeight,
+          centerY: (regionStart + y - 1) / 2,
+        });
       }
     }
   }
 
-  // Sort by height descending — largest region is most likely a clean barrel
-  regions.sort((a, b) => b.height - a.height);
+  // Sort by proximity to image center (center-most barrel is best for extraction)
+  const imgCenter = height / 2;
+  regions.sort(
+    (a, b) => Math.abs(a.centerY - imgCenter) - Math.abs(b.centerY - imgCenter),
+  );
   return regions;
 }
 
 /**
  * Extract barrel outline from image pixel data.
- * Detects individual barrels in the image and extracts the largest one.
- * Expects a white-background, horizontally-oriented barrel photo.
- *
- * Returns null if the image doesn't contain a recognizable barrel shape.
+ * Uses Otsu's method for adaptive thresholding and selects the center-most barrel.
  */
 export function extractContourFromImageData(
   imageData: ImageData,
-  options?: { brightnessThreshold?: number },
 ): RawContour | null {
-  const { width, height, data } = imageData;
-  const threshold = options?.brightnessThreshold ?? 230;
+  const { width, data } = imageData;
 
-  // Step 1: Detect barrel regions (isolate one barrel from a 3-barrel photo)
+  const threshold = computeOtsuThreshold(imageData);
   const regions = detectBarrelRegions(imageData, threshold);
   if (regions.length === 0) return null;
 
-  // Use the largest region (most pixels = clearest barrel)
   const target = regions[0];
   const yMin = target.yStart;
   const yMax = target.yEnd;
 
-  // Step 2: For each column x, find the top-most and bottom-most non-background pixel
-  //         within the target region only
   const topEdge: number[] = [];
   const bottomEdge: number[] = [];
 
@@ -105,12 +141,9 @@ export function extractContourFromImageData(
     let bottom = -1;
     for (let y = yMin; y <= yMax; y++) {
       const idx = (y * width + x) * 4;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      const a = data[idx + 3];
-      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-      if (brightness <= threshold && a >= 128) {
+      const brightness =
+        0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      if (brightness <= threshold && data[idx + 3] >= 128) {
         if (top === -1) top = y;
         bottom = y;
       }
@@ -119,18 +152,17 @@ export function extractContourFromImageData(
     bottomEdge.push(bottom);
   }
 
-  // Trim empty columns from both ends
+  // Trim empty columns
   let startX = 0;
   let endX = width - 1;
   while (startX < width && topEdge[startX] === -1) startX++;
   while (endX > startX && topEdge[endX] === -1) endX--;
-
   if (startX >= endX) return null;
 
   const trimmedTop = topEdge.slice(startX, endX + 1);
   const trimmedBottom = bottomEdge.slice(startX, endX + 1);
 
-  // Check barrel height — must be reasonable
+  // Validate barrel height
   let maxBarrelHeight = 0;
   for (let i = 0; i < trimmedTop.length; i++) {
     if (trimmedTop[i] !== -1) {
@@ -140,7 +172,7 @@ export function extractContourFromImageData(
   }
   if (maxBarrelHeight < 3) return null;
 
-  // Interpolate internal gaps (columns where detection failed)
+  // Interpolate internal gaps
   for (let i = 0; i < trimmedTop.length; i++) {
     if (trimmedTop[i] === -1) {
       let prev = i - 1;
@@ -149,19 +181,27 @@ export function extractContourFromImageData(
       while (next < trimmedTop.length && trimmedTop[next] === -1) next++;
       if (prev >= 0 && next < trimmedTop.length) {
         const t = (i - prev) / (next - prev);
-        trimmedTop[i] = Math.round(trimmedTop[prev] + t * (trimmedTop[next] - trimmedTop[prev]));
-        trimmedBottom[i] = Math.round(trimmedBottom[prev] + t * (trimmedBottom[next] - trimmedBottom[prev]));
+        trimmedTop[i] = Math.round(
+          trimmedTop[prev] + t * (trimmedTop[next] - trimmedTop[prev]),
+        );
+        trimmedBottom[i] = Math.round(
+          trimmedBottom[prev] + t * (trimmedBottom[next] - trimmedBottom[prev]),
+        );
       }
     }
   }
 
-  // Smooth with moving average (window = 7)
-  const smooth = (arr: number[], window: number): number[] => {
-    const half = Math.floor(window / 2);
+  // Smooth with moving average (window = 5, reduced from 7 to preserve cut detail)
+  const smooth = (arr: number[], w: number): number[] => {
+    const half = Math.floor(w / 2);
     return arr.map((_, i) => {
       let sum = 0;
       let count = 0;
-      for (let j = Math.max(0, i - half); j <= Math.min(arr.length - 1, i + half); j++) {
+      for (
+        let j = Math.max(0, i - half);
+        j <= Math.min(arr.length - 1, i + half);
+        j++
+      ) {
         if (arr[j] !== -1) {
           sum += arr[j];
           count++;
@@ -172,17 +212,16 @@ export function extractContourFromImageData(
   };
 
   return {
-    topEdge: smooth(trimmedTop, 7),
-    bottomEdge: smooth(trimmedBottom, 7),
+    topEdge: smooth(trimmedTop, 5),
+    bottomEdge: smooth(trimmedBottom, 5),
     xOffset: startX,
-    imageHeight: height,
+    imageHeight: imageData.height,
   };
 }
 
 /**
  * Normalize raw pixel contour to mm-based coordinate system.
- * Uses known length and maxDiameter specs to accurately scale.
- * Downsamples to ~90 points per side.
+ * Uses known length and maxDiameter to accurately scale.
  */
 export function normalizeContourToMm(
   raw: RawContour,
@@ -192,23 +231,18 @@ export function normalizeContourToMm(
   const barrelLengthPx = raw.topEdge.length;
   const pxPerMm = barrelLengthPx / lengthMm;
 
-  // Calculate center axis per column
   const centerY: number[] = [];
   for (let i = 0; i < barrelLengthPx; i++) {
     centerY.push((raw.topEdge[i] + raw.bottomEdge[i]) / 2);
   }
 
-  // Find max pixel radius for diameter scaling
   let maxRadiusPx = 0;
   for (let i = 0; i < barrelLengthPx; i++) {
     const r = (raw.bottomEdge[i] - raw.topEdge[i]) / 2;
     if (r > maxRadiusPx) maxRadiusPx = r;
   }
 
-  // Scale factor: map max pixel radius to known maxDiameter/2
   const radiusScale = maxRadiusPx > 0 ? (maxDiaMm / 2) / maxRadiusPx : 1;
-
-  // Downsample to ~90 points
   const numPoints = Math.min(90, barrelLengthPx);
   const step = barrelLengthPx / numPoints;
 
@@ -239,19 +273,16 @@ export function contourToSvgPath(
   const { upperProfile, lowerProfile } = contour;
   if (upperProfile.length === 0) return '';
 
-  // Build upper edge points (left to right)
   const upperPoints = upperProfile.map(([xMm, rMm]) => ({
     x: xOffset + xMm * scale,
     y: yCenter - rMm * scale,
   }));
 
-  // Build lower edge points (right to left for closed path)
   const lowerPoints = [...lowerProfile].reverse().map(([xMm, rMm]) => ({
     x: xOffset + xMm * scale,
     y: yCenter + rMm * scale,
   }));
 
-  // Create smooth path using line segments (contour already smoothed)
   const allPoints = [...upperPoints, ...lowerPoints];
   if (allPoints.length < 2) return '';
 
