@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import {
   Container,
   Typography,
@@ -15,6 +15,9 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  ToggleButtonGroup,
+  ToggleButton,
+  CircularProgress,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -22,9 +25,10 @@ import { collection, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
 import { canWriteArticles, isAdmin } from '@/lib/permissions';
+import type { ArticleType } from '@/types';
 
 function toSlug(title: string): string {
   return title
@@ -36,18 +40,23 @@ function toSlug(title: string): string {
     .slice(0, 80);
 }
 
-export default function NewArticlePage() {
+function NewArticleContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const userRole = session?.user?.role;
 
+  const initialType = (searchParams.get('type') as ArticleType) || 'article';
+  const initialSlug = searchParams.get('slug') || '';
+
   const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [slugManual, setSlugManual] = useState(false);
+  const [slug, setSlug] = useState(initialSlug);
+  const [slugManual, setSlugManual] = useState(!!initialSlug);
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [articleType, setArticleType] = useState<ArticleType>(initialType);
   const [previewTab, setPreviewTab] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -108,13 +117,18 @@ export default function NewArticlePage() {
         tags,
         isDraft,
         isFeatured,
+        articleType,
         userId: session.user.id,
         userName: session.user.name || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      router.push(isDraft ? '/articles' : `/articles/${slug}`);
+      if (articleType === 'page') {
+        router.push(`/articles/${slug}/edit`);
+      } else {
+        router.push(isDraft ? '/articles' : `/articles/${slug}`);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -129,10 +143,27 @@ export default function NewArticlePage() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        新規記事
+        {articleType === 'page' ? '固定ページ作成' : '新規記事'}
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {isAdmin(userRole) && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            記事タイプ
+          </Typography>
+          <ToggleButtonGroup
+            value={articleType}
+            exclusive
+            onChange={(_, v) => { if (v) setArticleType(v); }}
+            size="small"
+          >
+            <ToggleButton value="article">記事</ToggleButton>
+            <ToggleButton value="page">固定ページ</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
 
       <TextField
         label="タイトル"
@@ -152,26 +183,28 @@ export default function NewArticlePage() {
         }}
         fullWidth
         required
-        helperText={`/articles/${slug || '...'}`}
+        helperText={articleType === 'page' ? `固定ページ: /${slug || '...'}` : `/articles/${slug || '...'}`}
         sx={{ mb: 2 }}
       />
 
-      <Autocomplete
-        multiple
-        freeSolo
-        options={['ダーツ', '技術', 'メンタル', 'セッティング', '練習', '大会', '初心者']}
-        value={tags}
-        onChange={(_, v) => setTags(v)}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
-          ))
-        }
-        renderInput={(params) => <TextField {...params} label="タグ" placeholder="タグを追加" />}
-        sx={{ mb: 2 }}
-      />
+      {articleType === 'article' && (
+        <Autocomplete
+          multiple
+          freeSolo
+          options={['ダーツ', '技術', 'メンタル', 'セッティング', '練習', '大会', '初心者']}
+          value={tags}
+          onChange={(_, v) => setTags(v)}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
+            ))
+          }
+          renderInput={(params) => <TextField {...params} label="タグ" placeholder="タグを追加" />}
+          sx={{ mb: 2 }}
+        />
+      )}
 
-      {isAdmin(userRole) && (
+      {isAdmin(userRole) && articleType === 'article' && (
         <FormControlLabel
           control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
           label="トップページにおすすめ表示"
@@ -179,34 +212,38 @@ export default function NewArticlePage() {
         />
       )}
 
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        カバー画像
-      </Typography>
-      {coverImage ? (
-        <Box sx={{ position: 'relative', mb: 2, display: 'inline-block' }}>
-          <img
-            src={URL.createObjectURL(coverImage)}
-            alt="カバー"
-            style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
-          />
-          <IconButton
-            size="small"
-            onClick={() => setCoverImage(null)}
-            sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ) : (
-        <Button
-          variant="outlined"
-          component="label"
-          startIcon={<CloudUploadIcon />}
-          sx={{ mb: 2 }}
-        >
-          画像を選択
-          <input type="file" hidden accept="image/*" onChange={handleCoverSelect} />
-        </Button>
+      {articleType === 'article' && (
+        <>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            カバー画像
+          </Typography>
+          {coverImage ? (
+            <Box sx={{ position: 'relative', mb: 2, display: 'inline-block' }}>
+              <img
+                src={URL.createObjectURL(coverImage)}
+                alt="カバー"
+                style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => setCoverImage(null)}
+                sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ) : (
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              sx={{ mb: 2 }}
+            >
+              画像を選択
+              <input type="file" hidden accept="image/*" onChange={handleCoverSelect} />
+            </Button>
+          )}
+        </>
       )}
 
       <Box sx={{ mb: 2 }}>
@@ -264,5 +301,13 @@ export default function NewArticlePage() {
         </Button>
       </Box>
     </Container>
+  );
+}
+
+export default function NewArticlePage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+      <NewArticleContent />
+    </Suspense>
   );
 }

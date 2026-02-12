@@ -228,6 +228,7 @@ export default function HomePage() {
         setFeaturedArticles(
           snapshot.docs
             .map((d) => ({ id: d.id, ...d.data() }) as Article)
+            .filter((a) => a.articleType !== 'page')
             .slice(0, 3)
         );
       } catch {

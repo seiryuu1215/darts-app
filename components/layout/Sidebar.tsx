@@ -65,7 +65,11 @@ export default function Sidebar({
         ),
       )
         .then((snap) => {
-          setArticles(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Article & { id: string }));
+          setArticles(
+            snap.docs
+              .map((d) => ({ id: d.id, ...d.data() }) as Article & { id: string })
+              .filter((a) => a.articleType !== 'page')
+          );
         })
         .catch(() => {});
     }

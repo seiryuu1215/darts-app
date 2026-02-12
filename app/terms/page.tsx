@@ -39,10 +39,22 @@ export default function TermsPage() {
         <Typography variant="body1" sx={{ mb: 2 }}>
           当サイトは、提供する情報の正確性・完全性を保証しません。
           外部ショップへのリンク先での取引については、当サイトは一切の責任を負いません。
-          DARTSLIVE スタッツの取得は外部サービスの仕様変更により利用できなくなる場合があります。
         </Typography>
 
-        <Typography variant="h6" gutterBottom>6. 規約の変更</Typography>
+        <Typography variant="h6" gutterBottom>6. DARTSLIVE連携に関する免責事項</Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          DARTSLIVE連携機能は、ユーザー自身のアカウント情報を用いてユーザーの指示のもとスタッツ情報を取得する機能です。
+          本機能の利用に際し、以下の点にご同意いただく必要があります。
+        </Typography>
+        <Typography component="ul" variant="body1" sx={{ mb: 2, pl: 2 }}>
+          <li>本機能はDARTSLIVE公式が提供するものではなく、当サイトが独自に実装したものです。</li>
+          <li>DARTSLIVEの仕様変更・メンテナンス等により、予告なく機能が利用できなくなる場合があります。</li>
+          <li>入力されたDARTSLIVEアカウント情報は、スタッツ取得の目的にのみ使用し、サーバーに永続保存しません。ブラウザへの保存はユーザーの任意選択によるものです。</li>
+          <li>本機能の利用により、DARTSLIVEアカウントに何らかの影響が生じた場合、当サイトは一切の責任を負いません。</li>
+          <li>取得頻度はサーバー負荷軽減のため制限される場合があります。</li>
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>7. 規約の変更</Typography>
         <Typography variant="body1">
           本規約は予告なく変更される場合があります。変更後の規約は、本ページに掲載した時点で効力を生じます。
         </Typography>

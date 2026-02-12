@@ -26,7 +26,7 @@ import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
-import type { Article } from '@/types';
+import type { Article, ArticleType } from '@/types';
 import { canEditArticle, isAdmin } from '@/lib/permissions';
 
 export default function EditArticlePage() {
@@ -44,6 +44,7 @@ export default function EditArticlePage() {
   const [newSlug, setNewSlug] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [articleType, setArticleType] = useState<ArticleType>('article');
   const [isFeatured, setIsFeatured] = useState(false);
   const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState<File | null>(null);
@@ -69,6 +70,7 @@ export default function EditArticlePage() {
           setNewSlug(data.slug);
           setContent(data.content);
           setTags(data.tags || []);
+          setArticleType(data.articleType || 'article');
           setIsFeatured(data.isFeatured || false);
           setExistingCoverUrl(data.coverImageUrl || null);
         }
@@ -146,10 +148,15 @@ export default function EditArticlePage() {
         tags,
         isDraft,
         isFeatured,
+        articleType,
         updatedAt: serverTimestamp(),
       });
 
-      router.push(isDraft ? '/articles' : `/articles/${newSlug}`);
+      if (articleType === 'page') {
+        router.push(`/articles/${newSlug}/edit`);
+      } else {
+        router.push(isDraft ? '/articles' : `/articles/${newSlug}`);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -168,7 +175,7 @@ export default function EditArticlePage() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        記事編集
+        {articleType === 'page' ? '固定ページ編集' : '記事編集'}
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -188,26 +195,28 @@ export default function EditArticlePage() {
         onChange={(e) => setNewSlug(e.target.value)}
         fullWidth
         required
-        helperText={`/articles/${newSlug || '...'}`}
+        helperText={articleType === 'page' ? `固定ページ: /${newSlug || '...'}` : `/articles/${newSlug || '...'}`}
         sx={{ mb: 2 }}
       />
 
-      <Autocomplete
-        multiple
-        freeSolo
-        options={['ダーツ', '技術', 'メンタル', 'セッティング', '練習', '大会', '初心者']}
-        value={tags}
-        onChange={(_, v) => setTags(v)}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
-          ))
-        }
-        renderInput={(params) => <TextField {...params} label="タグ" placeholder="タグを追加" />}
-        sx={{ mb: 2 }}
-      />
+      {articleType === 'article' && (
+        <Autocomplete
+          multiple
+          freeSolo
+          options={['ダーツ', '技術', 'メンタル', 'セッティング', '練習', '大会', '初心者']}
+          value={tags}
+          onChange={(_, v) => setTags(v)}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
+            ))
+          }
+          renderInput={(params) => <TextField {...params} label="タグ" placeholder="タグを追加" />}
+          sx={{ mb: 2 }}
+        />
+      )}
 
-      {isAdmin(userRole) && (
+      {isAdmin(userRole) && articleType === 'article' && (
         <FormControlLabel
           control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
           label="トップページにおすすめ表示"
@@ -215,37 +224,41 @@ export default function EditArticlePage() {
         />
       )}
 
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        カバー画像
-      </Typography>
-      {coverPreviewUrl ? (
-        <Box sx={{ position: 'relative', mb: 2, display: 'inline-block' }}>
-          <img
-            src={coverPreviewUrl}
-            alt="カバー"
-            style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
-          />
-          <IconButton
-            size="small"
-            onClick={() => {
-              setCoverImage(null);
-              setExistingCoverUrl(null);
-            }}
-            sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ) : (
-        <Button
-          variant="outlined"
-          component="label"
-          startIcon={<CloudUploadIcon />}
-          sx={{ mb: 2 }}
-        >
-          画像を選択
-          <input type="file" hidden accept="image/*" onChange={handleCoverSelect} />
-        </Button>
+      {articleType === 'article' && (
+        <>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            カバー画像
+          </Typography>
+          {coverPreviewUrl ? (
+            <Box sx={{ position: 'relative', mb: 2, display: 'inline-block' }}>
+              <img
+                src={coverPreviewUrl}
+                alt="カバー"
+                style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setCoverImage(null);
+                  setExistingCoverUrl(null);
+                }}
+                sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ) : (
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              sx={{ mb: 2 }}
+            >
+              画像を選択
+              <input type="file" hidden accept="image/*" onChange={handleCoverSelect} />
+            </Button>
+          )}
+        </>
       )}
 
       <Box sx={{ mb: 2 }}>

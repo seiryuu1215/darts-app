@@ -166,6 +166,8 @@ export interface DartsLiveStats {
   updatedAt: Timestamp;
 }
 
+export type ArticleType = 'article' | 'page';
+
 export interface Article {
   id?: string;
   slug: string;
@@ -175,6 +177,7 @@ export interface Article {
   tags: string[];
   isDraft: boolean;
   isFeatured?: boolean;
+  articleType?: ArticleType;
   userId: string;
   userName?: string;
   createdAt: Timestamp;

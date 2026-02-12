@@ -143,6 +143,7 @@ export default function StatsPage() {
   const [dlLoading, setDlLoading] = useState(false);
   const [dlError, setDlError] = useState('');
   const [dlSaveCredentials, setDlSaveCredentials] = useState(true);
+  const [dlConsent, setDlConsent] = useState(false);
   const [dlHasSaved, setDlHasSaved] = useState(false);
   const [monthlyTab, setMonthlyTab] = useState<MonthlyTab>('rating');
   const [gameChartCategory, setGameChartCategory] = useState<string>('');
@@ -155,7 +156,7 @@ export default function StatsPage() {
     }
   }, [status, router]);
 
-  // localStorageからDARTSLIVE認証情報を復元
+  // localStorageからDARTSLIVE認証情報・同意状態を復元
   useEffect(() => {
     try {
       const saved = localStorage.getItem('dartslive_credentials');
@@ -164,6 +165,9 @@ export default function StatsPage() {
         if (email) setDlEmail(email);
         if (password) setDlPassword(password);
         setDlHasSaved(true);
+      }
+      if (localStorage.getItem('dartslive_consent') === '1') {
+        setDlConsent(true);
       }
     } catch { /* ignore */ }
   }, []);
@@ -228,6 +232,8 @@ export default function StatsPage() {
       setDlData(json.data);
       setDlOpen(false);
       setDlUpdatedAt(new Date().toISOString());
+      // 同意状態を保存
+      localStorage.setItem('dartslive_consent', '1');
       // 認証情報をlocalStorageに保存/削除
       if (dlSaveCredentials) {
         localStorage.setItem('dartslive_credentials', JSON.stringify({ email: dlEmail, password: dlPassword }));
@@ -818,9 +824,14 @@ export default function StatsPage() {
           <TextField label="メールアドレス" type="email" value={dlEmail} onChange={(e) => setDlEmail(e.target.value)} fullWidth disabled={dlLoading} sx={{ mb: 2, mt: 1 }} />
           <TextField label="パスワード" type="password" value={dlPassword} onChange={(e) => setDlPassword(e.target.value)} fullWidth disabled={dlLoading} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetch(); } }} />
           <FormControlLabel
+            control={<Checkbox checked={dlConsent} onChange={(e) => setDlConsent(e.target.checked)} size="small" />}
+            label={<Typography variant="body2"><Link href="/terms" target="_blank" style={{ textDecoration: 'underline' }}>利用規約（第6条）</Link>に同意する</Typography>}
+            sx={{ mt: 1.5, display: 'block' }}
+          />
+          <FormControlLabel
             control={<Checkbox checked={dlSaveCredentials} onChange={(e) => setDlSaveCredentials(e.target.checked)} size="small" />}
             label="この端末に認証情報を保存する"
-            sx={{ mt: 1 }}
+            sx={{ mt: 0.5 }}
           />
           {dlHasSaved && (
             <Button
@@ -840,7 +851,7 @@ export default function StatsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDlOpen(false)} disabled={dlLoading}>キャンセル</Button>
-          <Button onClick={handleFetch} variant="contained" disabled={dlLoading} startIcon={dlLoading ? <CircularProgress size={18} /> : <SyncIcon />}>
+          <Button onClick={handleFetch} variant="contained" disabled={dlLoading || !dlConsent} startIcon={dlLoading ? <CircularProgress size={18} /> : <SyncIcon />}>
             {dlLoading ? '取得中...' : '取得'}
           </Button>
         </DialogActions>

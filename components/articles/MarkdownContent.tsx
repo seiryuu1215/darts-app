@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Typography, Link as MuiLink, Paper, Box, Table, TableHead, TableBody, TableRow, TableCell } from '@mui/material';
@@ -7,6 +8,25 @@ import type { Components } from 'react-markdown';
 
 interface MarkdownContentProps {
   content: string;
+}
+
+const TWEET_URL_RE = /^https?:\/\/(twitter\.com|x\.com)\/\w+\/status\/\d+/;
+
+function TweetEmbed({ url }: { url: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const w = window as unknown as { twttr?: { widgets?: { load?: (el?: HTMLElement) => void } } };
+    if (w.twttr?.widgets?.load) {
+      w.twttr.widgets.load(ref.current || undefined);
+    }
+  }, []);
+  return (
+    <Box ref={ref} sx={{ my: 2 }}>
+      <blockquote className="twitter-tweet" data-dnt="true">
+        <a href={url}>{url}</a>
+      </blockquote>
+    </Box>
+  );
 }
 
 const components: Components = {
@@ -25,16 +45,26 @@ const components: Components = {
       {children}
     </Typography>
   ),
-  p: ({ children }) => (
-    <Typography variant="body1" paragraph sx={{ lineHeight: 1.8 }}>
-      {children}
-    </Typography>
-  ),
-  a: ({ href, children }) => (
-    <MuiLink href={href} target="_blank" rel="noopener noreferrer">
-      {children}
-    </MuiLink>
-  ),
+  p: ({ children }) => {
+    // ツイートURLのみの段落を埋め込みに変換
+    if (isSingleTweetLink(children)) {
+      const url = extractTweetUrl(children);
+      if (url) return <TweetEmbed url={url} />;
+    }
+    return (
+      <Typography variant="body1" paragraph sx={{ lineHeight: 1.8 }}>
+        {children}
+      </Typography>
+    );
+  },
+  a: ({ href, children }) => {
+    // インラインのツイートリンクはそのまま表示
+    return (
+      <MuiLink href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </MuiLink>
+    );
+  },
   code: ({ className, children }) => {
     const isBlock = className?.startsWith('language-');
     if (isBlock) {
@@ -102,10 +132,43 @@ const components: Components = {
   ),
 };
 
+/** 子要素がツイートURLへの単一リンクかどうか判定 */
+function isSingleTweetLink(children: ReactNode): boolean {
+  if (!Array.isArray(children) || children.length !== 1) return false;
+  const child = children[0];
+  if (!child || typeof child !== 'object' || !('props' in child)) return false;
+  const href = child.props?.href;
+  return typeof href === 'string' && TWEET_URL_RE.test(href);
+}
+
+/** 子要素からツイートURLを抽出 */
+function extractTweetUrl(children: ReactNode): string | null {
+  if (!Array.isArray(children) || children.length !== 1) return null;
+  const child = children[0];
+  if (!child || typeof child !== 'object' || !('props' in child)) return null;
+  return child.props?.href ?? null;
+}
+
 export default function MarkdownContent({ content }: MarkdownContentProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Twitter widgets.js を1回だけ読み込み
+  useEffect(() => {
+    if (!content.match(TWEET_URL_RE)) return;
+    const w = window as unknown as { twttr?: unknown };
+    if (w.twttr) return;
+    const script = document.createElement('script');
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.async = true;
+    script.charset = 'utf-8';
+    document.head.appendChild(script);
+  }, [content]);
+
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {content}
-    </ReactMarkdown>
+    <div ref={containerRef}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }

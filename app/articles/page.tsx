@@ -35,6 +35,7 @@ export default function ArticlesPage() {
         const snapshot = await getDocs(q);
         const docs = snapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }) as Article)
+          .filter((a) => a.articleType !== 'page')
           .sort((a, b) => {
             const aTime = a.createdAt?.toMillis?.() ?? 0;
             const bTime = b.createdAt?.toMillis?.() ?? 0;
