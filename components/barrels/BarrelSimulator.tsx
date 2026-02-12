@@ -1,142 +1,79 @@
 'use client';
 
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, Chip, Skeleton } from '@mui/material';
 import type { BarrelProduct } from '@/types';
-import { contourToSvgPath } from '@/lib/barrel-contour';
-import { useBarrelContour } from './useBarrelContour';
+import { useProcessedBarrelImage } from './useProcessedBarrelImage';
 
 interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
 }
 
-const COLORS = ['#1976d2', '#dc004e'];
-const SVG_HEIGHT = 180;
-const PADDING = 40;
-const SCALE = 10; // 1mm = 10px — larger for cut detail visibility
+const TINT_COLORS: [number, number, number][] = [
+  [25, 118, 210], // #1976d2 blue
+  [220, 0, 78], // #dc004e red
+];
+const HEX_COLORS = ['#1976d2', '#dc004e'];
+const TARGET_PX_PER_MM = 8;
 
-function drawBarrelPath(
-  length: number,
-  maxDiameter: number,
-  yCenter: number,
-): string {
-  const scaledLen = length * SCALE;
-  const scaledMaxR = (maxDiameter / 2) * SCALE;
-  const frontR = scaledMaxR * 0.7;
-  const rearR = scaledMaxR * 0.85;
-  const maxPoint = scaledLen * 0.4;
-  const x0 = PADDING;
-
-  const topFront = yCenter - frontR;
-  const topMax = yCenter - scaledMaxR;
-  const topRear = yCenter - rearR;
-  const botFront = yCenter + frontR;
-  const botMax = yCenter + scaledMaxR;
-  const botRear = yCenter + rearR;
-
-  return [
-    `M ${x0} ${topFront}`,
-    `C ${x0 + maxPoint * 0.5} ${topFront}, ${x0 + maxPoint * 0.8} ${topMax}, ${x0 + maxPoint} ${topMax}`,
-    `C ${x0 + maxPoint * 1.2} ${topMax}, ${x0 + scaledLen * 0.7} ${topRear * 0.98 + yCenter * 0.02}, ${x0 + scaledLen} ${topRear}`,
-    `L ${x0 + scaledLen} ${botRear}`,
-    `C ${x0 + scaledLen * 0.7} ${botRear * 0.98 + yCenter * 0.02}, ${x0 + maxPoint * 1.2} ${botMax}, ${x0 + maxPoint} ${botMax}`,
-    `C ${x0 + maxPoint * 0.8} ${botMax}, ${x0 + maxPoint * 0.5} ${botFront}, ${x0} ${botFront}`,
-    'Z',
-  ].join(' ');
-}
-
-/** Individual barrel shape — renders on a shared center line for overlay comparison */
-function BarrelShape({
+/** Single barrel image — background removed, scaled to mm, tinted */
+function BarrelOverlayImage({
   barrel,
-  yCenter,
-  color,
-  subColor,
-  showLabelsAbove,
+  index,
 }: {
   barrel: BarrelProduct;
-  yCenter: number;
-  color: string;
-  subColor: string;
-  showLabelsAbove: boolean;
+  index: number;
 }) {
+  const tint = TINT_COLORS[index % TINT_COLORS.length];
+  const { image, loading } = useProcessedBarrelImage(barrel, tint);
+
   const len = barrel.length ?? 45;
-  const dia = barrel.maxDiameter ?? 7.0;
-  const { contour, loading } = useBarrelContour(barrel);
+  const dia = barrel.maxDiameter ?? 7;
 
-  const shapePath = contour
-    ? contourToSvgPath(contour, SCALE, PADDING, yCenter)
-    : drawBarrelPath(len, dia, yCenter);
+  if (loading) {
+    return (
+      <Skeleton
+        variant="rectangular"
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: len * TARGET_PX_PER_MM,
+          height: dia * TARGET_PX_PER_MM,
+          borderRadius: 1,
+        }}
+      />
+    );
+  }
 
-  // Label vertical offsets: first barrel above, second below
-  const labelY = showLabelsAbove
-    ? yCenter - (dia / 2) * SCALE - 22
-    : yCenter + (dia / 2) * SCALE + 36;
+  if (!image) return null;
 
-  const dimLineY = showLabelsAbove
-    ? yCenter - (dia / 2) * SCALE - 8
-    : yCenter + (dia / 2) * SCALE + 12;
-
-  const dimTextY = showLabelsAbove ? dimLineY - 4 : dimLineY + 14;
+  // Scale image so barrel.length maps to the target px/mm
+  const pxPerMm = image.widthPx / len;
+  const displayScale = TARGET_PX_PER_MM / pxPerMm;
+  const displayWidth = image.widthPx * displayScale;
+  const displayHeight = image.heightPx * displayScale;
 
   return (
-    <g>
-      <path
-        d={shapePath}
-        fill={color}
-        fillOpacity={0.15}
-        stroke={color}
-        strokeWidth={1.5}
-      >
-        {loading && (
-          <animate
-            attributeName="fill-opacity"
-            values="0.1;0.3;0.1"
-            dur="1.5s"
-            repeatCount="indefinite"
-          />
-        )}
-      </path>
-
-      {/* Length dimension line */}
-      <line
-        x1={PADDING}
-        y1={dimLineY}
-        x2={PADDING + len * SCALE}
-        y2={dimLineY}
-        stroke={color}
-        strokeWidth={1}
-        strokeOpacity={0.6}
-        markerStart={`url(#arrow-${color.replace('#', '')}L)`}
-        markerEnd={`url(#arrow-${color.replace('#', '')}R)`}
-      />
-      <text
-        x={PADDING + (len * SCALE) / 2}
-        y={dimTextY}
-        textAnchor="middle"
-        fill={color}
-        fontSize={10}
-        fontWeight="bold"
-      >
-        {len}mm / ⌀{dia}mm
-      </text>
-
-      {/* Barrel name label */}
-      <text
-        x={PADDING}
-        y={labelY}
-        fill={color}
-        fontSize={12}
-        fontWeight="bold"
-      >
-        {barrel.brand} {barrel.name}
-      </text>
-    </g>
+    <Box
+      component="img"
+      src={image.dataUrl}
+      alt={`${barrel.brand} ${barrel.name}`}
+      sx={{
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: displayWidth,
+        height: displayHeight,
+        opacity: 0.75,
+        pointerEvents: 'none',
+      }}
+    />
   );
 }
 
 export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
-  const theme = useTheme();
-  const subColor = theme.palette.text.secondary;
-
   if (barrels.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -148,71 +85,64 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
   }
 
   const maxLen = Math.max(...barrels.map((b) => b.length ?? 45));
-  const dynamicWidth = Math.max(500, PADDING * 2 + maxLen * SCALE + 60);
-  // Both barrels share the same center line for overlay comparison
-  const yCenter = SVG_HEIGHT / 2;
+  const maxDia = Math.max(...barrels.map((b) => b.maxDiameter ?? 7));
+  const containerWidth = maxLen * TARGET_PX_PER_MM + 60;
+  const containerHeight = Math.max(120, maxDia * TARGET_PX_PER_MM * 3 + 40);
 
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
-      <svg
-        viewBox={`0 0 ${dynamicWidth} ${SVG_HEIGHT}`}
-        width="100%"
-        style={{ maxHeight: 300 }}
+    <Box>
+      {/* Legend chips */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+        {barrels.map((b, i) => (
+          <Chip
+            key={b.id ?? i}
+            label={`${b.brand} ${b.name} (${b.length ?? '?'}mm / ⌀${b.maxDiameter ?? '?'}mm)`}
+            size="small"
+            sx={{
+              bgcolor: HEX_COLORS[i % HEX_COLORS.length],
+              color: '#fff',
+              fontWeight: 'bold',
+            }}
+          />
+        ))}
+      </Box>
+
+      {/* Overlay comparison area */}
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: containerWidth,
+          height: containerHeight,
+          mx: 'auto',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          overflow: 'hidden',
+          bgcolor: 'background.paper',
+        }}
       >
-        {barrels.map((barrel, i) => {
-          const color = COLORS[i % COLORS.length];
-          return (
-            <BarrelShape
-              key={barrel.id ?? i}
-              barrel={barrel}
-              yCenter={yCenter}
-              color={color}
-              subColor={subColor}
-              showLabelsAbove={i === 0}
-            />
-          );
-        })}
-        {/* Per-color arrow markers */}
-        <defs>
-          {COLORS.map((color) => {
-            const id = color.replace('#', '');
-            return (
-              <g key={color}>
-                <marker
-                  id={`arrow-${id}L`}
-                  markerWidth="6"
-                  markerHeight="6"
-                  refX="6"
-                  refY="3"
-                  orient="auto"
-                >
-                  <path
-                    d="M6,0 L0,3 L6,6"
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={1}
-                  />
-                </marker>
-                <marker
-                  id={`arrow-${id}R`}
-                  markerWidth="6"
-                  markerHeight="6"
-                  refX="0"
-                  refY="3"
-                  orient="auto"
-                >
-                  <path
-                    d="M0,0 L6,3 L0,6"
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={1}
-                  />
-                </marker>
-              </g>
-            );
-          })}
-        </defs>
-      </svg>
+        {/* Center axis guide line */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '50%',
+            borderTop: '1px dashed',
+            borderColor: 'divider',
+            opacity: 0.4,
+          }}
+        />
+
+        {barrels.map((barrel, i) => (
+          <BarrelOverlayImage
+            key={barrel.id ?? i}
+            barrel={barrel}
+            index={i}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
