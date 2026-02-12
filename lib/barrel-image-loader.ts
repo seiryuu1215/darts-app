@@ -4,7 +4,7 @@
  */
 export async function loadImageAsCanvas(
   imageUrl: string,
-  maxWidth = 400,
+  maxWidth = 800,
 ): Promise<ImageData | null> {
   try {
     const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;

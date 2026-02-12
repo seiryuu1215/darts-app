@@ -191,29 +191,36 @@ export function extractContourFromImageData(
     }
   }
 
-  // Smooth with moving average (window = 5, reduced from 7 to preserve cut detail)
-  const smooth = (arr: number[], w: number): number[] => {
-    const half = Math.floor(w / 2);
+  // Gaussian smoothing (sigma=1.0) — preserves cut detail much better than moving average.
+  // At 800px width, sigma=1.0 only blurs ~0.25mm of structure.
+  const gaussianSmooth = (arr: number[], sigma: number): number[] => {
+    const radius = Math.ceil(sigma * 2.5);
+    const kernel: number[] = [];
+    let kernelSum = 0;
+    for (let k = -radius; k <= radius; k++) {
+      const v = Math.exp(-(k * k) / (2 * sigma * sigma));
+      kernel.push(v);
+      kernelSum += v;
+    }
+    for (let k = 0; k < kernel.length; k++) kernel[k] /= kernelSum;
+
     return arr.map((_, i) => {
       let sum = 0;
-      let count = 0;
-      for (
-        let j = Math.max(0, i - half);
-        j <= Math.min(arr.length - 1, i + half);
-        j++
-      ) {
-        if (arr[j] !== -1) {
-          sum += arr[j];
-          count++;
+      let wsum = 0;
+      for (let k = -radius; k <= radius; k++) {
+        const idx = i + k;
+        if (idx >= 0 && idx < arr.length && arr[idx] !== -1) {
+          sum += arr[idx] * kernel[k + radius];
+          wsum += kernel[k + radius];
         }
       }
-      return count > 0 ? sum / count : arr[i];
+      return wsum > 0 ? sum / wsum : arr[i];
     });
   };
 
   return {
-    topEdge: smooth(trimmedTop, 5),
-    bottomEdge: smooth(trimmedBottom, 5),
+    topEdge: gaussianSmooth(trimmedTop, 1.0),
+    bottomEdge: gaussianSmooth(trimmedBottom, 1.0),
     xOffset: startX,
     imageHeight: imageData.height,
   };
@@ -243,7 +250,7 @@ export function normalizeContourToMm(
   }
 
   const radiusScale = maxRadiusPx > 0 ? (maxDiaMm / 2) / maxRadiusPx : 1;
-  const numPoints = Math.min(90, barrelLengthPx);
+  const numPoints = Math.min(200, barrelLengthPx);
   const step = barrelLengthPx / numPoints;
 
   const upperProfile: [number, number][] = [];

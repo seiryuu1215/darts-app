@@ -10,9 +10,9 @@ interface BarrelSimulatorProps {
 }
 
 const COLORS = ['#1976d2', '#dc004e'];
-const SVG_HEIGHT = 160;
+const SVG_HEIGHT = 180;
 const PADDING = 40;
-const SCALE = 8; // 1mm = 8px
+const SCALE = 10; // 1mm = 10px — larger for cut detail visibility
 
 function drawBarrelPath(
   length: number,
@@ -82,9 +82,9 @@ function BarrelShape({
       <path
         d={shapePath}
         fill={color}
-        fillOpacity={0.25}
+        fillOpacity={0.15}
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={1.5}
       >
         {loading && (
           <animate
