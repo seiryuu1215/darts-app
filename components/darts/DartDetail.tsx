@@ -49,6 +49,7 @@ import { addDoc } from 'firebase/firestore';
 import CommentList from '@/components/comment/CommentList';
 import CommentForm from '@/components/comment/CommentForm';
 import UserAvatar from '@/components/UserAvatar';
+import ShareIcon from '@mui/icons-material/Share';
 import { calcDartTotals, hasCompleteSpecs } from '@/lib/calc-totals';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SearchIcon from '@mui/icons-material/Search';
@@ -396,6 +397,25 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}
         >
           {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+        </IconButton>
+        <IconButton
+          onClick={() => {
+            const siteUrl =
+              typeof window !== 'undefined' ? window.location.origin : '';
+            const url = `${siteUrl}/darts/${dartId}`;
+            const barrelInfo = dart.barrel
+              ? `${dart.barrel.brand} ${dart.barrel.name} (${dart.barrel.weight}g)`
+              : '';
+            const text = `${dart.title}${barrelInfo ? `\n${barrelInfo}` : ''}\n\n#DartsLab #ダーツ`;
+            window.open(
+              `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+              '_blank',
+              'noopener,noreferrer,width=550,height=420',
+            );
+          }}
+          aria-label="Xでシェア"
+        >
+          <ShareIcon />
         </IconButton>
       </Box>
 
