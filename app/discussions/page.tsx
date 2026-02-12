@@ -1,13 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import {
-  Container,
-  Typography,
-  Box,
-  CircularProgress,
-  Button,
-} from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {
   collection,
@@ -57,9 +51,7 @@ export default function DiscussionsPage() {
       const q = query(collection(db, 'discussions'), ...constraints);
       const snap = await getDocs(q);
       const docs = snap.docs.slice(0, PAGE_SIZE);
-      const items = docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Discussion,
-      );
+      const items = docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion);
 
       return {
         items,
@@ -73,16 +65,20 @@ export default function DiscussionsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchDiscussions(category).then((result) => {
-      if (cancelled) return;
-      setDiscussions(result.items);
-      setLastDoc(result.lastDoc);
-      setHasMore(result.hasMore);
-      setLoading(false);
-    }).catch(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
+    fetchDiscussions(category)
+      .then((result) => {
+        if (cancelled) return;
+        setDiscussions(result.items);
+        setLastDoc(result.lastDoc);
+        setHasMore(result.hasMore);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [category, fetchDiscussions]);
 
   const handleLoadMore = async () => {

@@ -41,12 +41,8 @@ export default function DiscussionCard({ discussion }: DiscussionCardProps) {
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-            {discussion.isPinned && (
-              <PushPinIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-            )}
-            {discussion.isLocked && (
-              <LockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-            )}
+            {discussion.isPinned && <PushPinIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+            {discussion.isLocked && <LockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
             <Typography variant="subtitle1" fontWeight="bold" noWrap sx={{ flex: 1 }}>
               {discussion.title}
             </Typography>

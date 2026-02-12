@@ -229,15 +229,9 @@ export default function HomePage() {
     };
     const fetchDiscussions = async () => {
       try {
-        const q = query(
-          collection(db, 'discussions'),
-          orderBy('lastRepliedAt', 'desc'),
-          limit(5),
-        );
+        const q = query(collection(db, 'discussions'), orderBy('lastRepliedAt', 'desc'), limit(5));
         const snap = await getDocs(q);
-        setRecentDiscussions(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion),
-        );
+        setRecentDiscussions(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion));
       } catch {
         /* ignore */
       }

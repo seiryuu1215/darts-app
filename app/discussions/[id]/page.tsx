@@ -79,9 +79,7 @@ export default function DiscussionDetailPage() {
         orderBy('createdAt', 'asc'),
       );
       const snap = await getDocs(q);
-      setReplies(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DiscussionReply),
-      );
+      setReplies(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DiscussionReply));
     } catch {
       console.error('返信取得エラー');
     }
@@ -94,7 +92,9 @@ export default function DiscussionDetailPage() {
       if (!cancelled) setLoading(false);
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [fetchDiscussion, fetchReplies]);
 
   const handleTogglePin = async () => {
@@ -117,9 +117,7 @@ export default function DiscussionDetailPage() {
     if (!confirm('このスレッドを削除しますか？')) return;
     try {
       // 返信も削除
-      const repliesSnap = await getDocs(
-        collection(db, 'discussions', discussionId, 'replies'),
-      );
+      const repliesSnap = await getDocs(collection(db, 'discussions', discussionId, 'replies'));
       await Promise.all(
         repliesSnap.docs.map((d) =>
           deleteDoc(doc(db, 'discussions', discussionId, 'replies', d.id)),
@@ -155,9 +153,7 @@ export default function DiscussionDetailPage() {
     );
   }
 
-  const canEdit = userId
-    ? canEditDiscussion(role, discussion.userId, userId)
-    : false;
+  const canEdit = userId ? canEditDiscussion(role, discussion.userId, userId) : false;
   const canReply = canReplyDiscussion(role) && !discussion.isLocked;
   const canPin = canPinDiscussion(role);
   const canLock = canLockDiscussion(role);
@@ -165,21 +161,14 @@ export default function DiscussionDetailPage() {
   return (
     <TwoColumnLayout sidebar={<Sidebar />}>
       <Breadcrumbs
-        items={[
-          { label: 'ディスカッション', href: '/discussions' },
-          { label: discussion.title },
-        ]}
+        items={[{ label: 'ディスカッション', href: '/discussions' }, { label: discussion.title }]}
       />
 
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          {discussion.isPinned && (
-            <PushPinIcon sx={{ fontSize: 20, color: 'warning.main' }} />
-          )}
-          {discussion.isLocked && (
-            <LockIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-          )}
+          {discussion.isPinned && <PushPinIcon sx={{ fontSize: 20, color: 'warning.main' }} />}
+          {discussion.isLocked && <LockIcon sx={{ fontSize: 20, color: 'text.secondary' }} />}
           <Typography variant="h4" sx={{ flex: 1 }}>
             {discussion.title}
           </Typography>
@@ -270,11 +259,7 @@ export default function DiscussionDetailPage() {
       <Typography variant="h6" sx={{ mb: 1 }}>
         返信 ({discussion.replyCount})
       </Typography>
-      <ReplyList
-        discussionId={discussionId}
-        replies={replies}
-        onReplyDeleted={handleReplyChange}
-      />
+      <ReplyList discussionId={discussionId} replies={replies} onReplyDeleted={handleReplyChange} />
 
       {discussion.isLocked && (
         <Alert severity="info" sx={{ mt: 2 }}>
@@ -282,9 +267,7 @@ export default function DiscussionDetailPage() {
         </Alert>
       )}
 
-      {canReply && (
-        <ReplyForm discussionId={discussionId} onReplyAdded={handleReplyChange} />
-      )}
+      {canReply && <ReplyForm discussionId={discussionId} onReplyAdded={handleReplyChange} />}
     </TwoColumnLayout>
   );
 }

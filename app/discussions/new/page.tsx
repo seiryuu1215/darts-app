@@ -118,10 +118,7 @@ function NewDiscussionContent() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Breadcrumbs
-        items={[
-          { label: 'ディスカッション', href: '/discussions' },
-          { label: '新規スレッド' },
-        ]}
+        items={[{ label: 'ディスカッション', href: '/discussions' }, { label: '新規スレッド' }]}
       />
       <Typography variant="h4" sx={{ mb: 3 }}>
         新規スレッド
@@ -201,12 +198,7 @@ function NewDiscussionContent() {
         </Alert>
       )}
 
-      <Button
-        variant="contained"
-        onClick={handleSubmit}
-        disabled={loading}
-        size="large"
-      >
+      <Button variant="contained" onClick={handleSubmit} disabled={loading} size="large">
         {loading ? '投稿中...' : '投稿する'}
       </Button>
     </Container>

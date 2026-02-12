@@ -400,8 +400,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         </IconButton>
         <IconButton
           onClick={() => {
-            const siteUrl =
-              typeof window !== 'undefined' ? window.location.origin : '';
+            const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
             const url = `${siteUrl}/darts/${dartId}`;
             const barrelInfo = dart.barrel
               ? `${dart.barrel.brand} ${dart.barrel.name} (${dart.barrel.weight}g)`

@@ -78,13 +78,7 @@ export default function Sidebar({
         .catch(() => {});
     }
     if (showRecentDiscussions) {
-      getDocs(
-        query(
-          collection(db, 'discussions'),
-          orderBy('lastRepliedAt', 'desc'),
-          limit(5),
-        ),
-      )
+      getDocs(query(collection(db, 'discussions'), orderBy('lastRepliedAt', 'desc'), limit(5)))
         .then((snap) => {
           setDiscussions(
             snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion & { id: string }),
