@@ -849,7 +849,7 @@ export default function StatsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
                     <XAxis dataKey="month" fontSize={11} tick={{ fill: chartText }} />
                     <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
-                    <Tooltip />
+                    <Tooltip contentStyle={{ backgroundColor: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 6, color: chartText }} />
                     <Line
                       type="monotone"
                       dataKey="value"
@@ -897,7 +897,7 @@ export default function StatsPage() {
                         <XAxis dataKey="game" fontSize={11} tick={{ fill: chartText }} />
                         <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 6 }}
+                          contentStyle={{ backgroundColor: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 6, color: chartText }}
                           labelFormatter={(v) => `Game ${v}`}
                         />
                         <Legend
