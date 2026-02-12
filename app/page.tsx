@@ -123,27 +123,21 @@ export default function HomePage() {
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // オンボーディング判定
+  // ユーザーデータ統合取得（オンボーディング判定 + アクティブダーツ）
   useEffect(() => {
     if (!session?.user?.id) return;
-    const checkOnboarding = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', session.user.id));
-        if (userDoc.exists() && !userDoc.data().onboardingCompleted) {
-          setShowOnboarding(true);
-        }
-      } catch { /* ignore */ }
-    };
-    checkOnboarding();
-  }, [session]);
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    const fetchActiveDarts = async () => {
+    const fetchUserData = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', session.user.id));
         if (!userDoc.exists()) return;
         const userData = userDoc.data();
+
+        // オンボーディング判定
+        if (!userData.onboardingCompleted) {
+          setShowOnboarding(true);
+        }
+
+        // アクティブダーツ取得
         if (userData.activeSoftDartId) {
           const dartDoc = await getDoc(doc(db, 'darts', userData.activeSoftDartId));
           if (dartDoc.exists()) {
@@ -161,7 +155,7 @@ export default function HomePage() {
           setActiveSteelDart(null);
         }
       } catch (err) {
-        console.error('使用中セッティング取得エラー:', err);
+        console.error('ユーザーデータ取得エラー:', err);
       }
     };
     const fetchMyDarts = async () => {
@@ -202,7 +196,7 @@ export default function HomePage() {
         }
       } catch { /* ignore */ }
     };
-    fetchActiveDarts();
+    fetchUserData();
     fetchMyDarts();
     fetchDlCache();
   }, [session]);

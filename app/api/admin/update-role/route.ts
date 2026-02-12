@@ -1,32 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { adminDb } from '@/lib/firebase-admin';
-import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { withAdmin, withErrorHandler } from '@/lib/api-middleware';
 
 const updateRoleSchema = z.object({
   userId: z.string().min(1),
   role: z.enum(['admin', 'pro', 'general']),
 });
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: '未認証' }, { status: 401 });
-    }
-
-    // 管理者チェック: adminDb（サーバーサイド）で直接確認
-    const adminDoc = await adminDb.doc(`users/${session.user.id}`).get();
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-    }
-
+export const POST = withErrorHandler(
+  withAdmin(async (request: NextRequest) => {
     const body = await request.json();
     const parsed = updateRoleSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: '入力が不正です', details: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: '入力が不正です', details: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
     const { userId, role } = parsed.data;
 
@@ -47,8 +37,6 @@ export async function POST(request: NextRequest) {
     await adminDb.doc(`users/${userId}`).update(updateData);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('権限変更エラー:', error);
-    return NextResponse.json({ error: '権限変更に失敗しました' }, { status: 500 });
-  }
-}
+  }),
+  '権限変更エラー',
+);

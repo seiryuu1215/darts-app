@@ -11,7 +11,7 @@ import {
   Tab,
   Alert,
 } from '@mui/material';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -40,30 +40,28 @@ export default function BookmarksPage() {
     const fetchBookmarks = async () => {
       setLoading(true);
       try {
-        // バレルブックマーク
+        // バレルブックマーク — バッチ取得（30件ずつチャンク）
         const barrelBmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
-        const barrelPromises = barrelBmSnap.docs.map(async (bmDoc) => {
-          const barrelId = bmDoc.data().barrelId;
-          const barrelSnap = await getDoc(doc(db, 'barrels', barrelId));
-          if (barrelSnap.exists()) {
-            return { id: barrelSnap.id, ...barrelSnap.data() } as BarrelProduct;
-          }
-          return null;
-        });
-        const barrels = (await Promise.all(barrelPromises)).filter(Boolean) as BarrelProduct[];
+        const barrelIds = barrelBmSnap.docs.map((d) => d.data().barrelId).filter(Boolean);
+        const barrels: BarrelProduct[] = [];
+        for (let i = 0; i < barrelIds.length; i += 30) {
+          const chunk = barrelIds.slice(i, i + 30);
+          const q = query(collection(db, 'barrels'), where(documentId(), 'in', chunk));
+          const snap = await getDocs(q);
+          snap.docs.forEach((d) => barrels.push({ id: d.id, ...d.data() } as BarrelProduct));
+        }
         setBarrelBookmarks(barrels);
 
-        // ダーツブックマーク
+        // ダーツブックマーク — バッチ取得（30件ずつチャンク）
         const dartBmSnap = await getDocs(collection(db, 'users', session.user.id, 'bookmarks'));
-        const dartPromises = dartBmSnap.docs.map(async (bmDoc) => {
-          const dartId = bmDoc.data().dartId;
-          const dartSnap = await getDoc(doc(db, 'darts', dartId));
-          if (dartSnap.exists()) {
-            return { id: dartSnap.id, ...dartSnap.data() } as Dart;
-          }
-          return null;
-        });
-        const darts = (await Promise.all(dartPromises)).filter(Boolean) as Dart[];
+        const dartIds = dartBmSnap.docs.map((d) => d.data().dartId).filter(Boolean);
+        const darts: Dart[] = [];
+        for (let i = 0; i < dartIds.length; i += 30) {
+          const chunk = dartIds.slice(i, i + 30);
+          const q = query(collection(db, 'darts'), where(documentId(), 'in', chunk));
+          const snap = await getDocs(q);
+          snap.docs.forEach((d) => darts.push({ id: d.id, ...d.data() } as Dart));
+        }
         setDartBookmarks(darts);
       } catch (err) {
         console.error('ブックマーク取得エラー:', err);
@@ -103,7 +101,7 @@ export default function BookmarksPage() {
           <Grid container spacing={2}>
             {barrelBookmarks.map((barrel) => (
               <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
-                <BarrelCard barrel={barrel} />
+                <BarrelCard barrel={barrel} isBookmarked={true} />
               </Grid>
             ))}
           </Grid>

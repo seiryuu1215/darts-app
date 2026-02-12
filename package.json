@@ -7,6 +7,10 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "scrape:ranking": "tsx scripts/scrape-ranking.ts",
     "scrape:barrels": "tsx scripts/scrape-barrels2.ts"
   },
@@ -15,10 +19,9 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
-    "@opentelemetry/api": "^1.9.0",
+    "@sentry/nextjs": "^10.38.0",
     "@serwist/next": "^9.5.5",
     "@sparticuz/chromium": "^143.0.4",
-    "cheerio": "^1.2.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.6.1",
     "next": "16.1.6",
@@ -35,7 +38,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/puppeteer": "^5.4.7",
     "@types/react": "^19",
@@ -43,9 +45,10 @@
     "dotenv": "^17.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prettier": "^3.8.1",
     "serwist": "^9.5.5",
-    "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

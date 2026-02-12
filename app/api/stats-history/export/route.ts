@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { canExportCsv } from '@/lib/permissions';
+import { withPermission, withErrorHandler } from '@/lib/api-middleware';
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: '未ログインです' }, { status: 401 });
-  }
-  if (!canExportCsv(session.user.role)) {
-    return NextResponse.json({ error: 'PROプラン以上で利用できます' }, { status: 403 });
-  }
-
-  try {
-    const colRef = adminDb.collection(`users/${session.user.id}/dartsLiveStats`);
+export const GET = withErrorHandler(
+  withPermission(canExportCsv, 'PROプラン以上で利用できます', async (_req, { userId }) => {
+    const colRef = adminDb.collection(`users/${userId}/dartsLiveStats`);
     const snapshot = await colRef.orderBy('date', 'asc').get();
 
     const header = '日付,Rating,PPD,MPR,ゲーム数,コンディション,メモ';
@@ -43,8 +34,6 @@ export async function GET() {
         'Content-Disposition': 'attachment; filename="dartslive-stats.csv"',
       },
     });
-  } catch (err) {
-    console.error('CSV export error:', err);
-    return NextResponse.json({ error: 'エクスポートエラー' }, { status: 500 });
-  }
-}
+  }),
+  'CSV export error',
+);

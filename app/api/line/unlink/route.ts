@@ -1,29 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 
-export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: '未ログインです' }, { status: 401 });
-  }
+export const POST = withErrorHandler(
+  withAuth(async (_req, { userId }) => {
+    const userRef = adminDb.doc(`users/${userId}`);
 
-  const userRef = adminDb.doc(`users/${session.user.id}`);
+    await userRef.update({
+      lineUserId: FieldValue.delete(),
+      lineNotifyEnabled: false,
+      dlCredentialsEncrypted: FieldValue.delete(),
+    });
 
-  await userRef.update({
-    lineUserId: FieldValue.delete(),
-    lineNotifyEnabled: false,
-    dlCredentialsEncrypted: FieldValue.delete(),
-  });
+    // 会話状態もクリア
+    const userSnap = await userRef.get();
+    const lineUserId = userSnap.data()?.lineUserId;
+    if (lineUserId) {
+      await adminDb.doc(`lineConversations/${lineUserId}`).delete().catch(() => {});
+    }
 
-  // 会話状態もクリア
-  const userSnap = await userRef.get();
-  const lineUserId = userSnap.data()?.lineUserId;
-  if (lineUserId) {
-    await adminDb.doc(`lineConversations/${lineUserId}`).delete().catch(() => {});
-  }
-
-  return NextResponse.json({ success: true });
-}
+    return NextResponse.json({ success: true });
+  }),
+  'LINE unlink error',
+);

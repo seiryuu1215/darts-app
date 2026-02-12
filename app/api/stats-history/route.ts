@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
-import { canUseDartslive, getStatsRetentionDays } from '@/lib/permissions';
+import { getStatsRetentionDays } from '@/lib/permissions';
+import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 
 /** JST (UTC+9) の現在時刻を返す */
 function nowJST(): Date {
@@ -41,27 +40,25 @@ function getDateRange(period: string): { start: Date; end: Date } {
   }
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: '未ログインです' }, { status: 401 });
-  }
-  const rawPeriod = request.nextUrl.searchParams.get('period') || 'all';
-  const VALID_PERIODS = ['today', 'week', 'month', 'all'] as const;
-  const period = VALID_PERIODS.includes(rawPeriod as typeof VALID_PERIODS[number]) ? rawPeriod : 'all';
-  let { start, end } = getDateRange(period);
+export const GET = withErrorHandler(
+  withAuth(async (request: NextRequest, { userId, role }) => {
+    const rawPeriod = request.nextUrl.searchParams.get('period') || 'all';
+    const VALID_PERIODS = ['today', 'week', 'month', 'all'] as const;
+    const period = VALID_PERIODS.includes(rawPeriod as (typeof VALID_PERIODS)[number])
+      ? rawPeriod
+      : 'all';
+    let { start, end } = getDateRange(period);
 
-  // DARTSLIVE連携自体はPROのみだが、履歴参照はFreeでも可能（30日制限）
-  const retentionDays = getStatsRetentionDays(session.user.role);
-  if (retentionDays !== null) {
-    const retentionStart = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
-    if (start < retentionStart) {
-      start = retentionStart;
+    // DARTSLIVE連携自体はPROのみだが、履歴参照はFreeでも可能（30日制限）
+    const retentionDays = getStatsRetentionDays(role);
+    if (retentionDays !== null) {
+      const retentionStart = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+      if (start < retentionStart) {
+        start = retentionStart;
+      }
     }
-  }
 
-  try {
-    const colRef = adminDb.collection(`users/${session.user.id}/dartsLiveStats`);
+    const colRef = adminDb.collection(`users/${userId}/dartsLiveStats`);
     let query = colRef.orderBy('date', 'asc');
 
     if (period !== 'all' || retentionDays !== null) {
@@ -104,34 +101,34 @@ export async function GET(request: NextRequest) {
     const validMpr = records.filter((r) => r.mpr != null);
     const validCondition = records.filter((r) => r.condition != null);
 
-    const avgRating = validRatings.length > 0
-      ? validRatings.reduce((sum, r) => sum + r.rating!, 0) / validRatings.length
-      : null;
-    const avgPpd = validPpd.length > 0
-      ? validPpd.reduce((sum, r) => sum + r.ppd!, 0) / validPpd.length
-      : null;
-    const avgMpr = validMpr.length > 0
-      ? validMpr.reduce((sum, r) => sum + r.mpr!, 0) / validMpr.length
-      : null;
-    const avgCondition = validCondition.length > 0
-      ? validCondition.reduce((sum, r) => sum + r.condition!, 0) / validCondition.length
-      : null;
+    const avgRating =
+      validRatings.length > 0
+        ? validRatings.reduce((sum, r) => sum + r.rating!, 0) / validRatings.length
+        : null;
+    const avgPpd =
+      validPpd.length > 0
+        ? validPpd.reduce((sum, r) => sum + r.ppd!, 0) / validPpd.length
+        : null;
+    const avgMpr =
+      validMpr.length > 0
+        ? validMpr.reduce((sum, r) => sum + r.mpr!, 0) / validMpr.length
+        : null;
+    const avgCondition =
+      validCondition.length > 0
+        ? validCondition.reduce((sum, r) => sum + r.condition!, 0) / validCondition.length
+        : null;
 
     // Rating変動（期間内最初→最後）
-    const ratingChange = validRatings.length >= 2
-      ? validRatings[validRatings.length - 1].rating! - validRatings[0].rating!
-      : null;
+    const ratingChange =
+      validRatings.length >= 2
+        ? validRatings[validRatings.length - 1].rating! - validRatings[0].rating!
+        : null;
 
     // 自己ベスト
-    const bestRating = validRatings.length > 0
-      ? Math.max(...validRatings.map((r) => r.rating!))
-      : null;
-    const bestPpd = validPpd.length > 0
-      ? Math.max(...validPpd.map((r) => r.ppd!))
-      : null;
-    const bestMpr = validMpr.length > 0
-      ? Math.max(...validMpr.map((r) => r.mpr!))
-      : null;
+    const bestRating =
+      validRatings.length > 0 ? Math.max(...validRatings.map((r) => r.rating!)) : null;
+    const bestPpd = validPpd.length > 0 ? Math.max(...validPpd.map((r) => r.ppd!)) : null;
+    const bestMpr = validMpr.length > 0 ? Math.max(...validMpr.map((r) => r.mpr!)) : null;
 
     // 連続プレイ日数（ストリーク） — 全期間のみ計算
     let streak = 0;
@@ -175,8 +172,6 @@ export async function GET(request: NextRequest) {
       },
       records,
     });
-  } catch (err) {
-    console.error('Stats history error:', err);
-    return NextResponse.json({ error: 'データ取得エラー' }, { status: 500 });
-  }
-}
+  }),
+  'Stats history error',
+);

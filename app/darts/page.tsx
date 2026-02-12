@@ -12,7 +12,7 @@ import {
   InputAdornment,
   Chip,
 } from '@mui/material';
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, where, limit, startAfter, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -34,6 +34,8 @@ export default function DartsListPage() {
   );
 }
 
+const PAGE_SIZE = 30;
+
 function DartsListContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
@@ -41,18 +43,23 @@ function DartsListContent() {
   const mineOnly = searchParams.get('mine') === '1';
   const [darts, setDarts] = useState<Dart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDarts = async () => {
       setFetchError(null);
+      setDarts([]);
+      setLastDoc(null);
       try {
         let q;
         if (mineOnly && session?.user?.id) {
-          q = query(collection(db, 'darts'), where('userId', '==', session.user.id), orderBy('createdAt', 'desc'));
+          q = query(collection(db, 'darts'), where('userId', '==', session.user.id), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
         } else {
-          q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'));
+          q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
         }
         const snapshot = await getDocs(q);
         const dartsData = snapshot.docs.map((doc) => ({
@@ -60,6 +67,8 @@ function DartsListContent() {
           ...doc.data(),
         })) as Dart[];
         setDarts(dartsData);
+        setHasMore(snapshot.docs.length === PAGE_SIZE);
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1] ?? null);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error('ダーツ取得エラー:', err);
@@ -70,6 +79,31 @@ function DartsListContent() {
     };
     fetchDarts();
   }, [mineOnly, session]);
+
+  const loadMore = async () => {
+    if (!lastDoc || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      let q;
+      if (mineOnly && session?.user?.id) {
+        q = query(collection(db, 'darts'), where('userId', '==', session.user.id), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(PAGE_SIZE));
+      } else {
+        q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(PAGE_SIZE));
+      }
+      const snapshot = await getDocs(q);
+      const newDarts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Dart[];
+      setDarts((prev) => [...prev, ...newDarts]);
+      setHasMore(snapshot.docs.length === PAGE_SIZE);
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1] ?? null);
+    } catch (err) {
+      console.error('追加読み込みエラー:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const filteredDarts = useMemo(() => {
     if (!searchQuery.trim()) return darts;
@@ -174,13 +208,23 @@ function DartsListContent() {
           {searchQuery ? '検索結果が見つかりませんでした' : 'まだダーツが登録されていません'}
         </Typography>
       ) : (
-        <Grid container spacing={3}>
-          {filteredDarts.map((dart) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
-              <DartCard dart={dart} />
-            </Grid>
-          ))}
-        </Grid>
+        <>
+          <Grid container spacing={3}>
+            {filteredDarts.map((dart) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
+                <DartCard dart={dart} />
+              </Grid>
+            ))}
+          </Grid>
+          {hasMore && !searchQuery && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Button variant="outlined" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
+                もっと見る
+              </Button>
+            </Box>
+          )}
+        </>
       )}
     </Container>
   );

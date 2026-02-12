@@ -38,7 +38,7 @@ import RecommendIcon from '@mui/icons-material/AutoAwesome';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Link from 'next/link';
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
@@ -68,6 +68,9 @@ export default function BarrelsPage() {
   const [page, setPage] = useState(1);
   const [ranking, setRanking] = useState<RankedBarrel[]>([]);
   const [rankingTab, setRankingTab] = useState<RankingPeriod>('weekly');
+
+  // ブックマーク状態（1回のfetchで取得）
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   // おすすめ関連
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
@@ -115,7 +118,7 @@ export default function BarrelsPage() {
     fetchRanking();
   }, []);
 
-  // ログインユーザーの自分のダーツを取得（おすすめ用）
+  // ログインユーザーの自分のダーツを取得（おすすめ用）+ ブックマーク一括取得
   useEffect(() => {
     if (!session?.user?.id) return;
     setRecommendLoading(true);
@@ -123,14 +126,21 @@ export default function BarrelsPage() {
       try {
         const q = query(collection(db, 'darts'), where('userId', '==', session.user.id));
         const snapshot = await getDocs(q);
-        setMyDarts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Dart[]);
+        setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
       } catch (err) {
         console.error('マイダーツ取得エラー:', err);
       } finally {
         setRecommendLoading(false);
       }
     };
+    const fetchBookmarks = async () => {
+      try {
+        const bmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
+        setBookmarkedIds(new Set(bmSnap.docs.map((d) => d.id)));
+      } catch { /* ignore */ }
+    };
     fetchMyDarts();
+    fetchBookmarks();
   }, [session]);
 
   // ブランド一覧（動的生成）
@@ -354,7 +364,7 @@ export default function BarrelsPage() {
               }}>
                 {recommendedBarrels.map((barrel) => (
                   <Box key={barrel.id} sx={{ minWidth: 240, maxWidth: 240, flexShrink: 0, scrollSnapAlign: 'start' }}>
-                    <BarrelCard barrel={barrel} />
+                    <BarrelCard barrel={barrel} isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : false} />
                   </Box>
                 ))}
               </Box>
@@ -525,7 +535,7 @@ export default function BarrelsPage() {
           <Grid container spacing={2}>
             {paginatedBarrels.map((barrel) => (
               <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
-                <BarrelCard barrel={barrel} />
+                <BarrelCard barrel={barrel} isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : undefined} />
               </Grid>
             ))}
           </Grid>

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { adminDb } from '@/lib/firebase-admin';
-import { authOptions } from '@/lib/auth';
-import { FieldValue } from 'firebase-admin/firestore';
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
+import { withAdmin, withErrorHandler } from '@/lib/api-middleware';
 
 const pricingSchema = z.object({
   proMonthlyPriceYen: z.number().int().min(0).optional(),
@@ -16,23 +14,15 @@ const pricingSchema = z.object({
   trialDays: z.number().int().min(0).max(90).optional(),
 });
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: '未認証' }, { status: 401 });
-    }
-
-    // 管理者チェック: adminDb（サーバーサイド）で確認
-    const adminDoc = await adminDb.doc(`users/${session.user.id}`).get();
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-    }
-
+export const POST = withErrorHandler(
+  withAdmin(async (request: NextRequest, { userId }) => {
     const body = await request.json();
     const parsed = pricingSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: '入力が不正です', details: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: '入力が不正です', details: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
     const {
       proMonthlyPriceYen,
@@ -45,14 +35,15 @@ export async function POST(request: NextRequest) {
     } = parsed.data;
 
     const updateData: Record<string, unknown> = {
-      updatedBy: session.user.id,
+      updatedBy: userId,
       updatedAt: FieldValue.serverTimestamp(),
     };
 
     if (proMonthlyPriceYen !== undefined) updateData.proMonthlyPriceYen = proMonthlyPriceYen;
     if (proPromoPriceYen !== undefined) updateData.proPromoPriceYen = proPromoPriceYen;
     if (proStripePriceId !== undefined) updateData.proStripePriceId = proStripePriceId;
-    if (proPromoStripePriceId !== undefined) updateData.proPromoStripePriceId = proPromoStripePriceId;
+    if (proPromoStripePriceId !== undefined)
+      updateData.proPromoStripePriceId = proPromoStripePriceId;
     if (trialDays !== undefined) updateData.trialDays = trialDays;
 
     if (promoStartDate) {
@@ -70,8 +61,6 @@ export async function POST(request: NextRequest) {
     await adminDb.doc('config/pricing').set(updateData, { merge: true });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Pricing update error:', error);
-    return NextResponse.json({ error: '設定の更新に失敗しました' }, { status: 500 });
-  }
-}
+  }),
+  'Pricing update error',
+);

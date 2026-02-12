@@ -23,21 +23,27 @@ import type { BarrelProduct } from '@/types';
 
 interface BarrelCardProps {
   barrel: BarrelProduct;
+  isBookmarked?: boolean;
 }
 
-export default function BarrelCard({ barrel }: BarrelCardProps) {
+export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(isBookmarked ?? false);
 
   useEffect(() => {
+    // 親からisBookmarkedが提供されている場合はfetchスキップ
+    if (isBookmarked !== undefined) {
+      setBookmarked(isBookmarked);
+      return;
+    }
     if (!session?.user?.id || !barrel.id) return;
     const check = async () => {
       const bmDoc = await getDoc(doc(db, 'users', session.user.id, 'barrelBookmarks', barrel.id!));
       setBookmarked(bmDoc.exists());
     };
     check();
-  }, [session, barrel.id]);
+  }, [session, barrel.id, isBookmarked]);
 
   const handleBookmark = async () => {
     if (!session?.user?.id || !barrel.id) return;
