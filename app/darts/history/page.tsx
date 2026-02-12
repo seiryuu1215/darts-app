@@ -114,7 +114,7 @@ export default function SettingHistoryPage() {
             const isBarrelChange = entry.changeType === 'barrel';
             const isInitial = entry.changeType === 'initial';
             const isCurrent = entry.endedAt === null;
-            const days = calcDays(entry.startedAt as any, entry.endedAt as any);
+            const days = calcDays(entry.startedAt as { toDate?: () => Date } | null, entry.endedAt as { toDate?: () => Date } | null);
             const dotSize = isBarrelChange ? 14 : 8;
             const dotColor = isBarrelChange ? 'primary.main' : 'grey.500';
 
@@ -149,7 +149,7 @@ export default function SettingHistoryPage() {
                   {/* 期間 */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
                     <Typography variant="caption" color="text.secondary">
-                      {formatDate(entry.startedAt as any)} 〜 {isCurrent ? '現在' : formatDate(entry.endedAt as any)}
+                      {formatDate(entry.startedAt as { toDate?: () => Date } | null)} 〜 {isCurrent ? '現在' : formatDate(entry.endedAt as { toDate?: () => Date } | null)}
                       {days && ` (${days}日間)`}
                     </Typography>
                     {isCurrent && <Chip label="使用中" size="small" color="success" />}

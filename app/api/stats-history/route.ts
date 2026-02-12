@@ -47,7 +47,8 @@ export const GET = withErrorHandler(
     const period = VALID_PERIODS.includes(rawPeriod as (typeof VALID_PERIODS)[number])
       ? rawPeriod
       : 'all';
-    let { start, end } = getDateRange(period);
+    let { start } = getDateRange(period);
+    const { end } = getDateRange(period);
 
     // DARTSLIVE連携自体はPROのみだが、履歴参照はFreeでも可能（30日制限）
     const retentionDays = getStatsRetentionDays(role);

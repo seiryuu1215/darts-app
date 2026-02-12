@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, createContext, useMemo, useState, useEffect } from 'react';
+import { ReactNode, createContext, useEffect, useMemo, useState } from 'react';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { ThemeProvider, createTheme, CssBaseline, useMediaQuery } from '@mui/material';
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
@@ -36,22 +36,25 @@ function FirebaseAuthSync() {
 
 export default function Providers({ children }: { children: ReactNode }) {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
 
-  useEffect(() => {
-    const stored = localStorage.getItem('colorMode') as 'light' | 'dark' | null;
-    setMode(stored || (prefersDark ? 'dark' : 'light'));
-  }, [prefersDark]);
+  // stored は明示的にユーザーが選んだテーマ。null なら OS 設定に従う
+  const [stored, setStored] = useState<'light' | 'dark' | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('colorMode') as 'light' | 'dark' | null;
+  });
+
+  const mode: 'light' | 'dark' = stored ?? (prefersDark ? 'dark' : 'light');
 
   const colorMode = useMemo(() => ({
     toggleColorMode: () => {
-      setMode((prev) => {
-        const next = prev === 'light' ? 'dark' : 'light';
+      setStored((prev) => {
+        const current = prev ?? (prefersDark ? 'dark' : 'light');
+        const next = current === 'light' ? 'dark' : 'light';
         localStorage.setItem('colorMode', next);
         return next;
       });
     },
-  }), []);
+  }), [prefersDark]);
 
   const theme = useMemo(() => createTheme({
     palette: {

@@ -30,13 +30,14 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [bookmarked, setBookmarked] = useState(isBookmarked ?? false);
+  // isBookmarked prop が変わったら同期
+  if (isBookmarked !== undefined && isBookmarked !== bookmarked) {
+    setBookmarked(isBookmarked);
+  }
 
   useEffect(() => {
     // 親からisBookmarkedが提供されている場合はfetchスキップ
-    if (isBookmarked !== undefined) {
-      setBookmarked(isBookmarked);
-      return;
-    }
+    if (isBookmarked !== undefined) return;
     if (!session?.user?.id || !barrel.id) return;
     const check = async () => {
       const bmDoc = await getDoc(doc(db, 'users', session.user.id, 'barrelBookmarks', barrel.id!));

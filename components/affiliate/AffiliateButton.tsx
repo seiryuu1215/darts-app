@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Button, Menu, MenuItem, ListItemText } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -19,26 +19,24 @@ export default function AffiliateButton({
   size = 'small',
   variant = 'text',
 }: AffiliateButtonProps) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLButtonElement>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const shopLinks = getShopLinks(barrel);
 
   return (
     <>
       <Button
-        ref={anchorRef}
         size={size}
         variant={variant}
         startIcon={<ShoppingCartIcon />}
         endIcon={<ArrowDropDownIcon />}
-        onClick={() => setOpen(true)}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
       >
         購入する
       </Button>
       <Menu
-        anchorEl={anchorRef.current}
-        open={open}
-        onClose={() => setOpen(false)}
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
       >
         {shopLinks.map((link) => (
           <MenuItem
@@ -47,7 +45,7 @@ export default function AffiliateButton({
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
+            onClick={() => setAnchorEl(null)}
           >
             <ListItemText>{link.label}で見る</ListItemText>
             <OpenInNewIcon sx={{ fontSize: 16, ml: 1, color: 'text.secondary' }} />
