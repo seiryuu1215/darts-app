@@ -30,6 +30,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  useTheme,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -123,6 +124,14 @@ const AWARD_ORDER = [
 export default function StatsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  // テーマ対応チャートカラー
+  const chartGrid = isDark ? '#333' : '#ddd';
+  const chartText = isDark ? '#ccc' : '#666';
+  const chartTooltipBg = isDark ? '#1e1e1e' : '#fff';
+  const chartTooltipBorder = isDark ? '#444' : '#ddd';
+  const chartAvgLine = isDark ? '#90caf9' : '#1565c0';
 
   const [dlData, setDlData] = useState<DartsliveData | null>(null);
   const [dlOpen, setDlOpen] = useState(false);
@@ -382,60 +391,84 @@ export default function StatsPage() {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
-                    {target.ppd01Only != null && target.ppdGap01Only != null && (
-                      <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_01 + '44' }}>
-                        <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>
-                          01だけで上げる場合
+                    <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_01 + '44' }}>
+                      <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>
+                        01だけで上げる場合
+                      </Typography>
+                      {target.ppd01Only.achieved ? (
+                        <Typography variant="body1" sx={{ mt: 0.5, color: 'success.main', fontWeight: 'bold' }}>
+                          達成済み
                         </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                          PPD {target.ppd01Only.toFixed(2)}
+                      ) : (
+                        <>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                            PPD {target.ppd01Only.target.toFixed(2)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            あと +{target.ppd01Only.gap.toFixed(2)} 必要
+                          </Typography>
+                        </>
+                      )}
+                    </Paper>
+                    <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_CRICKET + '44' }}>
+                      <Typography variant="caption" sx={{ color: COLOR_CRICKET, fontWeight: 'bold' }}>
+                        Cricketだけで上げる場合
+                      </Typography>
+                      {target.mprCriOnly.achieved ? (
+                        <Typography variant="body1" sx={{ mt: 0.5, color: 'success.main', fontWeight: 'bold' }}>
+                          達成済み
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          あと +{target.ppdGap01Only.toFixed(2)} 必要
-                        </Typography>
-                      </Paper>
-                    )}
-                    {target.mprCriOnly != null && target.mprGapCriOnly != null && (
-                      <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_CRICKET + '44' }}>
-                        <Typography variant="caption" sx={{ color: COLOR_CRICKET, fontWeight: 'bold' }}>
-                          Cricketだけで上げる場合
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                          MPR {target.mprCriOnly.toFixed(2)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          あと +{target.mprGapCriOnly.toFixed(2)} 必要
-                        </Typography>
-                      </Paper>
-                    )}
+                      ) : (
+                        <>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                            MPR {target.mprCriOnly.target.toFixed(2)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            あと +{target.mprCriOnly.gap.toFixed(2)} 必要
+                          </Typography>
+                        </>
+                      )}
+                    </Paper>
                   </Box>
                   {/* 均等に上げる場合 */}
-                  {target.ppdBalanced != null && target.mprBalanced != null && (
-                    <Paper variant="outlined" sx={{ p: 1.5, mt: 1.5, borderColor: 'divider' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-                        均等に上げる場合
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            PPD {target.ppdBalanced.toFixed(2)}
-                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                              (+{target.ppdGapBalanced?.toFixed(2)})
-                            </Typography>
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            MPR {target.mprBalanced.toFixed(2)}
-                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                              (+{target.mprGapBalanced?.toFixed(2)})
-                            </Typography>
-                          </Typography>
-                        </Box>
+                  <Paper variant="outlined" sx={{ p: 1.5, mt: 1.5, borderColor: 'divider' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                      均等に上げる場合
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          PPD{' '}
+                          {target.ppdBalanced.achieved ? (
+                            <Typography component="span" sx={{ color: 'success.main' }}>達成済み</Typography>
+                          ) : (
+                            <>
+                              {target.ppdBalanced.target.toFixed(2)}
+                              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                (+{target.ppdBalanced.gap.toFixed(2)})
+                              </Typography>
+                            </>
+                          )}
+                        </Typography>
                       </Box>
-                    </Paper>
-                  )}
-                  {target.ppd01Only == null && target.mprCriOnly == null && target.ppdBalanced == null && (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          MPR{' '}
+                          {target.mprBalanced.achieved ? (
+                            <Typography component="span" sx={{ color: 'success.main' }}>達成済み</Typography>
+                          ) : (
+                            <>
+                              {target.mprBalanced.target.toFixed(2)}
+                              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                (+{target.mprBalanced.gap.toFixed(2)})
+                              </Typography>
+                            </>
+                          )}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                  {target.ppd01Only.achieved && target.mprCriOnly.achieved && (
                     <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 1 }}>
                       最大レーティングに到達しています
                     </Typography>
@@ -491,9 +524,9 @@ export default function StatsPage() {
                 </Box>
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={monthlyChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                    <XAxis dataKey="month" fontSize={11} />
-                    <YAxis domain={['auto', 'auto']} fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+                    <XAxis dataKey="month" fontSize={11} tick={{ fill: chartText }} />
+                    <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
                     <Tooltip />
                     <Line
                       type="monotone"
@@ -527,14 +560,21 @@ export default function StatsPage() {
                   const baseColor = getGameColor(gameChartCategory);
                   // COUNT-UP: 期待値基準、それ以外: ゲーム内平均基準
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
+                  // Rt期待値の2段階下（カウントアップ用: PPR-2相当×8ラウンド = 期待値-16）
+                  const dangerThreshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp - 16 : null;
+                  const getBarColor = (score: number) => {
+                    if (score >= threshold) return '#4caf50'; // 基準以上: 緑
+                    if (dangerThreshold != null && score <= dangerThreshold) return '#f44336'; // Rt-2以下: 赤
+                    return `${baseColor}66`; // 通常: 薄いカテゴリ色
+                  };
                   return (
                     <ResponsiveContainer width="100%" height={230}>
                       <ComposedChart data={gameChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="game" fontSize={11} />
-                        <YAxis domain={['auto', 'auto']} fontSize={11} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+                        <XAxis dataKey="game" fontSize={11} tick={{ fill: chartText }} />
+                        <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #444', borderRadius: 6 }}
+                          contentStyle={{ backgroundColor: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 6 }}
                           labelFormatter={(v) => `Game ${v}`}
                         />
                         <Legend
@@ -543,17 +583,14 @@ export default function StatsPage() {
                         />
                         <Bar dataKey="score" name="スコア" opacity={0.8} radius={[2, 2, 0, 0]}>
                           {gameChartData.map((entry, i) => (
-                            <Cell
-                              key={i}
-                              fill={entry.score >= threshold ? '#4caf50' : `${baseColor}66`}
-                            />
+                            <Cell key={i} fill={getBarColor(entry.score)} />
                           ))}
                         </Bar>
                         <Line
                           type="monotone"
                           dataKey="avg"
                           name="累計平均"
-                          stroke="#90caf9"
+                          stroke={chartAvgLine}
                           strokeWidth={2}
                           dot={false}
                         />
@@ -580,21 +617,23 @@ export default function StatsPage() {
                 {selectedGame && (() => {
                   const gameAvg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
                   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
+                  const chipDanger = isCountUpCategory && expectedCountUp != null ? expectedCountUp - 16 : null;
                   return (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
                       {selectedGame.scores.map((s, i) => {
                         const isGood = s >= threshold;
+                        const isDanger = chipDanger != null && s <= chipDanger;
                         return (
                           <Chip
                             key={i}
                             label={gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT') ? s.toFixed(2) : s}
                             size="small"
-                            variant={isGood ? 'filled' : 'outlined'}
+                            variant={isGood || isDanger ? 'filled' : 'outlined'}
                             sx={{
-                              bgcolor: isGood ? '#4caf5022' : undefined,
-                              borderColor: isGood ? '#4caf50' : 'divider',
-                              color: isGood ? '#4caf50' : 'text.secondary',
-                              fontWeight: isGood ? 'bold' : 'normal',
+                              bgcolor: isGood ? '#4caf5022' : isDanger ? '#f4433622' : undefined,
+                              borderColor: isGood ? '#4caf50' : isDanger ? '#f44336' : 'divider',
+                              color: isGood ? '#4caf50' : isDanger ? '#f44336' : 'text.secondary',
+                              fontWeight: isGood || isDanger ? 'bold' : 'normal',
                             }}
                           />
                         );

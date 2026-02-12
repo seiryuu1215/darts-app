@@ -49,22 +49,28 @@ export function mprForRating(targetCriRt: number): number {
   return (targetCriRt * 25 + 25) / 100; // (MPR*100-25)/25 = Rt → MPR = (Rt*25+25)/100
 }
 
+export interface TargetStat {
+  target: number;   // 目標値
+  gap: number;      // 現在との差
+  achieved: boolean; // 既に達成済み
+}
+
 export interface RatingTarget {
   currentRating: number;
   current01Rt: number;
   currentCriRt: number;
   nextRating: number;
   // 01だけで上げる場合
-  ppd01Only: number | null;
-  ppdGap01Only: number | null;
+  ppd01Only: TargetStat;
   // Cricketだけで上げる場合
-  mprCriOnly: number | null;
-  mprGapCriOnly: number | null;
-  // 均等に上げる場合
-  ppdBalanced: number | null;
-  ppdGapBalanced: number | null;
-  mprBalanced: number | null;
-  mprGapBalanced: number | null;
+  mprCriOnly: TargetStat;
+  // 均等に上げる場合（01Rt=CriRt=nextRatingになる値）
+  ppdBalanced: TargetStat;
+  mprBalanced: TargetStat;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 export function getRatingTarget(ppd: number, mpr: number): RatingTarget {
@@ -73,63 +79,30 @@ export function getRatingTarget(ppd: number, mpr: number): RatingTarget {
   const currentRating = (current01Rt + currentCriRt) / 2;
   const nextRating = Math.floor(currentRating) + 1;
 
-  // 01だけで次のレーティングに到達する場合
-  // (new01Rt + currentCriRt) / 2 = nextRating
-  // new01Rt = nextRating * 2 - currentCriRt
+  // 01だけで上げる場合: new01Rt = nextRating*2 - currentCriRt
   const needed01Rt = nextRating * 2 - currentCriRt;
-  let ppd01Only: number | null = null;
-  let ppdGap01Only: number | null = null;
-  if (needed01Rt <= 18) { // 01レーティング上限チェック（SA Flight最大付近）
-    ppd01Only = Math.round(ppdForRating(needed01Rt) * 100) / 100;
-    ppdGap01Only = Math.round((ppd01Only - ppd) * 100) / 100;
-    if (ppdGap01Only <= 0) {
-      ppd01Only = null;
-      ppdGap01Only = null;
-    }
-  }
+  const ppd01Target = round2(ppdForRating(needed01Rt));
+  const ppd01Gap = round2(ppd01Target - ppd);
 
-  // Cricketだけで次のレーティングに到達する場合
+  // Cricketだけで上げる場合: newCriRt = nextRating*2 - current01Rt
   const neededCriRt = nextRating * 2 - current01Rt;
-  let mprCriOnly: number | null = null;
-  let mprGapCriOnly: number | null = null;
-  if (neededCriRt <= 18) {
-    mprCriOnly = Math.round(mprForRating(neededCriRt) * 100) / 100;
-    mprGapCriOnly = Math.round((mprCriOnly - mpr) * 100) / 100;
-    if (mprGapCriOnly <= 0) {
-      mprCriOnly = null;
-      mprGapCriOnly = null;
-    }
-  }
+  const mprCriTarget = round2(mprForRating(neededCriRt));
+  const mprCriGap = round2(mprCriTarget - mpr);
 
-  // 均等に上げる場合
-  // 01Rt と CriRt をそれぞれ半分ずつ上げる
-  const totalGap = nextRating * 2 - (current01Rt + currentCriRt);
-  const halfGap = totalGap / 2;
-  const balanced01Rt = current01Rt + halfGap;
-  const balancedCriRt = currentCriRt + halfGap;
-  let ppdBalanced: number | null = null;
-  let ppdGapBalanced: number | null = null;
-  let mprBalanced: number | null = null;
-  let mprGapBalanced: number | null = null;
-  if (balanced01Rt <= 18 && balancedCriRt <= 18 && totalGap > 0) {
-    ppdBalanced = Math.round(ppdForRating(balanced01Rt) * 100) / 100;
-    ppdGapBalanced = Math.round((ppdBalanced - ppd) * 100) / 100;
-    mprBalanced = Math.round(mprForRating(balancedCriRt) * 100) / 100;
-    mprGapBalanced = Math.round((mprBalanced - mpr) * 100) / 100;
-  }
+  // 均等に上げる場合: 01Rt = CriRt = nextRating
+  const ppdBalTarget = round2(ppdForRating(nextRating));
+  const ppdBalGap = round2(ppdBalTarget - ppd);
+  const mprBalTarget = round2(mprForRating(nextRating));
+  const mprBalGap = round2(mprBalTarget - mpr);
 
   return {
     currentRating,
     current01Rt,
     currentCriRt,
     nextRating,
-    ppd01Only,
-    ppdGap01Only,
-    mprCriOnly,
-    mprGapCriOnly,
-    ppdBalanced,
-    ppdGapBalanced,
-    mprBalanced,
-    mprGapBalanced,
+    ppd01Only: { target: ppd01Target, gap: ppd01Gap, achieved: ppd01Gap <= 0 },
+    mprCriOnly: { target: mprCriTarget, gap: mprCriGap, achieved: mprCriGap <= 0 },
+    ppdBalanced: { target: ppdBalTarget, gap: ppdBalGap, achieved: ppdBalGap <= 0 },
+    mprBalanced: { target: mprBalTarget, gap: mprBalGap, achieved: mprBalGap <= 0 },
   };
 }
