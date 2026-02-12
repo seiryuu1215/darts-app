@@ -35,8 +35,9 @@ import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import type { Dart } from '@/types';
-import { TIPS, SHAFTS, FLIGHTS, CONDOR_AXE, BARREL_CUTS } from '@/lib/darts-parts';
+import { TIPS, SHAFTS, FLIGHTS, CONDOR_AXE, BARREL_CUTS, checkShaftFlightCompatibility } from '@/lib/darts-parts';
 import type { TipSpec, ShaftSpec, FlightSpec, CondorAxeSpec } from '@/lib/darts-parts';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 interface DartFormProps {
   initialData?: Dart;
@@ -655,6 +656,19 @@ export default function DartForm({ initialData, dartId, isDraft, draftBarrelImag
               sx={{ mb: 3 }}
             />
           )}
+
+          {/* 互換性警告 */}
+          {(() => {
+            const warning = checkShaftFlightCompatibility(
+              shaftIsCustom ? null : selectedShaft,
+              flightIsCustom ? null : selectedFlight,
+            );
+            return warning ? (
+              <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
+                {warning}
+              </Alert>
+            ) : null;
+          })()}
 
           {/* フライト */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>

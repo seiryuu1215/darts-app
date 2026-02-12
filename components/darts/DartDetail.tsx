@@ -26,6 +26,7 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {
   doc,
   deleteDoc,
@@ -294,39 +295,51 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           <UserAvatar userId={dart.userId} avatarUrl={dart.userAvatarUrl} userName={dart.userName} size={36} />
           <Typography variant="subtitle1">{dart.userName || '匿名'}</Typography>
         </Box>
-        {isOwner && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button variant="outlined" size="small" startIcon={<EditIcon />} component={Link} href={`/darts/${dartId}/edit`}>
-              編集
-            </Button>
-            <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteOpen(true)}>
-              削除
-            </Button>
-            <Button
-              variant={isActiveDart ? 'contained' : 'outlined'}
-              size="small"
-              color={isActiveDart ? 'success' : 'primary'}
-              startIcon={isActiveDart ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-              onClick={handleToggleActive}
-            >
-              {isActiveDart
-                ? `${dart.tip.type === 'soft' ? 'ソフト' : 'スティール'}使用中 ✓`
-                : `${dart.tip.type === 'soft' ? 'ソフト' : 'スティール'}で使用中にする`}
-            </Button>
-            {/* バレル比較はチップ・シャフト・フライトの数値が全て揃っている場合のみ表示 */}
-            {hasCompleteSpecs(dart) && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<CompareArrowsIcon />}
-                component={Link}
-                href={`/darts/compare?left=${dartId}`}
-              >
-                セッティング比較
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {isOwner && (
+            <>
+              <Button variant="outlined" size="small" startIcon={<EditIcon />} component={Link} href={`/darts/${dartId}/edit`}>
+                編集
               </Button>
-            )}
-          </Box>
-        )}
+              <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteOpen(true)}>
+                削除
+              </Button>
+              <Button
+                variant={isActiveDart ? 'contained' : 'outlined'}
+                size="small"
+                color={isActiveDart ? 'success' : 'primary'}
+                startIcon={isActiveDart ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
+                onClick={handleToggleActive}
+              >
+                {isActiveDart
+                  ? `${dart.tip.type === 'soft' ? 'ソフト' : 'スティール'}使用中 ✓`
+                  : `${dart.tip.type === 'soft' ? 'ソフト' : 'スティール'}で使用中にする`}
+              </Button>
+              {hasCompleteSpecs(dart) && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CompareArrowsIcon />}
+                  component={Link}
+                  href={`/darts/compare?left=${dartId}`}
+                >
+                  セッティング比較
+                </Button>
+              )}
+            </>
+          )}
+          {session && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ContentCopyIcon />}
+              component={Link}
+              href={`/darts/new?copyFrom=${dartId}`}
+            >
+              コピーして新規作成
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
