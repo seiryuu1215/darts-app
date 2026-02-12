@@ -57,7 +57,7 @@ export default function CommentList({ dartId, comments, onCommentDeleted }: Comm
               </Box>
             </Box>
             {session?.user?.id === comment.userId && (
-              <IconButton size="small" onClick={() => handleDelete(comment.id!)}>
+              <IconButton size="small" onClick={() => handleDelete(comment.id!)} aria-label="コメントを削除">
                 <DeleteIcon fontSize="small" />
               </IconButton>
             )}

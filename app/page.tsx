@@ -9,7 +9,6 @@ import {
   Card,
   CardActionArea,
   CardContent,
-  CircularProgress,
   Button,
   CardMedia,
   Chip,
@@ -32,7 +31,9 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DartCard from '@/components/darts/DartCard';
+import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import ArticleCard from '@/components/articles/ArticleCard';
+import OnboardingDialog from '@/components/OnboardingDialog';
 import type { Dart, Article } from '@/types';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
@@ -120,6 +121,21 @@ export default function HomePage() {
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // オンボーディング判定
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const checkOnboarding = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', session.user.id));
+        if (userDoc.exists() && !userDoc.data().onboardingCompleted) {
+          setShowOnboarding(true);
+        }
+      } catch { /* ignore */ }
+    };
+    checkOnboarding();
+  }, [session]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -249,6 +265,14 @@ export default function HomePage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {session?.user?.id && (
+        <OnboardingDialog
+          open={showOnboarding}
+          userId={session.user.id}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
+
       <Typography variant="h4" sx={{ mb: 3 }}>
         ダッシュボード
       </Typography>
@@ -435,9 +459,13 @@ export default function HomePage() {
       </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <Grid container spacing={3}>
+          {[0, 1, 2].map((i) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+              <DartCardSkeleton />
+            </Grid>
+          ))}
+        </Grid>
       ) : othersRecentDarts.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
           まだセッティングが登録されていません

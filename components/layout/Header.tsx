@@ -140,7 +140,7 @@ export default function Header() {
               </>
             )}
 
-            <IconButton color="inherit" onClick={colorMode.toggleColorMode} size="small" sx={{ ml: 0.5 }}>
+            <IconButton color="inherit" onClick={colorMode.toggleColorMode} size="small" sx={{ ml: 0.5 }} aria-label="テーマ切替">
               {theme.palette.mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
             </IconButton>
 
@@ -149,6 +149,7 @@ export default function Header() {
                 <IconButton
                   onClick={(e) => setAnchorEl(e.currentTarget)}
                   sx={{ p: 0.5, ml: 0.5, border: '2px solid rgba(255,255,255,0.5)', '&:hover': { opacity: 0.8 } }}
+                  aria-label="ユーザーメニュー"
                 >
                   <UserAvatar
                     userId={session.user.id}
@@ -222,6 +223,7 @@ export default function Header() {
               color="inherit"
               edge="end"
               onClick={() => setDrawerOpen(true)}
+              aria-label="メニューを開く"
             >
               <MenuIcon />
             </IconButton>
@@ -231,7 +233,7 @@ export default function Header() {
 
       {/* モバイルドロワー */}
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <Box sx={{ width: 250 }}>
+        <Box sx={{ width: 250 }} role="navigation" aria-label="メインメニュー">
           {session && (
             <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <UserAvatar userId={session.user.id} avatarUrl={null} userName={session.user.name || ''} size={36} />

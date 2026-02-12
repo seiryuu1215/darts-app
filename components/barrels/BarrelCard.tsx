@@ -118,7 +118,7 @@ export default function BarrelCard({ barrel }: BarrelCardProps) {
           )}
         </Box>
         {session && (
-          <IconButton size="small" onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'}>
+          <IconButton size="small" onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'} aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}>
             {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>
         )}

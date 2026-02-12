@@ -8,7 +8,7 @@ import {
   Typography,
   Paper,
   Chip,
-  CircularProgress,
+  Skeleton,
   Button,
   Grid,
   IconButton,
@@ -20,6 +20,7 @@ import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import DartCard from '@/components/darts/DartCard';
+import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import type { User, Dart } from '@/types';
 import EditIcon from '@mui/icons-material/Edit';
 import XIcon from '@mui/icons-material/X';
@@ -74,9 +75,22 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
-      </Box>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Skeleton variant="circular" width={80} height={80} />
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="text" width="40%" height={32} />
+            <Skeleton variant="text" width="60%" />
+          </Box>
+        </Box>
+        <Grid container spacing={3}>
+          {[0, 1, 2].map((i) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+              <DartCardSkeleton />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
     );
   }
 

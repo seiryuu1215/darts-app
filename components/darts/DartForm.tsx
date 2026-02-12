@@ -731,8 +731,8 @@ export default function DartForm({ initialData, dartId, isDraft, draftBarrelImag
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           {imageUrls.map((url, i) => (
             <Box key={i} sx={{ position: 'relative' }}>
-              <img src={url} alt="" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }} />
-              <IconButton size="small" onClick={() => removeExistingImage(i)} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}>
+              <img src={url} alt="セッティング画像プレビュー" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }} />
+              <IconButton size="small" onClick={() => removeExistingImage(i)} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }} aria-label="画像を削除">
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -743,8 +743,8 @@ export default function DartForm({ initialData, dartId, isDraft, draftBarrelImag
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           {newImages.map((file, i) => (
             <Box key={i} sx={{ position: 'relative' }}>
-              <img src={URL.createObjectURL(file)} alt="" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }} />
-              <IconButton size="small" onClick={() => removeNewImage(i)} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }}>
+              <img src={URL.createObjectURL(file)} alt="新規画像プレビュー" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }} />
+              <IconButton size="small" onClick={() => removeNewImage(i)} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper' }} aria-label="画像を削除">
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>

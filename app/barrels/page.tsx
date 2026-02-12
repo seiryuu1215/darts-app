@@ -43,6 +43,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
 import BarrelCard from '@/components/barrels/BarrelCard';
+import BarrelCardSkeleton from '@/components/barrels/BarrelCardSkeleton';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import { BARREL_CUTS } from '@/lib/darts-parts';
@@ -508,9 +509,13 @@ export default function BarrelsPage() {
       </Collapse>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <Grid container spacing={2}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={i}>
+              <BarrelCardSkeleton />
+            </Grid>
+          ))}
+        </Grid>
       ) : filteredBarrels.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
           {barrels.length === 0 ? 'バレルデータがありません。スクレイピングスクリプトを実行してください。' : '条件に一致するバレルがありません'}

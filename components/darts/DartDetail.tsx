@@ -356,11 +356,11 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <IconButton onClick={handleLike} color={liked ? 'error' : 'default'} disabled={!session}>
+        <IconButton onClick={handleLike} color={liked ? 'error' : 'default'} disabled={!session} aria-label={liked ? 'いいね解除' : 'いいね'}>
           {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
         </IconButton>
         <Typography variant="body2">{likeCount}</Typography>
-        <IconButton onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'} disabled={!session}>
+        <IconButton onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'} disabled={!session} aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}>
           {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
         </IconButton>
       </Box>
