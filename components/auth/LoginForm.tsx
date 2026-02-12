@@ -36,11 +36,19 @@ export default function LoginForm() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}
+    >
       <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
         ログイン
       </Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <TextField
         label="メールアドレス"
         type="email"

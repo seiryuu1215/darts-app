@@ -14,9 +14,7 @@ function computeOtsu(data: Uint8ClampedArray, totalPixels: number): number {
   const histogram = new Array(256).fill(0);
   for (let i = 0; i < totalPixels; i++) {
     const idx = i * 4;
-    const b = Math.round(
-      0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2],
-    );
+    const b = Math.round(0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]);
     histogram[b]++;
   }
 
@@ -53,12 +51,7 @@ interface Region {
 }
 
 /** Detect individual barrel regions by row scanning */
-function detectRegions(
-  data: Uint8ClampedArray,
-  w: number,
-  h: number,
-  threshold: number,
-): Region[] {
+function detectRegions(data: Uint8ClampedArray, w: number, h: number, threshold: number): Region[] {
   const minFill = w * 0.05;
   const regions: Region[] = [];
   let inRegion = false;
@@ -69,8 +62,7 @@ function detectRegions(
     if (y < h) {
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
-        const b =
-          0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        const b = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
         if (b <= threshold && data[idx + 3] >= 128) count++;
       }
     }
@@ -92,9 +84,7 @@ function detectRegions(
 
   // Sort by proximity to image center
   const mid = h / 2;
-  regions.sort(
-    (a, b) => Math.abs(a.centerY - mid) - Math.abs(b.centerY - mid),
-  );
+  regions.sort((a, b) => Math.abs(a.centerY - mid) - Math.abs(b.centerY - mid));
   return regions;
 }
 
@@ -143,8 +133,7 @@ export async function processBarrelImage(
     for (let y = target.yStart; y <= target.yEnd; y++) {
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
-        const b =
-          0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        const b = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
         if (b <= otsuThreshold && data[idx + 3] >= 128) {
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;
@@ -177,17 +166,14 @@ export async function processBarrelImage(
     const od = outData.data;
 
     for (let i = 0; i < od.length; i += 4) {
-      const brightness =
-        0.299 * od[i] + 0.587 * od[i + 1] + 0.114 * od[i + 2];
+      const brightness = 0.299 * od[i] + 0.587 * od[i + 1] + 0.114 * od[i + 2];
 
       if (brightness > BG_THRESHOLD) {
         // Fully transparent background
         od[i + 3] = 0;
       } else if (brightness > BG_THRESHOLD - EDGE_WIDTH) {
         // Anti-aliased edge: smooth transition
-        const alpha = Math.round(
-          255 * (BG_THRESHOLD - brightness) / EDGE_WIDTH,
-        );
+        const alpha = Math.round((255 * (BG_THRESHOLD - brightness)) / EDGE_WIDTH);
         od[i + 3] = Math.min(od[i + 3], alpha);
       }
 

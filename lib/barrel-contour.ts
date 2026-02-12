@@ -66,10 +66,7 @@ function computeOtsuThreshold(imageData: ImageData): number {
  * Scan rows to detect individual barrel regions separated by background gaps.
  * Returns regions sorted by proximity to image center (center-most first).
  */
-function detectBarrelRegions(
-  imageData: ImageData,
-  threshold: number,
-): BarrelRegion[] {
+function detectBarrelRegions(imageData: ImageData, threshold: number): BarrelRegion[] {
   const { width, height, data } = imageData;
   const minFill = width * 0.05;
   const rowFill: boolean[] = [];
@@ -78,8 +75,7 @@ function detectBarrelRegions(
     let count = 0;
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
-      const brightness =
-        0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      const brightness = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
       if (brightness <= threshold && data[idx + 3] >= 128) count++;
     }
     rowFill.push(count >= minFill);
@@ -110,9 +106,7 @@ function detectBarrelRegions(
 
   // Sort by proximity to image center (center-most barrel is best for extraction)
   const imgCenter = height / 2;
-  regions.sort(
-    (a, b) => Math.abs(a.centerY - imgCenter) - Math.abs(b.centerY - imgCenter),
-  );
+  regions.sort((a, b) => Math.abs(a.centerY - imgCenter) - Math.abs(b.centerY - imgCenter));
   return regions;
 }
 
@@ -120,9 +114,7 @@ function detectBarrelRegions(
  * Extract barrel outline from image pixel data.
  * Uses Otsu's method for adaptive thresholding and selects the center-most barrel.
  */
-export function extractContourFromImageData(
-  imageData: ImageData,
-): RawContour | null {
+export function extractContourFromImageData(imageData: ImageData): RawContour | null {
   const { width, data } = imageData;
 
   const threshold = computeOtsuThreshold(imageData);
@@ -141,8 +133,7 @@ export function extractContourFromImageData(
     let bottom = -1;
     for (let y = yMin; y <= yMax; y++) {
       const idx = (y * width + x) * 4;
-      const brightness =
-        0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      const brightness = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
       if (brightness <= threshold && data[idx + 3] >= 128) {
         if (top === -1) top = y;
         bottom = y;
@@ -181,9 +172,7 @@ export function extractContourFromImageData(
       while (next < trimmedTop.length && trimmedTop[next] === -1) next++;
       if (prev >= 0 && next < trimmedTop.length) {
         const t = (i - prev) / (next - prev);
-        trimmedTop[i] = Math.round(
-          trimmedTop[prev] + t * (trimmedTop[next] - trimmedTop[prev]),
-        );
+        trimmedTop[i] = Math.round(trimmedTop[prev] + t * (trimmedTop[next] - trimmedTop[prev]));
         trimmedBottom[i] = Math.round(
           trimmedBottom[prev] + t * (trimmedBottom[next] - trimmedBottom[prev]),
         );
@@ -249,7 +238,7 @@ export function normalizeContourToMm(
     if (r > maxRadiusPx) maxRadiusPx = r;
   }
 
-  const radiusScale = maxRadiusPx > 0 ? (maxDiaMm / 2) / maxRadiusPx : 1;
+  const radiusScale = maxRadiusPx > 0 ? maxDiaMm / 2 / maxRadiusPx : 1;
   const numPoints = Math.min(200, barrelLengthPx);
   const step = barrelLengthPx / numPoints;
 

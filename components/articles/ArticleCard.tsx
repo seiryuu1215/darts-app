@@ -17,7 +17,13 @@ export default function ArticleCard({ article }: ArticleCardProps) {
     <Card
       component={Link}
       href={`/articles/${article.slug}`}
-      sx={{ textDecoration: 'none', height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
+      sx={{
+        textDecoration: 'none',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
+      }}
     >
       {article.coverImageUrl ? (
         <CardMedia

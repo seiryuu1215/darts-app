@@ -4,12 +4,12 @@
 
 // フライト別カラー（DARTSLIVEアプリ準拠）
 export const FLIGHT_COLORS: Record<string, string> = {
-  N:  '#808080', // グレー
-  C:  '#4CAF50', // グリーン
+  N: '#808080', // グレー
+  C: '#4CAF50', // グリーン
   CC: '#00ACC1', // シアン
-  B:  '#1E88E5', // ブルー
+  B: '#1E88E5', // ブルー
   BB: '#7B1FA2', // パープル
-  A:  '#FF9800', // オレンジ
+  A: '#FF9800', // オレンジ
   AA: '#E65100', // 濃いめオレンジ
   SA: '#FDD835', // イエロー
 };
@@ -19,6 +19,6 @@ export function getFlightColor(flight: string): string {
 }
 
 // ゲームカテゴリカラー
-export const COLOR_01 = '#E53935';       // 01 - レッド
-export const COLOR_CRICKET = '#1E88E5';  // Cricket - ブルー
-export const COLOR_COUNTUP = '#43A047';  // COUNT-UP - グリーン
+export const COLOR_01 = '#E53935'; // 01 - レッド
+export const COLOR_CRICKET = '#1E88E5'; // Cricket - ブルー
+export const COLOR_COUNTUP = '#43A047'; // COUNT-UP - グリーン

@@ -33,10 +33,7 @@ const db = getFirestore(app);
 
 async function setAdmin() {
   // emailでユーザを検索
-  const snapshot = await db
-    .collection('users')
-    .where('email', '==', ADMIN_EMAIL)
-    .get();
+  const snapshot = await db.collection('users').where('email', '==', ADMIN_EMAIL).get();
 
   if (snapshot.empty) {
     console.error(`ユーザが見つかりません: ${ADMIN_EMAIL}`);

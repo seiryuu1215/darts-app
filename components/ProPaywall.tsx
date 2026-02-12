@@ -11,9 +11,22 @@ interface ProPaywallProps {
 
 export default function ProPaywall({ title, description }: ProPaywallProps) {
   return (
-    <Paper sx={{ textAlign: 'center', py: 6, px: 3, mb: 2, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+    <Paper
+      sx={{
+        textAlign: 'center',
+        py: 6,
+        px: 3,
+        mb: 2,
+        bgcolor: 'background.default',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+      }}
+    >
       <LockIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-      <Typography variant="h6" sx={{ mb: 1 }}>{title}</Typography>
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        {title}
+      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {description}
       </Typography>

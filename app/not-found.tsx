@@ -19,7 +19,8 @@ export default function NotFound() {
               component="span"
               sx={{
                 display: 'inline-block',
-                px: 3, py: 1,
+                px: 3,
+                py: 1,
                 bgcolor: 'primary.main',
                 color: 'primary.contrastText',
                 borderRadius: 1,
@@ -35,7 +36,8 @@ export default function NotFound() {
               component="span"
               sx={{
                 display: 'inline-block',
-                px: 3, py: 1,
+                px: 3,
+                py: 1,
                 border: '1px solid',
                 borderColor: 'primary.main',
                 color: 'primary.main',

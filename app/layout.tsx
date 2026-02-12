@@ -1,51 +1,52 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Providers from "@/components/Providers";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import type { Metadata, Viewport } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import Providers from '@/components/Providers';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Darts Lab - ダーツセッティング管理・バレル検索・スタッツ分析",
-    template: "%s | Darts Lab",
+    default: 'Darts Lab - ダーツセッティング管理・バレル検索・スタッツ分析',
+    template: '%s | Darts Lab',
   },
-  description: "ダーツのセッティングを登録・管理・共有。7,000種以上のバレル検索、診断クイズ、DARTSLIVEスタッツ連携でダーツライフをサポート。",
-  manifest: "/manifest.json",
+  description:
+    'ダーツのセッティングを登録・管理・共有。7,000種以上のバレル検索、診断クイズ、DARTSLIVEスタッツ連携でダーツライフをサポート。',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Darts Lab",
+    statusBarStyle: 'black-translucent',
+    title: 'Darts Lab',
   },
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
   },
   openGraph: {
-    type: "website",
-    locale: "ja_JP",
-    siteName: "Darts Lab",
+    type: 'website',
+    locale: 'ja_JP',
+    siteName: 'Darts Lab',
   },
   twitter: {
-    card: "summary",
+    card: 'summary',
   },
 };
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#1976d2",
+  themeColor: '#1976d2',
 };
 
 export default function RootLayout({
@@ -55,14 +56,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable}`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
           <Header />
-          <main style={{ minHeight: 'calc(100vh - 128px)' }}>
-            {children}
-          </main>
+          <main style={{ minHeight: 'calc(100vh - 128px)' }}>{children}</main>
           <Footer />
         </Providers>
       </body>

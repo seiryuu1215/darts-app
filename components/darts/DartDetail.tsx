@@ -80,14 +80,9 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
 
   const fetchComments = useCallback(async () => {
     try {
-      const q = query(
-        collection(db, 'darts', dartId, 'comments'),
-        orderBy('createdAt', 'desc')
-      );
+      const q = query(collection(db, 'darts', dartId, 'comments'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
-      setComments(
-        snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Comment[]
-      );
+      setComments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Comment[]);
     } catch (err) {
       console.error('コメント取得エラー:', err);
     }
@@ -96,15 +91,12 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
   const fetchMemos = useCallback(async () => {
     if (!session?.user?.id || !isOwner) return;
     try {
-      const q = query(
-        collection(db, 'darts', dartId, 'memos'),
-        orderBy('createdAt', 'desc')
-      );
+      const q = query(collection(db, 'darts', dartId, 'memos'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       setMemos(
         snapshot.docs
           .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((m) => (m as Memo).userId === session.user.id) as Memo[]
+          .filter((m) => (m as Memo).userId === session.user.id) as Memo[],
       );
     } catch (err) {
       console.error('メモ取得エラー:', err);
@@ -172,7 +164,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       const q = query(histRef, orderBy('startedAt', 'desc'));
       const snap = await getDocs(q);
       const current = snap.docs.find(
-        (d) => d.data().dartId === dartId && d.data().endedAt === null
+        (d) => d.data().dartId === dartId && d.data().endedAt === null,
       );
       if (current) {
         await updateDoc(doc(db, 'users', session.user.id, 'settingHistory', current.id), {
@@ -209,7 +201,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         const q = query(histRef, orderBy('startedAt', 'desc'));
         const snap = await getDocs(q);
         const currentEntry = snap.docs.find(
-          (d) => d.data().dartId === currentActiveId && d.data().endedAt === null
+          (d) => d.data().dartId === currentActiveId && d.data().endedAt === null,
         );
         if (currentEntry) {
           await updateDoc(doc(db, 'users', userId, 'settingHistory', currentEntry.id), {
@@ -221,7 +213,10 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         const prevDartDoc = await getDoc(doc(db, 'darts', currentActiveId));
         if (prevDartDoc.exists()) {
           prevDart = prevDartDoc.data() as Dart;
-          if (prevDart.barrel.name !== dart.barrel.name || prevDart.barrel.brand !== dart.barrel.brand) {
+          if (
+            prevDart.barrel.name !== dart.barrel.name ||
+            prevDart.barrel.brand !== dart.barrel.brand
+          ) {
             changeType = 'barrel';
             changedParts.push('バレル');
           } else {
@@ -290,22 +285,55 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          mb: 2,
+          flexWrap: 'wrap',
+          gap: 1,
+        }}
+      >
         <Box
           component={Link}
           href={`/users/${dart.userId}`}
-          sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.8 } }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            textDecoration: 'none',
+            color: 'inherit',
+            '&:hover': { opacity: 0.8 },
+          }}
         >
-          <UserAvatar userId={dart.userId} avatarUrl={dart.userAvatarUrl} userName={dart.userName} size={36} />
+          <UserAvatar
+            userId={dart.userId}
+            avatarUrl={dart.userAvatarUrl}
+            userName={dart.userName}
+            size={36}
+          />
           <Typography variant="subtitle1">{dart.userName || '匿名'}</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {isOwner && (
             <>
-              <Button variant="outlined" size="small" startIcon={<EditIcon />} component={Link} href={`/darts/${dartId}/edit`}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<EditIcon />}
+                component={Link}
+                href={`/darts/${dartId}/edit`}
+              >
                 編集
               </Button>
-              <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteOpen(true)}>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={() => setDeleteOpen(true)}
+              >
                 削除
               </Button>
               <Button
@@ -347,127 +375,202 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography variant="h4">
-          {dart.title}
-        </Typography>
-        {dart.isDraft && (
-          <Chip label="ドラフト" size="small" color="warning" />
-        )}
+        <Typography variant="h4">{dart.title}</Typography>
+        {dart.isDraft && <Chip label="ドラフト" size="small" color="warning" />}
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <IconButton onClick={handleLike} color={liked ? 'error' : 'default'} disabled={!session} aria-label={liked ? 'いいね解除' : 'いいね'}>
+        <IconButton
+          onClick={handleLike}
+          color={liked ? 'error' : 'default'}
+          disabled={!session}
+          aria-label={liked ? 'いいね解除' : 'いいね'}
+        >
           {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
         </IconButton>
         <Typography variant="body2">{likeCount}</Typography>
-        <IconButton onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'} disabled={!session} aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}>
+        <IconButton
+          onClick={handleBookmark}
+          color={bookmarked ? 'primary' : 'default'}
+          disabled={!session}
+          aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}
+        >
           {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
         </IconButton>
       </Box>
 
       {dart.imageUrls.length > 0 && (
-        <ImageList cols={dart.imageUrls.length > 1 ? 2 : 1} gap={8} sx={{ mb: 2, maxWidth: 500, mx: 'auto', mt: 0 }}>
+        <ImageList
+          cols={dart.imageUrls.length > 1 ? 2 : 1}
+          gap={8}
+          sx={{ mb: 2, maxWidth: 500, mx: 'auto', mt: 0 }}
+        >
           {dart.imageUrls.map((url, i) => (
             <ImageListItem key={i}>
-              <img src={url} alt={`${dart.title} - ${i + 1}`} style={{ borderRadius: 8, maxHeight: 240, objectFit: 'cover' }} />
+              <img
+                src={url}
+                alt={`${dart.title} - ${i + 1}`}
+                style={{ borderRadius: 8, maxHeight: 240, objectFit: 'cover' }}
+              />
             </ImageListItem>
           ))}
         </ImageList>
       )}
 
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>セットアップ</Typography>
+        <Typography variant="h6" gutterBottom>
+          セットアップ
+        </Typography>
 
         {/* セッティング込みトータル（全パーツのスペックが揃っている場合のみ） */}
         {(() => {
           if (!hasCompleteSpecs(dart)) return null;
           const totals = calcDartTotals(dart);
-          return (totals.totalLength || totals.totalWeight) ? (
+          return totals.totalLength || totals.totalWeight ? (
             <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>セッティング込み</Typography>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                セッティング込み
+              </Typography>
               <Typography variant="h5" color="primary">
                 {[
                   totals.totalLength && `${totals.totalLength.toFixed(1)}mm`,
                   totals.totalWeight && `${totals.totalWeight.toFixed(1)}g`,
-                ].filter(Boolean).join(' / ')}
+                ]
+                  .filter(Boolean)
+                  .join(' / ')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                ({[
-                  totals.totalLength && `${dart.tip.type === 'steel' ? 'ポイント' : 'チップ'}${dart.tip.lengthMm || 0} + バレル${dart.barrel.length || 0} + シャフト${(() => {
-                    if (dart.flight.isCondorAxe) return dart.flight.condorAxeShaftLengthMm || 0;
-                    return dart.shaft.lengthMm || 0;
-                  })()}mm`,
-                  totals.totalWeight && (dart.tip.type === 'steel'
-                    ? `バレル（ポイント込み）${dart.barrel.weight || 0} + シャフト${dart.shaft.weightG || 0} + フライト${dart.flight.weightG || 0}g`
-                    : `チップ${dart.tip.weightG || 0} + バレル${dart.barrel.weight || 0} + シャフト${dart.shaft.weightG || 0} + フライト${dart.flight.weightG || 0}g`),
-                ].filter(Boolean).join(' | ')})
+                (
+                {[
+                  totals.totalLength &&
+                    `${dart.tip.type === 'steel' ? 'ポイント' : 'チップ'}${dart.tip.lengthMm || 0} + バレル${dart.barrel.length || 0} + シャフト${(() => {
+                      if (dart.flight.isCondorAxe) return dart.flight.condorAxeShaftLengthMm || 0;
+                      return dart.shaft.lengthMm || 0;
+                    })()}mm`,
+                  totals.totalWeight &&
+                    (dart.tip.type === 'steel'
+                      ? `バレル（ポイント込み）${dart.barrel.weight || 0} + シャフト${dart.shaft.weightG || 0} + フライト${dart.flight.weightG || 0}g`
+                      : `チップ${dart.tip.weightG || 0} + バレル${dart.barrel.weight || 0} + シャフト${dart.shaft.weightG || 0} + フライト${dart.flight.weightG || 0}g`),
+                ]
+                  .filter(Boolean)
+                  .join(' | ')}
+                )
               </Typography>
             </Box>
           ) : null;
         })()}
 
         <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary">バレル</Typography>
-          <Typography>{dart.barrel.brand} {dart.barrel.name} ({dart.barrel.weight}g)</Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            バレル
+          </Typography>
+          <Typography>
+            {dart.barrel.brand} {dart.barrel.name} ({dart.barrel.weight}g)
+          </Typography>
           {(dart.barrel.maxDiameter || dart.barrel.length || dart.barrel.cut) && (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-              {dart.barrel.maxDiameter && <Chip label={`最大径 ${dart.barrel.maxDiameter}mm`} size="small" variant="outlined" />}
-              {dart.barrel.length && <Chip label={`全長 ${dart.barrel.length}mm`} size="small" variant="outlined" />}
-              {dart.barrel.cut && dart.barrel.cut.split(/[,+＋]/).filter(Boolean).map((c) => (
-                <Chip key={c.trim()} label={c.trim()} size="small" variant="outlined" />
-              ))}
+              {dart.barrel.maxDiameter && (
+                <Chip
+                  label={`最大径 ${dart.barrel.maxDiameter}mm`}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+              {dart.barrel.length && (
+                <Chip label={`全長 ${dart.barrel.length}mm`} size="small" variant="outlined" />
+              )}
+              {dart.barrel.cut &&
+                dart.barrel.cut
+                  .split(/[,+＋]/)
+                  .filter(Boolean)
+                  .map((c) => (
+                    <Chip key={c.trim()} label={c.trim()} size="small" variant="outlined" />
+                  ))}
             </Box>
           )}
         </Box>
 
         <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary">{dart.tip.type === 'steel' ? 'ポイント' : 'チップ'}</Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            {dart.tip.type === 'steel' ? 'ポイント' : 'チップ'}
+          </Typography>
           <Typography component="div">
             {dart.tip.name}
-            <Chip label={dart.tip.type === 'soft' ? 'ソフト' : 'スティール'} size="small" sx={{ ml: 1 }} />
+            <Chip
+              label={dart.tip.type === 'soft' ? 'ソフト' : 'スティール'}
+              size="small"
+              sx={{ ml: 1 }}
+            />
           </Typography>
           {(dart.tip.lengthMm || dart.tip.weightG) && (
             <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-              {dart.tip.lengthMm && <Chip label={`${dart.tip.lengthMm}mm`} size="small" variant="outlined" />}
-              {dart.tip.weightG && <Chip label={`${dart.tip.weightG}g`} size="small" variant="outlined" />}
+              {dart.tip.lengthMm && (
+                <Chip label={`${dart.tip.lengthMm}mm`} size="small" variant="outlined" />
+              )}
+              {dart.tip.weightG && (
+                <Chip label={`${dart.tip.weightG}g`} size="small" variant="outlined" />
+              )}
             </Box>
           )}
         </Box>
 
         {dart.flight.isCondorAxe ? (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">シャフト & フライト（CONDOR AXE一体型）</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              シャフト & フライト（CONDOR AXE一体型）
+            </Typography>
             <Typography component="div">{dart.flight.name}</Typography>
             <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
-              {dart.flight.condorAxeShaftLengthMm && <Chip label={`シャフト長 ${dart.flight.condorAxeShaftLengthMm}mm`} size="small" variant="outlined" />}
-              {dart.flight.weightG && <Chip label={`${dart.flight.weightG}g`} size="small" variant="outlined" />}
+              {dart.flight.condorAxeShaftLengthMm && (
+                <Chip
+                  label={`シャフト長 ${dart.flight.condorAxeShaftLengthMm}mm`}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+              {dart.flight.weightG && (
+                <Chip label={`${dart.flight.weightG}g`} size="small" variant="outlined" />
+              )}
               <Chip label="一体型" size="small" color="info" />
             </Box>
           </Box>
         ) : (
           <>
             <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary">シャフト</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                シャフト
+              </Typography>
               <Typography component="div">{dart.shaft.name}</Typography>
               {(dart.shaft.lengthMm || dart.shaft.weightG) && (
                 <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                  {dart.shaft.lengthMm && <Chip label={`${dart.shaft.lengthMm}mm`} size="small" variant="outlined" />}
-                  {dart.shaft.weightG && <Chip label={`${dart.shaft.weightG}g`} size="small" variant="outlined" />}
+                  {dart.shaft.lengthMm && (
+                    <Chip label={`${dart.shaft.lengthMm}mm`} size="small" variant="outlined" />
+                  )}
+                  {dart.shaft.weightG && (
+                    <Chip label={`${dart.shaft.weightG}g`} size="small" variant="outlined" />
+                  )}
                 </Box>
               )}
             </Box>
 
             <Box>
-              <Typography variant="subtitle2" color="text.secondary">フライト</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                フライト
+              </Typography>
               <Typography component="div">
                 {dart.flight.name}
                 {dart.flight.shape && (
                   <Chip
                     label={
-                      dart.flight.shape === 'standard' ? 'スタンダード' :
-                      dart.flight.shape === 'slim' ? 'スリム' :
-                      dart.flight.shape === 'kite' ? 'シェイプ' :
-                      dart.flight.shape === 'small' ? 'スモール' : 'ティアドロップ'
+                      dart.flight.shape === 'standard'
+                        ? 'スタンダード'
+                        : dart.flight.shape === 'slim'
+                          ? 'スリム'
+                          : dart.flight.shape === 'kite'
+                            ? 'シェイプ'
+                            : dart.flight.shape === 'small'
+                              ? 'スモール'
+                              : 'ティアドロップ'
                     }
                     size="small"
                     sx={{ ml: 1 }}
@@ -549,14 +652,18 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
 
       {dart.description && (
         <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>説明</Typography>
+          <Typography variant="h6" gutterBottom>
+            説明
+          </Typography>
           <Typography whiteSpace="pre-wrap">{dart.description}</Typography>
         </Paper>
       )}
 
       {isOwner && (
         <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>メモ</Typography>
+          <Typography variant="h6" gutterBottom>
+            メモ
+          </Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <TextField
               fullWidth
@@ -593,7 +700,9 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
                 }}
               >
                 <Box>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{memo.text}</Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {memo.text}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {memo.createdAt?.toDate?.().toLocaleString('ja-JP') || ''}
                   </Typography>
@@ -622,11 +731,18 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>キャンセル</Button>
-          <Button onClick={handleDelete} color="error">削除</Button>
+          <Button onClick={handleDelete} color="error">
+            削除
+          </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={historyDialogOpen} onClose={() => !historyLoading && setHistoryDialogOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={historyDialogOpen}
+        onClose={() => !historyLoading && setHistoryDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogTitle>セッティング変更を記録</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
@@ -644,7 +760,9 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHistoryDialogOpen(false)} disabled={historyLoading}>キャンセル</Button>
+          <Button onClick={() => setHistoryDialogOpen(false)} disabled={historyLoading}>
+            キャンセル
+          </Button>
           <Button onClick={handleConfirmActivate} variant="contained" disabled={historyLoading}>
             {historyLoading ? '記録中...' : '確定'}
           </Button>

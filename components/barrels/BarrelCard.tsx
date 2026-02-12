@@ -74,7 +74,15 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   };
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
+    <Card
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
+      }}
+    >
       {barrel.isDiscontinued && (
         <Chip
           label="廃盤"
@@ -96,7 +104,12 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
           component="img"
           src="/dart-placeholder.svg"
           alt="No Image"
-          sx={{ height: 160, width: '100%', objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
+          sx={{
+            height: 160,
+            width: '100%',
+            objectFit: 'cover',
+            ...(barrel.isDiscontinued && { opacity: 0.6 }),
+          }}
         />
       )}
       <CardContent sx={{ flexGrow: 1, pb: 1 }}>
@@ -108,14 +121,28 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           <Chip label={`${barrel.weight}g`} size="small" color="primary" variant="outlined" />
-          {barrel.maxDiameter && <Chip label={`最大径 ${barrel.maxDiameter}mm`} size="small" variant="outlined" />}
-          {barrel.length && <Chip label={`全長 ${barrel.length}mm`} size="small" variant="outlined" />}
-          {barrel.cut && barrel.cut.split(/[,+＋]/).filter(Boolean).map((c) => (
-            <Chip key={c.trim()} label={c.trim()} size="small" variant="outlined" />
-          ))}
+          {barrel.maxDiameter && (
+            <Chip label={`最大径 ${barrel.maxDiameter}mm`} size="small" variant="outlined" />
+          )}
+          {barrel.length && (
+            <Chip label={`全長 ${barrel.length}mm`} size="small" variant="outlined" />
+          )}
+          {barrel.cut &&
+            barrel.cut
+              .split(/[,+＋]/)
+              .filter(Boolean)
+              .map((c) => <Chip key={c.trim()} label={c.trim()} size="small" variant="outlined" />)}
         </Box>
       </CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, pb: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 1,
+          pb: 1,
+        }}
+      >
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <AffiliateButton barrel={barrel} size="small" />
           {session && (
@@ -125,7 +152,12 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
           )}
         </Box>
         {session && (
-          <IconButton size="small" onClick={handleBookmark} color={bookmarked ? 'primary' : 'default'} aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}>
+          <IconButton
+            size="small"
+            onClick={handleBookmark}
+            color={bookmarked ? 'primary' : 'default'}
+            aria-label={bookmarked ? 'ブックマーク解除' : 'ブックマーク'}
+          >
             {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>
         )}

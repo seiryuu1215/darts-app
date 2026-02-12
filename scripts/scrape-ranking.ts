@@ -41,11 +41,13 @@ async function main() {
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
   // 売上順でソート
-  const url = 'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
+  const url =
+    'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
   const items = await page.evaluate(() => {
-    const results: { name: string; imageUrl: string | null; productUrl: string; price: string }[] = [];
+    const results: { name: string; imageUrl: string | null; productUrl: string; price: string }[] =
+      [];
     const seen = new Set<string>();
 
     document.querySelectorAll('a[href*="shopdetail"]').forEach((a) => {
@@ -56,13 +58,19 @@ async function main() {
       seen.add(cleanHref);
 
       const img = a.querySelector('img');
-      const nameEl = a.closest('.item, .itemBox, li, [class*="product"]')?.querySelector('[class*="name"], [class*="title"], p, h3');
-      const priceEl = a.closest('.item, .itemBox, li, [class*="product"]')?.querySelector('[class*="price"], .price');
+      const nameEl = a
+        .closest('.item, .itemBox, li, [class*="product"]')
+        ?.querySelector('[class*="name"], [class*="title"], p, h3');
+      const priceEl = a
+        .closest('.item, .itemBox, li, [class*="product"]')
+        ?.querySelector('[class*="price"], .price');
 
       results.push({
         name: nameEl?.textContent?.trim() || img?.getAttribute('alt')?.trim() || '',
         imageUrl: img?.getAttribute('src') || null,
-        productUrl: cleanHref.startsWith('http') ? cleanHref : `https://www.dartshive.jp${cleanHref}`,
+        productUrl: cleanHref.startsWith('http')
+          ? cleanHref
+          : `https://www.dartshive.jp${cleanHref}`,
         price: priceEl?.textContent?.trim() || '',
       });
     });

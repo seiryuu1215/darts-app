@@ -41,7 +41,9 @@ export default function BookmarksPage() {
       setLoading(true);
       try {
         // バレルブックマーク — バッチ取得（30件ずつチャンク）
-        const barrelBmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
+        const barrelBmSnap = await getDocs(
+          collection(db, 'users', session.user.id, 'barrelBookmarks'),
+        );
         const barrelIds = barrelBmSnap.docs.map((d) => d.data().barrelId).filter(Boolean);
         const barrels: BarrelProduct[] = [];
         for (let i = 0; i < barrelIds.length; i += 30) {
@@ -79,9 +81,15 @@ export default function BookmarksPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: 'ブックマーク' }]} />
-      <Typography variant="h4" sx={{ mb: 3 }}>ブックマーク</Typography>
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        ブックマーク
+      </Typography>
 
-      {fetchError && <Alert severity="error" sx={{ mb: 2 }}>ブックマークの取得に失敗しました</Alert>}
+      {fetchError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          ブックマークの取得に失敗しました
+        </Alert>
+      )}
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab label={`バレル (${barrelBookmarks.length})`} />
@@ -106,20 +114,18 @@ export default function BookmarksPage() {
             ))}
           </Grid>
         )
+      ) : dartBookmarks.length === 0 ? (
+        <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
+          ブックマークしたセッティングはありません
+        </Typography>
       ) : (
-        dartBookmarks.length === 0 ? (
-          <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
-            ブックマークしたセッティングはありません
-          </Typography>
-        ) : (
-          <Grid container spacing={3}>
-            {dartBookmarks.map((dart) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
-                <DartCard dart={dart} />
-              </Grid>
-            ))}
-          </Grid>
-        )
+        <Grid container spacing={3}>
+          {dartBookmarks.map((dart) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
+              <DartCard dart={dart} />
+            </Grid>
+          ))}
+        </Grid>
       )}
     </Container>
   );

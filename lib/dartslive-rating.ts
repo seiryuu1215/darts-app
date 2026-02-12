@@ -25,8 +25,8 @@ export function calc01Rating(ppd: number): number {
 
 /** MPRからCricket個別レーティング（連続値）を算出 */
 export function calcCriRating(mpr: number): number {
-  if (mpr < 1.30) return 1;
-  if (mpr < 3.50) return (mpr * 100 - 90) / 20;
+  if (mpr < 1.3) return 1;
+  if (mpr < 3.5) return (mpr * 100 - 90) / 20;
   return (mpr * 100 - 25) / 25;
 }
 
@@ -50,8 +50,8 @@ export function mprForRating(targetCriRt: number): number {
 }
 
 export interface TargetStat {
-  target: number;   // 目標値
-  gap: number;      // 現在との差
+  target: number; // 目標値
+  gap: number; // 現在との差
   achieved: boolean; // 既に達成済み
 }
 

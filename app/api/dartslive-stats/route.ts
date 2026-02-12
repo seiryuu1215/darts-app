@@ -14,7 +14,11 @@ const dartsliveLoginSchema = z.object({
 
 export const maxDuration = 60;
 
-async function login(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>, email: string, password: string) {
+async function login(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+  email: string,
+  password: string,
+) {
   await page.goto('https://card.dartslive.com/account/login.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
@@ -30,7 +34,9 @@ async function login(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppetee
 }
 
 /** top.jsp からプレイヤープロフィール（通り名・カードアイコン）を取得 */
-async function scrapeProfile(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
+async function scrapeProfile(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+) {
   await page.goto('https://card.dartslive.com/t/top.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
@@ -39,7 +45,8 @@ async function scrapeProfile(page: Awaited<ReturnType<Awaited<ReturnType<typeof 
   return page.evaluate(() => {
     // 通り名（プレイヤータイトル/ニックネーム）
     const toorina =
-      document.querySelector('.toorina, .player-nickname, [class*="title"]')?.textContent?.trim() || '';
+      document.querySelector('.toorina, .player-nickname, [class*="title"]')?.textContent?.trim() ||
+      '';
     // カードアイコン/テーマ画像
     const iconEl = document.querySelector('.card-icon img, .player-icon img, [class*="icon"] img');
     const rawUrl = iconEl?.getAttribute('src') || '';
@@ -53,7 +60,9 @@ async function scrapeProfile(page: Awaited<ReturnType<Awaited<ReturnType<typeof 
 }
 
 /** play/index.jsp から現在スタッツ + Awards を取得 */
-async function scrapeCurrentStats(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
+async function scrapeCurrentStats(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+) {
   await page.goto('https://card.dartslive.com/t/play/index.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
@@ -142,7 +151,9 @@ async function scrapeCurrentStats(page: Awaited<ReturnType<Awaited<ReturnType<ty
 }
 
 /** monthly.jsp から月間推移データ（Rating/01/Cricket/COUNT-UP）を取得 */
-async function scrapeMonthlyData(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
+async function scrapeMonthlyData(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+) {
   const tabs = [
     { key: 'rating', param: '' },
     { key: 'zeroOne', param: '?t=1' },
@@ -181,7 +192,9 @@ async function scrapeMonthlyData(page: Awaited<ReturnType<Awaited<ReturnType<typ
 }
 
 /** playdata.jsp から直近の個別ゲーム結果を取得 */
-async function scrapeRecentGames(page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>) {
+async function scrapeRecentGames(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+) {
   await page.goto('https://card.dartslive.com/t/playdata.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
@@ -286,12 +299,15 @@ export const GET = withErrorHandler(
         },
         monthly: {},
         recentGames: { dayStats: {}, games: [], shops: [] },
-        prev: data?.prevRating != null ? {
-          rating: data.prevRating,
-          stats01Avg: data.prevStats01Avg,
-          statsCriAvg: data.prevStatsCriAvg,
-          statsPraAvg: data.prevStatsPraAvg,
-        } : null,
+        prev:
+          data?.prevRating != null
+            ? {
+                rating: data.prevRating,
+                stats01Avg: data.prevStats01Avg,
+                statsCriAvg: data.prevStatsCriAvg,
+                statsPraAvg: data.prevStatsPraAvg,
+              }
+            : null,
       },
       cached: true,
       summaryOnly: true,
@@ -302,93 +318,107 @@ export const GET = withErrorHandler(
 );
 
 export const POST = withErrorHandler(
-  withPermission(canUseDartslive, DARTSLIVE_PERMISSION_MSG, async (request: NextRequest, { userId }) => {
-    const body = await request.json();
-    const parsed = dartsliveLoginSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'メールアドレスとパスワードを正しく入力してください' }, { status: 400 });
-    }
-    const { email, password } = parsed.data;
-
-    let browser;
-    try {
-      const isVercel = process.env.VERCEL === '1';
-      browser = await puppeteer.launch({
-        args: isVercel ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
-        defaultViewport: { width: 1280, height: 720 },
-        executablePath: isVercel
-          ? await chromium.executablePath()
-          : process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: true,
-      });
-      const page = await browser.newPage();
-      await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      );
-
-      // ログイン
-      try {
-        await login(page, email, password);
-      } catch (e) {
-        if (e instanceof Error && e.message === 'LOGIN_FAILED') {
-          return NextResponse.json(
-            { error: 'ログインに失敗しました。メールアドレスとパスワードを確認してください。' },
-            { status: 401 }
-          );
-        }
-        throw e;
+  withPermission(
+    canUseDartslive,
+    DARTSLIVE_PERMISSION_MSG,
+    async (request: NextRequest, { userId }) => {
+      const body = await request.json();
+      const parsed = dartsliveLoginSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: 'メールアドレスとパスワードを正しく入力してください' },
+          { status: 400 },
+        );
       }
+      const { email, password } = parsed.data;
 
-      // 順次取得（同一ページインスタンスなので）
-      const profile = await scrapeProfile(page);
-      const currentStats = await scrapeCurrentStats(page);
-      const monthly = await scrapeMonthlyData(page);
-      const recentGames = await scrapeRecentGames(page);
+      let browser;
+      try {
+        const isVercel = process.env.VERCEL === '1';
+        browser = await puppeteer.launch({
+          args: isVercel ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
+          defaultViewport: { width: 1280, height: 720 },
+          executablePath: isVercel
+            ? await chromium.executablePath()
+            : process.env.CHROME_PATH ||
+              '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          headless: true,
+        });
+        const page = await browser.newPage();
+        await page.setUserAgent(
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        );
 
-      // Firestoreに最新スタッツを保存
-      const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
-      const prevDoc = await cacheRef.get();
-      const prevData = prevDoc.exists ? prevDoc.data() : null;
+        // ログイン
+        try {
+          await login(page, email, password);
+        } catch (e) {
+          if (e instanceof Error && e.message === 'LOGIN_FAILED') {
+            return NextResponse.json(
+              { error: 'ログインに失敗しました。メールアドレスとパスワードを確認してください。' },
+              { status: 401 },
+            );
+          }
+          throw e;
+        }
 
-      const responseData = {
-        current: { ...currentStats, toorina: profile.toorina, cardImageUrl: profile.cardImageUrl },
-        monthly,
-        recentGames,
-        prev: prevData ? {
-          rating: prevData.rating ?? prevData.current?.rating ?? null,
-          stats01Avg: prevData.stats01Avg ?? prevData.current?.stats01Avg ?? null,
-          statsCriAvg: prevData.statsCriAvg ?? prevData.current?.statsCriAvg ?? null,
-          statsPraAvg: prevData.statsPraAvg ?? prevData.current?.statsPraAvg ?? null,
-        } : null,
-      };
+        // 順次取得（同一ページインスタンスなので）
+        const profile = await scrapeProfile(page);
+        const currentStats = await scrapeCurrentStats(page);
+        const monthly = await scrapeMonthlyData(page);
+        const recentGames = await scrapeRecentGames(page);
 
-      // フルデータ + サマリーを保存
-      const cacheData = {
-        // サマリー（トップページ表示用）
-        rating: currentStats.rating,
-        ratingInt: currentStats.ratingInt,
-        flight: currentStats.flight,
-        cardName: currentStats.cardName,
-        toorina: profile.toorina,
-        cardImageUrl: profile.cardImageUrl,
-        stats01Avg: currentStats.stats01Avg,
-        statsCriAvg: currentStats.statsCriAvg,
-        statsPraAvg: currentStats.statsPraAvg,
-        // 前回との差分
-        prevRating: responseData.prev?.rating ?? null,
-        prevStats01Avg: responseData.prev?.stats01Avg ?? null,
-        prevStatsCriAvg: responseData.prev?.statsCriAvg ?? null,
-        prevStatsPraAvg: responseData.prev?.statsPraAvg ?? null,
-        // フルデータ（スタッツページ用）
-        fullData: JSON.stringify(responseData),
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-      await cacheRef.set(cacheData);
+        // Firestoreに最新スタッツを保存
+        const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
+        const prevDoc = await cacheRef.get();
+        const prevData = prevDoc.exists ? prevDoc.data() : null;
 
-      return NextResponse.json({ success: true, data: responseData });
-    } finally {
-      if (browser) await browser.close();
-    }
-  }),
+        const responseData = {
+          current: {
+            ...currentStats,
+            toorina: profile.toorina,
+            cardImageUrl: profile.cardImageUrl,
+          },
+          monthly,
+          recentGames,
+          prev: prevData
+            ? {
+                rating: prevData.rating ?? prevData.current?.rating ?? null,
+                stats01Avg: prevData.stats01Avg ?? prevData.current?.stats01Avg ?? null,
+                statsCriAvg: prevData.statsCriAvg ?? prevData.current?.statsCriAvg ?? null,
+                statsPraAvg: prevData.statsPraAvg ?? prevData.current?.statsPraAvg ?? null,
+              }
+            : null,
+        };
+
+        // フルデータ + サマリーを保存
+        const cacheData = {
+          // サマリー（トップページ表示用）
+          rating: currentStats.rating,
+          ratingInt: currentStats.ratingInt,
+          flight: currentStats.flight,
+          cardName: currentStats.cardName,
+          toorina: profile.toorina,
+          cardImageUrl: profile.cardImageUrl,
+          stats01Avg: currentStats.stats01Avg,
+          statsCriAvg: currentStats.statsCriAvg,
+          statsPraAvg: currentStats.statsPraAvg,
+          // 前回との差分
+          prevRating: responseData.prev?.rating ?? null,
+          prevStats01Avg: responseData.prev?.stats01Avg ?? null,
+          prevStatsCriAvg: responseData.prev?.statsCriAvg ?? null,
+          prevStatsPraAvg: responseData.prev?.statsPraAvg ?? null,
+          // フルデータ（スタッツページ用）
+          fullData: JSON.stringify(responseData),
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+        await cacheRef.set(cacheData);
+
+        return NextResponse.json({ success: true, data: responseData });
+      } finally {
+        if (browser) await browser.close();
+      }
+    },
+  ),
   'DARTSLIVE scraping error',
 );

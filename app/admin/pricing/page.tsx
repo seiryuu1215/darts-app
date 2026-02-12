@@ -3,15 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import {
-  Box,
-  Typography,
-  Paper,
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Alert, CircularProgress } from '@mui/material';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -57,7 +49,9 @@ export default function AdminPricingPage() {
             setPromoEndDate(data.promoEndDate.toDate().toISOString().slice(0, 16));
           }
         }
-      } catch { /* ignore */ } finally {
+      } catch {
+        /* ignore */
+      } finally {
         setLoading(false);
       }
     };
@@ -98,20 +92,36 @@ export default function AdminPricingPage() {
   };
 
   if (status === 'loading' || loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!isAdmin) return null;
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3 } }}>
-      <Typography variant="h5" sx={{ mb: 3 }}>料金・プロモ設定</Typography>
+      <Typography variant="h5" sx={{ mb: 3 }}>
+        料金・プロモ設定
+      </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       <Paper sx={{ p: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>基本価格</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+          基本価格
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="PRO月額 (¥)"
@@ -140,7 +150,9 @@ export default function AdminPricingPage() {
           sx={{ mb: 3 }}
         />
 
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>Stripe Price ID</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+          Stripe Price ID
+        </Typography>
         <TextField
           label="通常価格 Price ID"
           value={proStripePriceId}
@@ -160,7 +172,9 @@ export default function AdminPricingPage() {
           placeholder="price_..."
         />
 
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>プロモーション期間</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+          プロモーション期間
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="開始日時"

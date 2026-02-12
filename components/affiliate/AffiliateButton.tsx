@@ -33,11 +33,7 @@ export default function AffiliateButton({
       >
         購入する
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         {shopLinks.map((link) => (
           <MenuItem
             key={link.shop}

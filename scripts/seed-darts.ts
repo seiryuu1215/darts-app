@@ -61,9 +61,10 @@ const darts = [
       cut: 'シャークカット + リングカット',
     },
     tip: { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
-    shaft: { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.70 },
+    shaft: { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.7 },
     flight: { name: 'L-Flight PRO スモール', shape: 'small', weightG: 0.55, isCondorAxe: false },
-    description: 'メインで使ってるセッティング。シャークカットの掛かりが気持ち良い。ショートシャフト＋スモールでまとまり重視。',
+    description:
+      'メインで使ってるセッティング。シャークカットの掛かりが気持ち良い。ショートシャフト＋スモールでまとまり重視。',
     imageUrls: [],
   },
   {
@@ -78,7 +79,7 @@ const darts = [
       length: 44.0,
       cut: 'ピクセルグリップ',
     },
-    tip: { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.30 },
+    tip: { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.3 },
     shaft: { name: 'Fit Shaft GEAR #3', lengthMm: 24.0, weightG: 0.75 },
     flight: { name: 'Fit Flight AIR シェイプ', shape: 'kite', weightG: 0.57, isCondorAxe: false },
     description: '村松治樹モデル。ピクセルグリップがクセになる。練習用に長めのバレルで安定感重視。',
@@ -109,14 +110,14 @@ const darts = [
     userName: 'ハルカ',
     title: 'PYRO 坂口優希恵モデル 本気セッティング',
     barrel: {
-      name: 'PYRO Blazin\'',
+      name: "PYRO Blazin'",
       brand: 'Dynamite',
       weight: 20.0,
       maxDiameter: 7.0,
       length: 38.5,
       cut: 'ウィングカット + リングカット',
     },
-    tip: { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.30 },
+    tip: { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.3 },
     shaft: { name: 'L-Shaft Silent Slim 300 (Short)', lengthMm: 30.0, weightG: 0.73 },
     flight: { name: 'L-Flight PRO スリム', shape: 'slim', weightG: 0.43, isCondorAxe: false },
     description: '短めバレルで前重心。スリムフライトで鋭い飛び。大会用のメインセッティング。',
@@ -160,8 +161,14 @@ const darts = [
     },
     tip: { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
     shaft: { name: 'Fit Shaft GEAR #4', lengthMm: 28.5, weightG: 0.84 },
-    flight: { name: 'Fit Flight スタンダード', shape: 'standard', weightG: 0.88, isCondorAxe: false },
-    description: '友達から借りて投げたら意外と良かったので登録。軽めだけどダブルリングで程よくグリップ。',
+    flight: {
+      name: 'Fit Flight スタンダード',
+      shape: 'standard',
+      weightG: 0.88,
+      isCondorAxe: false,
+    },
+    description:
+      '友達から借りて投げたら意外と良かったので登録。軽めだけどダブルリングで程よくグリップ。',
     imageUrls: [],
   },
 ];
@@ -170,18 +177,24 @@ async function seed() {
   // ユーザ作成
   for (const user of users) {
     const { id, ...userData } = user;
-    await db.collection('users').doc(id).set({
-      ...userData,
-      height: null,
-      fourStanceType: null,
-      throwingImage: '',
-      dominantEye: null,
-      gripType: '',
-      activeSoftDartId: null,
-      activeSteelDartId: null,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    await db
+      .collection('users')
+      .doc(id)
+      .set(
+        {
+          ...userData,
+          height: null,
+          fourStanceType: null,
+          throwingImage: '',
+          dominantEye: null,
+          gripType: '',
+          activeSoftDartId: null,
+          activeSteelDartId: null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
     console.log(`ユーザ作成: ${user.displayName} (${id})`);
   }
 

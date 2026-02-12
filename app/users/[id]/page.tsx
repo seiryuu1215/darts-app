@@ -123,25 +123,21 @@ export default function UserProfilePage() {
       {/* プロフィールカード */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5, mb: 2 }}>
-          <UserAvatar userId={userId} avatarUrl={user.avatarUrl} userName={user.displayName} size={120} />
+          <UserAvatar
+            userId={userId}
+            avatarUrl={user.avatarUrl}
+            userName={user.displayName}
+            size={120}
+          />
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {user.displayName}
               </Typography>
-              {user.role === 'admin' && (
-                <Chip label="Admin" size="small" color="error" />
-              )}
-              {user.role === 'pro' && (
-                <Chip label="PRO" size="small" color="primary" />
-              )}
+              {user.role === 'admin' && <Chip label="Admin" size="small" color="error" />}
+              {user.role === 'pro' && <Chip label="PRO" size="small" color="primary" />}
               {isOwner && (
-                <Button
-                  size="small"
-                  startIcon={<EditIcon />}
-                  component={Link}
-                  href="/profile/edit"
-                >
+                <Button size="small" startIcon={<EditIcon />} component={Link} href="/profile/edit">
                   編集
                 </Button>
               )}
@@ -215,7 +211,15 @@ export default function UserProfilePage() {
       </Typography>
 
       {darts.length === 0 ? (
-        <Paper sx={{ textAlign: 'center', py: 4, bgcolor: 'background.default', border: '1px dashed', borderColor: 'divider' }}>
+        <Paper
+          sx={{
+            textAlign: 'center',
+            py: 4,
+            bgcolor: 'background.default',
+            border: '1px dashed',
+            borderColor: 'divider',
+          }}
+        >
           <Typography color="text.secondary">セッティングがありません</Typography>
         </Paper>
       ) : (
@@ -240,7 +244,13 @@ export default function UserProfilePage() {
                     component="img"
                     src={dart.imageUrls[0]}
                     alt={dart.title}
-                    sx={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
+                    sx={{
+                      width: 96,
+                      height: 96,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                      flexShrink: 0,
+                    }}
                   />
                 )}
                 <Box sx={{ minWidth: 0 }}>

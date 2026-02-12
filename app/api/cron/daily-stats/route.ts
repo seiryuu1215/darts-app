@@ -81,10 +81,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // LINE連携 + DL認証保存済みユーザーを取得
-    const usersSnap = await adminDb
-      .collection('users')
-      .where('lineUserId', '!=', null)
-      .get();
+    const usersSnap = await adminDb.collection('users').where('lineUserId', '!=', null).get();
 
     const eligibleUsers = usersSnap.docs.filter((doc) => {
       const data = doc.data();

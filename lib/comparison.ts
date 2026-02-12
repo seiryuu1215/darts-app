@@ -5,7 +5,7 @@
 export function getDiffColors(
   valueA: number | null | undefined,
   valueB: number | null | undefined,
-  maxDiffPercent = 20
+  maxDiffPercent = 20,
 ): { colorA: string; colorB: string } {
   const inherit = { colorA: 'inherit', colorB: 'inherit' };
 

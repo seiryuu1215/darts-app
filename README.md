@@ -26,17 +26,18 @@
 
 <!-- TODO: スクリーンショットを docs/screenshots/ に追加してパスを更新 -->
 
-| ホーム | バレル検索 | スタッツ |
-|:---:|:---:|:---:|
+|               ホーム               |                バレル検索                |               スタッツ               |
+| :--------------------------------: | :--------------------------------------: | :----------------------------------: |
 | ![Home](docs/screenshots/home.png) | ![Barrels](docs/screenshots/barrels.png) | ![Stats](docs/screenshots/stats.png) |
 
-| セッティング登録 | バレルシミュレーター | 診断クイズ |
-|:---:|:---:|:---:|
+|           セッティング登録           |             バレルシミュレーター             |             診断クイズ             |
+| :----------------------------------: | :------------------------------------------: | :--------------------------------: |
 | ![Setup](docs/screenshots/setup.png) | ![Simulator](docs/screenshots/simulator.png) | ![Quiz](docs/screenshots/quiz.png) |
 
 ## 主な機能
 
 ### セッティング管理
+
 - バレル・チップ・シャフト・フライトの組み合わせを登録
 - 主要メーカーの製品プリセットから選択、またはカスタム入力
 - CONDOR AXE（一体型パーツ）対応
@@ -46,6 +47,7 @@
 - セッティング変更履歴の記録・追跡
 
 ### バレルデータベース & 探索
+
 - バレル製品をスペック（重量・径・長さ・カット）で横断検索
 - 人気売上ランキング（週間/月間/総合タブ切替）
 - **バレルシミュレーター**: SVGでバレル形状を可視化、最大3本まで重ねて比較
@@ -54,6 +56,7 @@
 - ブックマーク＆検索結果からセッティング下書き作成
 
 ### DARTSLIVE スタッツ連携（PRO）
+
 - DARTSLIVE アカウントからスタッツを自動取得（Puppeteer によるサーバーサイドスクレイピング）
 - Rating / 01 / Cricket / COUNT-UP の月間推移グラフ（Recharts）
 - 直近プレイデータの可視化
@@ -62,57 +65,61 @@
 - カウントアップのRt期待値基準カラー表示
 
 ### 手動スタッツ記録
+
 - 練習の調子やメモを手動で記録・管理
 - 全ユーザーが利用可能
 
 ### アフィリエイト連携 & 収益化
+
 - ダーツハイブ（A8.net）・楽天・Amazon への購入導線
 - 環境変数ベースのアフィリエイトID管理（未設定時は直リンクにフォールバック）
 - 全バレルカード・詳細ページ・サイドバーにショップリンク
 
 ### ソーシャル & コンテンツ
+
 - セッティングへのいいね・コメント・ブックマーク
 - Markdown ベースのナレッジ記事投稿（PRO/admin）
 - プロフィール公開/非公開設定
 
 ### PWA
+
 - Service Worker によるオフラインキャッシュ
 - モバイルでホーム画面に追加して使用可能
 
 ## ロール別機能一覧
 
-| 機能 | general（無料） | pro（有料） | admin |
-|------|:---:|:---:|:---:|
-| セッティング登録 | 最大3件 | 無制限 | 無制限 |
-| セッティング閲覧・いいね・コメント | o | o | o |
-| バレル検索・クイズ・シミュレーター | o | o | o |
-| セッティング比較・履歴 | o | o | o |
-| プロフィール編集 | o | o | o |
-| 手動スタッツ記録 | o | o | o |
-| DARTSLIVE連携（自動取得・グラフ・Rt目標） | x | o | o |
-| 記事投稿・編集（自分の記事） | x | o | o |
-| 記事のおすすめフラグ設定 | x | x | o |
-| ユーザーロール管理 | x | x | o |
+| 機能                                      | general（無料） | pro（有料） | admin  |
+| ----------------------------------------- | :-------------: | :---------: | :----: |
+| セッティング登録                          |     最大3件     |   無制限    | 無制限 |
+| セッティング閲覧・いいね・コメント        |        o        |      o      |   o    |
+| バレル検索・クイズ・シミュレーター        |        o        |      o      |   o    |
+| セッティング比較・履歴                    |        o        |      o      |   o    |
+| プロフィール編集                          |        o        |      o      |   o    |
+| 手動スタッツ記録                          |        o        |      o      |   o    |
+| DARTSLIVE連携（自動取得・グラフ・Rt目標） |        x        |      o      |   o    |
+| 記事投稿・編集（自分の記事）              |        x        |      o      |   o    |
+| 記事のおすすめフラグ設定                  |        x        |      x      |   o    |
+| ユーザーロール管理                        |        x        |      x      |   o    |
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-|----------|------|
-| フレームワーク | Next.js 16 (App Router) |
-| 言語 | TypeScript 5 (strict) |
-| UI | React 19, MUI v7 |
-| 認証 | NextAuth.js 4 + Firebase Authentication |
-| データベース | Cloud Firestore |
-| ストレージ | Firebase Storage |
-| 決済 | Stripe (Subscription / Webhook) |
-| グラフ | Recharts 3 |
-| スクレイピング | Puppeteer 24 |
-| エラー監視 | Sentry |
-| テスト | Vitest (38 tests) |
-| フォーマッター | Prettier |
-| CI | GitHub Actions (lint / format / test / build) |
-| PWA | Serwist (Workbox ベース) |
-| ホスティング | Vercel |
+| カテゴリ       | 技術                                          |
+| -------------- | --------------------------------------------- |
+| フレームワーク | Next.js 16 (App Router)                       |
+| 言語           | TypeScript 5 (strict)                         |
+| UI             | React 19, MUI v7                              |
+| 認証           | NextAuth.js 4 + Firebase Authentication       |
+| データベース   | Cloud Firestore                               |
+| ストレージ     | Firebase Storage                              |
+| 決済           | Stripe (Subscription / Webhook)               |
+| グラフ         | Recharts 3                                    |
+| スクレイピング | Puppeteer 24                                  |
+| エラー監視     | Sentry                                        |
+| テスト         | Vitest (38 tests)                             |
+| フォーマッター | Prettier                                      |
+| CI             | GitHub Actions (lint / format / test / build) |
+| PWA            | Serwist (Workbox ベース)                      |
+| ホスティング   | Vercel                                        |
 
 ## アーキテクチャ
 
@@ -196,18 +203,18 @@ npm install
 cp .env.example .env.local
 ```
 
-| 変数 | 説明 |
-|------|------|
-| `NEXT_PUBLIC_FIREBASE_*` | Firebase クライアントSDK設定 |
-| `NEXTAUTH_SECRET` | NextAuth JWT 署名キー（`openssl rand -base64 32` で生成） |
-| `NEXTAUTH_URL` | アプリの URL（開発: `http://localhost:3000`） |
-| `ADMIN_EMAIL` | 管理者メールアドレス |
-| `STRIPE_SECRET_KEY` | Stripe シークレットキー |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook 署名シークレット |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe 公開キー |
-| `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID` | 楽天アフィリエイトID（任意） |
-| `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` | AmazonアソシエイトTag（任意） |
-| `NEXT_PUBLIC_A8_MEDIA_ID` | A8.net メディアID（任意） |
+| 変数                                 | 説明                                                      |
+| ------------------------------------ | --------------------------------------------------------- |
+| `NEXT_PUBLIC_FIREBASE_*`             | Firebase クライアントSDK設定                              |
+| `NEXTAUTH_SECRET`                    | NextAuth JWT 署名キー（`openssl rand -base64 32` で生成） |
+| `NEXTAUTH_URL`                       | アプリの URL（開発: `http://localhost:3000`）             |
+| `ADMIN_EMAIL`                        | 管理者メールアドレス                                      |
+| `STRIPE_SECRET_KEY`                  | Stripe シークレットキー                                   |
+| `STRIPE_WEBHOOK_SECRET`              | Stripe Webhook 署名シークレット                           |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe 公開キー                                           |
+| `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID`   | 楽天アフィリエイトID（任意）                              |
+| `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG`   | AmazonアソシエイトTag（任意）                             |
+| `NEXT_PUBLIC_A8_MEDIA_ID`            | A8.net メディアID（任意）                                 |
 
 ### 開発サーバー
 
@@ -281,14 +288,14 @@ darts-app/
 
 ## 設計ドキュメント
 
-| ドキュメント | 内容 |
-|-------------|------|
-| [アーキテクチャ設計書](docs/ARCHITECTURE.md) | システム構成図・ページ遷移図・データフロー（Mermaid） |
-| [要件定義書](docs/01-requirements.md) | 目的・ユーザー定義・機能一覧・非機能要件 |
-| [基本設計書](docs/02-basic-design.md) | システム構成・技術選定理由・DB設計 |
-| [詳細設計書](docs/03-detailed-design.md) | 画面設計・API設計・認証フロー・状態管理 |
-| [タスク分解](docs/04-task-breakdown.md) | 開発チェックリスト |
-| [セキュリティレビュー](docs/05-security-review.md) | セキュリティ観点のレビュー結果 |
+| ドキュメント                                       | 内容                                                  |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| [アーキテクチャ設計書](docs/ARCHITECTURE.md)       | システム構成図・ページ遷移図・データフロー（Mermaid） |
+| [要件定義書](docs/01-requirements.md)              | 目的・ユーザー定義・機能一覧・非機能要件              |
+| [基本設計書](docs/02-basic-design.md)              | システム構成・技術選定理由・DB設計                    |
+| [詳細設計書](docs/03-detailed-design.md)           | 画面設計・API設計・認証フロー・状態管理               |
+| [タスク分解](docs/04-task-breakdown.md)            | 開発チェックリスト                                    |
+| [セキュリティレビュー](docs/05-security-review.md) | セキュリティ観点のレビュー結果                        |
 
 ## セキュリティ
 

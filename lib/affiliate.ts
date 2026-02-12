@@ -14,19 +14,13 @@ export function getAffiliateConfig(): AffiliateConfig {
   };
 }
 
-export function toDartshiveAffiliateUrl(
-  productUrl: string,
-  config: AffiliateConfig,
-): string {
+export function toDartshiveAffiliateUrl(productUrl: string, config: AffiliateConfig): string {
   if (!config.a8MediaId) return productUrl;
   const encoded = encodeURIComponent(productUrl);
   return `https://px.a8.net/svt/ejp?a8mat=${config.a8MediaId}&a8ejpredirect=${encoded}`;
 }
 
-export function toRakutenSearchUrl(
-  barrelName: string,
-  config: AffiliateConfig,
-): string {
+export function toRakutenSearchUrl(barrelName: string, config: AffiliateConfig): string {
   const query = encodeURIComponent(barrelName);
   if (!config.rakutenAffiliateId) {
     return `https://search.rakuten.co.jp/search/mall/${query}/`;
@@ -34,10 +28,7 @@ export function toRakutenSearchUrl(
   return `https://hb.afl.rakuten.co.jp/hgc/${config.rakutenAffiliateId}/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F${query}%2F`;
 }
 
-export function toAmazonSearchUrl(
-  barrelName: string,
-  config: AffiliateConfig,
-): string {
+export function toAmazonSearchUrl(barrelName: string, config: AffiliateConfig): string {
   const query = encodeURIComponent(barrelName);
   if (!config.amazonAssociateTag) {
     return `https://www.amazon.co.jp/s?k=${query}`;
@@ -45,10 +36,7 @@ export function toAmazonSearchUrl(
   return `https://www.amazon.co.jp/s?k=${query}&tag=${config.amazonAssociateTag}`;
 }
 
-export function getShopLinks(
-  barrel: BarrelProduct,
-  config?: AffiliateConfig,
-): ShopLink[] {
+export function getShopLinks(barrel: BarrelProduct, config?: AffiliateConfig): ShopLink[] {
   const c = config ?? getAffiliateConfig();
   const searchName = `${barrel.brand} ${barrel.name}`;
 

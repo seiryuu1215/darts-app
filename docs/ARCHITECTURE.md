@@ -234,33 +234,33 @@ components/
 
 ## 技術スタック詳細
 
-| カテゴリ | 技術 | 用途 |
-|---------|------|------|
-| フレームワーク | Next.js 16 (App Router) | SSR/SSG + API Routes |
-| 言語 | TypeScript 5 (strict) | 型安全なフルスタック開発 |
-| UI | React 19 + MUI v7 | コンポーネントライブラリ |
-| CSS | Tailwind CSS v4 | ユーティリティCSS |
-| 認証 | NextAuth.js 4 + Firebase Auth | JWT + ロールベースアクセス制御 |
-| データベース | Cloud Firestore | NoSQL リアルタイムDB |
-| ストレージ | Firebase Storage | 画像アップロード |
-| グラフ | Recharts 3 | スタッツ可視化 |
-| スクレイピング | Puppeteer 24 | DARTSLIVE データ取得 |
-| PWA | Serwist (@serwist/next) | Service Worker + キャッシュ戦略 |
-| ホスティング | Vercel | Edge Network + Serverless |
-| アフィリエイト | A8.net / 楽天 / Amazon | 収益化基盤 |
+| カテゴリ       | 技術                          | 用途                            |
+| -------------- | ----------------------------- | ------------------------------- |
+| フレームワーク | Next.js 16 (App Router)       | SSR/SSG + API Routes            |
+| 言語           | TypeScript 5 (strict)         | 型安全なフルスタック開発        |
+| UI             | React 19 + MUI v7             | コンポーネントライブラリ        |
+| CSS            | Tailwind CSS v4               | ユーティリティCSS               |
+| 認証           | NextAuth.js 4 + Firebase Auth | JWT + ロールベースアクセス制御  |
+| データベース   | Cloud Firestore               | NoSQL リアルタイムDB            |
+| ストレージ     | Firebase Storage              | 画像アップロード                |
+| グラフ         | Recharts 3                    | スタッツ可視化                  |
+| スクレイピング | Puppeteer 24                  | DARTSLIVE データ取得            |
+| PWA            | Serwist (@serwist/next)       | Service Worker + キャッシュ戦略 |
+| ホスティング   | Vercel                        | Edge Network + Serverless       |
+| アフィリエイト | A8.net / 楽天 / Amazon        | 収益化基盤                      |
 
 ## 環境変数一覧
 
-| 変数 | 種類 | 説明 |
-|------|------|------|
-| `NEXT_PUBLIC_FIREBASE_*` | 公開 | Firebase クライアントSDK設定 |
-| `NEXTAUTH_SECRET` | 秘密 | JWT署名キー |
-| `NEXTAUTH_URL` | 設定 | アプリURL |
-| `ADMIN_EMAIL` | 設定 | 管理者メールアドレス |
-| `FIREBASE_SERVICE_ACCOUNT_KEY` | 秘密 | Firebase Admin SDK キー |
-| `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID` | 公開 | 楽天アフィリエイトID |
-| `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` | 公開 | Amazonアソシエイトタグ |
-| `NEXT_PUBLIC_A8_MEDIA_ID` | 公開 | A8.net メディアID |
+| 変数                               | 種類 | 説明                         |
+| ---------------------------------- | ---- | ---------------------------- |
+| `NEXT_PUBLIC_FIREBASE_*`           | 公開 | Firebase クライアントSDK設定 |
+| `NEXTAUTH_SECRET`                  | 秘密 | JWT署名キー                  |
+| `NEXTAUTH_URL`                     | 設定 | アプリURL                    |
+| `ADMIN_EMAIL`                      | 設定 | 管理者メールアドレス         |
+| `FIREBASE_SERVICE_ACCOUNT_KEY`     | 秘密 | Firebase Admin SDK キー      |
+| `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID` | 公開 | 楽天アフィリエイトID         |
+| `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` | 公開 | Amazonアソシエイトタグ       |
+| `NEXT_PUBLIC_A8_MEDIA_ID`          | 公開 | A8.net メディアID            |
 
 ## アフィリエイトフロー
 

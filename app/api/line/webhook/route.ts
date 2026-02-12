@@ -110,7 +110,10 @@ async function handleUnfollow(lineUserId: string) {
     });
   }
   // 会話状態もクリア
-  await adminDb.doc(`lineConversations/${lineUserId}`).delete().catch(() => {});
+  await adminDb
+    .doc(`lineConversations/${lineUserId}`)
+    .delete()
+    .catch(() => {});
 }
 
 /** テキストメッセージハンドリング */
@@ -227,7 +230,10 @@ async function handleLinkCode(replyToken: string, lineUserId: string, code: stri
 
   if (!codeSnap.exists) {
     await replyLineMessage(replyToken, [
-      { type: 'text', text: 'コードが見つかりません。有効期限が切れているか、コードが正しくない可能性があります。' },
+      {
+        type: 'text',
+        text: 'コードが見つかりません。有効期限が切れているか、コードが正しくない可能性があります。',
+      },
     ]);
     return;
   }
@@ -245,7 +251,10 @@ async function handleLinkCode(replyToken: string, lineUserId: string, code: stri
   if (expiresAt && expiresAt < new Date()) {
     await codeRef.delete();
     await replyLineMessage(replyToken, [
-      { type: 'text', text: 'コードの有効期限が切れています。プロフィールページから再発行してください。' },
+      {
+        type: 'text',
+        text: 'コードの有効期限が切れています。プロフィールページから再発行してください。',
+      },
     ]);
     return;
   }

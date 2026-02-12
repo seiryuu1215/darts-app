@@ -137,7 +137,9 @@ export default function BarrelsPage() {
       try {
         const bmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
         setBookmarkedIds(new Set(bmSnap.docs.map((d) => d.id)));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     fetchMyDarts();
     fetchBookmarks();
@@ -154,7 +156,12 @@ export default function BarrelsPage() {
     const dbCuts = barrels
       .map((b) => b.cut)
       .filter(Boolean)
-      .flatMap((c) => c.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean));
+      .flatMap((c) =>
+        c
+          .split(/[,+＋]/)
+          .map((s) => s.trim())
+          .filter(Boolean),
+      );
     const set = new Set([...BARREL_CUTS, ...dbCuts]);
     return Array.from(set);
   }, [barrels]);
@@ -183,7 +190,8 @@ export default function BarrelsPage() {
         if (barrelType !== selectedType) return false;
       }
       if (b.weight < weightRange[0] || b.weight > weightRange[1]) return false;
-      if (b.maxDiameter && (b.maxDiameter < diameterRange[0] || b.maxDiameter > diameterRange[1])) return false;
+      if (b.maxDiameter && (b.maxDiameter < diameterRange[0] || b.maxDiameter > diameterRange[1]))
+        return false;
       if (b.length && (b.length < lengthRange[0] || b.length > lengthRange[1])) return false;
       if (selectedCut && b.cut) {
         const cutTags = b.cut.split(/[,+＋]/).map((s) => s.trim());
@@ -191,12 +199,31 @@ export default function BarrelsPage() {
       }
       return true;
     });
-  }, [barrels, searchQuery, selectedBrand, selectedType, statusFilter, weightRange, diameterRange, lengthRange, selectedCut]);
+  }, [
+    barrels,
+    searchQuery,
+    selectedBrand,
+    selectedType,
+    statusFilter,
+    weightRange,
+    diameterRange,
+    lengthRange,
+    selectedCut,
+  ]);
 
   // フィルター変更時にページを1に戻す
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedBrand, selectedType, statusFilter, weightRange, diameterRange, lengthRange, selectedCut]);
+  }, [
+    searchQuery,
+    selectedBrand,
+    selectedType,
+    statusFilter,
+    weightRange,
+    diameterRange,
+    lengthRange,
+    selectedCut,
+  ]);
 
   // ページネーション
   const totalPages = Math.ceil(filteredBarrels.length / ITEMS_PER_PAGE);
@@ -234,16 +261,43 @@ export default function BarrelsPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: 'バレル検索' }]} />
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 1,
+        }}
+      >
         <Typography variant="h4">バレル検索</Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button component={Link} href="/barrels/recommend" variant="outlined" startIcon={<RecommendIcon />} size="small">
+          <Button
+            component={Link}
+            href="/barrels/recommend"
+            variant="outlined"
+            startIcon={<RecommendIcon />}
+            size="small"
+          >
             おすすめ
           </Button>
-          <Button component={Link} href="/barrels/simulator" variant="outlined" startIcon={<StraightenIcon />} size="small">
+          <Button
+            component={Link}
+            href="/barrels/simulator"
+            variant="outlined"
+            startIcon={<StraightenIcon />}
+            size="small"
+          >
             シミュレーター
           </Button>
-          <Button component={Link} href="/barrels/quiz" variant="outlined" startIcon={<QuizIcon />} size="small">
+          <Button
+            component={Link}
+            href="/barrels/quiz"
+            variant="outlined"
+            startIcon={<QuizIcon />}
+            size="small"
+          >
             診断クイズ
           </Button>
         </Box>
@@ -255,7 +309,9 @@ export default function BarrelsPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <TrendingUpIcon color="primary" />
             <Typography variant="h6">人気バレル</Typography>
-            <Typography variant="caption" color="text.secondary">ダーツハイブ売上ランキング</Typography>
+            <Typography variant="caption" color="text.secondary">
+              ダーツハイブ売上ランキング
+            </Typography>
           </Box>
           <Tabs
             value={rankingTab}
@@ -266,9 +322,28 @@ export default function BarrelsPage() {
             <Tab label="月間" value="monthly" />
             <Tab label="総合" value="all" />
           </Tabs>
-          <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, scrollSnapType: 'x mandatory', '&::-webkit-scrollbar': { height: 6 }, '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              overflowX: 'auto',
+              pb: 1,
+              scrollSnapType: 'x mandatory',
+              '&::-webkit-scrollbar': { height: 6 },
+              '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
+            }}
+          >
             {ranking.map((item) => (
-              <Card key={item.rank} sx={{ minWidth: 150, maxWidth: 150, flexShrink: 0, position: 'relative', scrollSnapAlign: 'start' }}>
+              <Card
+                key={item.rank}
+                sx={{
+                  minWidth: 150,
+                  maxWidth: 150,
+                  flexShrink: 0,
+                  position: 'relative',
+                  scrollSnapAlign: 'start',
+                }}
+              >
                 <CardActionArea
                   href={toDartshiveAffiliateUrl(item.productUrl, getAffiliateConfig())}
                   target="_blank"
@@ -290,8 +365,18 @@ export default function BarrelsPage() {
                       sx={{ objectFit: 'cover' }}
                     />
                   ) : (
-                    <Box sx={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'action.hover' }}>
-                      <Typography variant="caption" color="text.secondary">No Image</Typography>
+                    <Box
+                      sx={{
+                        height: 120,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        No Image
+                      </Typography>
                     </Box>
                   )}
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -353,18 +438,26 @@ export default function BarrelsPage() {
                 おすすめバレルが見つかりませんでした
               </Typography>
             ) : (
-              <Box sx={{
-                display: 'flex',
-                gap: 2,
-                overflowX: 'auto',
-                pb: 1,
-                scrollSnapType: 'x mandatory',
-                '&::-webkit-scrollbar': { height: 6 },
-                '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
-              }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  overflowX: 'auto',
+                  pb: 1,
+                  scrollSnapType: 'x mandatory',
+                  '&::-webkit-scrollbar': { height: 6 },
+                  '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
+                }}
+              >
                 {recommendedBarrels.map((barrel) => (
-                  <Box key={barrel.id} sx={{ minWidth: 240, maxWidth: 240, flexShrink: 0, scrollSnapAlign: 'start' }}>
-                    <BarrelCard barrel={barrel} isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : false} />
+                  <Box
+                    key={barrel.id}
+                    sx={{ minWidth: 240, maxWidth: 240, flexShrink: 0, scrollSnapAlign: 'start' }}
+                  >
+                    <BarrelCard
+                      barrel={barrel}
+                      isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : false}
+                    />
                   </Box>
                 ))}
               </Box>
@@ -398,28 +491,48 @@ export default function BarrelsPage() {
         >
           フィルター
           {activeFilterCount > 0 && (
-            <Chip label={activeFilterCount} size="small" color="primary" sx={{ ml: 1, height: 20, minWidth: 20 }} />
+            <Chip
+              label={activeFilterCount}
+              size="small"
+              color="primary"
+              sx={{ ml: 1, height: 20, minWidth: 20 }}
+            />
           )}
         </Button>
         {activeFilterCount > 0 && (
-          <Button size="small" onClick={clearFilters}>クリア</Button>
+          <Button size="small" onClick={clearFilters}>
+            クリア
+          </Button>
         )}
       </Box>
 
       {/* ヒット件数表示 */}
-      <Paper variant="outlined" sx={{ p: 1.5, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1.5,
+          mb: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
           <Typography variant="h6" component="span" color="primary">
             {filteredBarrels.length.toLocaleString()}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             件ヒット
-            {filteredBarrels.length !== barrels.length && ` (全${barrels.length.toLocaleString()}件中)`}
+            {filteredBarrels.length !== barrels.length &&
+              ` (全${barrels.length.toLocaleString()}件中)`}
           </Typography>
         </Box>
         {totalPages > 1 && (
           <Typography variant="body2" color="text.secondary">
-            {(page - 1) * ITEMS_PER_PAGE + 1}〜{Math.min(page * ITEMS_PER_PAGE, filteredBarrels.length)}件目を表示
+            {(page - 1) * ITEMS_PER_PAGE + 1}〜
+            {Math.min(page * ITEMS_PER_PAGE, filteredBarrels.length)}件目を表示
           </Typography>
         )}
       </Paper>
@@ -427,11 +540,15 @@ export default function BarrelsPage() {
       <Collapse in={filterOpen}>
         <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>販売状態</Typography>
+            <Typography variant="body2" gutterBottom>
+              販売状態
+            </Typography>
             <ToggleButtonGroup
               value={statusFilter}
               exclusive
-              onChange={(_, v) => { if (v !== null) setStatusFilter(v); }}
+              onChange={(_, v) => {
+                if (v !== null) setStatusFilter(v);
+              }}
               size="small"
             >
               <ToggleButton value="all">すべて</ToggleButton>
@@ -443,7 +560,11 @@ export default function BarrelsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>タイプ</InputLabel>
-                <Select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} label="タイプ">
+                <Select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  label="タイプ"
+                >
                   <MenuItem value="">すべて</MenuItem>
                   <MenuItem value="soft">ソフト (2BA/4BA)</MenuItem>
                   <MenuItem value="steel">スティール</MenuItem>
@@ -453,10 +574,16 @@ export default function BarrelsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>ブランド</InputLabel>
-                <Select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} label="ブランド">
+                <Select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  label="ブランド"
+                >
                   <MenuItem value="">すべて</MenuItem>
                   {brands.map((brand) => (
-                    <MenuItem key={brand} value={brand}>{brand}</MenuItem>
+                    <MenuItem key={brand} value={brand}>
+                      {brand}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -464,10 +591,16 @@ export default function BarrelsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>カット</InputLabel>
-                <Select value={selectedCut} onChange={(e) => setSelectedCut(e.target.value)} label="カット">
+                <Select
+                  value={selectedCut}
+                  onChange={(e) => setSelectedCut(e.target.value)}
+                  label="カット"
+                >
                   <MenuItem value="">すべて</MenuItem>
                   {cuts.map((cut) => (
-                    <MenuItem key={cut} value={cut}>{cut}</MenuItem>
+                    <MenuItem key={cut} value={cut}>
+                      {cut}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -528,14 +661,19 @@ export default function BarrelsPage() {
         </Grid>
       ) : filteredBarrels.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
-          {barrels.length === 0 ? 'バレルデータがありません。スクレイピングスクリプトを実行してください。' : '条件に一致するバレルがありません'}
+          {barrels.length === 0
+            ? 'バレルデータがありません。スクレイピングスクリプトを実行してください。'
+            : '条件に一致するバレルがありません'}
         </Typography>
       ) : (
         <>
           <Grid container spacing={2}>
             {paginatedBarrels.map((barrel) => (
               <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={barrel.id}>
-                <BarrelCard barrel={barrel} isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : undefined} />
+                <BarrelCard
+                  barrel={barrel}
+                  isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : undefined}
+                />
               </Grid>
             ))}
           </Grid>

@@ -46,7 +46,7 @@ const PROGRESS_FILE = 'progress.txt';
 const nukeMode = process.argv.includes('--nuke');
 
 function sleep(ms: number) {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 // ---------------- visited 永続 ----------------
@@ -78,12 +78,18 @@ interface BarrelData {
 
 async function save(barrel: BarrelData) {
   const id = Buffer.from(barrel.productUrl).toString('base64url');
-  await db.collection('barrels').doc(id).set({
-    ...barrel,
-    source: 'dartshive',
-    scrapedAt: Timestamp.now(),
-    ...(barrel.isDiscontinued !== undefined && { isDiscontinued: barrel.isDiscontinued }),
-  }, { merge: true });
+  await db
+    .collection('barrels')
+    .doc(id)
+    .set(
+      {
+        ...barrel,
+        source: 'dartshive',
+        scrapedAt: Timestamp.now(),
+        ...(barrel.isDiscontinued !== undefined && { isDiscontinued: barrel.isDiscontinued }),
+      },
+      { merge: true },
+    );
 }
 
 async function nukeBarrels() {
@@ -97,7 +103,7 @@ async function nukeBarrels() {
   const docs = snapshot.docs;
   for (let i = 0; i < docs.length; i += batchSize) {
     const batch = db.batch();
-    docs.slice(i, i + batchSize).forEach(doc => batch.delete(doc.ref));
+    docs.slice(i, i + batchSize).forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
     deleted += Math.min(batchSize, docs.length - i);
     console.log(`  削除: ${deleted}/${total}`);
@@ -125,7 +131,7 @@ async function scrapeDetail(page: Page, url: string): Promise<BarrelData | null>
       let length: number | null = null;
       let brand = '';
 
-      document.querySelectorAll('table tr').forEach(tr => {
+      document.querySelectorAll('table tr').forEach((tr) => {
         const tds = tr.querySelectorAll('td,th');
         if (tds.length < 2) return;
         const label = (tds[0].textContent || '').trim();
@@ -186,10 +192,12 @@ async function scrapeList(page: Page, url: string): Promise<string[]> {
 
   return page.evaluate((origin: string) => {
     return Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="shopdetail"]'))
-      .map(a => {
+      .map((a) => {
         const href = a.getAttribute('href');
         if (!href) return '';
-        return href.startsWith('http') ? href : `${origin}${href.startsWith('/') ? '' : '/'}${href}`;
+        return href.startsWith('http')
+          ? href
+          : `${origin}${href.startsWith('/') ? '' : '/'}${href}`;
       })
       .filter(Boolean);
   }, new URL(url).origin);
@@ -197,7 +205,12 @@ async function scrapeList(page: Page, url: string): Promise<string[]> {
 
 // ---------------- worker ----------------
 
-async function worker(browser: Browser, queue: string[], id: number, stats: { saved: number; skipped: number }) {
+async function worker(
+  browser: Browser,
+  queue: string[],
+  id: number,
+  stats: { saved: number; skipped: number },
+) {
   const page = await browser.newPage();
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
@@ -255,23 +268,23 @@ async function scrapePhase(
       break;
     }
 
-    const queue = links.filter(u => {
+    const queue = links.filter((u) => {
       if (visited.has(u)) return false;
       visited.add(u);
       return true;
     });
 
     // URLを記録（visited とは別に、フェーズ判定用）
-    links.forEach(u => savedUrls.add(u));
+    links.forEach((u) => savedUrls.add(u));
 
     console.log(`リンク数: ${links.length}, 新規: ${queue.length}`);
 
     if (queue.length > 0) {
       emptyStreak = 0;
       // isDiscontinued フラグを付与
-      const taggedQueue = queue.map(u => ({ url: u, isDiscontinued }));
+      const taggedQueue = queue.map((u) => ({ url: u, isDiscontinued }));
       const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
-        workerWithFlag(browser, taggedQueue, i + 1, stats)
+        workerWithFlag(browser, taggedQueue, i + 1, stats),
       );
       await Promise.all(workers);
     } else {
@@ -335,8 +348,10 @@ async function main() {
   }
 
   const allMode = process.argv.includes('--all');
-  const BASE_CURRENT = 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
-  const BASE_ALL = 'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010';
+  const BASE_CURRENT =
+    'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
+  const BASE_ALL =
+    'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010';
 
   const browser = await puppeteer.launch({ headless: true });
   const stats = { saved: 0, skipped: 0 };
@@ -367,7 +382,7 @@ async function main() {
         break;
       }
 
-      const queue = links.filter(u => {
+      const queue = links.filter((u) => {
         if (visited.has(u)) return false;
         visited.add(u);
         return true;
@@ -378,12 +393,12 @@ async function main() {
       if (queue.length > 0) {
         emptyStreak = 0;
         // フェーズ1のSetに含まれないURL → 廃盤
-        const taggedQueue = queue.map(u => ({
+        const taggedQueue = queue.map((u) => ({
           url: u,
           isDiscontinued: !currentUrls.has(u),
         }));
         const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
-          workerWithFlag(browser, taggedQueue, i + 1, stats)
+          workerWithFlag(browser, taggedQueue, i + 1, stats),
         );
         await Promise.all(workers);
       } else {
@@ -409,7 +424,7 @@ async function main() {
   console.log(`\n完了！合計 ${stats.saved} 件保存、${stats.skipped} 件スキップ`);
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('エラー:', e);
   saveVisited();
   process.exit(1);

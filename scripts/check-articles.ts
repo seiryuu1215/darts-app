@@ -18,7 +18,9 @@ async function check() {
   console.log(`articles コレクション: ${snapshot.size}件`);
   snapshot.docs.forEach((doc) => {
     const d = doc.data();
-    console.log(`  id=${doc.id}, slug=${d.slug}, isDraft=${d.isDraft}, title=${d.title}, createdAt=${d.createdAt?.toDate()}`);
+    console.log(
+      `  id=${doc.id}, slug=${d.slug}, isDraft=${d.isDraft}, title=${d.title}, createdAt=${d.createdAt?.toDate()}`,
+    );
   });
 }
 

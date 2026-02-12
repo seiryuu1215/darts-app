@@ -107,13 +107,9 @@ export const GET = withErrorHandler(
         ? validRatings.reduce((sum, r) => sum + r.rating!, 0) / validRatings.length
         : null;
     const avgPpd =
-      validPpd.length > 0
-        ? validPpd.reduce((sum, r) => sum + r.ppd!, 0) / validPpd.length
-        : null;
+      validPpd.length > 0 ? validPpd.reduce((sum, r) => sum + r.ppd!, 0) / validPpd.length : null;
     const avgMpr =
-      validMpr.length > 0
-        ? validMpr.reduce((sum, r) => sum + r.mpr!, 0) / validMpr.length
-        : null;
+      validMpr.length > 0 ? validMpr.reduce((sum, r) => sum + r.mpr!, 0) / validMpr.length : null;
     const avgCondition =
       validCondition.length > 0
         ? validCondition.reduce((sum, r) => sum + r.condition!, 0) / validCondition.length

@@ -34,10 +34,10 @@ const bucket = getStorage(app).bucket();
 
 // 記事ごとに色を固定（順番にグラデーションを割り当て）
 const GRADIENTS: [string, string][] = [
-  ['#667eea', '#764ba2'],  // 紫
-  ['#f093fb', '#f5576c'],  // ピンク
-  ['#4facfe', '#00f2fe'],  // 青
-  ['#43e97b', '#38f9d7'],  // 緑
+  ['#667eea', '#764ba2'], // 紫
+  ['#f093fb', '#f5576c'], // ピンク
+  ['#4facfe', '#00f2fe'], // 青
+  ['#43e97b', '#38f9d7'], // 緑
 ];
 
 async function fixThumbnails() {

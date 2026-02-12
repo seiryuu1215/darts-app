@@ -163,12 +163,10 @@ export default function HomePage() {
         const q = query(
           collection(db, 'darts'),
           where('userId', '==', session.user.id),
-          orderBy('createdAt', 'desc')
+          orderBy('createdAt', 'desc'),
         );
         const snapshot = await getDocs(q);
-        setMyDarts(
-          snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]
-        );
+        setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
       } catch (err) {
         console.error('マイセッティング取得エラー:', err);
       }
@@ -194,7 +192,9 @@ export default function HomePage() {
             prevStatsPraAvg: prev?.statsPraAvg ?? null,
           });
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     fetchUserData();
     fetchMyDarts();
@@ -204,17 +204,13 @@ export default function HomePage() {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const q = query(
-          collection(db, 'darts'),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
+        const q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), limit(10));
         const snapshot = await getDocs(q);
         setRecentDarts(
           snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
-          })) as Dart[]
+          })) as Dart[],
         );
       } catch (err) {
         console.error('最新セッティング取得エラー:', err);
@@ -232,14 +228,14 @@ export default function HomePage() {
         const q = query(
           collection(db, 'articles'),
           where('isFeatured', '==', true),
-          where('isDraft', '==', false)
+          where('isDraft', '==', false),
         );
         const snapshot = await getDocs(q);
         setFeaturedArticles(
           snapshot.docs
             .map((d) => ({ id: d.id, ...d.data() }) as Article)
             .filter((a) => a.articleType !== 'page')
-            .slice(0, 3)
+            .slice(0, 3),
         );
       } catch {
         // おすすめ記事がない場合は無視
@@ -248,9 +244,7 @@ export default function HomePage() {
     fetchFeatured();
   }, []);
 
-  const visibleCards = featureCards.filter(
-    (card) => !card.authOnly || session
-  );
+  const visibleCards = featureCards.filter((card) => !card.authOnly || session);
 
   // みんなのセッティング: 自分のを除外
   const othersRecentDarts = session?.user?.id
@@ -273,21 +267,32 @@ export default function HomePage() {
 
       {session && (
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
             <Typography variant="h5">使用中セッティング</Typography>
-            <Button component={Link} href="/darts/history" size="small" startIcon={<HistoryIcon />}>履歴</Button>
+            <Button component={Link} href="/darts/history" size="small" startIcon={<HistoryIcon />}>
+              履歴
+            </Button>
           </Box>
           <Grid container spacing={2}>
-            {([
+            {[
               { label: 'ソフト', dart: activeSoftDart, color: 'info' as const },
               { label: 'スティール', dart: activeSteelDart, color: 'default' as const },
-            ]).map(({ label, dart: activeDart, color }) => (
+            ].map(({ label, dart: activeDart, color }) => (
               <Grid size={{ xs: 12, sm: 6 }} key={label}>
                 {activeDart ? (
                   <Card
                     component={Link}
                     href={`/darts/${activeDart.id}`}
-                    sx={{ textDecoration: 'none', display: 'flex', flexDirection: 'row', height: 100, borderLeft: 4, borderColor: color === 'info' ? 'info.main' : 'grey.500' }}
+                    sx={{
+                      textDecoration: 'none',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      height: 100,
+                      borderLeft: 4,
+                      borderColor: color === 'info' ? 'info.main' : 'grey.500',
+                    }}
                   >
                     {activeDart.imageUrls.length > 0 ? (
                       <CardMedia
@@ -304,21 +309,51 @@ export default function HomePage() {
                         sx={{ width: 100, height: '100%', flexShrink: 0, objectFit: 'cover' }}
                       />
                     )}
-                    <CardContent sx={{ py: 1.5, px: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent
+                      sx={{
+                        py: 1.5,
+                        px: 2,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        minWidth: 0,
+                        '&:last-child': { pb: 1.5 },
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                         <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
-                        <Chip label={label} size="small" color={color} sx={{ height: 20, '& .MuiChip-label': { px: 1, fontSize: '0.7rem' } }} />
+                        <Chip
+                          label={label}
+                          size="small"
+                          color={color}
+                          sx={{ height: 20, '& .MuiChip-label': { px: 1, fontSize: '0.7rem' } }}
+                        />
                       </Box>
-                      <Typography variant="subtitle2" noWrap>{activeDart.title}</Typography>
+                      <Typography variant="subtitle2" noWrap>
+                        {activeDart.title}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap>
-                        {activeDart.barrel.brand} {activeDart.barrel.name} ({activeDart.barrel.weight}g)
+                        {activeDart.barrel.brand} {activeDart.barrel.name} (
+                        {activeDart.barrel.weight}g)
                       </Typography>
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card sx={{ display: 'flex', alignItems: 'center', height: 100, px: 2, borderLeft: 4, borderColor: color === 'info' ? 'info.main' : 'grey.500' }}>
+                  <Card
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      height: 100,
+                      px: 2,
+                      borderLeft: 4,
+                      borderColor: color === 'info' ? 'info.main' : 'grey.500',
+                    }}
+                  >
                     <Chip label={label} size="small" color={color} sx={{ mr: 1.5 }} />
-                    <Typography variant="body2" color="text.secondary">未設定</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      未設定
+                    </Typography>
                   </Card>
                 )}
               </Grid>
@@ -328,57 +363,112 @@ export default function HomePage() {
       )}
 
       {/* DARTSLIVE Stats Summary */}
-      {session && dlCache && (() => {
-        const fc = getFlightColor(dlCache.flight);
-        return (
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BarChartIcon color="primary" />
-                <Typography variant="h5">DARTSLIVE Stats</Typography>
+      {session &&
+        dlCache &&
+        (() => {
+          const fc = getFlightColor(dlCache.flight);
+          return (
+            <Box sx={{ mb: 4 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BarChartIcon color="primary" />
+                  <Typography variant="h5">DARTSLIVE Stats</Typography>
+                </Box>
+                <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">
+                  詳細
+                </Button>
               </Box>
-              <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">詳細</Button>
+              <Card
+                component={Link}
+                href="/stats"
+                sx={{ textDecoration: 'none', borderRadius: 2, overflow: 'hidden' }}
+              >
+                <Box sx={{ display: 'flex' }}>
+                  {[
+                    {
+                      label: `Rt`,
+                      sub: dlCache.flight,
+                      value: dlCache.rating?.toFixed(2) ?? '--',
+                      color: fc,
+                    },
+                    { label: '01', value: dlCache.stats01Avg?.toFixed(2) ?? '--', color: COLOR_01 },
+                    {
+                      label: 'Cricket',
+                      value: dlCache.statsCriAvg?.toFixed(2) ?? '--',
+                      color: COLOR_CRICKET,
+                    },
+                    {
+                      label: 'CU',
+                      value: dlCache.statsPraAvg?.toFixed(0) ?? '--',
+                      color: COLOR_COUNTUP,
+                    },
+                  ].map((item) => (
+                    <Box
+                      key={item.label}
+                      sx={{
+                        flex: 1,
+                        textAlign: 'center',
+                        py: 1.5,
+                        borderTop: `3px solid ${item.color}`,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: item.color,
+                          fontWeight: 'bold',
+                          display: 'block',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {item.label}
+                        {item.sub && (
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ ml: 0.5, opacity: 0.7 }}
+                          >
+                            {item.sub}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.3 }}>
+                        {item.value}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Card>
             </Box>
-            <Card
-              component={Link}
-              href="/stats"
-              sx={{ textDecoration: 'none', borderRadius: 2, overflow: 'hidden' }}
-            >
-              <Box sx={{ display: 'flex' }}>
-                {[
-                  { label: `Rt`, sub: dlCache.flight, value: dlCache.rating?.toFixed(2) ?? '--', color: fc },
-                  { label: '01', value: dlCache.stats01Avg?.toFixed(2) ?? '--', color: COLOR_01 },
-                  { label: 'Cricket', value: dlCache.statsCriAvg?.toFixed(2) ?? '--', color: COLOR_CRICKET },
-                  { label: 'CU', value: dlCache.statsPraAvg?.toFixed(0) ?? '--', color: COLOR_COUNTUP },
-                ].map((item) => (
-                  <Box key={item.label} sx={{ flex: 1, textAlign: 'center', py: 1.5, borderTop: `3px solid ${item.color}` }}>
-                    <Typography variant="caption" sx={{ color: item.color, fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>
-                      {item.label}
-                      {item.sub && <Typography component="span" variant="caption" sx={{ ml: 0.5, opacity: 0.7 }}>{item.sub}</Typography>}
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.3 }}>
-                      {item.value}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Card>
-          </Box>
-        );
-      })()}
+          );
+        })()}
 
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
           <Grid size={{ xs: 6, sm: 6, md: 3 }} key={card.href}>
-            <Card sx={{ height: '100%', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}>
+            <Card
+              sx={{ height: '100%', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
+            >
               <CardActionArea
                 component={Link}
                 href={card.href}
-                sx={{ height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                sx={{
+                  height: '100%',
+                  p: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <Box sx={{ color: 'primary.main', mb: 1 }}>
-                  {card.icon}
-                </Box>
+                <Box sx={{ color: 'primary.main', mb: 1 }}>{card.icon}</Box>
                 <CardContent sx={{ textAlign: 'center', p: 0, '&:last-child': { pb: 0 } }}>
                   <Typography variant="subtitle1" fontWeight="bold">
                     {card.title}
@@ -396,16 +486,14 @@ export default function HomePage() {
       {/* おすすめ記事 */}
       {featuredArticles.length > 0 && (
         <Box sx={{ mb: 5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <AutoAwesomeIcon color="primary" />
               <Typography variant="h5">おすすめ記事</Typography>
             </Box>
-            <Button
-              component={Link}
-              href="/articles"
-              endIcon={<ArrowForwardIcon />}
-            >
+            <Button component={Link} href="/articles" endIcon={<ArrowForwardIcon />}>
               すべての記事
             </Button>
           </Box>
@@ -421,33 +509,30 @@ export default function HomePage() {
 
       {session && myDarts.length > 0 && (
         <Box sx={{ mb: 5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
             <Typography variant="h5">マイセッティング</Typography>
-            <Button
-              component={Link}
-              href="/darts?mine=1"
-              endIcon={<ArrowForwardIcon />}
-            >
+            <Button component={Link} href="/darts?mine=1" endIcon={<ArrowForwardIcon />}>
               すべて見る
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {myDarts.filter((d: Dart) => !d.isDraft).slice(0, 3).map((dart) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
-                <DartCard dart={dart} />
-              </Grid>
-            ))}
+            {myDarts
+              .filter((d: Dart) => !d.isDraft)
+              .slice(0, 3)
+              .map((dart) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
+                  <DartCard dart={dart} />
+                </Grid>
+              ))}
           </Grid>
         </Box>
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">みんなのセッティング</Typography>
-        <Button
-          component={Link}
-          href="/darts"
-          endIcon={<ArrowForwardIcon />}
-        >
+        <Button component={Link} href="/darts" endIcon={<ArrowForwardIcon />}>
           もっと見る
         </Button>
       </Box>

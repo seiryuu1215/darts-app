@@ -120,13 +120,20 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
 
   const canNext = () => {
     switch (step) {
-      case 0: return !!answers.playStyle;
-      case 1: return !!answers.gripPosition;
-      case 2: return !!answers.weightPreference;
-      case 3: return !!answers.lengthPreference;
-      case 4: return true; // budget is optional
-      case 5: return true; // cuts are optional
-      default: return false;
+      case 0:
+        return !!answers.playStyle;
+      case 1:
+        return !!answers.gripPosition;
+      case 2:
+        return !!answers.weightPreference;
+      case 3:
+        return !!answers.lengthPreference;
+      case 4:
+        return true; // budget is optional
+      case 5:
+        return true; // cuts are optional
+      default:
+        return false;
     }
   };
 
@@ -155,7 +162,9 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
           <OptionCards
             options={GRIP_OPTIONS}
             value={answers.gripPosition || ''}
-            onChange={(v) => setAnswers({ ...answers, gripPosition: v as QuizAnswer['gripPosition'] })}
+            onChange={(v) =>
+              setAnswers({ ...answers, gripPosition: v as QuizAnswer['gripPosition'] })
+            }
           />
         );
       case 2:
@@ -163,7 +172,9 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
           <OptionCards
             options={WEIGHT_OPTIONS}
             value={answers.weightPreference || ''}
-            onChange={(v) => setAnswers({ ...answers, weightPreference: v as QuizAnswer['weightPreference'] })}
+            onChange={(v) =>
+              setAnswers({ ...answers, weightPreference: v as QuizAnswer['weightPreference'] })
+            }
           />
         );
       case 3:
@@ -171,17 +182,13 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
           <OptionCards
             options={LENGTH_OPTIONS}
             value={answers.lengthPreference || ''}
-            onChange={(v) => setAnswers({ ...answers, lengthPreference: v as QuizAnswer['lengthPreference'] })}
+            onChange={(v) =>
+              setAnswers({ ...answers, lengthPreference: v as QuizAnswer['lengthPreference'] })
+            }
           />
         );
       case 4:
-        return (
-          <OptionCards
-            options={BUDGET_OPTIONS}
-            value=""
-            onChange={() => {}}
-          />
-        );
+        return <OptionCards options={BUDGET_OPTIONS} value="" onChange={() => {}} />;
       case 5:
         return (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -197,16 +204,18 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
                     const cuts = answers.cutPreference || [];
                     setAnswers({
                       ...answers,
-                      cutPreference: selected
-                        ? cuts.filter((c) => c !== cut)
-                        : [...cuts, cut],
+                      cutPreference: selected ? cuts.filter((c) => c !== cut) : [...cuts, cut],
                     });
                   }}
                   sx={{ cursor: 'pointer' }}
                 />
               );
             })}
-            <Typography variant="caption" color="text.secondary" sx={{ width: '100%', textAlign: 'center', mt: 1 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ width: '100%', textAlign: 'center', mt: 1 }}
+            >
               複数選択可・スキップしてもOK
             </Typography>
           </Box>
@@ -230,9 +239,7 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
         {STEPS[step]}
       </Typography>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        {renderStep()}
-      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>{renderStep()}</Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Button
@@ -252,11 +259,7 @@ export default function BarrelQuiz({ onComplete }: BarrelQuizProps) {
             次へ
           </Button>
         ) : (
-          <Button
-            variant="contained"
-            onClick={handleFinish}
-            endIcon={<CheckIcon />}
-          >
+          <Button variant="contained" onClick={handleFinish} endIcon={<CheckIcon />}>
             結果を見る
           </Button>
         )}

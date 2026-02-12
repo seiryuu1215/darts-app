@@ -51,12 +51,7 @@ export default function DartDetailPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Breadcrumbs
-        items={[
-          { label: 'セッティング', href: '/darts' },
-          { label: dart.title },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: 'セッティング', href: '/darts' }, { label: dart.title }]} />
       <DartDetail dart={dart} dartId={dartId} />
     </Container>
   );

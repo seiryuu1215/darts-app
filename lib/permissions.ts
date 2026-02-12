@@ -17,7 +17,7 @@ export function canWriteArticles(role: UserRole | undefined): boolean {
 export function canEditArticle(
   role: UserRole | undefined,
   articleUserId: string,
-  currentUserId: string
+  currentUserId: string,
 ): boolean {
   if (role === 'admin') return true;
   if (role === 'pro') return articleUserId === currentUserId;

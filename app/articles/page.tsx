@@ -1,14 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  Container,
-  Typography,
-  Grid,
-  Box,
-  CircularProgress,
-  Button,
-} from '@mui/material';
+import { Container, Typography, Grid, Box, CircularProgress, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -28,10 +21,7 @@ export default function ArticlesPage() {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const q = query(
-          collection(db, 'articles'),
-          where('isDraft', '==', false)
-        );
+        const q = query(collection(db, 'articles'), where('isDraft', '==', false));
         const snapshot = await getDocs(q);
         const docs = snapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }) as Article)
@@ -57,12 +47,7 @@ export default function ArticlesPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">記事</Typography>
         {canWrite && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            component={Link}
-            href="/articles/new"
-          >
+          <Button variant="contained" startIcon={<AddIcon />} component={Link} href="/articles/new">
             新規記事
           </Button>
         )}

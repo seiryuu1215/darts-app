@@ -7,7 +7,15 @@ import { Container, CircularProgress, Box, Button } from '@mui/material';
 import DartForm from '@/components/darts/DartForm';
 import ProPaywall from '@/components/ProPaywall';
 import type { Dart } from '@/types';
-import { Timestamp, doc, getDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
+import {
+  Timestamp,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getCountFromServer,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSettingsLimit, SETTINGS_LIMIT_GENERAL } from '@/lib/permissions';
 
@@ -42,7 +50,9 @@ function NewDartContent() {
         if (snapshot.data().count >= limit) {
           setLimitReached(true);
         }
-      } catch { /* ignore */ } finally {
+      } catch {
+        /* ignore */
+      } finally {
         setLimitChecking(false);
       }
     };
@@ -82,7 +92,9 @@ function NewDartContent() {
         name: searchParams.get('barrelName') || '',
         brand: searchParams.get('barrelBrand') || '',
         weight: Number(searchParams.get('barrelWeight')) || 0,
-        maxDiameter: searchParams.get('barrelMaxDiameter') ? Number(searchParams.get('barrelMaxDiameter')) : null,
+        maxDiameter: searchParams.get('barrelMaxDiameter')
+          ? Number(searchParams.get('barrelMaxDiameter'))
+          : null,
         length: searchParams.get('barrelLength') ? Number(searchParams.get('barrelLength')) : null,
         cut: searchParams.get('barrelCut') || '',
       },
@@ -99,7 +111,8 @@ function NewDartContent() {
     } satisfies Dart;
   }, [searchParams]);
 
-  const draftImageUrl = searchParams.get('draft') === '1' ? searchParams.get('barrelImageUrl') : null;
+  const draftImageUrl =
+    searchParams.get('draft') === '1' ? searchParams.get('barrelImageUrl') : null;
 
   if (status === 'loading' || copyLoading || limitChecking) {
     return (
@@ -141,7 +154,13 @@ function NewDartContent() {
 
 export default function NewDartPage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <NewDartContent />
     </Suspense>
   );

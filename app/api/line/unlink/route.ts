@@ -17,7 +17,10 @@ export const POST = withErrorHandler(
     const userSnap = await userRef.get();
     const lineUserId = userSnap.data()?.lineUserId;
     if (lineUserId) {
-      await adminDb.doc(`lineConversations/${lineUserId}`).delete().catch(() => {});
+      await adminDb
+        .doc(`lineConversations/${lineUserId}`)
+        .delete()
+        .catch(() => {});
     }
 
     return NextResponse.json({ success: true });

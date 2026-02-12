@@ -431,10 +431,7 @@ const articles = [
 
 async function seedArticles() {
   // 管理者ユーザーを取得
-  const snapshot = await db
-    .collection('users')
-    .where('email', '==', ADMIN_EMAIL)
-    .get();
+  const snapshot = await db.collection('users').where('email', '==', ADMIN_EMAIL).get();
 
   let userId = '';
   let userName = '';

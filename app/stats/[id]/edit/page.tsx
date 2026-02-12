@@ -54,7 +54,9 @@ export default function StatsEditPage() {
     if (status === 'authenticated' && session?.user?.id) {
       const fetchStats = async () => {
         try {
-          const docSnap = await getDoc(doc(db, 'users', session.user.id, 'dartsLiveStats', statsId));
+          const docSnap = await getDoc(
+            doc(db, 'users', session.user.id, 'dartsLiveStats', statsId),
+          );
           if (!docSnap.exists()) {
             setError('スタッツが見つかりません');
             setLoading(false);
@@ -62,7 +64,9 @@ export default function StatsEditPage() {
           }
           const data = docSnap.data();
           const d = data.date.toDate();
-          setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+          setDate(
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+          );
           setRating(data.rating?.toString() || '');
           setGamesPlayed(data.gamesPlayed?.toString() || '');
           setPpd(data.zeroOneStats?.ppd?.toString() || '');
@@ -146,16 +150,16 @@ export default function StatsEditPage() {
       <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, p: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5">スタッツ編集</Typography>
-          <Button
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteOpen(true)}>
             削除
           </Button>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         <TextField
           label="日付"
@@ -168,7 +172,9 @@ export default function StatsEditPage() {
           sx={{ mb: 3 }}
         />
 
-        <Typography variant="h6" sx={{ mb: 1 }}>基本スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          基本スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="レーティング"
@@ -190,7 +196,9 @@ export default function StatsEditPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>01スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          01スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
           <TextField
             label="PPD"
@@ -221,7 +229,9 @@ export default function StatsEditPage() {
         />
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>クリケットスタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          クリケットスタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="MPR"
@@ -243,7 +253,9 @@ export default function StatsEditPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>詳細スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          詳細スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="ブル率 (%)"
@@ -264,13 +276,11 @@ export default function StatsEditPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>調子</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          調子
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-          <Rating
-            value={condition}
-            onChange={(_, v) => setCondition(v)}
-            max={5}
-          />
+          <Rating value={condition} onChange={(_, v) => setCondition(v)} max={5} />
           <Typography variant="body2" color="text.secondary">
             {condition === 1 && '絶不調'}
             {condition === 2 && '不調'}
@@ -292,11 +302,7 @@ export default function StatsEditPage() {
         />
 
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={() => router.push('/stats')}
-          >
+          <Button variant="outlined" fullWidth onClick={() => router.push('/stats')}>
             キャンセル
           </Button>
           <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">
@@ -314,7 +320,9 @@ export default function StatsEditPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>キャンセル</Button>
-          <Button onClick={handleDelete} color="error">削除</Button>
+          <Button onClick={handleDelete} color="error">
+            削除
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

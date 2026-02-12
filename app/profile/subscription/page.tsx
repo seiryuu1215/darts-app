@@ -50,12 +50,15 @@ function SubscriptionContent() {
           const data = userDoc.data();
           setSubInfo({
             subscriptionStatus: data.subscriptionStatus || null,
-            subscriptionCurrentPeriodEnd: data.subscriptionCurrentPeriodEnd?.toDate?.()?.toISOString() || null,
+            subscriptionCurrentPeriodEnd:
+              data.subscriptionCurrentPeriodEnd?.toDate?.()?.toISOString() || null,
             subscriptionTrialEnd: data.subscriptionTrialEnd?.toDate?.()?.toISOString() || null,
             subscriptionId: data.subscriptionId || null,
           });
         }
-      } catch { /* ignore */ } finally {
+      } catch {
+        /* ignore */
+      } finally {
         setLoading(false);
       }
     };
@@ -70,13 +73,19 @@ function SubscriptionContent() {
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       setPortalLoading(false);
     }
   };
 
   if (status === 'loading' || loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   const userIsPro = isPro(session?.user?.role);
@@ -88,9 +97,7 @@ function SubscriptionContent() {
   const periodEnd = subInfo?.subscriptionCurrentPeriodEnd
     ? new Date(subInfo.subscriptionCurrentPeriodEnd)
     : null;
-  const trialEnd = subInfo?.subscriptionTrialEnd
-    ? new Date(subInfo.subscriptionTrialEnd)
-    : null;
+  const trialEnd = subInfo?.subscriptionTrialEnd ? new Date(subInfo.subscriptionTrialEnd) : null;
 
   const trialDaysLeft = trialEnd
     ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
@@ -98,7 +105,9 @@ function SubscriptionContent() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>サブスクリプション</Typography>
+      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+        サブスクリプション
+      </Typography>
 
       {success && (
         <Alert severity="success" sx={{ mb: 3 }}>
@@ -108,7 +117,9 @@ function SubscriptionContent() {
 
       <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>現在のプラン</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            現在のプラン
+          </Typography>
           <Chip
             label={userIsPro ? 'PRO' : 'Free'}
             color={userIsPro ? 'primary' : 'default'}
@@ -124,7 +135,12 @@ function SubscriptionContent() {
 
         {isTrialing && trialEnd && (
           <Box sx={{ mb: 2 }}>
-            <Chip label={`無料トライアル中（残り${trialDaysLeft}日）`} color="info" size="small" variant="outlined" />
+            <Chip
+              label={`無料トライアル中（残り${trialDaysLeft}日）`}
+              color="info"
+              size="small"
+              variant="outlined"
+            />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               トライアル終了日: {trialEnd.toLocaleDateString('ja-JP')}
             </Typography>
@@ -164,12 +180,7 @@ function SubscriptionContent() {
         )}
 
         {!userIsPro && (
-          <Button
-            variant="contained"
-            fullWidth
-            component={Link}
-            href="/pricing"
-          >
+          <Button variant="contained" fullWidth component={Link} href="/pricing">
             PROプランにアップグレード
           </Button>
         )}
@@ -180,7 +191,13 @@ function SubscriptionContent() {
 
 export default function SubscriptionPage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <SubscriptionContent />
     </Suspense>
   );

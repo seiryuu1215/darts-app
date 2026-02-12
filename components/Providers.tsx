@@ -45,40 +45,47 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   const mode: 'light' | 'dark' = stored ?? (prefersDark ? 'dark' : 'light');
 
-  const colorMode = useMemo(() => ({
-    toggleColorMode: () => {
-      setStored((prev) => {
-        const current = prev ?? (prefersDark ? 'dark' : 'light');
-        const next = current === 'light' ? 'dark' : 'light';
-        localStorage.setItem('colorMode', next);
-        return next;
-      });
-    },
-  }), [prefersDark]);
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setStored((prev) => {
+          const current = prev ?? (prefersDark ? 'dark' : 'light');
+          const next = current === 'light' ? 'dark' : 'light';
+          localStorage.setItem('colorMode', next);
+          return next;
+        });
+      },
+    }),
+    [prefersDark],
+  );
 
-  const theme = useMemo(() => createTheme({
-    palette: {
-      mode,
-      primary: { main: '#1976d2' },
-      secondary: { main: '#dc004e' },
-    },
-    components: {
-      MuiCard: {
-        styleOverrides: {
-          root: {
-            transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: { main: '#1976d2' },
+          secondary: { main: '#dc004e' },
+        },
+        components: {
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+              },
+            },
+          },
+          MuiCssBaseline: {
+            styleOverrides: {
+              body: {
+                transition: 'background-color 0.3s ease, color 0.3s ease',
+              },
+            },
           },
         },
-      },
-      MuiCssBaseline: {
-        styleOverrides: {
-          body: {
-            transition: 'background-color 0.3s ease, color 0.3s ease',
-          },
-        },
-      },
-    },
-  }), [mode]);
+      }),
+    [mode],
+  );
 
   return (
     <SessionProvider>

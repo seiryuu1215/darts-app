@@ -49,7 +49,7 @@ const BASE_URL = 'https://www.dartshive.jp';
 const CATEGORY = '010'; // バレルカテゴリ
 
 function sleep(ms: number) {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 // ---------------- visited 永続 ----------------
@@ -99,11 +99,17 @@ interface BarrelData {
 
 async function save(barrel: BarrelData) {
   const id = Buffer.from(barrel.productUrl).toString('base64url');
-  await db.collection('barrels').doc(id).set({
-    ...barrel,
-    source: 'dartshive',
-    scrapedAt: Timestamp.now(),
-  }, { merge: true });
+  await db
+    .collection('barrels')
+    .doc(id)
+    .set(
+      {
+        ...barrel,
+        source: 'dartshive',
+        scrapedAt: Timestamp.now(),
+      },
+      { merge: true },
+    );
 }
 
 async function nukeBarrels() {
@@ -116,7 +122,7 @@ async function nukeBarrels() {
   const docs = snapshot.docs;
   for (let i = 0; i < docs.length; i += batchSize) {
     const batch = db.batch();
-    docs.slice(i, i + batchSize).forEach(doc => batch.delete(doc.ref));
+    docs.slice(i, i + batchSize).forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
     deleted += Math.min(batchSize, docs.length - i);
     console.log(`  削除: ${deleted}/${total}`);
@@ -131,8 +137,8 @@ async function nukeBarrels() {
 // ---------------- ブランド一覧取得 ----------------
 
 interface BrandInfo {
-  id: string;   // e.g. "b00001"
-  name: string;  // e.g. "ダイナスティー"
+  id: string; // e.g. "b00001"
+  name: string; // e.g. "ダイナスティー"
   count: number; // 商品数
 }
 
@@ -149,7 +155,7 @@ async function scrapeBrands(page: Page): Promise<BrandInfo[]> {
     const results: { id: string; name: string; count: number }[] = [];
 
     // ブランド絞り込みのリンクを探す
-    document.querySelectorAll('a[href*="fq.brand="]').forEach(a => {
+    document.querySelectorAll('a[href*="fq.brand="]').forEach((a) => {
       const href = a.getAttribute('href') || '';
       const match = href.match(/fq\.brand=(b\d+)/);
       if (!match) return;
@@ -174,13 +180,15 @@ async function scrapeBrands(page: Page): Promise<BrandInfo[]> {
 
   // 重複排除
   const seen = new Set<string>();
-  const unique = brands.filter(b => {
+  const unique = brands.filter((b) => {
     if (seen.has(b.id)) return false;
     seen.add(b.id);
     return true;
   });
 
-  console.log(`ブランド数: ${unique.length}, 合計商品数: ${unique.reduce((s, b) => s + b.count, 0)}`);
+  console.log(
+    `ブランド数: ${unique.length}, 合計商品数: ${unique.reduce((s, b) => s + b.count, 0)}`,
+  );
   return unique;
 }
 
@@ -199,7 +207,7 @@ async function scrapeDetail(page: Page, url: string): Promise<BarrelData | null>
       let length: number | null = null;
       let brand = '';
 
-      document.querySelectorAll('table tr').forEach(tr => {
+      document.querySelectorAll('table tr').forEach((tr) => {
         const tds = tr.querySelectorAll('td,th');
         if (tds.length < 2) return;
         const label = (tds[0].textContent || '').trim();
@@ -257,10 +265,12 @@ async function scrapeList(page: Page, url: string): Promise<string[]> {
 
   return page.evaluate((origin: string) => {
     return Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="shopdetail"]'))
-      .map(a => {
+      .map((a) => {
         const href = a.getAttribute('href');
         if (!href) return '';
-        return href.startsWith('http') ? href : `${origin}${href.startsWith('/') ? '' : '/'}${href}`;
+        return href.startsWith('http')
+          ? href
+          : `${origin}${href.startsWith('/') ? '' : '/'}${href}`;
       })
       .filter(Boolean);
   }, new URL(url).origin);
@@ -268,7 +278,12 @@ async function scrapeList(page: Page, url: string): Promise<string[]> {
 
 // ---------------- worker ----------------
 
-async function worker(browser: Browser, queue: string[], id: number, stats: { saved: number; skipped: number }) {
+async function worker(
+  browser: Browser,
+  queue: string[],
+  id: number,
+  stats: { saved: number; skipped: number },
+) {
   const page = await browser.newPage();
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
@@ -328,7 +343,9 @@ async function main() {
     // 完了済みブランドはスキップ
     if (completedSet.has(brand.id)) {
       brandsDone++;
-      console.log(`\n[${brandsDone}/${brands.length}] ${brand.name} (${brand.id}) — スキップ（完了済み）`);
+      console.log(
+        `\n[${brandsDone}/${brands.length}] ${brand.name} (${brand.id}) — スキップ（完了済み）`,
+      );
       continue;
     }
 
@@ -338,7 +355,7 @@ async function main() {
     console.log(`========================================`);
 
     // 再開ポイント: 処理中ブランドの途中ページから再開
-    const startPage = (progress.currentBrand === brand.id) ? progress.currentPage : 1;
+    const startPage = progress.currentBrand === brand.id ? progress.currentPage : 1;
 
     let emptyStreak = 0;
 
@@ -351,7 +368,7 @@ async function main() {
         break;
       }
 
-      const queue = links.filter(u => {
+      const queue = links.filter((u) => {
         if (visited.has(u)) return false;
         visited.add(u);
         return true;
@@ -362,7 +379,7 @@ async function main() {
       if (queue.length > 0) {
         emptyStreak = 0;
         const workers = Array.from({ length: CONCURRENCY }, (_, i) =>
-          worker(browser, queue, i + 1, stats)
+          worker(browser, queue, i + 1, stats),
         );
         await Promise.all(workers);
       } else {
@@ -404,7 +421,7 @@ async function main() {
   console.log(`処理ブランド数: ${brands.length}`);
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('エラー:', e);
   saveVisited();
   process.exit(1);

@@ -57,24 +57,30 @@ export function generateThumbnailSvg(options: ThumbnailOptions): string {
   const gradient = options.gradient || GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
 
   const lines = wrapTitle(title);
-  const fontSize = lines.some(l => l.length > 14) ? 36 : 40;
+  const fontSize = lines.some((l) => l.length > 14) ? 36 : 40;
   const lineHeight = fontSize * 1.4;
   const textBlockHeight = lines.length * lineHeight;
   const textStartY = (height - textBlockHeight) / 2 + fontSize * 0.35;
 
-  const titleLines = lines.map((line, i) =>
-    `<text x="${width / 2}" y="${textStartY + i * lineHeight}" text-anchor="middle" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" filter="url(#shadow)">${escapeXml(line)}</text>`
-  ).join('\n    ');
+  const titleLines = lines
+    .map(
+      (line, i) =>
+        `<text x="${width / 2}" y="${textStartY + i * lineHeight}" text-anchor="middle" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" filter="url(#shadow)">${escapeXml(line)}</text>`,
+    )
+    .join('\n    ');
 
-  const tagChips = tags.slice(0, 3).map((tag, i) => {
-    const tagWidth = tag.length * 16 + 24;
-    const totalWidth = tags.slice(0, 3).reduce((sum, t) => sum + t.length * 16 + 24 + 8, -8);
-    const startX = (width - totalWidth) / 2;
-    const x = startX + tags.slice(0, i).reduce((sum, t) => sum + t.length * 16 + 24 + 8, 0);
-    return `
+  const tagChips = tags
+    .slice(0, 3)
+    .map((tag, i) => {
+      const tagWidth = tag.length * 16 + 24;
+      const totalWidth = tags.slice(0, 3).reduce((sum, t) => sum + t.length * 16 + 24 + 8, -8);
+      const startX = (width - totalWidth) / 2;
+      const x = startX + tags.slice(0, i).reduce((sum, t) => sum + t.length * 16 + 24 + 8, 0);
+      return `
     <rect x="${x}" y="${height - 60}" width="${tagWidth}" height="28" rx="14" fill="rgba(255,255,255,0.25)"/>
     <text x="${x + tagWidth / 2}" y="${height - 42}" text-anchor="middle" font-family="'Hiragino Sans',sans-serif" font-size="13" fill="white">${escapeXml(tag)}</text>`;
-  }).join('');
+    })
+    .join('');
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>

@@ -29,9 +29,10 @@ export default function ArticleDetailPage() {
   const { data: session } = useSession();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
-  const canEdit = article && session?.user?.id
-    ? canEditArticle(session.user.role, article.userId, session.user.id)
-    : false;
+  const canEdit =
+    article && session?.user?.id
+      ? canEditArticle(session.user.role, article.userId, session.user.id)
+      : false;
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -39,7 +40,7 @@ export default function ArticleDetailPage() {
         const q = query(
           collection(db, 'articles'),
           where('slug', '==', slug),
-          where('isDraft', '==', false)
+          where('isDraft', '==', false),
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
@@ -84,12 +85,7 @@ export default function ArticleDetailPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Breadcrumbs
-        items={[
-          { label: '記事', href: '/articles' },
-          { label: article.title },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: '記事', href: '/articles' }, { label: article.title }]} />
 
       <Button component={Link} href="/articles" startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
         記事一覧

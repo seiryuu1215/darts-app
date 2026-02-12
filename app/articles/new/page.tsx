@@ -146,7 +146,11 @@ function NewArticleContent() {
         {articleType === 'page' ? '固定ページ作成' : '新規記事'}
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {isAdmin(userRole) && (
         <Box sx={{ mb: 2 }}>
@@ -156,7 +160,9 @@ function NewArticleContent() {
           <ToggleButtonGroup
             value={articleType}
             exclusive
-            onChange={(_, v) => { if (v) setArticleType(v); }}
+            onChange={(_, v) => {
+              if (v) setArticleType(v);
+            }}
             size="small"
           >
             <ToggleButton value="article">記事</ToggleButton>
@@ -183,7 +189,9 @@ function NewArticleContent() {
         }}
         fullWidth
         required
-        helperText={articleType === 'page' ? `固定ページ: /${slug || '...'}` : `/articles/${slug || '...'}`}
+        helperText={
+          articleType === 'page' ? `固定ページ: /${slug || '...'}` : `/articles/${slug || '...'}`
+        }
         sx={{ mb: 2 }}
       />
 
@@ -206,7 +214,9 @@ function NewArticleContent() {
 
       {isAdmin(userRole) && articleType === 'article' && (
         <FormControlLabel
-          control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+          control={
+            <Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+          }
           label="トップページにおすすめ表示"
           sx={{ mb: 2, display: 'block' }}
         />
@@ -306,7 +316,13 @@ function NewArticleContent() {
 
 export default function NewArticlePage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <NewArticleContent />
     </Suspense>
   );

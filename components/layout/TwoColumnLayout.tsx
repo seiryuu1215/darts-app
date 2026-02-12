@@ -25,13 +25,9 @@ export default function TwoColumnLayout({
   return (
     <Container maxWidth={maxWidth} sx={{ py: 4 }}>
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          {children}
-        </Grid>
+        <Grid size={{ xs: 12, md: 8 }}>{children}</Grid>
         <Grid size={{ xs: 12, md: 4 }} sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Box sx={{ position: 'sticky', top: 80 }}>
-            {sidebar}
-          </Box>
+          <Box sx={{ position: 'sticky', top: 80 }}>{sidebar}</Box>
         </Grid>
       </Grid>
     </Container>

@@ -17,7 +17,10 @@ const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 let app;
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  app = initializeApp({ credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS), storageBucket });
+  app = initializeApp({
+    credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS),
+    storageBucket,
+  });
 } else {
   app = initializeApp({ projectId, storageBucket });
 }
@@ -38,15 +41,17 @@ interface BarrelRecord {
 function downloadImage(url: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return downloadImage(res.headers.location!).then(resolve).catch(reject);
-      }
-      const chunks: Buffer[] = [];
-      res.on('data', (c: Buffer) => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
+    client
+      .get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          return downloadImage(res.headers.location!).then(resolve).catch(reject);
+        }
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      })
+      .on('error', reject);
   });
 }
 
@@ -57,15 +62,16 @@ const dartDefs = [
     title: 'Gomez Type16 メインセッティング',
     user: 'takumi',
     tip: { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
-    shaft: { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.70 },
+    shaft: { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.7 },
     flight: { name: 'L-Flight PRO スモール', shape: 'small', weightG: 0.55, isCondorAxe: false },
-    description: 'メインで使ってるセッティング。シャークカットの掛かりが気持ち良い。ショートシャフト＋スモールでまとまり重視。',
+    description:
+      'メインで使ってるセッティング。シャークカットの掛かりが気持ち良い。ショートシャフト＋スモールでまとまり重視。',
   },
   {
     search: 'RISING SUN G10',
     title: 'RISING SUN G10 練習用セッティング',
     user: 'takumi',
-    tip: { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.30 },
+    tip: { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.3 },
     shaft: { name: 'Fit Shaft GEAR #3', lengthMm: 24.0, weightG: 0.75 },
     flight: { name: 'Fit Flight AIR シェイプ', shape: 'kite', weightG: 0.57, isCondorAxe: false },
     description: '村松治樹モデル。ピクセルグリップがクセになる。練習用に長めのバレルで安定感重視。',
@@ -83,7 +89,7 @@ const dartDefs = [
     search: 'PYRO G9',
     title: 'PYRO G9 大会用セッティング',
     user: 'haruka',
-    tip: { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.30 },
+    tip: { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.3 },
     shaft: { name: 'L-Shaft Silent Slim 300', lengthMm: 30.0, weightG: 0.73 },
     flight: { name: 'L-Flight PRO スリム', shape: 'slim', weightG: 0.43, isCondorAxe: false },
     description: '星野光正モデル。短めバレルで前重心。スリムフライトで鋭い飛び。大会用。',
@@ -94,7 +100,12 @@ const dartDefs = [
     user: 'haruka',
     tip: { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
     shaft: { name: 'Fit Shaft GEAR #4', lengthMm: 28.5, weightG: 0.84 },
-    flight: { name: 'Fit Flight スタンダード', shape: 'standard', weightG: 0.88, isCondorAxe: false },
+    flight: {
+      name: 'Fit Flight スタンダード',
+      shape: 'standard',
+      weightG: 0.88,
+      isCondorAxe: false,
+    },
     description: '鈴木未来モデル。ダブルリングで程よくグリップ。安定感があって投げやすい。',
   },
   {
@@ -144,7 +155,7 @@ async function main() {
   // バレルDBロード
   const barrelSnap = await db.collection('barrels').get();
   const allBarrels: BarrelRecord[] = barrelSnap.docs
-    .map((d) => ({ id: d.id, ...d.data() } as BarrelRecord))
+    .map((d) => ({ id: d.id, ...d.data() }) as BarrelRecord)
     .filter((b) => b.imageUrl && b.weight > 0);
   console.log(`画像付きバレル: ${allBarrels.length}件\n`);
 
@@ -167,15 +178,21 @@ async function main() {
   for (const [key, { userId, userName }] of Object.entries(userMap)) {
     const profile = userProfiles[key];
     if (!profile) continue;
-    await db.collection('users').doc(userId).set({
-      displayName: userName,
-      email: `${key}@example.com`,
-      photoURL: null,
-      avatarUrl: null,
-      ...profile,
-      updatedAt: FieldValue.serverTimestamp(),
-      createdAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    await db
+      .collection('users')
+      .doc(userId)
+      .set(
+        {
+          displayName: userName,
+          email: `${key}@example.com`,
+          photoURL: null,
+          avatarUrl: null,
+          ...profile,
+          updatedAt: FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
     console.log(`✓ プロフィール更新: ${userName} (${userId})`);
   }
   console.log('');
@@ -200,7 +217,9 @@ async function main() {
         const ext = barrel.imageUrl.includes('.png') ? 'png' : 'jpg';
         const filePath = `images/darts/${dartId}/barrel.${ext}`;
         const file = bucket.file(filePath);
-        await file.save(imgBuffer, { metadata: { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}` } });
+        await file.save(imgBuffer, {
+          metadata: { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}` },
+        });
         await file.makePublic();
         imageUrls = [`https://storage.googleapis.com/${storageBucket}/${filePath}`];
       } catch {

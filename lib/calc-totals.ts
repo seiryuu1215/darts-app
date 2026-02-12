@@ -22,7 +22,7 @@ export function calcDartTotals(dart: Dart): DartTotals {
 
   const tipLen = dart.tip.lengthMm || 0;
   // スティールはバレル重量にポイント重量が含まれるため加算しない
-  const tipW = dart.tip.type === 'steel' ? 0 : (dart.tip.weightG || 0);
+  const tipW = dart.tip.type === 'steel' ? 0 : dart.tip.weightG || 0;
 
   let shaftLen = 0;
   let shaftW = 0;

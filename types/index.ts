@@ -22,7 +22,7 @@ export interface User {
   lineUserId?: string | null;
   lineNotifyEnabled?: boolean;
   dlCredentialsEncrypted?: {
-    email: string;   // AES-256-GCM encrypted
+    email: string; // AES-256-GCM encrypted
     password: string; // AES-256-GCM encrypted
   } | null;
   stripeCustomerId?: string | null;
@@ -214,7 +214,7 @@ export interface QuizAnswer {
 
 // Barrel Contour (extracted from product image)
 export interface BarrelContour {
-  upperProfile: [number, number][];  // [x_mm, radius_mm][]
+  upperProfile: [number, number][]; // [x_mm, radius_mm][]
   lowerProfile: [number, number][];
 }
 

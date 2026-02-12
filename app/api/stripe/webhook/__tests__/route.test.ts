@@ -227,8 +227,8 @@ describe('Stripe webhook', () => {
 
     // Should NOT update user (manual pro protection)
     // Only the stripeEvents set should be called
-    const userUpdateCalls = mockUpdate.mock.calls.filter(
-      ([path]: [string]) => path.startsWith('users/'),
+    const userUpdateCalls = mockUpdate.mock.calls.filter(([path]: [string]) =>
+      path.startsWith('users/'),
     );
     expect(userUpdateCalls).toHaveLength(0);
   });

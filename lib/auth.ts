@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
           const userCredential = await signInWithEmailAndPassword(
             auth,
             credentials.email,
-            credentials.password
+            credentials.password,
           );
           const user = userCredential.user;
 
@@ -63,7 +63,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.role = (user as unknown as { role: UserRole }).role;
-        token.subscriptionStatus = (user as unknown as { subscriptionStatus: StripeSubscriptionStatus | null }).subscriptionStatus;
+        token.subscriptionStatus = (
+          user as unknown as { subscriptionStatus: StripeSubscriptionStatus | null }
+        ).subscriptionStatus;
       } else if (token.sub) {
         // セッション更新時にFirestoreから最新のroleを取得
         try {
@@ -86,7 +88,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.sub) {
         session.user.id = token.sub;
         session.user.role = (token.role as UserRole) || 'general';
-        session.user.subscriptionStatus = (token.subscriptionStatus as StripeSubscriptionStatus | null) || null;
+        session.user.subscriptionStatus =
+          (token.subscriptionStatus as StripeSubscriptionStatus | null) || null;
       }
       return session;
     },

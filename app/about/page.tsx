@@ -23,7 +23,7 @@ export default function AboutPage() {
         const q = query(
           collection(db, 'articles'),
           where('slug', '==', 'about'),
-          where('articleType', '==', 'page')
+          where('articleType', '==', 'page'),
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {

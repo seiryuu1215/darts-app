@@ -32,10 +32,7 @@ function makeRequest(url = 'http://localhost:3000/api/test'): NextRequest {
 
 describe('withErrorHandler', () => {
   it('returns handler response on success', async () => {
-    const handler = withErrorHandler(
-      async () => NextResponse.json({ ok: true }),
-      'test error',
-    );
+    const handler = withErrorHandler(async () => NextResponse.json({ ok: true }), 'test error');
     const res = await handler(makeRequest());
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -44,12 +41,9 @@ describe('withErrorHandler', () => {
 
   it('returns 500 and logs error on throw', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const handler = withErrorHandler(
-      async () => {
-        throw new Error('boom');
-      },
-      'test label',
-    );
+    const handler = withErrorHandler(async () => {
+      throw new Error('boom');
+    }, 'test label');
     const res = await handler(makeRequest());
     expect(res.status).toBe(500);
     const body = await res.json();

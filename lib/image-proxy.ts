@@ -13,9 +13,7 @@ function buildProxyUrls(imageUrl: string): string[] {
 }
 
 /** Fetch an image blob with automatic fallback between proxies */
-export async function fetchImageWithFallback(
-  imageUrl: string,
-): Promise<Blob | null> {
+export async function fetchImageWithFallback(imageUrl: string): Promise<Blob | null> {
   const urls = buildProxyUrls(imageUrl);
 
   for (const url of urls) {

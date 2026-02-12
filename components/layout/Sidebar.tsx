@@ -68,7 +68,7 @@ export default function Sidebar({
           setArticles(
             snap.docs
               .map((d) => ({ id: d.id, ...d.data() }) as Article & { id: string })
-              .filter((a) => a.articleType !== 'page')
+              .filter((a) => a.articleType !== 'page'),
           );
         })
         .catch(() => {});
@@ -80,7 +80,11 @@ export default function Sidebar({
       {/* 関連バレル */}
       {relatedBarrels && relatedBarrels.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
             <StorefrontIcon fontSize="small" color="primary" />
             関連バレル
           </Typography>
@@ -105,7 +109,11 @@ export default function Sidebar({
       {/* 人気バレルTOP5 */}
       {showPopularBarrels && popularBarrels.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
             <TrendingUpIcon fontSize="small" color="primary" />
             人気バレル TOP5
           </Typography>
@@ -138,7 +146,11 @@ export default function Sidebar({
       {/* 新着記事 */}
       {showRecentArticles && articles.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
             <ArticleIcon fontSize="small" color="primary" />
             新着記事
           </Typography>
@@ -164,7 +176,9 @@ export default function Sidebar({
       {showShopBanners && (
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-            <Typography variant="subtitle2" fontWeight="bold">ダーツショップ</Typography>
+            <Typography variant="subtitle2" fontWeight="bold">
+              ダーツショップ
+            </Typography>
             <Chip label="PR" size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
           </Box>
           <Divider sx={{ mb: 1.5 }} />

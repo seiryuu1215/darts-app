@@ -3,7 +3,12 @@
 import { Box, Container, Grid, Typography, Link as MuiLink, Divider } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import NextLink from 'next/link';
-import { toDartshiveAffiliateUrl, toRakutenSearchUrl, toAmazonSearchUrl, getAffiliateConfig } from '@/lib/affiliate';
+import {
+  toDartshiveAffiliateUrl,
+  toRakutenSearchUrl,
+  toAmazonSearchUrl,
+  getAffiliateConfig,
+} from '@/lib/affiliate';
 
 interface FooterLink {
   label: string;
@@ -27,7 +32,14 @@ function FooterSection({ title, links }: { title: string; links: FooterLink[] })
               rel="noopener noreferrer"
               underline="hover"
               color="text.secondary"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 14, transition: 'color 0.2s', '&:hover': { color: 'primary.main' } }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontSize: 14,
+                transition: 'color 0.2s',
+                '&:hover': { color: 'primary.main' },
+              }}
             >
               {link.label}
               <OpenInNewIcon sx={{ fontSize: 12 }} />
@@ -63,7 +75,11 @@ export default function Footer() {
   ];
 
   const shopLinks: FooterLink[] = [
-    { label: 'ダーツハイブ', href: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config), external: true },
+    {
+      label: 'ダーツハイブ',
+      href: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config),
+      external: true,
+    },
     { label: 'S-DARTS', href: 'https://www.s-darts.com/', external: true },
     { label: '楽天ダーツ', href: toRakutenSearchUrl('ダーツ バレル', config), external: true },
     { label: 'Amazon ダーツ', href: toAmazonSearchUrl('ダーツ バレル', config), external: true },
@@ -103,7 +119,11 @@ export default function Footer() {
 
         <Divider sx={{ my: 3 }} />
 
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ textAlign: 'center', display: 'block' }}
+        >
           &copy; {new Date().getFullYear()} Darts Lab
         </Typography>
       </Container>

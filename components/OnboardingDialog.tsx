@@ -31,28 +31,32 @@ interface OnboardingDialogProps {
 const steps = [
   {
     label: 'プロフィールを設定',
-    description: '表示名やアバター、利き目・スタンスなどを設定しましょう。他のプレイヤーがあなたのセッティングを見たときに参考になります。',
+    description:
+      '表示名やアバター、利き目・スタンスなどを設定しましょう。他のプレイヤーがあなたのセッティングを見たときに参考になります。',
     icon: <PersonIcon />,
     href: '/profile/edit',
     action: 'プロフィール編集へ',
   },
   {
     label: '最初のセッティングを登録',
-    description: '今使っているバレル・シャフト・フライト・チップを登録しましょう。スペックの合計値が自動計算されます。',
+    description:
+      '今使っているバレル・シャフト・フライト・チップを登録しましょう。スペックの合計値が自動計算されます。',
     icon: <SettingsIcon />,
     href: '/darts/new',
     action: 'セッティング登録へ',
   },
   {
     label: 'バレルを探す',
-    description: '7,000種以上のバレルから検索したり、診断クイズであなたにぴったりのバレルを見つけましょう。',
+    description:
+      '7,000種以上のバレルから検索したり、診断クイズであなたにぴったりのバレルを見つけましょう。',
     icon: <SearchIcon />,
     href: '/barrels',
     action: 'バレル検索へ',
   },
   {
     label: 'スタッツを確認（PRO）',
-    description: 'DARTSLIVE連携でRating・PPD・MPRの推移をグラフで可視化。1週間の無料トライアルで全機能をお試しください。',
+    description:
+      'DARTSLIVE連携でRating・PPD・MPRの推移をグラフで可視化。1週間の無料トライアルで全機能をお試しください。',
     icon: <BarChartIcon />,
     href: '/stats',
     action: 'スタッツへ',
@@ -96,13 +100,19 @@ export default function OnboardingDialog({ open, userId, onClose }: OnboardingDi
                 onClick={() => setActiveStep(index)}
                 sx={{ cursor: 'pointer' }}
                 icon={
-                  <Box sx={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    bgcolor: activeStep === index ? 'primary.main' : 'action.disabledBackground',
-                    color: activeStep === index ? 'primary.contrastText' : 'text.secondary',
-                    fontSize: 18,
-                  }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: activeStep === index ? 'primary.main' : 'action.disabledBackground',
+                      color: activeStep === index ? 'primary.contrastText' : 'text.secondary',
+                      fontSize: 18,
+                    }}
+                  >
                     {step.icon}
                   </Box>
                 }

@@ -52,11 +52,19 @@ export default function RegisterForm() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}
+    >
       <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
         新規登録
       </Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <TextField
         label="表示名"
         value={displayName}

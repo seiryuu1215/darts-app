@@ -86,9 +86,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!firebaseUid) return;
 
   const stripe = getStripe();
-  const subscriptionId = typeof session.subscription === 'string'
-    ? session.subscription
-    : session.subscription?.id;
+  const subscriptionId =
+    typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
 
   if (!subscriptionId) return;
 
@@ -107,9 +106,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const customerId = typeof subscription.customer === 'string'
-    ? subscription.customer
-    : subscription.customer.id;
+  const customerId =
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
   const firebaseUid = await getFirebaseUidFromCustomer(customerId);
   if (!firebaseUid) return;
 
@@ -138,9 +136,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const customerId = typeof subscription.customer === 'string'
-    ? subscription.customer
-    : subscription.customer.id;
+  const customerId =
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
   const firebaseUid = await getFirebaseUidFromCustomer(customerId);
   if (!firebaseUid) return;
 
@@ -158,9 +155,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId = typeof invoice.customer === 'string'
-    ? invoice.customer
-    : invoice.customer?.id;
+  const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
   if (!customerId) return;
 
   const firebaseUid = await getFirebaseUidFromCustomer(customerId);

@@ -93,9 +93,7 @@ export default function AdminUsersPage() {
         return;
       }
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
       setSuccess('権限を変更しました');
     } catch {
       setError('権限変更に失敗しました');
@@ -150,9 +148,7 @@ export default function AdminUsersPage() {
                   <Select
                     value={user.role}
                     size="small"
-                    onChange={(e) =>
-                      handleRoleChange(user.id, e.target.value as UserRole)
-                    }
+                    onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                   >
                     <MenuItem value="admin">admin</MenuItem>
                     <MenuItem value="pro">pro</MenuItem>
@@ -171,7 +167,9 @@ export default function AdminUsersPage() {
                   ) : user.subscriptionStatus === 'canceled' ? (
                     <Chip label="canceled" size="small" variant="outlined" />
                   ) : (
-                    <Typography variant="caption" color="text.disabled">-</Typography>
+                    <Typography variant="caption" color="text.disabled">
+                      -
+                    </Typography>
                   )}
                 </TableCell>
               </TableRow>

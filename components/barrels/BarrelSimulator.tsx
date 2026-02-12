@@ -88,9 +88,7 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
   if (barrels.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography color="text.secondary">
-          バレルを選択してください
-        </Typography>
+        <Typography color="text.secondary">バレルを選択してください</Typography>
       </Box>
     );
   }
@@ -148,12 +146,7 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
         />
 
         {barrels.map((barrel, i) => (
-          <BarrelImage
-            key={barrel.id ?? i}
-            barrel={barrel}
-            index={i}
-            yOffset={offsets[i] ?? 0}
-          />
+          <BarrelImage key={barrel.id ?? i} barrel={barrel} index={i} yOffset={offsets[i] ?? 0} />
         ))}
       </Box>
     </Box>

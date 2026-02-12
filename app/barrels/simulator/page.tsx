@@ -39,7 +39,13 @@ const MAX_BARRELS = 2;
 
 export default function SimulatorPage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <SimulatorContent />
     </Suspense>
   );
@@ -127,10 +133,7 @@ function SimulatorContent() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Breadcrumbs
-        items={[
-          { label: 'バレル検索', href: '/barrels' },
-          { label: 'シミュレーター' },
-        ]}
+        items={[{ label: 'バレル検索', href: '/barrels' }, { label: 'シミュレーター' }]}
       />
 
       <Typography variant="h4" gutterBottom>
@@ -164,10 +167,21 @@ function SimulatorContent() {
                 <TableRow key={b.id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: ['#1976d2', '#dc004e'][i] }} />
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          bgcolor: ['#1976d2', '#dc004e'][i],
+                        }}
+                      />
                       <Box>
-                        <Typography variant="body2" fontWeight="bold">{b.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{b.brand}</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {b.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {b.brand}
+                        </Typography>
                       </Box>
                     </Box>
                   </TableCell>
@@ -178,7 +192,12 @@ function SimulatorContent() {
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                       <AffiliateButton barrel={b} size="small" />
-                      <Button size="small" color="error" onClick={() => toggleSelect(b)} startIcon={<DeleteIcon />}>
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() => toggleSelect(b)}
+                        startIcon={<DeleteIcon />}
+                      >
                         削除
                       </Button>
                     </Box>
@@ -233,10 +252,26 @@ function SimulatorContent() {
                   disabled={isDisabled}
                 >
                   {barrel.imageUrl ? (
-                    <CardMedia component="img" height="100" image={barrel.imageUrl} alt={barrel.name} sx={{ objectFit: 'cover' }} />
+                    <CardMedia
+                      component="img"
+                      height="100"
+                      image={barrel.imageUrl}
+                      alt={barrel.name}
+                      sx={{ objectFit: 'cover' }}
+                    />
                   ) : (
-                    <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'action.hover' }}>
-                      <Typography variant="caption" color="text.secondary">No Image</Typography>
+                    <Box
+                      sx={{
+                        height: 100,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        No Image
+                      </Typography>
                     </Box>
                   )}
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -246,7 +281,14 @@ function SimulatorContent() {
                     <Typography variant="caption" color="text.secondary" noWrap display="block">
                       {barrel.brand} / {barrel.weight}g
                     </Typography>
-                    {isSelected && <Chip label="選択中" size="small" color="primary" sx={{ mt: 0.5, height: 20 }} />}
+                    {isSelected && (
+                      <Chip
+                        label="選択中"
+                        size="small"
+                        color="primary"
+                        sx={{ mt: 0.5, height: 20 }}
+                      />
+                    )}
                   </CardContent>
                 </CardActionArea>
                 {isBookmarked && (

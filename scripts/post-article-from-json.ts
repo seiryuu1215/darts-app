@@ -33,7 +33,10 @@ if (!projectId || !storageBucket) {
 
 let app;
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  app = initializeApp({ credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS), storageBucket });
+  app = initializeApp({
+    credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS),
+    storageBucket,
+  });
 } else {
   app = initializeApp({ projectId, storageBucket });
 }
@@ -89,15 +92,21 @@ async function main() {
   }
 
   if (!rawInput.trim()) {
-    console.error(JSON.stringify({ error: '入力が空です。stdin か --file でJSONを渡してください' }));
+    console.error(
+      JSON.stringify({ error: '入力が空です。stdin か --file でJSONを渡してください' }),
+    );
     process.exit(1);
   }
 
   const { title, tags, content } = extractJson(rawInput);
 
   // 管理者ユーザー
-  const userSnapshot = await db.collection('users').where('email', '==', 'mt.oikawa@gmail.com').get();
-  let userId = '', userName = '';
+  const userSnapshot = await db
+    .collection('users')
+    .where('email', '==', 'mt.oikawa@gmail.com')
+    .get();
+  let userId = '',
+    userName = '';
   if (!userSnapshot.empty) {
     userId = userSnapshot.docs[0].id;
     userName = userSnapshot.docs[0].data().displayName || '';
@@ -117,13 +126,25 @@ async function main() {
 
   // Firestore
   await docRef.set({
-    slug, title, content, coverImageUrl, tags, isDraft,
-    userId, userName,
+    slug,
+    title,
+    content,
+    coverImageUrl,
+    tags,
+    isDraft,
+    userId,
+    userName,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
 
-  console.log(JSON.stringify({ id: articleId, slug, url: `/articles/${slug}`, coverImageUrl, isDraft, title }, null, 2));
+  console.log(
+    JSON.stringify(
+      { id: articleId, slug, url: `/articles/${slug}`, coverImageUrl, isDraft, title },
+      null,
+      2,
+    ),
+  );
 }
 
 main().catch((err) => {

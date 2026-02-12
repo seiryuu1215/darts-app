@@ -34,13 +34,20 @@ config({ path: '.env.local' });
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 if (!projectId || !storageBucket) {
-  console.error(JSON.stringify({ error: '環境変数が不足: NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET' }));
+  console.error(
+    JSON.stringify({
+      error: '環境変数が不足: NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    }),
+  );
   process.exit(1);
 }
 
 let app;
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  app = initializeApp({ credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS), storageBucket });
+  app = initializeApp({
+    credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS),
+    storageBucket,
+  });
 } else {
   app = initializeApp({ projectId, storageBucket });
 }
@@ -111,7 +118,10 @@ async function main() {
 
   // タグ
   const tags = parsed['tags']
-    ? parsed['tags'].split(',').map((t) => t.trim()).filter(Boolean)
+    ? parsed['tags']
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
 
   // 本文
@@ -125,7 +135,11 @@ async function main() {
   }
 
   if (!content.trim()) {
-    console.error(JSON.stringify({ error: '本文が空です。--content / --file / stdin のいずれかで指定してください' }));
+    console.error(
+      JSON.stringify({
+        error: '本文が空です。--content / --file / stdin のいずれかで指定してください',
+      }),
+    );
     process.exit(1);
   }
 

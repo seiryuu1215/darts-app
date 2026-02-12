@@ -60,7 +60,9 @@ export default function RecommendPage() {
       setLoading(true);
       try {
         // ブックマークID取得
-        const barrelBmSnap = await getDocs(collection(db, 'users', session.user.id, 'barrelBookmarks'));
+        const barrelBmSnap = await getDocs(
+          collection(db, 'users', session.user.id, 'barrelBookmarks'),
+        );
         const bmIds = new Set(barrelBmSnap.docs.map((d) => d.data().barrelId as string));
         setBookmarkIds(bmIds);
 
@@ -89,7 +91,7 @@ export default function RecommendPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q)
+        (b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q),
       );
     }
     // ブックマーク済みを上に
@@ -126,7 +128,12 @@ export default function RecommendPage() {
       const candidateBarrels = selectedType
         ? allBarrels.filter((b) => getBarrelType(b.name) === selectedType)
         : allBarrels;
-      const analyzed = recommendFromBarrelsWithAnalysis(selectedBarrels, candidateBarrels, 30, preferenceText || undefined);
+      const analyzed = recommendFromBarrelsWithAnalysis(
+        selectedBarrels,
+        candidateBarrels,
+        30,
+        preferenceText || undefined,
+      );
       setResults(analyzed);
     } catch (err) {
       console.error('おすすめ検索エラー:', err);
@@ -141,7 +148,9 @@ export default function RecommendPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: 'バレル検索', href: '/barrels' }, { label: 'おすすめ' }]} />
-      <Typography variant="h4" sx={{ mb: 1 }}>おすすめバレルを探す</Typography>
+      <Typography variant="h4" sx={{ mb: 1 }}>
+        おすすめバレルを探す
+      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         好みのバレルを1〜3個選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。
       </Typography>
@@ -213,14 +222,24 @@ export default function RecommendPage() {
               const isBookmarked = barrel.id ? bookmarkIds.has(barrel.id) : false;
               const isSelected = barrel.id ? selectedIds.has(barrel.id) : false;
               // ブックマーク → 非ブックマーク境界にDivider表示
-              const showDivider = index > 0 && !isBookmarked && bookmarkedCount > 0 &&
-                displayBarrels[index - 1]?.id && bookmarkIds.has(displayBarrels[index - 1].id!);
+              const showDivider =
+                index > 0 &&
+                !isBookmarked &&
+                bookmarkedCount > 0 &&
+                displayBarrels[index - 1]?.id &&
+                bookmarkIds.has(displayBarrels[index - 1].id!);
 
               return (
-                <Grid size={{ xs: 6, sm: 4, md: 3 }} key={barrel.id} sx={showDivider ? { pt: 1 } : undefined}>
+                <Grid
+                  size={{ xs: 6, sm: 4, md: 3 }}
+                  key={barrel.id}
+                  sx={showDivider ? { pt: 1 } : undefined}
+                >
                   {showDivider && (
                     <Divider sx={{ mb: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">すべてのバレル</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        すべてのバレル
+                      </Typography>
                     </Divider>
                   )}
                   <Card
@@ -254,8 +273,18 @@ export default function RecommendPage() {
                         sx={{ objectFit: 'cover' }}
                       />
                     ) : (
-                      <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'action.hover' }}>
-                        <Typography variant="caption" color="text.secondary">No Image</Typography>
+                      <Box
+                        sx={{
+                          height: 100,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: 'action.hover',
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          No Image
+                        </Typography>
                       </Box>
                     )}
                     <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -297,7 +326,9 @@ export default function RecommendPage() {
 
       {results !== null && (
         <>
-          <Typography variant="h6" sx={{ mb: 2 }}>おすすめバレル</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            おすすめバレル
+          </Typography>
           {results.length === 0 ? (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
               類似バレルが見つかりませんでした
@@ -309,7 +340,10 @@ export default function RecommendPage() {
                   <Box>
                     <BarrelCard barrel={analysis.barrel} />
                     {/* 分析カード */}
-                    <Paper variant="outlined" sx={{ mt: -0.5, borderTopLeftRadius: 0, borderTopRightRadius: 0, p: 1.5 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ mt: -0.5, borderTopLeftRadius: 0, borderTopRightRadius: 0, p: 1.5 }}
+                    >
                       {/* 一致度バー */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 48 }}>
@@ -319,9 +353,19 @@ export default function RecommendPage() {
                           variant="determinate"
                           value={analysis.matchPercent}
                           sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                          color={analysis.matchPercent >= 70 ? 'success' : analysis.matchPercent >= 40 ? 'primary' : 'warning'}
+                          color={
+                            analysis.matchPercent >= 70
+                              ? 'success'
+                              : analysis.matchPercent >= 40
+                                ? 'primary'
+                                : 'warning'
+                          }
                         />
-                        <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 32, textAlign: 'right' }}>
+                        <Typography
+                          variant="caption"
+                          fontWeight="bold"
+                          sx={{ minWidth: 32, textAlign: 'right' }}
+                        >
                           {analysis.matchPercent}%
                         </Typography>
                       </Box>
@@ -333,7 +377,13 @@ export default function RecommendPage() {
                             label={`重量 ${analysis.diffs.weightDiff > 0 ? '+' : ''}${analysis.diffs.weightDiff}g`}
                             size="small"
                             variant="outlined"
-                            color={Math.abs(analysis.diffs.weightDiff) <= 0.5 ? 'success' : Math.abs(analysis.diffs.weightDiff) <= 2 ? 'default' : 'warning'}
+                            color={
+                              Math.abs(analysis.diffs.weightDiff) <= 0.5
+                                ? 'success'
+                                : Math.abs(analysis.diffs.weightDiff) <= 2
+                                  ? 'default'
+                                  : 'warning'
+                            }
                           />
                         )}
                         {analysis.diffs.diameterDiff != null && (
@@ -341,7 +391,13 @@ export default function RecommendPage() {
                             label={`径 ${analysis.diffs.diameterDiff > 0 ? '+' : ''}${analysis.diffs.diameterDiff.toFixed(1)}mm`}
                             size="small"
                             variant="outlined"
-                            color={Math.abs(analysis.diffs.diameterDiff) <= 0.2 ? 'success' : Math.abs(analysis.diffs.diameterDiff) <= 0.5 ? 'default' : 'warning'}
+                            color={
+                              Math.abs(analysis.diffs.diameterDiff) <= 0.2
+                                ? 'success'
+                                : Math.abs(analysis.diffs.diameterDiff) <= 0.5
+                                  ? 'default'
+                                  : 'warning'
+                            }
                           />
                         )}
                         {analysis.diffs.lengthDiff != null && (
@@ -349,12 +405,20 @@ export default function RecommendPage() {
                             label={`長さ ${analysis.diffs.lengthDiff > 0 ? '+' : ''}${analysis.diffs.lengthDiff}mm`}
                             size="small"
                             variant="outlined"
-                            color={Math.abs(analysis.diffs.lengthDiff) <= 1 ? 'success' : Math.abs(analysis.diffs.lengthDiff) <= 3 ? 'default' : 'warning'}
+                            color={
+                              Math.abs(analysis.diffs.lengthDiff) <= 1
+                                ? 'success'
+                                : Math.abs(analysis.diffs.lengthDiff) <= 3
+                                  ? 'default'
+                                  : 'warning'
+                            }
                           />
                         )}
                         {analysis.diffs.cutMatch !== 'none' && (
                           <Chip
-                            label={analysis.diffs.cutMatch === 'exact' ? 'カット一致' : 'カット近似'}
+                            label={
+                              analysis.diffs.cutMatch === 'exact' ? 'カット一致' : 'カット近似'
+                            }
                             size="small"
                             variant="outlined"
                             color={analysis.diffs.cutMatch === 'exact' ? 'success' : 'info'}
@@ -368,7 +432,13 @@ export default function RecommendPage() {
                       {/* 感覚の違い */}
                       <Box>
                         {analysis.insights.map((insight, i) => (
-                          <Typography key={i} variant="caption" display="block" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                          <Typography
+                            key={i}
+                            variant="caption"
+                            display="block"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.6 }}
+                          >
                             ・{insight}
                           </Typography>
                         ))}

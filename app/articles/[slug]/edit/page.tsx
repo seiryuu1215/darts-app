@@ -20,7 +20,15 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, getDocs, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -56,10 +64,7 @@ export default function EditArticlePage() {
     const fetchArticle = async () => {
       try {
         // 管理者は下書きも取得できるよう isDraft フィルタなしで slug 検索
-        const q = query(
-          collection(db, 'articles'),
-          where('slug', '==', slug)
-        );
+        const q = query(collection(db, 'articles'), where('slug', '==', slug));
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
           const d = snapshot.docs[0];
@@ -168,9 +173,7 @@ export default function EditArticlePage() {
     }
   };
 
-  const coverPreviewUrl = coverImage
-    ? URL.createObjectURL(coverImage)
-    : existingCoverUrl;
+  const coverPreviewUrl = coverImage ? URL.createObjectURL(coverImage) : existingCoverUrl;
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -178,7 +181,11 @@ export default function EditArticlePage() {
         {articleType === 'page' ? '固定ページ編集' : '記事編集'}
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <TextField
         label="タイトル"
@@ -195,7 +202,11 @@ export default function EditArticlePage() {
         onChange={(e) => setNewSlug(e.target.value)}
         fullWidth
         required
-        helperText={articleType === 'page' ? `固定ページ: /${newSlug || '...'}` : `/articles/${newSlug || '...'}`}
+        helperText={
+          articleType === 'page'
+            ? `固定ページ: /${newSlug || '...'}`
+            : `/articles/${newSlug || '...'}`
+        }
         sx={{ mb: 2 }}
       />
 
@@ -218,7 +229,9 @@ export default function EditArticlePage() {
 
       {isAdmin(userRole) && articleType === 'article' && (
         <FormControlLabel
-          control={<Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />}
+          control={
+            <Switch checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+          }
           label="トップページにおすすめ表示"
           sx={{ mb: 2, display: 'block' }}
         />

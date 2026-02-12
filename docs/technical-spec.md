@@ -6,15 +6,15 @@
 
 ## 2. 技術スタック
 
-| カテゴリ | 技術 | バージョン |
-|---|---|---|
-| フレームワーク | Next.js (App Router) | 16.1.6 |
-| UI ライブラリ | MUI (Material UI) | 7.x |
-| CSS | Tailwind CSS | 4.x |
-| 認証 | NextAuth.js | 4.x |
-| バックエンド | Firebase (Firestore, Storage, Auth) | 12.x |
-| 言語 | TypeScript | 5.x |
-| ランタイム | React | 19.x |
+| カテゴリ       | 技術                                | バージョン |
+| -------------- | ----------------------------------- | ---------- |
+| フレームワーク | Next.js (App Router)                | 16.1.6     |
+| UI ライブラリ  | MUI (Material UI)                   | 7.x        |
+| CSS            | Tailwind CSS                        | 4.x        |
+| 認証           | NextAuth.js                         | 4.x        |
+| バックエンド   | Firebase (Firestore, Storage, Auth) | 12.x       |
+| 言語           | TypeScript                          | 5.x        |
+| ランタイム     | React                               | 19.x       |
 
 ## 3. ディレクトリ構成
 
@@ -112,10 +112,10 @@ NEXTAUTH_URL=http://localhost:3000
 
 NextAuth.js を使用し、以下2つのプロバイダーを提供する。
 
-| プロバイダー | 説明 |
-|---|---|
+| プロバイダー        | 説明                                        |
+| ------------------- | ------------------------------------------- |
 | CredentialsProvider | Firebase Auth のメール/パスワード認証を利用 |
-| GoogleProvider | Google OAuth 2.0 によるソーシャルログイン |
+| GoogleProvider      | Google OAuth 2.0 によるソーシャルログイン   |
 
 - セッション管理: JWT戦略
 - カスタムログインページ: `/login`
@@ -141,13 +141,13 @@ NextAuth.js を使用し、以下2つのプロバイダーを提供する。
 users/{userId}
 ```
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `displayName` | `string` | 表示名 |
-| `email` | `string` | メールアドレス |
-| `photoURL` | `string \| null` | プロフィール画像URL |
-| `createdAt` | `Timestamp` | 作成日時 |
-| `updatedAt` | `Timestamp` | 更新日時 |
+| フィールド    | 型               | 説明                |
+| ------------- | ---------------- | ------------------- |
+| `displayName` | `string`         | 表示名              |
+| `email`       | `string`         | メールアドレス      |
+| `photoURL`    | `string \| null` | プロフィール画像URL |
+| `createdAt`   | `Timestamp`      | 作成日時            |
+| `updatedAt`   | `Timestamp`      | 更新日時            |
 
 ### 6.2 `darts` コレクション
 
@@ -155,27 +155,27 @@ users/{userId}
 darts/{dartId}
 ```
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `userId` | `string` | 投稿者のUID |
-| `title` | `string` | セットアップのタイトル |
-| `barrel` | `object` | バレル情報 |
-| `barrel.name` | `string` | バレル名 |
-| `barrel.brand` | `string` | ブランド名 |
-| `barrel.weight` | `number` | 重量（g） |
-| `tip` | `object` | チップ情報 |
-| `tip.name` | `string` | チップ名 |
-| `tip.type` | `string` | 種類（`soft` / `steel`） |
-| `shaft` | `object` | シャフト情報 |
-| `shaft.name` | `string` | シャフト名 |
-| `shaft.length` | `string` | 長さ（`short` / `medium` / `long`） |
-| `flight` | `object` | フライト情報 |
-| `flight.name` | `string` | フライト名 |
-| `flight.shape` | `string` | 形状（`standard` / `slim` / `kite` / `teardrop`） |
-| `imageUrls` | `string[]` | 画像URLの配列（Firebase Storage） |
-| `description` | `string` | 説明・メモ |
-| `createdAt` | `Timestamp` | 作成日時 |
-| `updatedAt` | `Timestamp` | 更新日時 |
+| フィールド      | 型          | 説明                                              |
+| --------------- | ----------- | ------------------------------------------------- |
+| `userId`        | `string`    | 投稿者のUID                                       |
+| `title`         | `string`    | セットアップのタイトル                            |
+| `barrel`        | `object`    | バレル情報                                        |
+| `barrel.name`   | `string`    | バレル名                                          |
+| `barrel.brand`  | `string`    | ブランド名                                        |
+| `barrel.weight` | `number`    | 重量（g）                                         |
+| `tip`           | `object`    | チップ情報                                        |
+| `tip.name`      | `string`    | チップ名                                          |
+| `tip.type`      | `string`    | 種類（`soft` / `steel`）                          |
+| `shaft`         | `object`    | シャフト情報                                      |
+| `shaft.name`    | `string`    | シャフト名                                        |
+| `shaft.length`  | `string`    | 長さ（`short` / `medium` / `long`）               |
+| `flight`        | `object`    | フライト情報                                      |
+| `flight.name`   | `string`    | フライト名                                        |
+| `flight.shape`  | `string`    | 形状（`standard` / `slim` / `kite` / `teardrop`） |
+| `imageUrls`     | `string[]`  | 画像URLの配列（Firebase Storage）                 |
+| `description`   | `string`    | 説明・メモ                                        |
+| `createdAt`     | `Timestamp` | 作成日時                                          |
+| `updatedAt`     | `Timestamp` | 更新日時                                          |
 
 ### 6.3 `comments` サブコレクション
 
@@ -183,12 +183,12 @@ darts/{dartId}
 darts/{dartId}/comments/{commentId}
 ```
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `userId` | `string` | コメント投稿者のUID |
-| `userName` | `string` | 投稿者の表示名 |
-| `text` | `string` | コメント本文 |
-| `createdAt` | `Timestamp` | 作成日時 |
+| フィールド  | 型          | 説明                |
+| ----------- | ----------- | ------------------- |
+| `userId`    | `string`    | コメント投稿者のUID |
+| `userName`  | `string`    | 投稿者の表示名      |
+| `text`      | `string`    | コメント本文        |
+| `createdAt` | `Timestamp` | 作成日時            |
 
 ## 7. Firebase Storage 構成
 

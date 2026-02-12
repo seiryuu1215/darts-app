@@ -12,7 +12,17 @@ import {
   InputAdornment,
   Chip,
 } from '@mui/material';
-import { collection, getDocs, orderBy, query, where, limit, startAfter, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  where,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -28,7 +38,13 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
 export default function DartsListPage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <DartsListContent />
     </Suspense>
   );
@@ -57,7 +73,12 @@ function DartsListContent() {
       try {
         let q;
         if (mineOnly && session?.user?.id) {
-          q = query(collection(db, 'darts'), where('userId', '==', session.user.id), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+          q = query(
+            collection(db, 'darts'),
+            where('userId', '==', session.user.id),
+            orderBy('createdAt', 'desc'),
+            limit(PAGE_SIZE),
+          );
         } else {
           q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
         }
@@ -86,9 +107,20 @@ function DartsListContent() {
     try {
       let q;
       if (mineOnly && session?.user?.id) {
-        q = query(collection(db, 'darts'), where('userId', '==', session.user.id), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(PAGE_SIZE));
+        q = query(
+          collection(db, 'darts'),
+          where('userId', '==', session.user.id),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastDoc),
+          limit(PAGE_SIZE),
+        );
       } else {
-        q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(PAGE_SIZE));
+        q = query(
+          collection(db, 'darts'),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastDoc),
+          limit(PAGE_SIZE),
+        );
       }
       const snapshot = await getDocs(q);
       const newDarts = snapshot.docs.map((doc) => ({
@@ -113,7 +145,7 @@ function DartsListContent() {
         dart.title.toLowerCase().includes(q) ||
         dart.barrel.name.toLowerCase().includes(q) ||
         dart.barrel.brand.toLowerCase().includes(q) ||
-        (dart.userName && dart.userName.toLowerCase().includes(q))
+        (dart.userName && dart.userName.toLowerCase().includes(q)),
     );
   }, [darts, searchQuery]);
 
@@ -128,15 +160,19 @@ function DartsListContent() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Breadcrumbs items={[{ label: mineOnly ? 'マイセッティング' : 'セッティング' }]} />
-      <Box sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between',
-        alignItems: { xs: 'stretch', sm: 'center' },
-        gap: 2,
-        mb: 3,
-      }}>
-        <Typography variant="h4">{mineOnly ? 'マイセッティング' : 'みんなのセッティング'}</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Typography variant="h4">
+          {mineOnly ? 'マイセッティング' : 'みんなのセッティング'}
+        </Typography>
         {session && (
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
@@ -148,12 +184,7 @@ function DartsListContent() {
             >
               履歴
             </Button>
-            <Button
-              variant="contained"
-              component={Link}
-              href="/darts/new"
-              startIcon={<AddIcon />}
-            >
+            <Button variant="contained" component={Link} href="/darts/new" startIcon={<AddIcon />}>
               新規登録
             </Button>
           </Box>
@@ -195,12 +226,20 @@ function DartsListContent() {
         </Box>
       ) : fetchError ? (
         <Box sx={{ py: 6, px: 2, textAlign: 'center' }}>
-          <Typography color="error" sx={{ mb: 1 }}>データの取得に失敗しました</Typography>
-          <Typography variant="body2" color="text.secondary" component="pre" sx={{ textAlign: 'left', overflow: 'auto', maxWidth: '100%' }}>
+          <Typography color="error" sx={{ mb: 1 }}>
+            データの取得に失敗しました
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            component="pre"
+            sx={{ textAlign: 'left', overflow: 'auto', maxWidth: '100%' }}
+          >
             {fetchError}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            .env.local の NEXT_PUBLIC_FIREBASE_* と、起動ポートに合わせた NEXTAUTH_URL を確認してください。
+            .env.local の NEXT_PUBLIC_FIREBASE_* と、起動ポートに合わせた NEXTAUTH_URL
+            を確認してください。
           </Typography>
         </Box>
       ) : filteredDarts.length === 0 ? (

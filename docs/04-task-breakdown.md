@@ -2,16 +2,17 @@
 
 ## ドキュメント情報
 
-| 項目 | 内容 |
-|------|------|
-| プロジェクト名 | Darts App |
-| 作成日 | 2025-02-09 |
+| 項目           | 内容       |
+| -------------- | ---------- |
+| プロジェクト名 | Darts App  |
+| 作成日         | 2025-02-09 |
 
 ---
 
 ## Phase 1: プロジェクト基盤構築
 
 ### 1.1 環境セットアップ
+
 - [x] Next.js 16 プロジェクト作成（App Router）
 - [x] TypeScript 設定
 - [x] MUI v7 + Emotion 導入
@@ -23,6 +24,7 @@
 - [x] `.gitignore` 設定（`.env.local`, `node_modules`, `.next` 等）
 
 ### 1.2 共通基盤
+
 - [x] 型定義（`types/index.ts`）— User, Dart, Barrel, Comment, Article, DartsLiveStats
 - [x] NextAuth 型拡張（`types/next-auth.d.ts`）
 - [x] Firebase Client SDK 初期化（`lib/firebase.ts`）
@@ -36,6 +38,7 @@
 ## Phase 2: 認証・ユーザー管理
 
 ### 2.1 認証
+
 - [x] ログインページ（`app/login/page.tsx`）
 - [x] ログインフォーム（`components/auth/LoginForm.tsx`）— メール/パスワード + Google OAuth
 - [x] 新規登録ページ（`app/register/page.tsx`）
@@ -44,6 +47,7 @@
 - [x] ロールベースアクセス制御（admin / pro / general）
 
 ### 2.2 ユーザープロフィール
+
 - [x] プロフィール編集ページ（`app/profile/edit/page.tsx`）
 - [x] アバター表示コンポーネント（`components/UserAvatar.tsx`）
 
@@ -52,6 +56,7 @@
 ## Phase 3: セッティング管理（コア機能）
 
 ### 3.1 パーツマスタデータ
+
 - [x] チップ プリセット定義（`lib/darts-parts.ts` — 49製品）
 - [x] シャフト プリセット定義（8製品）
 - [x] フライト プリセット定義（13製品 + CONDOR AXE 7種）
@@ -59,6 +64,7 @@
 - [x] スペック計算ロジック（`lib/calc-totals.ts`）
 
 ### 3.2 セッティングCRUD
+
 - [x] セッティング登録フォーム（`components/darts/DartForm.tsx`）
   - [x] バレル入力セクション（ブランド・重量・径・長さ・カット複数選択）
   - [x] チップ入力セクション（プリセット選択 + カスタム入力）
@@ -72,6 +78,7 @@
 - [x] セッティング詳細コンポーネント（`components/darts/DartDetail.tsx`）
 
 ### 3.3 セッティング一覧・検索
+
 - [x] セッティング一覧ページ（`app/darts/page.tsx`）
   - [x] ブランド・カット・種別フィルタ
   - [x] テキスト検索
@@ -79,6 +86,7 @@
 - [x] レコメンドエンジン（`lib/recommend-barrels.ts`）
 
 ### 3.4 ソーシャル機能
+
 - [x] いいね機能（Firestore `dartLikes` サブコレクション）
 - [x] ブックマーク機能（`dartBookmarks` サブコレクション）
 - [x] コメント一覧（`components/comment/CommentList.tsx`）
@@ -86,6 +94,7 @@
 - [x] ブックマーク一覧ページ（`app/bookmarks/page.tsx`）
 
 ### 3.5 セッティング比較
+
 - [x] 比較ページ（`app/darts/compare/page.tsx`）
 - [x] 差分カラー表示（`lib/comparison.ts`）
 
@@ -106,11 +115,13 @@
 ## Phase 5: スタッツ記録
 
 ### 5.1 手動入力
+
 - [x] スタッツ入力ページ（`app/stats/new/page.tsx`）
 - [x] スタッツ編集ページ（`app/stats/[id]/edit/page.tsx`）
 - [x] Firestore `dartsLiveStats` サブコレクション
 
 ### 5.2 DARTSLIVE連携
+
 - [x] スクレイピングAPIルート（`app/api/dartslive-stats/route.ts`）
   - [x] DARTSLIVEログイン処理
   - [x] 現在スタッツ取得（Rating, 01, Cricket, COUNT-UP, Awards）
@@ -120,6 +131,7 @@
 - [x] 自動取得ダイアログ（フォーム自動入力）
 
 ### 5.3 スタッツダッシュボード
+
 - [x] ダッシュボードページ（`app/stats/page.tsx`）
   - [x] DARTSLIVE風UI（フライトカラー、カテゴリカラー）
   - [x] Rating Hero Card（フライト階級バッジ）
@@ -131,6 +143,7 @@
   - [x] 使用中ダーツ表示
 
 ### 5.4 トップページ連携
+
 - [x] スタッツサマリーカード（`app/page.tsx`）
 - [x] `dartsliveCache/latest` からの読み込み
 

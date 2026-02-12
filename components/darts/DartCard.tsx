@@ -21,7 +21,13 @@ export default function DartCard({ dart }: DartCardProps) {
     <Card
       component={Link}
       href={`/darts/${dart.id}`}
-      sx={{ textDecoration: 'none', height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
+      sx={{
+        textDecoration: 'none',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
+      }}
     >
       {dart.imageUrls.length > 0 ? (
         <CardMedia
@@ -71,13 +77,16 @@ export default function DartCard({ dart }: DartCardProps) {
           {dart.barrel.brand} {dart.barrel.name}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {dart.barrel.weight}g
-          {dart.barrel.maxDiameter && ` / 最大径${dart.barrel.maxDiameter}mm`}
+          {dart.barrel.weight}g{dart.barrel.maxDiameter && ` / 最大径${dart.barrel.maxDiameter}mm`}
           {dart.barrel.length && ` / 全長${dart.barrel.length}mm`}
         </Typography>
         {dart.barrel.cut && (
           <Typography variant="caption" display="block" color="text.secondary">
-            {dart.barrel.cut.split(/[,+＋]/).filter(Boolean).map(c => c.trim()).join(' / ')}
+            {dart.barrel.cut
+              .split(/[,+＋]/)
+              .filter(Boolean)
+              .map((c) => c.trim())
+              .join(' / ')}
           </Typography>
         )}
         {showTotals && (totals.totalLength || totals.totalWeight) && (
@@ -86,7 +95,9 @@ export default function DartCard({ dart }: DartCardProps) {
               label={`セッティング込み ${[
                 totals.totalLength && `${totals.totalLength.toFixed(1)}mm`,
                 totals.totalWeight && `${totals.totalWeight.toFixed(1)}g`,
-              ].filter(Boolean).join(' / ')}`}
+              ]
+                .filter(Boolean)
+                .join(' / ')}`}
               size="small"
               color="primary"
               variant="outlined"

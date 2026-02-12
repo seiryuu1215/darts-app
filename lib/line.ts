@@ -30,10 +30,7 @@ export async function sendLinePushMessage(
 }
 
 /** Reply メッセージ送信 */
-export async function replyLineMessage(
-  replyToken: string,
-  messages: object[],
-): Promise<void> {
+export async function replyLineMessage(replyToken: string, messages: object[]): Promise<void> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) return;
 

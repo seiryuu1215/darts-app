@@ -14,9 +14,22 @@ export interface UserPreference {
 }
 
 const KEYWORD_LIST = [
-  '安定', '鋭い', '前重心', 'センター重心', '後ろ重心', 'グリップ',
-  'ストレート', 'トルピード', '飛び', '抜け', 'コントロール',
-  'パワー', 'シャープ', 'スリム', 'ロング', 'ショート',
+  '安定',
+  '鋭い',
+  '前重心',
+  'センター重心',
+  '後ろ重心',
+  'グリップ',
+  'ストレート',
+  'トルピード',
+  '飛び',
+  '抜け',
+  'コントロール',
+  'パワー',
+  'シャープ',
+  'スリム',
+  'ロング',
+  'ショート',
 ];
 
 export function analyzeUserDarts(darts: Dart[]): UserPreference {
@@ -40,8 +53,11 @@ export function analyzeUserDarts(darts: Dart[]): UserPreference {
   const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
 
   // 最大径平均
-  const diameters = darts.map((d) => d.barrel.maxDiameter).filter((v): v is number => v != null && v > 0);
-  const avgDiameter = diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
+  const diameters = darts
+    .map((d) => d.barrel.maxDiameter)
+    .filter((v): v is number => v != null && v > 0);
+  const avgDiameter =
+    diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
 
   // 全長平均
   const lengths = darts.map((d) => d.barrel.length).filter((v): v is number => v != null && v > 0);
@@ -51,9 +67,13 @@ export function analyzeUserDarts(darts: Dart[]): UserPreference {
   const cutCount = new Map<string, number>();
   darts.forEach((d) => {
     if (d.barrel.cut) {
-      d.barrel.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean).forEach((c) => {
-        cutCount.set(c, (cutCount.get(c) || 0) + 1);
-      });
+      d.barrel.cut
+        .split(/[,+＋]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((c) => {
+          cutCount.set(c, (cutCount.get(c) || 0) + 1);
+        });
     }
   });
   const favoriteCuts = Array.from(cutCount.entries())
@@ -101,7 +121,11 @@ export function analyzeUserDarts(darts: Dart[]): UserPreference {
 }
 
 /** テキストから好みオフセットをパースする */
-export function parsePreferenceText(text: string): { weightOffset: number; diameterOffset: number; lengthOffset: number } {
+export function parsePreferenceText(text: string): {
+  weightOffset: number;
+  diameterOffset: number;
+  lengthOffset: number;
+} {
   let weightOffset = 0;
   let diameterOffset = 0;
   let lengthOffset = 0;
@@ -149,13 +173,16 @@ export function scoreBarrel(barrel: BarrelProduct, pref: UserPreference): number
 
   // カット: 完全一致+15、部分一致+8、不一致0
   if (barrel.cut && pref.favoriteCuts.length > 0) {
-    const barrelCuts = barrel.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean);
+    const barrelCuts = barrel.cut
+      .split(/[,+＋]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     const hasExact = barrelCuts.some((c) => pref.favoriteCuts.includes(c));
     if (hasExact) {
       score += 15;
     } else {
       const hasPartial = barrelCuts.some((bc) =>
-        pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc))
+        pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc)),
       );
       if (hasPartial) score += 8;
     }
@@ -197,18 +224,27 @@ function buildPrefFromBarrels(selectedBarrels: BarrelProduct[], userText?: strin
   const weights = selectedBarrels.map((b) => b.weight).filter((w) => w > 0);
   const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
 
-  const diameters = selectedBarrels.map((b) => b.maxDiameter).filter((v): v is number => v != null && v > 0);
-  const avgDiameter = diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
+  const diameters = selectedBarrels
+    .map((b) => b.maxDiameter)
+    .filter((v): v is number => v != null && v > 0);
+  const avgDiameter =
+    diameters.length > 0 ? diameters.reduce((a, b) => a + b, 0) / diameters.length : null;
 
-  const lengths = selectedBarrels.map((b) => b.length).filter((v): v is number => v != null && v > 0);
+  const lengths = selectedBarrels
+    .map((b) => b.length)
+    .filter((v): v is number => v != null && v > 0);
   const avgLength = lengths.length > 0 ? lengths.reduce((a, b) => a + b, 0) / lengths.length : null;
 
   const cutCount = new Map<string, number>();
   selectedBarrels.forEach((b) => {
     if (b.cut) {
-      b.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean).forEach((c) => {
-        cutCount.set(c, (cutCount.get(c) || 0) + 1);
-      });
+      b.cut
+        .split(/[,+＋]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((c) => {
+          cutCount.set(c, (cutCount.get(c) || 0) + 1);
+        });
     }
   });
   const favoriteCuts = Array.from(cutCount.entries())
@@ -227,7 +263,9 @@ function buildPrefFromBarrels(selectedBarrels: BarrelProduct[], userText?: strin
     .slice(0, 5)
     .map(([brand]) => brand);
 
-  const offsets = userText ? parsePreferenceText(userText) : { weightOffset: 0, diameterOffset: 0, lengthOffset: 0 };
+  const offsets = userText
+    ? parsePreferenceText(userText)
+    : { weightOffset: 0, diameterOffset: 0, lengthOffset: 0 };
 
   return {
     avgWeight,
@@ -250,20 +288,28 @@ function analyzeBarrel(barrel: BarrelProduct, pref: UserPreference): BarrelAnaly
   const matchPercent = Math.round((score / maxScore) * 100);
 
   // スペック差分
-  const weightDiff = pref.avgWeight > 0 ? Math.round((barrel.weight - pref.avgWeight) * 10) / 10 : null;
-  const diameterDiff = pref.avgDiameter != null && barrel.maxDiameter != null
-    ? Math.round((barrel.maxDiameter - pref.avgDiameter) * 100) / 100
-    : null;
-  const lengthDiff = pref.avgLength != null && barrel.length != null
-    ? Math.round((barrel.length - pref.avgLength) * 10) / 10
-    : null;
+  const weightDiff =
+    pref.avgWeight > 0 ? Math.round((barrel.weight - pref.avgWeight) * 10) / 10 : null;
+  const diameterDiff =
+    pref.avgDiameter != null && barrel.maxDiameter != null
+      ? Math.round((barrel.maxDiameter - pref.avgDiameter) * 100) / 100
+      : null;
+  const lengthDiff =
+    pref.avgLength != null && barrel.length != null
+      ? Math.round((barrel.length - pref.avgLength) * 10) / 10
+      : null;
 
   let cutMatch: 'exact' | 'partial' | 'none' = 'none';
   if (barrel.cut && pref.favoriteCuts.length > 0) {
-    const barrelCuts = barrel.cut.split(/[,+＋]/).map((s) => s.trim()).filter(Boolean);
+    const barrelCuts = barrel.cut
+      .split(/[,+＋]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (barrelCuts.some((c) => pref.favoriteCuts.includes(c))) {
       cutMatch = 'exact';
-    } else if (barrelCuts.some((bc) => pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc)))) {
+    } else if (
+      barrelCuts.some((bc) => pref.favoriteCuts.some((fc) => bc.includes(fc) || fc.includes(bc)))
+    ) {
       cutMatch = 'partial';
     }
   }
@@ -284,14 +330,18 @@ function analyzeBarrel(barrel: BarrelProduct, pref: UserPreference): BarrelAnaly
   }
 
   if (diameterDiff != null) {
-    if (diameterDiff > 0.3) insights.push(`太め（+${diameterDiff.toFixed(1)}mm）。グリップの存在感が増す`);
-    else if (diameterDiff < -0.3) insights.push(`細め（${diameterDiff.toFixed(1)}mm）。指離れが良くなる傾向`);
+    if (diameterDiff > 0.3)
+      insights.push(`太め（+${diameterDiff.toFixed(1)}mm）。グリップの存在感が増す`);
+    else if (diameterDiff < -0.3)
+      insights.push(`細め（${diameterDiff.toFixed(1)}mm）。指離れが良くなる傾向`);
     else insights.push('最大径は近いサイズ感');
   }
 
   if (lengthDiff != null) {
-    if (lengthDiff > 2) insights.push(`長め（+${lengthDiff.toFixed(1)}mm）。グリップポイントの選択肢が広がる`);
-    else if (lengthDiff < -2) insights.push(`短め（${lengthDiff.toFixed(1)}mm）。コンパクトな振り感に`);
+    if (lengthDiff > 2)
+      insights.push(`長め（+${lengthDiff.toFixed(1)}mm）。グリップポイントの選択肢が広がる`);
+    else if (lengthDiff < -2)
+      insights.push(`短め（${lengthDiff.toFixed(1)}mm）。コンパクトな振り感に`);
     else insights.push('全長は近い。持ち替え時の違和感が少なそう');
   }
 
@@ -306,7 +356,7 @@ export function recommendFromBarrels(
   selectedBarrels: BarrelProduct[],
   allBarrels: BarrelProduct[],
   limit = 10,
-  userText?: string
+  userText?: string,
 ): BarrelProduct[] {
   const results = recommendFromBarrelsWithAnalysis(selectedBarrels, allBarrels, limit, userText);
   return results.map((r) => r.barrel);
@@ -316,7 +366,7 @@ export function recommendFromBarrelsWithAnalysis(
   selectedBarrels: BarrelProduct[],
   allBarrels: BarrelProduct[],
   limit = 10,
-  userText?: string
+  userText?: string,
 ): BarrelAnalysis[] {
   if (selectedBarrels.length === 0) return [];
 
@@ -334,7 +384,7 @@ export function recommendBarrels(
   darts: Dart[],
   barrels: BarrelProduct[],
   type: 'soft' | 'steel',
-  limit = 10
+  limit = 10,
 ): BarrelProduct[] {
   const pref = analyzeUserDarts(darts);
   if (pref.avgWeight === 0) return [];
@@ -364,9 +414,9 @@ function buildPrefFromQuiz(answers: QuizAnswer): UserPreference {
   const weightMap = { light: 16.5, medium: 19.0, heavy: 22.0 };
   const lengthMap = { short: 40, standard: 45, long: 50 };
   const diameterMap = {
-    front: 7.2,   // フロントグリップ → やや太め
-    center: 7.0,  // センターグリップ → 標準
-    rear: 6.8,    // リアグリップ → やや細め
+    front: 7.2, // フロントグリップ → やや太め
+    center: 7.0, // センターグリップ → 標準
+    rear: 6.8, // リアグリップ → やや細め
   };
 
   return {

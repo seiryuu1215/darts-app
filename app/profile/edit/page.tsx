@@ -149,10 +149,20 @@ export default function ProfileEditPage() {
   return (
     <Container maxWidth="sm">
       <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4, p: { xs: 2, sm: 3 } }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>プロフィール編集</Typography>
+        <Typography variant="h5" sx={{ mb: 3 }}>
+          プロフィール編集
+        </Typography>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
+          </Alert>
+        )}
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <UserAvatar
@@ -266,9 +276,13 @@ export default function ProfileEditPage() {
         <Divider sx={{ my: 4 }} />
 
         <Paper variant="outlined" sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
             <Typography variant="h6">LINE連携</Typography>
-            {lineUserId && <Chip icon={<CheckCircleIcon />} label="連携済み" color="success" size="small" />}
+            {lineUserId && (
+              <Chip icon={<CheckCircleIcon />} label="連携済み" color="success" size="small" />
+            )}
           </Box>
 
           {!lineUserId ? (
@@ -279,16 +293,26 @@ export default function ProfileEditPage() {
 
               {/* Step 1 */}
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                <Chip label="1" size="small" sx={{ minWidth: 28, fontWeight: 'bold', bgcolor: 'primary.main', color: '#fff' }} />
+                <Chip
+                  label="1"
+                  size="small"
+                  sx={{ minWidth: 28, fontWeight: 'bold', bgcolor: 'primary.main', color: '#fff' }}
+                />
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>友だち追加</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    友だち追加
+                  </Typography>
                   <Button
                     variant="contained"
                     size="small"
                     href="https://line.me/R/ti/p/@411qccwd"
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{ bgcolor: '#06c755', '&:hover': { bgcolor: '#05b34c' }, textTransform: 'none' }}
+                    sx={{
+                      bgcolor: '#06c755',
+                      '&:hover': { bgcolor: '#05b34c' },
+                      textTransform: 'none',
+                    }}
                   >
                     LINE で友だち追加
                   </Button>
@@ -297,14 +321,30 @@ export default function ProfileEditPage() {
 
               {/* Step 2 */}
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                <Chip label="2" size="small" sx={{ minWidth: 28, fontWeight: 'bold', bgcolor: linkCode ? 'primary.main' : 'action.disabledBackground', color: linkCode ? '#fff' : 'text.secondary' }} />
+                <Chip
+                  label="2"
+                  size="small"
+                  sx={{
+                    minWidth: 28,
+                    fontWeight: 'bold',
+                    bgcolor: linkCode ? 'primary.main' : 'action.disabledBackground',
+                    color: linkCode ? '#fff' : 'text.secondary',
+                  }}
+                />
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>連携コードを発行</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    連携コードを発行
+                  </Typography>
                   {linkCode ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography
                         variant="h5"
-                        sx={{ fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: '0.15em', color: 'primary.main' }}
+                        sx={{
+                          fontFamily: 'monospace',
+                          fontWeight: 'bold',
+                          letterSpacing: '0.15em',
+                          color: 'primary.main',
+                        }}
                       >
                         {linkCode}
                       </Typography>
@@ -317,7 +357,9 @@ export default function ProfileEditPage() {
                       >
                         <ContentCopyIcon fontSize="small" />
                       </IconButton>
-                      <Typography variant="caption" color="text.secondary">10分間有効</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        10分間有効
+                      </Typography>
                     </Box>
                   ) : (
                     <Button
@@ -332,8 +374,11 @@ export default function ProfileEditPage() {
                           const json = await res.json();
                           if (res.ok) setLinkCode(json.code);
                           else setError(json.error || 'コード発行に失敗しました');
-                        } catch { setError('通信エラー'); }
-                        finally { setLinkLoading(false); }
+                        } catch {
+                          setError('通信エラー');
+                        } finally {
+                          setLinkLoading(false);
+                        }
                       }}
                     >
                       コードを発行
@@ -344,9 +389,20 @@ export default function ProfileEditPage() {
 
               {/* Step 3 */}
               <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <Chip label="3" size="small" sx={{ minWidth: 28, fontWeight: 'bold', bgcolor: 'action.disabledBackground', color: 'text.secondary' }} />
+                <Chip
+                  label="3"
+                  size="small"
+                  sx={{
+                    minWidth: 28,
+                    fontWeight: 'bold',
+                    bgcolor: 'action.disabledBackground',
+                    color: 'text.secondary',
+                  }}
+                />
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>Botにコードを送信</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    Botにコードを送信
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     発行した8桁のコードをLINE Botのトーク画面に送信すると連携完了です。
                   </Typography>
@@ -378,16 +434,26 @@ export default function ProfileEditPage() {
 
               {/* DARTSLIVE自動チェック */}
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>DARTSLIVE 自動チェック</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  DARTSLIVE 自動チェック
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 1.5 }}
+                >
                   毎朝10時にDARTSLIVEをチェックし、プレイがあればLINEに通知します。
                 </Typography>
 
                 {hasDlCredentials ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
-                      <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>設定済み</Typography>
+                      <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        設定済み
+                      </Typography>
                     </Box>
                     <Button
                       size="small"
@@ -397,13 +463,18 @@ export default function ProfileEditPage() {
                         if (!confirm('DARTSLIVE認証情報を削除しますか？')) return;
                         setDlDeleting(true);
                         try {
-                          const res = await fetch('/api/line/save-dl-credentials', { method: 'DELETE' });
+                          const res = await fetch('/api/line/save-dl-credentials', {
+                            method: 'DELETE',
+                          });
                           if (res.ok) {
                             setHasDlCredentials(false);
                             setSuccess('認証情報を削除しました');
                           } else setError('削除に失敗しました');
-                        } catch { setError('通信エラー'); }
-                        finally { setDlDeleting(false); }
+                        } catch {
+                          setError('通信エラー');
+                        } finally {
+                          setDlDeleting(false);
+                        }
                       }}
                     >
                       {dlDeleting ? '削除中...' : '認証情報を削除'}
@@ -429,7 +500,11 @@ export default function ProfileEditPage() {
                       size="small"
                       sx={{ mb: 1 }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mb: 1.5 }}
+                    >
                       認証情報は暗号化して保存されます。連携解除時に削除されます。
                     </Typography>
                     <Button
@@ -454,8 +529,11 @@ export default function ProfileEditPage() {
                             const json = await res.json();
                             setError(json.error || '保存に失敗しました');
                           }
-                        } catch { setError('通信エラー'); }
-                        finally { setDlSaving(false); }
+                        } catch {
+                          setError('通信エラー');
+                        } finally {
+                          setDlSaving(false);
+                        }
                       }}
                     >
                       {dlSaving ? '保存中...' : '保存'}
@@ -470,7 +548,8 @@ export default function ProfileEditPage() {
                 color="inherit"
                 disabled={unlinkLoading}
                 onClick={async () => {
-                  if (!confirm('LINE連携を解除しますか？DARTSLIVE自動チェック設定も削除されます。')) return;
+                  if (!confirm('LINE連携を解除しますか？DARTSLIVE自動チェック設定も削除されます。'))
+                    return;
                   setUnlinkLoading(true);
                   try {
                     const res = await fetch('/api/line/unlink', { method: 'POST' });
@@ -482,8 +561,11 @@ export default function ProfileEditPage() {
                     } else {
                       setError('連携解除に失敗しました');
                     }
-                  } catch { setError('通信エラー'); }
-                  finally { setUnlinkLoading(false); }
+                  } catch {
+                    setError('通信エラー');
+                  } finally {
+                    setUnlinkLoading(false);
+                  }
                 }}
                 sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
               >

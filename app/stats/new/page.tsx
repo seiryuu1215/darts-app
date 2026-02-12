@@ -157,7 +157,11 @@ export default function StatsNewPage() {
           </Button>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         <TextField
           label="日付"
@@ -170,7 +174,9 @@ export default function StatsNewPage() {
           sx={{ mb: 3 }}
         />
 
-        <Typography variant="h6" sx={{ mb: 1 }}>基本スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          基本スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="レーティング"
@@ -192,7 +198,9 @@ export default function StatsNewPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>01スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          01スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
           <TextField
             label="PPD"
@@ -223,7 +231,9 @@ export default function StatsNewPage() {
         />
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>クリケットスタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          クリケットスタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="MPR"
@@ -245,7 +255,9 @@ export default function StatsNewPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>詳細スタッツ</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          詳細スタッツ
+        </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <TextField
             label="ブル率 (%)"
@@ -266,13 +278,11 @@ export default function StatsNewPage() {
         </Box>
 
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>調子</Typography>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          調子
+        </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-          <Rating
-            value={condition}
-            onChange={(_, v) => setCondition(v)}
-            max={5}
-          />
+          <Rating value={condition} onChange={(_, v) => setCondition(v)} max={5} />
           <Typography variant="body2" color="text.secondary">
             {condition === 1 && '絶不調'}
             {condition === 2 && '不調'}
@@ -294,11 +304,7 @@ export default function StatsNewPage() {
         />
 
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={() => router.push('/stats')}
-          >
+          <Button variant="outlined" fullWidth onClick={() => router.push('/stats')}>
             キャンセル
           </Button>
           <Button type="submit" variant="contained" fullWidth disabled={loading} size="large">
@@ -314,8 +320,16 @@ export default function StatsNewPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             ダーツライブのアカウント情報でログインし、メインカードのスタッツを自動取得します。認証情報はサーバーに保存されません。
           </Typography>
-          {dlError && <Alert severity="error" sx={{ mb: 2 }}>{dlError}</Alert>}
-          {dlSuccess && <Alert severity="success" sx={{ mb: 2 }}>{dlSuccess}</Alert>}
+          {dlError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {dlError}
+            </Alert>
+          )}
+          {dlSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {dlSuccess}
+            </Alert>
+          )}
           <TextField
             label="メールアドレス"
             type="email"
@@ -335,7 +349,9 @@ export default function StatsNewPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDlOpen(false)} disabled={dlLoading}>キャンセル</Button>
+          <Button onClick={() => setDlOpen(false)} disabled={dlLoading}>
+            キャンセル
+          </Button>
           <Button
             onClick={handleFetchFromDartslive}
             variant="contained"

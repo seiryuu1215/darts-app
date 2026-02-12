@@ -121,12 +121,26 @@ function PricingContent() {
       )}
 
       {/* 価格カード */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 3,
+          mb: 4,
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'center',
+        }}
+      >
         {/* Free */}
         <Paper variant="outlined" sx={{ flex: 1, maxWidth: 340, p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>Free</Typography>
-          <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>¥0</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>基本機能を無料で</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Free
+          </Typography>
+          <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+            ¥0
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            基本機能を無料で
+          </Typography>
           {!session ? (
             <Button variant="outlined" fullWidth href="/register">
               無料で始める
@@ -139,30 +153,53 @@ function PricingContent() {
         </Paper>
 
         {/* PRO */}
-        <Paper sx={{ flex: 1, maxWidth: 340, p: 3, textAlign: 'center', border: '2px solid', borderColor: 'primary.main', position: 'relative' }}>
+        <Paper
+          sx={{
+            flex: 1,
+            maxWidth: 340,
+            p: 3,
+            textAlign: 'center',
+            border: '2px solid',
+            borderColor: 'primary.main',
+            position: 'relative',
+          }}
+        >
           <Chip
             label="おすすめ"
             color="primary"
             size="small"
             sx={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }}
           />
-          <Typography variant="h6" sx={{ mb: 1 }}>PRO</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            PRO
+          </Typography>
           <Box sx={{ mb: 1 }}>
             {pricing?.isPromo && (
-              <Typography variant="body1" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
+              <Typography
+                variant="body1"
+                sx={{ textDecoration: 'line-through', color: 'text.disabled' }}
+              >
                 ¥{pricing.price}
               </Typography>
             )}
             <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
               ¥{displayPrice}
-              <Typography component="span" variant="body1" color="text.secondary">/月</Typography>
+              <Typography component="span" variant="body1" color="text.secondary">
+                /月
+              </Typography>
             </Typography>
           </Box>
           {pricing?.isPromo && (
             <Chip label="プロモーション価格" color="warning" size="small" sx={{ mb: 1 }} />
           )}
           {pricing && pricing.trialDays > 0 && (
-            <Chip label={`${pricing.trialDays}日間無料トライアル`} color="success" size="small" variant="outlined" sx={{ mb: 2 }} />
+            <Chip
+              label={`${pricing.trialDays}日間無料トライアル`}
+              color="success"
+              size="small"
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
           )}
           {userIsPro ? (
             <Button variant="contained" fullWidth disabled>
@@ -192,14 +229,20 @@ function PricingContent() {
       </Box>
 
       {/* 機能比較テーブル */}
-      <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>機能比較</Typography>
+      <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
+        機能比較
+      </Typography>
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>機能</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Free</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 'bold', color: 'primary.main' }}>PRO</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                Free
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                PRO
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -208,16 +251,26 @@ function PricingContent() {
                 <TableCell>{f.label}</TableCell>
                 <TableCell align="center">
                   {typeof f.free === 'boolean' ? (
-                    f.free ? <CheckIcon color="success" fontSize="small" /> : <CloseIcon color="disabled" fontSize="small" />
+                    f.free ? (
+                      <CheckIcon color="success" fontSize="small" />
+                    ) : (
+                      <CloseIcon color="disabled" fontSize="small" />
+                    )
                   ) : (
                     <Typography variant="body2">{f.free}</Typography>
                   )}
                 </TableCell>
                 <TableCell align="center">
                   {typeof f.pro === 'boolean' ? (
-                    f.pro ? <CheckIcon color="success" fontSize="small" /> : <CloseIcon color="disabled" fontSize="small" />
+                    f.pro ? (
+                      <CheckIcon color="success" fontSize="small" />
+                    ) : (
+                      <CloseIcon color="disabled" fontSize="small" />
+                    )
                   ) : (
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{f.pro}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                      {f.pro}
+                    </Typography>
                   )}
                 </TableCell>
               </TableRow>
@@ -232,12 +285,19 @@ function PricingContent() {
       </Typography>
       <Box sx={{ mb: 4 }}>
         {FAQ.map((item, i) => (
-          <Accordion key={i} variant="outlined" disableGutters sx={{ '&:before': { display: 'none' } }}>
+          <Accordion
+            key={i}
+            variant="outlined"
+            disableGutters
+            sx={{ '&:before': { display: 'none' } }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle2">{item.q}</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">{item.a}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {item.a}
+              </Typography>
             </AccordionDetails>
           </Accordion>
         ))}
@@ -248,7 +308,13 @@ function PricingContent() {
 
 export default function PricingPage() {
   return (
-    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <PricingContent />
     </Suspense>
   );

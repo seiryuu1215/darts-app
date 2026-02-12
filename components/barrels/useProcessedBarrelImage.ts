@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { BarrelProduct } from '@/types';
-import {
-  processBarrelImage,
-  type ProcessedBarrelImage,
-} from '@/lib/barrel-image-processor';
+import { processBarrelImage, type ProcessedBarrelImage } from '@/lib/barrel-image-processor';
 
 const cache = new Map<string, ProcessedBarrelImage | null>();
 
@@ -17,9 +14,7 @@ export function useProcessedBarrelImage(
   const [loading, setLoading] = useState(false);
 
   const imageUrl = barrel.imageUrl;
-  const cacheKey = imageUrl
-    ? `${imageUrl}:${tintColor?.join(',') ?? 'none'}`
-    : '';
+  const cacheKey = imageUrl ? `${imageUrl}:${tintColor?.join(',') ?? 'none'}` : '';
 
   useEffect(() => {
     if (!imageUrl) {

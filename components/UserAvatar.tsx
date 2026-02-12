@@ -14,15 +14,17 @@ function generateAvatarUrl(userId: string): string {
   return `https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=${encodeURIComponent(userId)}`;
 }
 
-export default function UserAvatar({ userId, avatarUrl, userName, size = 40, sx, ...props }: UserAvatarProps) {
+export default function UserAvatar({
+  userId,
+  avatarUrl,
+  userName,
+  size = 40,
+  sx,
+  ...props
+}: UserAvatarProps) {
   const src = avatarUrl || generateAvatarUrl(userId);
 
   return (
-    <Avatar
-      src={src}
-      alt={userName || ''}
-      sx={{ width: size, height: size, ...sx }}
-      {...props}
-    />
+    <Avatar src={src} alt={userName || ''} sx={{ width: size, height: size, ...sx }} {...props} />
   );
 }

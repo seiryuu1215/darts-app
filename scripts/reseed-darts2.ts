@@ -17,7 +17,10 @@ const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 let app;
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  app = initializeApp({ credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS), storageBucket });
+  app = initializeApp({
+    credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS),
+    storageBucket,
+  });
 } else {
   app = initializeApp({ projectId, storageBucket });
 }
@@ -38,15 +41,17 @@ interface BarrelRecord {
 function downloadImage(url: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return downloadImage(res.headers.location!).then(resolve).catch(reject);
-      }
-      const chunks: Buffer[] = [];
-      res.on('data', (c: Buffer) => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
+    client
+      .get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          return downloadImage(res.headers.location!).then(resolve).catch(reject);
+        }
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      })
+      .on('error', reject);
   });
 }
 
@@ -54,7 +59,7 @@ async function main() {
   // 1. バレルDBから画像付きバレルをロード
   const barrelSnap = await db.collection('barrels').get();
   const allBarrels: BarrelRecord[] = barrelSnap.docs
-    .map((d) => ({ id: d.id, ...d.data() } as BarrelRecord))
+    .map((d) => ({ id: d.id, ...d.data() }) as BarrelRecord)
     .filter((b) => b.imageUrl && b.weight > 0);
   console.log(`画像付きバレル: ${allBarrels.length}件\n`);
 
@@ -104,15 +109,15 @@ async function main() {
   // 4. セッティングデータ定義（バレルはDBから取得した実データを使う）
   const tipOptions = [
     { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
-    { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.30 },
-    { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.30 },
+    { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.3 },
+    { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.3 },
     { name: 'Premium Lippoint 30', type: 'soft', lengthMm: 30.0, weightG: 0.34 },
     { name: 'CONDOR TIP ULTIMATE', type: 'soft', lengthMm: 31.0, weightG: 0.35 },
     { name: 'L-style Lippoint NO.5', type: 'soft', lengthMm: 23.0, weightG: 0.12 },
   ];
 
   const shaftOptions = [
-    { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.70 },
+    { name: 'L-Shaft 190 (Short)', lengthMm: 19.0, weightG: 0.7 },
     { name: 'Fit Shaft GEAR #3', lengthMm: 24.0, weightG: 0.75 },
     { name: 'L-Shaft 260 (Medium)', lengthMm: 26.0, weightG: 0.85 },
     { name: 'Fit Shaft GEAR #4', lengthMm: 28.5, weightG: 0.84 },
@@ -126,7 +131,13 @@ async function main() {
     { name: 'L-Flight スタンダード', shape: 'standard', weightG: 0.65, isCondorAxe: false },
     { name: 'L-Flight PRO スリム', shape: 'slim', weightG: 0.43, isCondorAxe: false },
     { name: 'Fit Flight スタンダード', shape: 'standard', weightG: 0.88, isCondorAxe: false },
-    { name: 'CONDOR AXE スモール S', shape: 'small', weightG: 1.42, isCondorAxe: true, condorAxeShaftLengthMm: 21.5 },
+    {
+      name: 'CONDOR AXE スモール S',
+      shape: 'small',
+      weightG: 1.42,
+      isCondorAxe: true,
+      condorAxeShaftLengthMm: 21.5,
+    },
   ];
 
   const descriptions = [
@@ -152,10 +163,10 @@ async function main() {
 
     // バレル名を短縮（ブランド名や余計な括弧を除去）
     const shortName = barrel.name
-      .replace(/^[A-Za-z]+\([^)]+\)\s*/, '')   // ブランド(xxx)
+      .replace(/^[A-Za-z]+\([^)]+\)\s*/, '') // ブランド(xxx)
       .replace(/\s*\([^)]*バレル[^)]*\)\s*$/, '') // (ダーツ バレル)
-      .replace(/\s*\d+BA\s*$/, '')               // 2BA
-      .replace(/\s*\d+(\.\d+)?g\s*$/, '')        // 重量
+      .replace(/\s*\d+BA\s*$/, '') // 2BA
+      .replace(/\s*\d+(\.\d+)?g\s*$/, '') // 重量
       .trim();
 
     // タイトルにバレル短縮名を使う
@@ -169,7 +180,9 @@ async function main() {
         const ext = barrel.imageUrl.includes('.png') ? 'png' : 'jpg';
         const filePath = `images/darts/${dartId}/barrel.${ext}`;
         const file = bucket.file(filePath);
-        await file.save(imgBuffer, { metadata: { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}` } });
+        await file.save(imgBuffer, {
+          metadata: { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}` },
+        });
         await file.makePublic();
         imageUrls = [`https://storage.googleapis.com/${storageBucket}/${filePath}`];
       } catch (err) {

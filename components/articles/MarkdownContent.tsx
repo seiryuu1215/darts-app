@@ -3,7 +3,17 @@
 import { useEffect, useRef, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Typography, Link as MuiLink, Paper, Box, Table, TableHead, TableBody, TableRow, TableCell } from '@mui/material';
+import {
+  Typography,
+  Link as MuiLink,
+  Paper,
+  Box,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '@mui/material';
 import type { Components } from 'react-markdown';
 
 interface MarkdownContentProps {
@@ -36,7 +46,12 @@ const components: Components = {
     </Typography>
   ),
   h2: ({ children }) => (
-    <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 3, mb: 1.5, fontWeight: 'bold' }}>
+    <Typography
+      variant="h5"
+      component="h2"
+      gutterBottom
+      sx={{ mt: 3, mb: 1.5, fontWeight: 'bold' }}
+    >
       {children}
     </Typography>
   ),
@@ -70,7 +85,10 @@ const components: Components = {
     if (isBlock) {
       return (
         <Paper variant="outlined" sx={{ p: 2, my: 2, overflow: 'auto', bgcolor: 'action.hover' }}>
-          <Box component="pre" sx={{ m: 0, fontFamily: 'monospace', fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>
+          <Box
+            component="pre"
+            sx={{ m: 0, fontFamily: 'monospace', fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}
+          >
             <code>{children}</code>
           </Box>
         </Paper>
@@ -79,7 +97,14 @@ const components: Components = {
     return (
       <Box
         component="code"
-        sx={{ px: 0.5, py: 0.25, borderRadius: 0.5, bgcolor: 'action.hover', fontFamily: 'monospace', fontSize: '0.875em' }}
+        sx={{
+          px: 0.5,
+          py: 0.25,
+          borderRadius: 0.5,
+          bgcolor: 'action.hover',
+          fontFamily: 'monospace',
+          fontSize: '0.875em',
+        }}
       >
         {children}
       </Box>
@@ -89,7 +114,14 @@ const components: Components = {
   blockquote: ({ children }) => (
     <Box
       component="blockquote"
-      sx={{ borderLeft: 4, borderColor: 'primary.main', pl: 2, my: 2, color: 'text.secondary', fontStyle: 'italic' }}
+      sx={{
+        borderLeft: 4,
+        borderColor: 'primary.main',
+        pl: 2,
+        my: 2,
+        color: 'text.secondary',
+        fontStyle: 'italic',
+      }}
     >
       {children}
     </Box>
@@ -117,11 +149,11 @@ const components: Components = {
   thead: ({ children }) => <TableHead>{children}</TableHead>,
   tbody: ({ children }) => <TableBody>{children}</TableBody>,
   tr: ({ children }) => <TableRow>{children}</TableRow>,
-  th: ({ children }) => (
-    <TableCell sx={{ fontWeight: 'bold' }}>{children}</TableCell>
-  ),
+  th: ({ children }) => <TableCell sx={{ fontWeight: 'bold' }}>{children}</TableCell>,
   td: ({ children }) => <TableCell>{children}</TableCell>,
-  hr: () => <Box component="hr" sx={{ my: 3, border: 'none', borderTop: 1, borderColor: 'divider' }} />,
+  hr: () => (
+    <Box component="hr" sx={{ my: 3, border: 'none', borderTop: 1, borderColor: 'divider' }} />
+  ),
   img: ({ src, alt }) => (
     <Box
       component="img"

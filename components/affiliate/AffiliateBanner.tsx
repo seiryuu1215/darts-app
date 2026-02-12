@@ -2,7 +2,12 @@
 
 import { Box, Typography, Button, Paper, Chip } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { toDartshiveAffiliateUrl, toRakutenSearchUrl, toAmazonSearchUrl, getAffiliateConfig } from '@/lib/affiliate';
+import {
+  toDartshiveAffiliateUrl,
+  toRakutenSearchUrl,
+  toAmazonSearchUrl,
+  getAffiliateConfig,
+} from '@/lib/affiliate';
 
 interface AffiliateBannerProps {
   variant?: 'shop-links' | 'barrel-search';
@@ -22,7 +27,14 @@ export default function AffiliateBanner({
 
   if (variant === 'barrel-search' && barrelName) {
     const shops = [
-      { label: 'ダーツハイブ', url: toDartshiveAffiliateUrl(`https://www.dartshive.jp/search/?q=${encodeURIComponent(barrelName)}`, config), color: '#e74c3c' },
+      {
+        label: 'ダーツハイブ',
+        url: toDartshiveAffiliateUrl(
+          `https://www.dartshive.jp/search/?q=${encodeURIComponent(barrelName)}`,
+          config,
+        ),
+        color: '#e74c3c',
+      },
       { label: '楽天', url: toRakutenSearchUrl(barrelName, config), color: '#bf0000' },
       { label: 'Amazon', url: toAmazonSearchUrl(barrelName, config), color: '#ff9900' },
     ];
@@ -72,8 +84,16 @@ export default function AffiliateBanner({
 
   // Default: general shop links
   const shops = [
-    { label: 'ダーツハイブ', desc: '品揃え豊富', url: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config) },
-    { label: '楽天市場', desc: 'ポイントが貯まる', url: toRakutenSearchUrl('ダーツ バレル', config) },
+    {
+      label: 'ダーツハイブ',
+      desc: '品揃え豊富',
+      url: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config),
+    },
+    {
+      label: '楽天市場',
+      desc: 'ポイントが貯まる',
+      url: toRakutenSearchUrl('ダーツ バレル', config),
+    },
     { label: 'Amazon', desc: '翌日配送', url: toAmazonSearchUrl('ダーツ バレル', config) },
   ];
 
