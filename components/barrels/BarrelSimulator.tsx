@@ -46,7 +46,41 @@ function BarrelOverlayImage({
     );
   }
 
-  if (!image) return null;
+  // Fallback: if processing failed, show original image with CSS tint
+  if (!image) {
+    if (!barrel.imageUrl) return null;
+    const color = HEX_COLORS[index % HEX_COLORS.length];
+    const fallbackWidth = len * TARGET_PX_PER_MM;
+    const fallbackHeight = (dia / len) * fallbackWidth * 3;
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: fallbackWidth,
+          height: fallbackHeight,
+          overflow: 'hidden',
+          borderRadius: 1,
+          border: `2px solid ${color}`,
+          opacity: 0.7,
+          pointerEvents: 'none',
+        }}
+      >
+        <Box
+          component="img"
+          src={`/api/proxy-image?url=${encodeURIComponent(barrel.imageUrl)}`}
+          alt={`${barrel.brand} ${barrel.name}`}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+          }}
+        />
+      </Box>
+    );
+  }
 
   // Scale image so barrel.length maps to the target px/mm
   const pxPerMm = image.widthPx / len;

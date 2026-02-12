@@ -172,8 +172,9 @@ export async function processBarrelImage(
     outCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
     // Remove white background with anti-aliased edges + apply tint
-    const BG_THRESHOLD = 240; // pure white background
-    const EDGE_WIDTH = 15; // smooth transition zone
+    // Threshold raised to 250 to preserve bright metallic barrel surfaces (silver, chrome)
+    const BG_THRESHOLD = 250;
+    const EDGE_WIDTH = 8; // narrow transition zone
     const outData = outCtx.getImageData(0, 0, cropW, cropH);
     const od = outData.data;
 
