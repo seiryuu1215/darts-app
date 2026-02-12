@@ -44,6 +44,7 @@ export default function Header() {
   const drawerItems = session
     ? [
         { label: 'セッティング', href: '/darts' },
+        { label: 'セッティング履歴', href: '/darts/history' },
         { label: 'バレル検索', href: '/barrels' },
         { label: 'スタッツ記録', href: '/stats' },
         { label: '記事', href: '/articles' },
