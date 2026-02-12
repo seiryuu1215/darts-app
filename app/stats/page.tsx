@@ -409,7 +409,33 @@ export default function StatsPage() {
                       </Paper>
                     )}
                   </Box>
-                  {target.ppd01Only == null && target.mprCriOnly == null && (
+                  {/* 均等に上げる場合 */}
+                  {target.ppdBalanced != null && target.mprBalanced != null && (
+                    <Paper variant="outlined" sx={{ p: 1.5, mt: 1.5, borderColor: 'divider' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                        均等に上げる場合
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            PPD {target.ppdBalanced.toFixed(2)}
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                              (+{target.ppdGapBalanced?.toFixed(2)})
+                            </Typography>
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            MPR {target.mprBalanced.toFixed(2)}
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                              (+{target.mprGapBalanced?.toFixed(2)})
+                            </Typography>
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  )}
+                  {target.ppd01Only == null && target.mprCriOnly == null && target.ppdBalanced == null && (
                     <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 1 }}>
                       最大レーティングに到達しています
                     </Typography>
@@ -496,73 +522,86 @@ export default function StatsPage() {
                     ))}
                   </ToggleButtonGroup>
                 </Box>
-                {gameChartData.length > 0 && (
-                  <ResponsiveContainer width="100%" height={230}>
-                    <ComposedChart data={gameChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <XAxis dataKey="game" fontSize={11} />
-                      <YAxis domain={['auto', 'auto']} fontSize={11} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="score" name="スコア" opacity={0.7}>
-                        {gameChartData.map((entry, i) => (
-                          <Cell
-                            key={i}
-                            fill={
-                              isCountUpCategory && expectedCountUp != null
-                                ? entry.score >= expectedCountUp ? '#4caf50' : '#f44336'
-                                : getGameColor(gameChartCategory)
-                            }
+                {gameChartData.length > 0 && (() => {
+                  const gameAvg = selectedGame ? selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length : 0;
+                  const baseColor = getGameColor(gameChartCategory);
+                  // COUNT-UP: 期待値基準、それ以外: ゲーム内平均基準
+                  const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
+                  return (
+                    <ResponsiveContainer width="100%" height={230}>
+                      <ComposedChart data={gameChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <XAxis dataKey="game" fontSize={11} />
+                        <YAxis domain={['auto', 'auto']} fontSize={11} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #444', borderRadius: 6 }}
+                          labelFormatter={(v) => `Game ${v}`}
+                        />
+                        <Legend
+                          iconType="plainline"
+                          wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                        />
+                        <Bar dataKey="score" name="スコア" opacity={0.8} radius={[2, 2, 0, 0]}>
+                          {gameChartData.map((entry, i) => (
+                            <Cell
+                              key={i}
+                              fill={entry.score >= threshold ? '#4caf50' : `${baseColor}66`}
+                            />
+                          ))}
+                        </Bar>
+                        <Line
+                          type="monotone"
+                          dataKey="avg"
+                          name="累計平均"
+                          stroke="#90caf9"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                        {isCountUpCategory && expectedCountUp != null && (
+                          <ReferenceLine
+                            y={expectedCountUp}
+                            stroke="#ff9800"
+                            strokeDasharray="6 3"
+                            label={{ value: `Rt期待値 ${expectedCountUp}`, position: 'right', fill: '#ff9800', fontSize: 10 }}
                           />
-                        ))}
-                      </Bar>
-                      <Line type="monotone" dataKey="avg" name="累計平均" stroke="#fff" strokeWidth={2} dot={false} />
-                      {isCountUpCategory && expectedCountUp != null && (
+                        )}
                         <ReferenceLine
-                          y={expectedCountUp}
-                          stroke="#ff9800"
-                          strokeDasharray="6 3"
-                          label={{ value: `期待値 ${expectedCountUp}`, position: 'right', fill: '#ff9800', fontSize: 11 }}
+                          y={gameAvg}
+                          stroke={baseColor}
+                          strokeDasharray="4 4"
+                          strokeOpacity={0.6}
+                          label={{ value: `平均 ${isCountUpCategory ? Math.round(gameAvg) : gameAvg.toFixed(2)}`, position: 'left', fill: baseColor, fontSize: 10 }}
                         />
-                      )}
-                      {selectedGame && (
-                        <ReferenceLine
-                          y={selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length}
-                          stroke={getGameColor(gameChartCategory)}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                )}
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
                 {/* Scores chips */}
-                {selectedGame && (
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
-                    {selectedGame.scores.map((s, i) => {
-                      const avg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
-                      // COUNT-UP系は01期待値で判定、それ以外はゲーム内平均で判定
-                      const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : avg;
-                      const isGood = s >= threshold;
-                      const chipColor = isCountUpCategory && expectedCountUp != null
-                        ? (isGood ? '#4caf50' : '#f44336')
-                        : getGameColor(gameChartCategory);
-                      return (
-                        <Chip
-                          key={i}
-                          label={gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT') ? s.toFixed(2) : s}
-                          size="small"
-                          variant={isGood ? 'filled' : 'outlined'}
-                          sx={{
-                            bgcolor: isGood ? `${chipColor}22` : undefined,
-                            borderColor: chipColor,
-                            color: isGood ? chipColor : 'text.secondary',
-                            fontWeight: isGood ? 'bold' : 'normal',
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
+                {selectedGame && (() => {
+                  const gameAvg = selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length;
+                  const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
+                  return (
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
+                      {selectedGame.scores.map((s, i) => {
+                        const isGood = s >= threshold;
+                        return (
+                          <Chip
+                            key={i}
+                            label={gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT') ? s.toFixed(2) : s}
+                            size="small"
+                            variant={isGood ? 'filled' : 'outlined'}
+                            sx={{
+                              bgcolor: isGood ? '#4caf5022' : undefined,
+                              borderColor: isGood ? '#4caf50' : 'divider',
+                              color: isGood ? '#4caf50' : 'text.secondary',
+                              fontWeight: isGood ? 'bold' : 'normal',
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  );
+                })()}
               </Paper>
             )}
 

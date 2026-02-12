@@ -55,11 +55,16 @@ export interface RatingTarget {
   currentCriRt: number;
   nextRating: number;
   // 01だけで上げる場合
-  ppd01Only: number | null;  // 必要なPPD
-  ppdGap01Only: number | null; // 現在との差
+  ppd01Only: number | null;
+  ppdGap01Only: number | null;
   // Cricketだけで上げる場合
-  mprCriOnly: number | null; // 必要なMPR
-  mprGapCriOnly: number | null; // 現在との差
+  mprCriOnly: number | null;
+  mprGapCriOnly: number | null;
+  // 均等に上げる場合
+  ppdBalanced: number | null;
+  ppdGapBalanced: number | null;
+  mprBalanced: number | null;
+  mprGapBalanced: number | null;
 }
 
 export function getRatingTarget(ppd: number, mpr: number): RatingTarget {
@@ -96,6 +101,23 @@ export function getRatingTarget(ppd: number, mpr: number): RatingTarget {
     }
   }
 
+  // 均等に上げる場合
+  // 01Rt と CriRt をそれぞれ半分ずつ上げる
+  const totalGap = nextRating * 2 - (current01Rt + currentCriRt);
+  const halfGap = totalGap / 2;
+  const balanced01Rt = current01Rt + halfGap;
+  const balancedCriRt = currentCriRt + halfGap;
+  let ppdBalanced: number | null = null;
+  let ppdGapBalanced: number | null = null;
+  let mprBalanced: number | null = null;
+  let mprGapBalanced: number | null = null;
+  if (balanced01Rt <= 18 && balancedCriRt <= 18 && totalGap > 0) {
+    ppdBalanced = Math.round(ppdForRating(balanced01Rt) * 100) / 100;
+    ppdGapBalanced = Math.round((ppdBalanced - ppd) * 100) / 100;
+    mprBalanced = Math.round(mprForRating(balancedCriRt) * 100) / 100;
+    mprGapBalanced = Math.round((mprBalanced - mpr) * 100) / 100;
+  }
+
   return {
     currentRating,
     current01Rt,
@@ -105,5 +127,9 @@ export function getRatingTarget(ppd: number, mpr: number): RatingTarget {
     ppdGap01Only,
     mprCriOnly,
     mprGapCriOnly,
+    ppdBalanced,
+    ppdGapBalanced,
+    mprBalanced,
+    mprGapBalanced,
   };
 }
