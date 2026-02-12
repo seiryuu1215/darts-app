@@ -24,6 +24,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import HistoryIcon from '@mui/icons-material/History';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
 export default function DartsListPage() {
   return (
@@ -92,6 +93,7 @@ function DartsListContent() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: mineOnly ? 'マイセッティング' : 'セッティング' }]} />
       <Box sx={{
         display: 'flex',
         flexDirection: { xs: 'column', sm: 'row' },

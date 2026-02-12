@@ -32,6 +32,7 @@ import { useRouter } from 'next/navigation';
 import BarrelCard from '@/components/barrels/BarrelCard';
 import { recommendFromBarrelsWithAnalysis, getBarrelType } from '@/lib/recommend-barrels';
 import type { BarrelAnalysis } from '@/lib/recommend-barrels';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { BarrelProduct } from '@/types';
 
 export default function RecommendPage() {
@@ -139,6 +140,7 @@ export default function RecommendPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: 'バレル検索', href: '/barrels' }, { label: 'おすすめ' }]} />
       <Typography variant="h4" sx={{ mb: 1 }}>おすすめバレルを探す</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         好みのバレルを1〜3個選ぶと、重量・最大径・全長・カット・ブランドを分析して似たスペックのバレルを提案します。

@@ -36,6 +36,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Dart } from '@/types';
 import {
   ResponsiveContainer,
@@ -255,6 +256,7 @@ export default function StatsPage() {
   return (
     <Container maxWidth="md">
       <Box sx={{ mt: 3, p: { xs: 1, sm: 2 } }}>
+        <Breadcrumbs items={[{ label: 'Stats' }]} />
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>

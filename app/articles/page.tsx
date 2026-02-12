@@ -15,6 +15,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import ArticleCard from '@/components/articles/ArticleCard';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Article } from '@/types';
 
 export default function ArticlesPage() {
@@ -50,6 +51,7 @@ export default function ArticlesPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: '記事' }]} />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">記事</Typography>
         {isAdmin && (

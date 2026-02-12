@@ -41,6 +41,8 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
 import BarrelCard from '@/components/barrels/BarrelCard';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import { BARREL_CUTS } from '@/lib/darts-parts';
 import { recommendBarrels } from '@/lib/recommend-barrels';
 import { toDartshiveAffiliateUrl, getAffiliateConfig } from '@/lib/affiliate';
@@ -212,6 +214,7 @@ export default function BarrelsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: 'バレル検索' }]} />
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">バレル検索</Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -519,6 +522,10 @@ export default function BarrelsPage() {
           )}
         </>
       )}
+
+      <Box sx={{ mt: 4 }}>
+        <AffiliateBanner />
+      </Box>
     </Container>
   );
 }

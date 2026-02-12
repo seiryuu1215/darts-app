@@ -18,9 +18,8 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import MarkdownContent from '@/components/articles/MarkdownContent';
-import TwoColumnLayout from '@/components/layout/TwoColumnLayout';
-import Sidebar from '@/components/layout/Sidebar';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import type { Article } from '@/types';
 
 export default function ArticleDetailPage() {
@@ -80,16 +79,8 @@ export default function ArticleDetailPage() {
     ? article.createdAt.toDate().toLocaleDateString('ja-JP')
     : '';
 
-  const sidebar = (
-    <Sidebar
-      showPopularBarrels
-      showRecentArticles
-      showShopBanners
-    />
-  );
-
   return (
-    <TwoColumnLayout sidebar={sidebar}>
+    <Container maxWidth="md" sx={{ py: 4 }}>
       <Breadcrumbs
         items={[
           { label: '記事', href: '/articles' },
@@ -138,6 +129,10 @@ export default function ArticleDetailPage() {
       </Box>
 
       <MarkdownContent content={article.content} />
-    </TwoColumnLayout>
+
+      <Box sx={{ mt: 4 }}>
+        <AffiliateBanner />
+      </Box>
+    </Container>
   );
 }

@@ -28,6 +28,7 @@ import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import type { Dart } from '@/types';
 import { calcDartTotals, hasCompleteSpecs } from '@/lib/calc-totals';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { getDiffColors } from '@/lib/comparison';
 
 function CompareContent() {
@@ -147,6 +148,7 @@ function CompareContent() {
   if (isComparing && dartA && dartB) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
+        <Breadcrumbs items={[{ label: 'セッティング', href: '/darts' }, { label: '比較' }]} />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -164,6 +166,7 @@ function CompareContent() {
   // 選択フェーズ
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: 'セッティング', href: '/darts' }, { label: '比較' }]} />
       <Typography variant="h5" gutterBottom>セッティング比較</Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         比較するセッティングを2つ選んでください（{selectedIds.length}/2）

@@ -191,6 +191,12 @@ export interface QuizAnswer {
   cutPreference: string[];
 }
 
+// Barrel Contour (extracted from product image)
+export interface BarrelContour {
+  upperProfile: [number, number][];  // [x_mm, radius_mm][]
+  lowerProfile: [number, number][];
+}
+
 // Affiliate
 export type ShopType = 'dartshive' | 'rakuten' | 'amazon';
 

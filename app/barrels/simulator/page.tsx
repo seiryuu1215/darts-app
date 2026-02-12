@@ -26,7 +26,9 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import { collection, getDocs } from 'firebase/firestore';
+import { useSession } from 'next-auth/react';
 import { db } from '@/lib/firebase';
 import type { BarrelProduct } from '@/types';
 import BarrelSimulator from '@/components/barrels/BarrelSimulator';
@@ -46,34 +48,64 @@ export default function SimulatorPage() {
 function SimulatorContent() {
   const searchParams = useSearchParams();
   const initialBarrel = searchParams.get('barrel') ?? '';
+  const { data: session } = useSession();
 
   const [allBarrels, setAllBarrels] = useState<BarrelProduct[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(initialBarrel);
   const [selected, setSelected] = useState<BarrelProduct[]>([]);
 
+  // Fetch barrels
   useEffect(() => {
     getDocs(collection(db, 'barrels'))
       .then((snap) => {
         const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BarrelProduct);
-        setAllBarrels(data);
+        // Filter out barrels without images (contour extraction requires image)
+        const withImages = data.filter((b) => b.imageUrl);
+        setAllBarrels(withImages);
 
-        // 初期バレル名がある場合は自動選択
         if (initialBarrel) {
-          const found = data.find((b) => b.name.includes(initialBarrel));
+          const found = withImages.find((b) => b.name.includes(initialBarrel));
           if (found) setSelected([found]);
         }
       })
       .finally(() => setLoading(false));
   }, [initialBarrel]);
 
+  // Fetch user's barrel bookmarks
+  useEffect(() => {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) return;
+    getDocs(collection(db, 'users', userId, 'barrelBookmarks'))
+      .then((snap) => {
+        const ids = new Set(snap.docs.map((d) => d.data().barrelId as string));
+        setBookmarkedIds(ids);
+      })
+      .catch((err) => console.error('ブックマーク取得エラー:', err));
+  }, [session]);
+
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return allBarrels.slice(0, 30);
-    const q = searchQuery.toLowerCase();
-    return allBarrels
-      .filter((b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q))
-      .slice(0, 30);
-  }, [allBarrels, searchQuery]);
+    let list = allBarrels;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (b) => b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q),
+      );
+    }
+
+    // Sort: bookmarked first, then alphabetical
+    list = [...list].sort((a, b) => {
+      const aBookmarked = bookmarkedIds.has(a.id ?? '');
+      const bBookmarked = bookmarkedIds.has(b.id ?? '');
+      if (aBookmarked && !bBookmarked) return -1;
+      if (!aBookmarked && bBookmarked) return 1;
+      return 0;
+    });
+
+    return list.slice(0, 30);
+  }, [allBarrels, searchQuery, bookmarkedIds]);
 
   const toggleSelect = (barrel: BarrelProduct) => {
     setSelected((prev) => {
@@ -185,6 +217,7 @@ function SimulatorContent() {
         {filtered.map((barrel) => {
           const isSelected = selected.some((b) => b.id === barrel.id);
           const isDisabled = !isSelected && selected.length >= MAX_BARRELS;
+          const isBookmarked = bookmarkedIds.has(barrel.id ?? '');
           return (
             <Grid key={barrel.id} size={{ xs: 6, sm: 4, md: 3 }}>
               <Card
@@ -192,6 +225,7 @@ function SimulatorContent() {
                   opacity: isDisabled ? 0.5 : 1,
                   border: isSelected ? '2px solid' : '2px solid transparent',
                   borderColor: isSelected ? 'primary.main' : 'transparent',
+                  position: 'relative',
                 }}
               >
                 <CardActionArea
@@ -215,6 +249,18 @@ function SimulatorContent() {
                     {isSelected && <Chip label="選択中" size="small" color="primary" sx={{ mt: 0.5, height: 20 }} />}
                   </CardContent>
                 </CardActionArea>
+                {isBookmarked && (
+                  <BookmarkIcon
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      fontSize: 20,
+                      color: 'warning.main',
+                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+                    }}
+                  />
+                )}
               </Card>
             </Grid>
           );

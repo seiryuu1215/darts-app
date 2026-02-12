@@ -53,6 +53,7 @@ import StraightenIcon from '@mui/icons-material/Straighten';
 import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { getShopLinks } from '@/lib/affiliate';
+import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 
 interface DartDetailProps {
   dart: Dart;
@@ -520,6 +521,14 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           </Button>
         </Box>
       </Paper>
+
+      {/* アフィリエイトバナー */}
+      <Box sx={{ mb: 3 }}>
+        <AffiliateBanner
+          variant="barrel-search"
+          barrelName={`${dart.barrel.brand} ${dart.barrel.name}`}
+        />
+      </Box>
 
       {dart.description && (
         <Paper sx={{ p: 3, mb: 3 }}>

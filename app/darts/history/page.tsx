@@ -17,6 +17,7 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { SettingHistory } from '@/types';
 
 function formatDate(ts: { toDate?: () => Date } | null) {
@@ -78,6 +79,7 @@ export default function SettingHistoryPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: 'セッティング', href: '/darts' }, { label: '履歴' }]} />
       <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>セッティング履歴</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         使用中セッティングの変更履歴を時系列で表示します。

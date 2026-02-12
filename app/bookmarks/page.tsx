@@ -17,6 +17,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import BarrelCard from '@/components/barrels/BarrelCard';
 import DartCard from '@/components/darts/DartCard';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { BarrelProduct, Dart } from '@/types';
 
 export default function BookmarksPage() {
@@ -79,6 +80,7 @@ export default function BookmarksPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Breadcrumbs items={[{ label: 'ブックマーク' }]} />
       <Typography variant="h4" sx={{ mb: 3 }}>ブックマーク</Typography>
 
       {fetchError && <Alert severity="error" sx={{ mb: 2 }}>ブックマークの取得に失敗しました</Alert>}

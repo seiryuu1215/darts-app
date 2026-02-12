@@ -2,6 +2,8 @@
 
 import { Box, Typography, useTheme } from '@mui/material';
 import type { BarrelProduct } from '@/types';
+import { contourToSvgPath } from '@/lib/barrel-contour';
+import { useBarrelContour } from './useBarrelContour';
 
 interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
@@ -25,12 +27,9 @@ function drawBarrelPath(
   const maxPoint = scaledLen * 0.4;
   const x0 = PADDING;
 
-  // Upper profile (front → max → rear)
   const topFront = yCenter - frontR;
   const topMax = yCenter - scaledMaxR;
   const topRear = yCenter - rearR;
-
-  // Lower profile
   const botFront = yCenter + frontR;
   const botMax = yCenter + scaledMaxR;
   const botRear = yCenter + rearR;
@@ -46,9 +45,93 @@ function drawBarrelPath(
   ].join(' ');
 }
 
+/** Individual barrel shape component — allows per-barrel hook usage */
+function BarrelShape({
+  barrel,
+  yCenter,
+  color,
+  subColor,
+}: {
+  barrel: BarrelProduct;
+  yCenter: number;
+  color: string;
+  subColor: string;
+}) {
+  const len = barrel.length ?? 45;
+  const dia = barrel.maxDiameter ?? 7.0;
+  const { contour, loading } = useBarrelContour(barrel);
+
+  // Use contour-based path if available, otherwise bezier fallback
+  const shapePath = contour
+    ? contourToSvgPath(contour, SCALE, PADDING, yCenter)
+    : drawBarrelPath(len, dia, yCenter);
+
+  return (
+    <g>
+      <path
+        d={shapePath}
+        fill={color}
+        fillOpacity={0.3}
+        stroke={color}
+        strokeWidth={2}
+      >
+        {loading && (
+          <animate
+            attributeName="fill-opacity"
+            values="0.15;0.35;0.15"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        )}
+      </path>
+
+      {/* Length dimension line */}
+      <line
+        x1={PADDING}
+        y1={yCenter + (dia / 2) * SCALE + 12}
+        x2={PADDING + len * SCALE}
+        y2={yCenter + (dia / 2) * SCALE + 12}
+        stroke={subColor}
+        strokeWidth={1}
+        markerStart="url(#arrowLeft)"
+        markerEnd="url(#arrowRight)"
+      />
+      <text
+        x={PADDING + (len * SCALE) / 2}
+        y={yCenter + (dia / 2) * SCALE + 26}
+        textAnchor="middle"
+        fill={subColor}
+        fontSize={11}
+      >
+        {len}mm
+      </text>
+
+      {/* Max diameter label */}
+      <text
+        x={PADDING + len * SCALE + 8}
+        y={yCenter + 4}
+        fill={subColor}
+        fontSize={11}
+      >
+        ⌀{dia}mm
+      </text>
+
+      {/* Barrel name label */}
+      <text
+        x={PADDING}
+        y={yCenter - (dia / 2) * SCALE - 8}
+        fill={color}
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {barrel.brand} {barrel.name}
+      </text>
+    </g>
+  );
+}
+
 export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
   const theme = useTheme();
-  const textColor = theme.palette.text.primary;
   const subColor = theme.palette.text.secondary;
 
   if (barrels.length === 0) {
@@ -73,60 +156,17 @@ export default function BarrelSimulator({ barrels }: BarrelSimulatorProps) {
         style={{ maxHeight: 400 }}
       >
         {barrels.map((barrel, i) => {
-          const len = barrel.length ?? 45;
-          const dia = barrel.maxDiameter ?? 7.0;
           const yCenter = barrelCount === 1 ? dynamicHeight / 2 : spacing * (i + 1);
           const color = COLORS[i % COLORS.length];
 
           return (
-            <g key={barrel.id ?? i}>
-              <path
-                d={drawBarrelPath(len, dia, yCenter)}
-                fill={color}
-                fillOpacity={0.3}
-                stroke={color}
-                strokeWidth={2}
-              />
-              {/* Length dimension line */}
-              <line
-                x1={PADDING}
-                y1={yCenter + (dia / 2) * SCALE + 12}
-                x2={PADDING + len * SCALE}
-                y2={yCenter + (dia / 2) * SCALE + 12}
-                stroke={subColor}
-                strokeWidth={1}
-                markerStart="url(#arrowLeft)"
-                markerEnd="url(#arrowRight)"
-              />
-              <text
-                x={PADDING + (len * SCALE) / 2}
-                y={yCenter + (dia / 2) * SCALE + 26}
-                textAnchor="middle"
-                fill={subColor}
-                fontSize={11}
-              >
-                {len}mm
-              </text>
-              {/* Max diameter label */}
-              <text
-                x={PADDING + len * SCALE + 8}
-                y={yCenter + 4}
-                fill={subColor}
-                fontSize={11}
-              >
-                ⌀{dia}mm
-              </text>
-              {/* Barrel name label */}
-              <text
-                x={PADDING}
-                y={yCenter - (dia / 2) * SCALE - 8}
-                fill={color}
-                fontSize={12}
-                fontWeight="bold"
-              >
-                {barrel.brand} {barrel.name}
-              </text>
-            </g>
+            <BarrelShape
+              key={barrel.id ?? i}
+              barrel={barrel}
+              yCenter={yCenter}
+              color={color}
+              subColor={subColor}
+            />
           );
         })}
         {/* Arrow markers */}
