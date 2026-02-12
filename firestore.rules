@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──────────────────────────────
+    // Helper functions
+    // ──────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'admin';
+    }
+
+    function isPro() {
+      return isSignedIn() && getUserRole() in ['pro', 'admin'];
+    }
+
+    // ──────────────────────────────
+    // users
+    // ──────────────────────────────
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      // likes
+      match /likes/{dartId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if isOwner(userId);
+      }
+
+      // bookmarks
+      match /bookmarks/{dartId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if isOwner(userId);
+      }
+
+      // barrelBookmarks
+      match /barrelBookmarks/{barrelId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if isOwner(userId);
+      }
+
+      // dartsLiveStats
+      match /dartsLiveStats/{statsId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isPro();
+        allow update: if isOwner(userId) && isPro();
+        allow delete: if isOwner(userId);
+      }
+
+      // settingHistory
+      match /settingHistory/{historyId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId);
+      }
+
+      // dartsliveCache (backend only via Admin SDK)
+      match /dartsliveCache/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    // ──────────────────────────────
+    // darts
+    // ──────────────────────────────
+    match /darts/{dartId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+
+      // comments
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+                      && request.resource.data.userId == request.auth.uid;
+        allow delete: if isSignedIn()
+                      && (resource.data.userId == request.auth.uid || isAdmin());
+      }
+
+      // memos (owner only)
+      match /memos/{memoId} {
+        allow read: if isSignedIn()
+                    && get(/databases/$(database)/documents/darts/$(dartId)).data.userId == request.auth.uid;
+        allow create: if isSignedIn()
+                      && request.resource.data.userId == request.auth.uid
+                      && get(/databases/$(database)/documents/darts/$(dartId)).data.userId == request.auth.uid;
+        allow delete: if isSignedIn()
+                      && get(/databases/$(database)/documents/darts/$(dartId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // ──────────────────────────────
+    // articles
+    // ──────────────────────────────
+    match /articles/{articleId} {
+      allow read: if true;
+      allow create: if isPro()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin()
+                    || (isPro() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // ──────────────────────────────
+    // discussions
+    // ──────────────────────────────
+    match /discussions/{discussionId} {
+      allow read: if true;
+
+      allow create: if isPro()
+                    && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn()
+                    && (
+                      // admin: 全フィールド更新可
+                      isAdmin()
+                      // 作者(pro): 自分のスレッドの内容のみ
+                      || (isPro()
+                          && resource.data.userId == request.auth.uid
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                              .hasOnly(['title', 'content', 'category', 'updatedAt']))
+                      // 返信時の replyCount/lastRepliedAt 更新
+                      || request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['replyCount', 'lastRepliedAt'])
+                    );
+
+      allow delete: if isAdmin()
+                    || (isPro() && resource.data.userId == request.auth.uid);
+
+      // replies
+      match /replies/{replyId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+                      && request.resource.data.userId == request.auth.uid
+                      && get(/databases/$(database)/documents/discussions/$(discussionId)).data.isLocked == false;
+        allow delete: if isSignedIn()
+                      && (resource.data.userId == request.auth.uid || isAdmin());
+        allow update: if false;
+      }
+    }
+
+    // ──────────────────────────────
+    // barrels (read-only, populated by scripts via Admin SDK)
+    // ──────────────────────────────
+    match /barrels/{barrelId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ──────────────────────────────
+    // barrelRanking (read-only)
+    // ──────────────────────────────
+    match /barrelRanking/{rankId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ──────────────────────────────
+    // config (read-only, admin updates via API)
+    // ──────────────────────────────
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ──────────────────────────────
+    // stripeEvents / lineConversations / lineLinkCodes
+    // (backend only via Admin SDK)
+    // ──────────────────────────────
+    match /stripeEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /lineConversations/{lineUserId} {
+      allow read, write: if false;
+    }
+
+    match /lineLinkCodes/{code} {
+      allow read, write: if false;
+    }
+  }
+}
