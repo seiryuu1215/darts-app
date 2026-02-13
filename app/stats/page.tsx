@@ -41,6 +41,7 @@ import Tab from '@mui/material/Tab';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
+import AdjustIcon from '@mui/icons-material/Adjust';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
@@ -466,11 +467,9 @@ export default function StatsPage() {
                       width: 48,
                       height: 48,
                       bgcolor: flightColor,
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
                     }}
                   >
-                    {c.cardName?.charAt(0) || 'D'}
+                    <AdjustIcon />
                   </Avatar>
                 )}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
