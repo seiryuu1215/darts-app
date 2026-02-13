@@ -116,7 +116,7 @@
 | セッティング閲覧・いいね・コメント        |        o        |      o      |   o    |
 | バレル検索・クイズ・シミュレーター        |        o        |      o      |   o    |
 | セッティング比較・履歴                    |        o        |      o      |   o    |
-| ディスカッション閲覧・返信               |        o        |      o      |   o    |
+| ディスカッション閲覧・返信                |        o        |      o      |   o    |
 | ディスカッション作成                      |        x        |      o      |   o    |
 | プロフィール編集                          |        o        |      o      |   o    |
 | 手動スタッツ記録                          |        o        |      o      |   o    |
@@ -249,8 +249,8 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID`   | 楽天アフィリエイトID（任意）                              |
 | `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG`   | AmazonアソシエイトTag（任意）                             |
 | `NEXT_PUBLIC_A8_MEDIA_ID`            | A8.net メディアID（任意）                                 |
-| `LINE_CHANNEL_SECRET`               | LINE Messaging API チャネルシークレット（任意）           |
-| `LINE_CHANNEL_ACCESS_TOKEN`         | LINE チャネルアクセストークン（任意）                     |
+| `LINE_CHANNEL_SECRET`                | LINE Messaging API チャネルシークレット（任意）           |
+| `LINE_CHANNEL_ACCESS_TOKEN`          | LINE チャネルアクセストークン（任意）                     |
 
 ### Firestore ルールのデプロイ
 
