@@ -1,6 +1,14 @@
 'use client';
 
-import { Paper, Box, Typography, ToggleButtonGroup, ToggleButton, Chip, useTheme } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  ToggleButtonGroup,
+  ToggleButton,
+  Chip,
+  useTheme,
+} from '@mui/material';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -61,8 +69,7 @@ export default function RecentGamesChart({
     ? selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length
     : 0;
   const baseColor = getGameColor(gameChartCategory);
-  const threshold =
-    isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
+  const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
   const dangerThreshold = isCountUpCategory ? dangerCountUp : null;
   const excellentThreshold = isCountUpCategory ? excellentCountUp : null;
 
@@ -75,9 +82,7 @@ export default function RecentGamesChart({
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-      <Box
-        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           直近ゲーム結果
         </Typography>

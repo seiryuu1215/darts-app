@@ -80,7 +80,7 @@ const COUNTUP_THRESHOLDS = [
   { value: 550, percentile: 15 },
   { value: 600, percentile: 10 }, // Rt.8-9 相当
   { value: 650, percentile: 6 },
-  { value: 700, percentile: 3 },  // Rt.11-12 相当
+  { value: 700, percentile: 3 }, // Rt.11-12 相当
   { value: 800, percentile: 1 },
   { value: 900, percentile: 0.3 },
 ];

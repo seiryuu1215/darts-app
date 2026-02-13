@@ -19,9 +19,7 @@ export default function RatingTargetCard({
   const target = getRatingTarget(stats01Avg, statsCriAvg);
 
   return (
-    <Paper
-      sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
-    >
+    <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
         <ArrowUpwardIcon sx={{ fontSize: 18, color: flightColor }} />
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>

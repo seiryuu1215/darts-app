@@ -48,9 +48,7 @@ export default function MonthlyTrendChart({
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-      <Box
-        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           月間推移
         </Typography>

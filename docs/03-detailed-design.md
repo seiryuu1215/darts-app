@@ -408,21 +408,21 @@ RootLayout (app/layout.tsx)
 
 ### 5.2 主要コンポーネントの責務
 
-| コンポーネント | 責務                         | props/state                                            |
-| -------------- | ---------------------------- | ------------------------------------------------------ |
-| `DartForm`     | セッティング入力の全管理     | 15+ state variables (barrel, tip, shaft, flight specs) |
-| `DartCard`     | セッティング一覧のカード表示 | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`      |
-| `BarrelCard`   | バレル製品カード             | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`  |
-| `CommentList`  | コメント一覧の表示・削除     | `dartId`, `comments[]`, `currentUserId`                |
-| `Providers`    | テーマ・セッション提供       | `children`, `darkMode` context                         |
-| `PlayerProfileCard` | DARTSLIVEプロフィール表示 | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor` |
-| `RatingHeroCard` | レーティング+フライト+進捗バー | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak` |
-| `PeriodStatsPanel` | 期間別スタッツ集計表示   | `periodTab`, `summary`, `records`, `loading`           |
-| `GameStatsCards` | 3カテゴリスタッツカード    | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile |
-| `BullStatsCard` | ブル統計+チャート          | `awards` (D-BULL/S-BULL)                                |
-| `CountUpDeltaChart` | COUNT-UP±差分可視化   | `games` (recentGames.games)                             |
-| `PercentileChip` | 上位X%バッジ（再利用）    | `type: 'rating'\|'ppd'\|'mpr'\|'countup'`, `value`     |
-| `PRSiteSection` | おすすめブランドPRカード   | なし（静的データ）                                      |
+| コンポーネント      | 責務                           | props/state                                                      |
+| ------------------- | ------------------------------ | ---------------------------------------------------------------- |
+| `DartForm`          | セッティング入力の全管理       | 15+ state variables (barrel, tip, shaft, flight specs)           |
+| `DartCard`          | セッティング一覧のカード表示   | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`                |
+| `BarrelCard`        | バレル製品カード               | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`            |
+| `CommentList`       | コメント一覧の表示・削除       | `dartId`, `comments[]`, `currentUserId`                          |
+| `Providers`         | テーマ・セッション提供         | `children`, `darkMode` context                                   |
+| `PlayerProfileCard` | DARTSLIVEプロフィール表示      | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor` |
+| `RatingHeroCard`    | レーティング+フライト+進捗バー | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak`        |
+| `PeriodStatsPanel`  | 期間別スタッツ集計表示         | `periodTab`, `summary`, `records`, `loading`                     |
+| `GameStatsCards`    | 3カテゴリスタッツカード        | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile   |
+| `BullStatsCard`     | ブル統計+チャート              | `awards` (D-BULL/S-BULL)                                         |
+| `CountUpDeltaChart` | COUNT-UP±差分可視化            | `games` (recentGames.games)                                      |
+| `PercentileChip`    | 上位X%バッジ（再利用）         | `type: 'rating'\|'ppd'\|'mpr'\|'countup'`, `value`               |
+| `PRSiteSection`     | おすすめブランドPRカード       | なし（静的データ）                                               |
 
 ---
 

@@ -26,7 +26,9 @@ export const GET = withErrorHandler(
       // CSV injection防止: 先頭が =, +, -, @, \t, \r の場合はシングルクォートで無害化
       if (/^[=+\-@\t\r]/.test(memo)) memo = `'${memo}`;
 
-      rows.push(`${dateStr},${rating},${ppd},${mpr},${games},${condition},${dBull},${sBull},"${memo}"`);
+      rows.push(
+        `${dateStr},${rating},${ppd},${mpr},${games},${condition},${dBull},${sBull},"${memo}"`,
+      );
     });
 
     const csv = rows.join('\n');

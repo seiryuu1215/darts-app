@@ -58,9 +58,7 @@ export default function CountUpDeltaChart({ games }: CountUpDeltaChartProps) {
   const chartTooltipBg = isDark ? '#1e1e1e' : '#fff';
   const chartTooltipBorder = isDark ? '#444' : '#ddd';
 
-  const countUpGames = games
-    .filter((g) => g.category === 'COUNT-UP')
-    .flatMap((g) => g.scores);
+  const countUpGames = games.filter((g) => g.category === 'COUNT-UP').flatMap((g) => g.scores);
 
   if (countUpGames.length < 2) return null;
 
@@ -107,13 +105,7 @@ export default function CountUpDeltaChart({ games }: CountUpDeltaChartProps) {
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
-                    fill={
-                      entry.delta > 0
-                        ? '#4CAF50'
-                        : entry.delta < 0
-                          ? '#F44336'
-                          : '#9E9E9E'
-                    }
+                    fill={entry.delta > 0 ? '#4CAF50' : entry.delta < 0 ? '#F44336' : '#9E9E9E'}
                   />
                 ))}
               </Bar>

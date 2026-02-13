@@ -145,11 +145,7 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
         {/* 今月バーチャート */}
         {monthlyBulls > 0 && (
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 0.5, display: 'block' }}
-            >
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
               今月のブル
             </Typography>
             <ResponsiveContainer width="100%" height={160}>
