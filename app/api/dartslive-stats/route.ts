@@ -43,19 +43,21 @@ async function scrapeProfile(
   });
 
   return page.evaluate(() => {
-    // 通り名（プレイヤータイトル/ニックネーム）
+    // カード名
+    const cardName =
+      document.querySelector('h2.playerName')?.textContent?.trim() || '';
+    // 通り名
     const toorina =
-      document.querySelector('.toorina, .player-nickname, [class*="title"]')?.textContent?.trim() ||
-      '';
-    // カードアイコン/テーマ画像
-    const iconEl = document.querySelector('.card-icon img, .player-icon img, [class*="icon"] img');
+      document.querySelector('p.torina, .torina')?.textContent?.trim() || '';
+    // プロフィール画像
+    const iconEl = document.querySelector('.profileImg img, .profile img');
     const rawUrl = iconEl?.getAttribute('src') || '';
     const cardImageUrl = rawUrl.startsWith('http')
       ? rawUrl
       : rawUrl
         ? `https://card.dartslive.com${rawUrl}`
         : '';
-    return { toorina, cardImageUrl };
+    return { cardName, toorina, cardImageUrl };
   });
 }
 
@@ -132,10 +134,7 @@ async function scrapeCurrentStats(
       }
     });
 
-    const cardName = document.querySelector('h1')?.textContent?.trim() || '';
-
     return {
-      cardName,
       rating: ratingRef ?? ratingInt,
       ratingInt,
       flight,
@@ -376,6 +375,7 @@ export const POST = withErrorHandler(
         const responseData = {
           current: {
             ...currentStats,
+            cardName: profile.cardName,
             toorina: profile.toorina,
             cardImageUrl: profile.cardImageUrl,
           },
@@ -397,7 +397,7 @@ export const POST = withErrorHandler(
           rating: currentStats.rating,
           ratingInt: currentStats.ratingInt,
           flight: currentStats.flight,
-          cardName: currentStats.cardName,
+          cardName: profile.cardName,
           toorina: profile.toorina,
           cardImageUrl: profile.cardImageUrl,
           stats01Avg: currentStats.stats01Avg,
