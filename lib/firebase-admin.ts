@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
 
@@ -29,3 +30,4 @@ function initAdmin() {
 
 const app = initAdmin();
 export const adminDb = getFirestore(app);
+export const adminStorage = getStorage(app);

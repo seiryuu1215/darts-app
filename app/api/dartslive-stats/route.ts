@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { canUseDartslive } from '@/lib/permissions';
 import { z } from 'zod';
@@ -33,32 +33,47 @@ async function login(
   }
 }
 
-/** top.jsp からプレイヤープロフィール（通り名・カードアイコン）を取得 */
+/** top.jsp からプレイヤープロフィール（カード名・通り名・プロフィール画像）を取得 */
 async function scrapeProfile(
   page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+  userId: string,
 ) {
   await page.goto('https://card.dartslive.com/t/top.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
   });
 
-  return page.evaluate(() => {
-    // カード名
+  const textData = await page.evaluate(() => {
     const cardName =
       document.querySelector('h2.playerName')?.textContent?.trim() || '';
-    // 通り名
-    const toorina =
+    // DARTSLIVE側で省略表示される場合がある（末尾 "..." を除去）
+    const rawTorina =
       document.querySelector('p.torina, .torina')?.textContent?.trim() || '';
-    // プロフィール画像
-    const iconEl = document.querySelector('.profileImg img, .profile img');
-    const rawUrl = iconEl?.getAttribute('src') || '';
-    const cardImageUrl = rawUrl.startsWith('http')
-      ? rawUrl
-      : rawUrl
-        ? `https://card.dartslive.com${rawUrl}`
-        : '';
-    return { cardName, toorina, cardImageUrl };
+    const toorina = rawTorina.replace(/\.{3}$/, '');
+    return { cardName, toorina };
   });
+
+  // プロフィール画像: 認証付きURLのためスクリーンショットでキャプチャ → Firebase Storageに保存
+  let cardImageUrl = '';
+  try {
+    const imgEl = await page.$('.profileImg img');
+    if (imgEl) {
+      const buffer = await imgEl.screenshot({ type: 'png' });
+      const bucket = adminStorage.bucket();
+      const filePath = `dartslive-profiles/${userId}.png`;
+      const file = bucket.file(filePath);
+      await file.save(buffer as Buffer, {
+        contentType: 'image/png',
+        metadata: { cacheControl: 'public, max-age=86400' },
+      });
+      await file.makePublic();
+      cardImageUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+    }
+  } catch (err) {
+    console.error('Profile image capture error:', err);
+  }
+
+  return { ...textData, cardImageUrl };
 }
 
 /** play/index.jsp から現在スタッツ + Awards を取得 */
@@ -362,7 +377,7 @@ export const POST = withErrorHandler(
         }
 
         // 順次取得（同一ページインスタンスなので）
-        const profile = await scrapeProfile(page);
+        const profile = await scrapeProfile(page, userId);
         const currentStats = await scrapeCurrentStats(page);
         const monthly = await scrapeMonthlyData(page);
         const recentGames = await scrapeRecentGames(page);
