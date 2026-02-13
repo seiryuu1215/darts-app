@@ -1,13 +1,17 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const LINE_API_BASE = 'https://api.line.me/v2/bot';
 
-/** LINE Webhook 署名検証 (HMAC-SHA256) */
+/** LINE Webhook 署名検証 (HMAC-SHA256, timing-safe) */
 export function validateLineSignature(body: string, signature: string): boolean {
   const secret = process.env.LINE_CHANNEL_SECRET;
   if (!secret) return false;
   const hash = createHmac('sha256', secret).update(body).digest('base64');
-  return hash === signature;
+  try {
+    return timingSafeEqual(Buffer.from(hash, 'base64'), Buffer.from(signature, 'base64'));
+  } catch {
+    return false;
+  }
 }
 
 /** Push メッセージ送信 */

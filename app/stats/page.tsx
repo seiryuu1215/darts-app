@@ -203,9 +203,7 @@ export default function StatsPage() {
   const [dlPassword, setDlPassword] = useState('');
   const [dlLoading, setDlLoading] = useState(false);
   const [dlError, setDlError] = useState('');
-  const [dlSaveCredentials, setDlSaveCredentials] = useState(true);
   const [dlConsent, setDlConsent] = useState(false);
-  const [dlHasSaved, setDlHasSaved] = useState(false);
   const [monthlyTab, setMonthlyTab] = useState<MonthlyTab>('rating');
   const [gameChartCategory, setGameChartCategory] = useState<string>('');
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
@@ -221,19 +219,14 @@ export default function StatsPage() {
     }
   }, [status, router]);
 
-  // localStorageからDARTSLIVE認証情報・同意状態を復元
+  // localStorageから同意状態を復元
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('dartslive_credentials');
-      if (saved) {
-        const { email, password } = JSON.parse(saved);
-        if (email) setDlEmail(email);
-        if (password) setDlPassword(password);
-        setDlHasSaved(true);
-      }
       if (localStorage.getItem('dartslive_consent') === '1') {
         setDlConsent(true);
       }
+      // 過去に保存された認証情報があれば削除
+      localStorage.removeItem('dartslive_credentials');
     } catch {
       /* ignore */
     }
@@ -326,19 +319,8 @@ export default function StatsPage() {
       setDlData(json.data);
       setDlOpen(false);
       setDlUpdatedAt(new Date().toISOString());
-      // 同意状態を保存
+      // 同意状態を保存（認証情報はブラウザに保存しない）
       localStorage.setItem('dartslive_consent', '1');
-      // 認証情報をlocalStorageに保存/削除
-      if (dlSaveCredentials) {
-        localStorage.setItem(
-          'dartslive_credentials',
-          JSON.stringify({ email: dlEmail, password: dlPassword }),
-        );
-        setDlHasSaved(true);
-      } else {
-        localStorage.removeItem('dartslive_credentials');
-        setDlHasSaved(false);
-      }
       if (json.data.recentGames?.games?.length > 0) {
         const games = json.data.recentGames.games;
         const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
@@ -414,7 +396,7 @@ export default function StatsPage() {
             <Button
               variant={dlData ? 'outlined' : 'contained'}
               startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
-              onClick={() => (dlData && dlEmail && dlPassword ? handleFetch() : setDlOpen(true))}
+              onClick={() => setDlOpen(true)}
               disabled={dlLoading}
               size="small"
             >
@@ -1549,8 +1531,7 @@ export default function StatsPage() {
           <DialogTitle>ダーツライブ連携</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              ダーツライブのアカウント情報でログインし、メインカードのスタッツを取得します。
-              {dlSaveCredentials && '認証情報はこの端末のブラウザにのみ保存されます。'}
+              ダーツライブのアカウント情報でログインし、メインカードのスタッツを取得します。認証情報はサーバーで一時的に使用され、保存されません。
             </Typography>
             {dlError && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -1598,32 +1579,6 @@ export default function StatsPage() {
               }
               sx={{ mt: 1.5, display: 'block' }}
             />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={dlSaveCredentials}
-                  onChange={(e) => setDlSaveCredentials(e.target.checked)}
-                  size="small"
-                />
-              }
-              label="この端末に認証情報を保存する"
-              sx={{ mt: 0.5 }}
-            />
-            {dlHasSaved && (
-              <Button
-                size="small"
-                color="error"
-                onClick={() => {
-                  localStorage.removeItem('dartslive_credentials');
-                  setDlEmail('');
-                  setDlPassword('');
-                  setDlHasSaved(false);
-                }}
-                sx={{ ml: 1 }}
-              >
-                保存済み情報を削除
-              </Button>
-            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDlOpen(false)} disabled={dlLoading}>

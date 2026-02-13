@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
+             && request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+
+    // ユーザーアップロード画像（セッティング写真等）
+    match /darts/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isValidImage();
+    }
+
+    // プロフィール画像
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isValidImage();
+    }
+
+    // 記事画像（admin のみ）
+    match /articles/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn()
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                   && isValidImage();
+    }
+
+    // それ以外は拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

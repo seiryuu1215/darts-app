@@ -14,11 +14,55 @@ export interface AuthContext {
 type HandlerWithAuth = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
 type Handler = (req: NextRequest) => Promise<NextResponse>;
 
+// ──────────────────────────────
+// Rate Limiter (in-memory, per-IP)
+// ──────────────────────────────
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 60; // requests per window
+
+function getRateLimitKey(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
+export function checkRateLimit(req: NextRequest): NextResponse | null {
+  const key = getRateLimitKey(req);
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return null;
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((entry.resetAt - now) / 1000)) } },
+    );
+  }
+  return null;
+}
+
+// Cleanup stale entries every 5 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimitStore) {
+      if (now > entry.resetAt) rateLimitStore.delete(key);
+    }
+  }, 5 * 60_000);
+}
+
 /**
  * エラーハンドリングラッパー — try-catch + console.error + 500レスポンス
  */
 export function withErrorHandler(handler: Handler, label: string): Handler {
   return async (req: NextRequest) => {
+    const rateLimited = checkRateLimit(req);
+    if (rateLimited) return rateLimited;
     try {
       return await handler(req);
     } catch (error) {

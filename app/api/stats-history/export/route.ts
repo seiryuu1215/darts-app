@@ -20,7 +20,9 @@ export const GET = withErrorHandler(
       const mpr = d.cricketStats?.mpr ?? '';
       const games = d.gamesPlayed ?? '';
       const condition = d.condition ?? '';
-      const memo = (d.memo ?? '').replace(/"/g, '""');
+      let memo = (d.memo ?? '').replace(/"/g, '""');
+      // CSV injection防止: 先頭が =, +, -, @, \t, \r の場合はシングルクォートで無害化
+      if (/^[=+\-@\t\r]/.test(memo)) memo = `'${memo}`;
 
       rows.push(`${dateStr},${rating},${ppd},${mpr},${games},${condition},"${memo}"`);
     });

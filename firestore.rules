@@ -29,9 +29,15 @@ service cloud.firestore {
     // users
     // ──────────────────────────────
     match /users/{userId} {
-      allow read: if true;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId)
+                    && !('role' in request.resource.data);
+      allow update: if isAdmin()
+                    || (isOwner(userId)
+                        && !request.resource.data.diff(resource.data).affectedKeys()
+                            .hasAny(['role', 'stripeCustomerId', 'subscriptionId',
+                                     'subscriptionStatus', 'subscriptionCurrentPeriodEnd',
+                                     'subscriptionTrialEnd']));
       allow delete: if isAdmin();
 
       // likes
@@ -132,9 +138,11 @@ service cloud.firestore {
                           && resource.data.userId == request.auth.uid
                           && request.resource.data.diff(resource.data).affectedKeys()
                               .hasOnly(['title', 'content', 'category', 'updatedAt']))
-                      // 返信時の replyCount/lastRepliedAt 更新
-                      || request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['replyCount', 'lastRepliedAt'])
+                      // 返信時の replyCount/lastRepliedAt 更新（+1のみ許可）
+                      || (isSignedIn()
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                              .hasOnly(['replyCount', 'lastRepliedAt'])
+                          && request.resource.data.replyCount == resource.data.replyCount + 1)
                     );
 
       allow delete: if isAdmin()

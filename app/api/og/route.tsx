@@ -3,13 +3,26 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
+const OG_ALLOWED_HOSTS = ['firebasestorage.googleapis.com'];
+
+function isAllowedImageUrl(url: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return OG_ALLOWED_HOSTS.some((h) => parsed.hostname === h);
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const title = searchParams.get('title') || 'Darts Lab';
   const barrel = searchParams.get('barrel') || '';
   const weight = searchParams.get('weight') || '';
   const user = searchParams.get('user') || '';
-  const imageUrl = searchParams.get('image') || '';
+  const rawImageUrl = searchParams.get('image') || '';
+  const imageUrl = isAllowedImageUrl(rawImageUrl) ? rawImageUrl : '';
 
   return new ImageResponse(
     <div

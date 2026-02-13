@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '無効なURLです' }, { status: 400 });
   }
 
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
+  if (parsed.protocol !== 'https:') {
     return NextResponse.json({ error: '許可されていないプロトコルです' }, { status: 400 });
   }
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '許可されていないドメインです' }, { status: 403 });
   }
 
-  const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+  const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
   try {
