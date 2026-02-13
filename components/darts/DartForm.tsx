@@ -17,6 +17,8 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  ListItemAvatar,
+  Avatar,
   CircularProgress,
   Paper,
   Autocomplete,
@@ -1029,14 +1031,23 @@ export default function DartForm({
               {searchResults.map((result, i) => (
                 <ListItem key={i} disablePadding>
                   <ListItemButton onClick={() => handleSelectBarrel(result)}>
+                    <ListItemAvatar>
+                      <Avatar
+                        src={result.imageUrl || undefined}
+                        variant="rounded"
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        {result.name?.charAt(0) || '?'}
+                      </Avatar>
+                    </ListItemAvatar>
                     <ListItemText
                       primary={result.name}
                       secondary={[
-                        result.brand && `ブランド: ${result.brand}`,
+                        result.brand && `${result.brand}`,
                         result.weight && `${result.weight}g`,
-                        result.maxDiameter && `最大径: ${result.maxDiameter}mm`,
-                        result.length && `全長: ${result.length}mm`,
-                        result.cut && `カット: ${result.cut}`,
+                        result.maxDiameter && `最大径${result.maxDiameter}mm`,
+                        result.length && `全長${result.length}mm`,
+                        result.cut && `${result.cut}`,
                       ]
                         .filter(Boolean)
                         .join(' / ')}

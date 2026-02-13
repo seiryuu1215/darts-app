@@ -10,17 +10,17 @@
 
 # Darts Lab
 
-> **Darts setup management, stats tracking & barrel discovery platform for darts players.**
+> **Darts setup management, stats tracking, barrel discovery & community platform for darts players.**
 >
-> Register your dart setups (barrel, shaft, flight, tip), auto-fetch DARTSLIVE stats with graph visualization, find your ideal barrel with a simulator & quiz, and purchase seamlessly via affiliate links.
+> Register your dart setups (barrel, shaft, flight, tip), auto-fetch DARTSLIVE stats with graph visualization, find your ideal barrel with a simulator & quiz, discuss settings and practice tips with fellow players, and purchase seamlessly via affiliate links.
 
 **Demo:** [https://darts-app-lime.vercel.app](https://darts-app-lime.vercel.app)
 
 ---
 
-ダーツプレイヤー向けのセッティング管理・スタッツ記録・バレル探索 Web アプリケーション。
+ダーツプレイヤー向けのセッティング管理・スタッツ記録・バレル探索・コミュニティ Web アプリケーション。
 
-自身のダーツセッティング（バレル・シャフト・フライト・チップ）を登録・共有し、DARTSLIVE のスタッツを自動取得してグラフで成長を可視化。バレルシミュレーターや診断クイズでぴったりのバレルを見つけ、アフィリエイト連携で購入までシームレスに繋げます。
+自身のダーツセッティング（バレル・シャフト・フライト・チップ）を登録・共有し、DARTSLIVE のスタッツを自動取得してグラフで成長を可視化。バレルシミュレーターや診断クイズでぴったりのバレルを見つけ、ディスカッション機能でセッティング相談や練習法を共有し、アフィリエイト連携で購入までシームレスに繋げます。
 
 ## Screenshots
 
@@ -39,21 +39,32 @@
 ### セッティング管理
 
 - バレル・チップ・シャフト・フライトの組み合わせを登録
-- 主要メーカーの製品プリセットから選択、またはカスタム入力
+- 7,000種以上のバレルデータベースから検索・選択（サムネイル画像付き）
+- 17種類のチッププリセット（L-style / TIGA / Target / CONDOR / COSMO）
+- 主要メーカーのシャフト・フライト製品プリセットから選択、またはカスタム入力
 - CONDOR AXE（一体型パーツ）対応
 - パーツ互換性チェック（シャフト × フライトの組み合わせ検証）
 - スペック（重量・全長）の自動計算
 - 2つのセッティングを横並びで比較
 - セッティング変更履歴の記録・追跡
+- X（Twitter）での OGP 画像付きシェア
 
 ### バレルデータベース & 探索
 
 - バレル製品をスペック（重量・径・長さ・カット）で横断検索
 - 人気売上ランキング（週間/月間/総合タブ切替）
-- **バレルシミュレーター**: SVGでバレル形状を可視化、最大3本まで重ねて比較
+- **バレルシミュレーター**: 実寸スケールで画像を重ねて形状比較（最大2本）
 - **診断クイズ**: 6つの質問に答えるだけでおすすめバレルを提案（MUI Stepper）
 - ユーザーの傾向に基づくレコメンドエンジン（マルチファクタースコアリング）
 - ブックマーク＆検索結果からセッティング下書き作成
+
+### ディスカッション（掲示板）
+
+- 6カテゴリの固定テーマ制（セッティング相談・レーティング・バレル選び・練習法・ギア・雑談）
+- 投稿者のレーティング（Rt）・使用バレルを自動表示し、発言の説得力を可視化
+- PRO+ ユーザーがスレッド作成、全ログインユーザーが返信可能
+- ピン留め・ロック機能（admin）
+- 最新ディスカッションをホーム・サイドバーに自動表示
 
 ### DARTSLIVE スタッツ連携（PRO）
 
@@ -69,17 +80,28 @@
 - 練習の調子やメモを手動で記録・管理
 - 全ユーザーが利用可能
 
+### 記事（admin 限定）
+
+- Markdown ベースの公式コンテンツ（バレルレビュー・初心者ガイド・攻略記事等）
+- カバー画像・タグ・おすすめフラグ・固定ページ対応
+- SEO 集客用の運営コンテンツとして機能
+
 ### アフィリエイト連携 & 収益化
 
-- ダーツハイブ（A8.net）・楽天・Amazon への購入導線
+- **6ショップ対応**: ダーツハイブ（A8.net）・エスダーツ・MAXIM・TiTO Online・楽天・Amazon
 - 環境変数ベースのアフィリエイトID管理（未設定時は直リンクにフォールバック）
-- 全バレルカード・詳細ページ・サイドバーにショップリンク
+- 全バレルカード・詳細ページ・サイドバー・フッターにショップリンク
 
-### ソーシャル & コンテンツ
+### ダークモード
 
-- セッティングへのいいね・コメント・ブックマーク
-- Markdown ベースのナレッジ記事投稿（PRO/admin）
-- プロフィール公開/非公開設定
+- OS 設定自動検出 + 手動切替
+- localStorage に設定を永続化
+- インラインスクリプトによる FOUC（ちらつき）防止
+
+### LINE 連携
+
+- LINE アカウントとの連携・解除
+- LINE 経由でのスタッツ通知
 
 ### PWA
 
@@ -94,11 +116,13 @@
 | セッティング閲覧・いいね・コメント        |        o        |      o      |   o    |
 | バレル検索・クイズ・シミュレーター        |        o        |      o      |   o    |
 | セッティング比較・履歴                    |        o        |      o      |   o    |
+| ディスカッション閲覧・返信               |        o        |      o      |   o    |
+| ディスカッション作成                      |        x        |      o      |   o    |
 | プロフィール編集                          |        o        |      o      |   o    |
 | 手動スタッツ記録                          |        o        |      o      |   o    |
 | DARTSLIVE連携（自動取得・グラフ・Rt目標） |        x        |      o      |   o    |
-| 記事投稿・編集（自分の記事）              |        x        |      o      |   o    |
-| 記事のおすすめフラグ設定                  |        x        |      x      |   o    |
+| 記事投稿・編集                            |        x        |      x      |   o    |
+| ディスカッション管理（ピン留め・ロック）  |        x        |      x      |   o    |
 | ユーザーロール管理                        |        x        |      x      |   o    |
 
 ## 技術スタック
@@ -120,6 +144,7 @@
 | CI             | GitHub Actions (lint / format / test / build) |
 | PWA            | Serwist (Workbox ベース)                      |
 | ホスティング   | Vercel                                        |
+| IaC            | Firebase CLI (firestore.rules / indexes)      |
 
 ## アーキテクチャ
 
@@ -133,6 +158,7 @@ graph TB
     subgraph Vercel
         Edge["Edge Network"]
         SF["Serverless Functions"]
+        OG["OGP Image Generator<br/>(Edge Runtime)"]
     end
 
     subgraph Firebase
@@ -151,10 +177,14 @@ graph TB
 
     subgraph External
         DL["DARTSLIVE"]
+        LINE["LINE Messaging API"]
     end
 
     subgraph Affiliate
-        A8["A8.net"]
+        A8["A8.net<br/>(ダーツハイブ)"]
+        SD["エスダーツ"]
+        MX["MAXIM"]
+        TT["TiTO Online"]
         RK["楽天"]
         AZ["Amazon"]
     end
@@ -163,6 +193,7 @@ graph TB
     SF --> Firebase
     SF -->|Puppeteer| DL
     SF -->|Webhook| Stripe
+    SF -->|Webhook| LINE
     SF -->|Error tracking| Sentry
     App --> Firebase
     App -->|購入リンク| Affiliate
@@ -171,12 +202,15 @@ graph TB
 - **サーバーレスアーキテクチャ**: Vercel + Firebase による完全マネージド構成
 - **JWT 認証**: NextAuth.js によるセッション管理、ロールベースアクセス制御（admin/pro/general）
 - **APIミドルウェア**: `lib/api-middleware.ts` による認証・権限・エラーハンドリングの共通化
-- **権限管理**: `lib/permissions.ts` による一元的なロール判定（セッティング上限・DARTSLIVE連携・記事投稿）
+- **権限管理**: `lib/permissions.ts` による一元的なロール判定（セッティング上限・DARTSLIVE連携・記事投稿・ディスカッション）
 - **独自レコメンドエンジン**: 重量(30点)・径(25点)・長さ(25点)・カット(15点)・ブランド(5点)の100点スコアリング
-- **SVGシミュレーター**: バレル寸法からベジエ曲線でシルエットを推定描画
+- **バレルシミュレーター**: 実寸スケール（mm→px変換）でバレル画像を重ね合わせ比較
 - **レーティング分析**: DARTSLIVE Rt計算式に基づく目標PPD/MPR算出・均等目標提案
+- **OGP画像生成**: `next/og` (Edge Runtime) によるセッティング共有用の動的OGP画像
 - **Stripe課金**: Checkout Session → Webhook → Firestore ロール更新のサーバーサイド完結フロー
-- **アフィリエイト基盤**: `lib/affiliate.ts` による環境変数ベースのURL変換
+- **アフィリエイト基盤**: `lib/affiliate.ts` による環境変数ベースのURL変換（6ショップ対応）
+- **ダークモード**: インラインスクリプトによるFOUC防止 + localStorage永続化 + OS設定連動
+- **Firestore ルール管理**: `firestore.rules` / `firestore.indexes.json` によるコード管理（Firebase CLI デプロイ）
 - **PWA**: Serwist による Workbox ベースのキャッシュ戦略
 
 ## セットアップ
@@ -215,6 +249,14 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID`   | 楽天アフィリエイトID（任意）                              |
 | `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG`   | AmazonアソシエイトTag（任意）                             |
 | `NEXT_PUBLIC_A8_MEDIA_ID`            | A8.net メディアID（任意）                                 |
+| `LINE_CHANNEL_SECRET`               | LINE Messaging API チャネルシークレット（任意）           |
+| `LINE_CHANNEL_ACCESS_TOKEN`         | LINE チャネルアクセストークン（任意）                     |
+
+### Firestore ルールのデプロイ
+
+```bash
+npx firebase-tools deploy --only firestore
+```
 
 ### 開発サーバー
 
@@ -243,35 +285,47 @@ npm run build  # Webpack モードで Service Worker も生成
 darts-app/
 ├── app/                        # Next.js App Router
 │   ├── api/                    #   API エンドポイント
+│   │   ├── og/                 #     OGP画像生成 (Edge Runtime)
+│   │   ├── stripe/             #     Stripe Checkout / Webhook
+│   │   ├── line/               #     LINE連携 (Webhook / Link / Unlink)
+│   │   └── ...                 #     認証・スタッツ・管理
 │   ├── darts/                  #   セッティング管理
 │   ├── barrels/                #   バレル検索
 │   │   ├── recommend/          #     おすすめ検索
 │   │   ├── simulator/          #     シミュレーター
 │   │   └── quiz/               #     診断クイズ
+│   ├── discussions/            #   ディスカッション（掲示板）
 │   ├── stats/                  #   スタッツ記録
-│   ├── articles/               #   記事
+│   ├── articles/               #   記事（admin限定）
+│   ├── bookmarks/              #   ブックマーク
+│   ├── admin/                  #   管理機能
 │   ├── about/                  #   サイトについて
 │   ├── privacy/                #   プライバシーポリシー
 │   ├── terms/                  #   利用規約
-│   ├── admin/                  #   管理機能
 │   ├── sw.ts                   #   Service Worker エントリ
-│   └── layout.tsx              #   ルートレイアウト (PWA メタデータ)
+│   └── layout.tsx              #   ルートレイアウト (PWA / ダークモード初期化)
 ├── components/                 # 再利用 UI コンポーネント
 │   ├── layout/                 #   Header, Footer, TwoColumn, Sidebar, Breadcrumbs
 │   ├── affiliate/              #   AffiliateButton
 │   ├── darts/                  #   DartCard, DartDetail, DartForm
 │   ├── barrels/                #   BarrelCard, BarrelSimulator, BarrelQuiz
+│   ├── discussions/            #   DiscussionCard, ReplyForm, ReplyList, CategoryTabs
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
 ├── lib/                        # ビジネスロジック・ユーティリティ
 │   ├── api-middleware.ts       #   API認証・権限・エラーハンドリング共通化
 │   ├── permissions.ts          #   ロール別権限判定ユーティリティ
-│   ├── affiliate.ts            #   アフィリエイトURL変換
+│   ├── affiliate.ts            #   アフィリエイトURL変換（6ショップ対応）
+│   ├── darts-parts.ts          #   チップ・シャフト・フライトのマスターデータ
 │   ├── recommend-barrels.ts    #   レコメンドエンジン + クイズスコアリング
 │   ├── calc-totals.ts          #   スペック合計計算
+│   ├── line.ts                 #   LINE Messaging API ヘルパー
 │   ├── firebase.ts             #   Firebase クライアント初期化
 │   ├── firebase-admin.ts       #   Firebase Admin SDK
 │   └── auth.ts                 #   NextAuth 設定
+├── firestore.rules             # Firestore セキュリティルール（コード管理）
+├── firestore.indexes.json      # Firestore 複合インデックス定義
+├── firebase.json               # Firebase CLI 設定
 ├── types/                      # TypeScript 型定義
 ├── scripts/                    # スクレイピング・データ管理スクリプト
 ├── docs/                       # 設計ドキュメント
@@ -300,12 +354,14 @@ darts-app/
 ## セキュリティ
 
 - 認証情報はサーバーサイドのみで処理し、永続化しない
-- Firebase セキュリティルールによるデータアクセス制御
+- Firestore セキュリティルールによるデータアクセス制御（`firestore.rules` でコード管理）
 - 環境変数による秘密情報管理（`.env.local` は Git 管理外）
 - 画像プロキシはホワイトリスト方式（許可ドメインのみ中継）
 - DARTSLIVE 連携は PRO/admin ユーザーのみ利用可能
+- 記事投稿は admin のみ利用可能
 - ロールベースのAPI保護（`lib/permissions.ts` による一元管理）
 - Stripe Webhook 署名検証 + イベント重複排除
+- LINE Webhook 署名検証
 - セキュリティヘッダー（HSTS, X-Frame-Options, CSP 相当）
 
 ## ライセンス

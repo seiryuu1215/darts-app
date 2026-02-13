@@ -108,10 +108,9 @@ service cloud.firestore {
     // ──────────────────────────────
     match /articles/{articleId} {
       allow read: if true;
-      allow create: if isPro()
+      allow create: if isAdmin()
                     && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin()
-                    || (isPro() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

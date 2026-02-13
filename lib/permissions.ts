@@ -11,17 +11,15 @@ export function isAdmin(role: UserRole | undefined): boolean {
 }
 
 export function canWriteArticles(role: UserRole | undefined): boolean {
-  return role === 'pro' || role === 'admin';
+  return role === 'admin';
 }
 
 export function canEditArticle(
   role: UserRole | undefined,
-  articleUserId: string,
-  currentUserId: string,
+  _articleUserId: string,
+  _currentUserId: string,
 ): boolean {
-  if (role === 'admin') return true;
-  if (role === 'pro') return articleUserId === currentUserId;
-  return false;
+  return role === 'admin';
 }
 
 export function canUseDartslive(role: UserRole | undefined): boolean {

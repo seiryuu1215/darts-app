@@ -45,6 +45,15 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   const mode: 'light' | 'dark' = stored ?? (prefersDark ? 'dark' : 'light');
 
+  // data-theme 属性をReact側と同期（インラインスクリプトで初期設定済み）
+  useEffect(() => {
+    if (mode === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }, [mode]);
+
   const colorMode = useMemo(
     () => ({
       toggleColorMode: () => {

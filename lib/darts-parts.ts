@@ -39,16 +39,28 @@ export interface CondorAxeSpec {
 
 // --- チップ ---
 export const TIPS: TipSpec[] = [
-  // L-style
-  { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 21.3, weightG: 0.28 },
+  // === L-style 2BA ===
+  { name: 'Lippoint Original', type: 'soft', lengthMm: 24.8, weightG: 0.27 },
   { name: 'Lippoint USA', type: 'soft', lengthMm: 26.5, weightG: 0.27 },
+  { name: 'Premium Lippoint Short', type: 'soft', lengthMm: 22.4, weightG: 0.27 },
+  { name: 'Premium Lippoint', type: 'soft', lengthMm: 24.5, weightG: 0.29 },
   { name: 'Premium Lippoint 30 (Long)', type: 'soft', lengthMm: 30.0, weightG: 0.34 },
-  // CONDOR
+  // === L-style No.5 ===
+  { name: 'Lippoint No.5', type: 'soft', lengthMm: 23.2, weightG: 0.19 },
+  { name: 'Premium Lippoint No.5', type: 'soft', lengthMm: 21.2, weightG: 0.19 },
+  // === TIGA ===
+  { name: 'TIGA Hyper Point Short (24mm)', type: 'soft', lengthMm: 24.0, weightG: 0.3 },
+  { name: 'TIGA Hyper Point Medium (27mm)', type: 'soft', lengthMm: 27.0, weightG: 0.35 },
+  { name: 'TIGA Hyper Point Long (30mm)', type: 'soft', lengthMm: 30.0, weightG: 0.41 },
+  // === Target ===
+  { name: 'Target CRYO TIP', type: 'soft', lengthMm: 24.5, weightG: 0.3 },
+  // === CONDOR ===
   { name: 'CONDOR TIP', type: 'soft', lengthMm: 24.5, weightG: 0.3 },
-  { name: 'CONDOR TIP ULTIMATE', type: 'soft', lengthMm: 31.0, weightG: 0.35 },
-  // Fit
-  { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.3 },
-  // スティール
+  { name: 'CONDOR TIP ULTIMATE', type: 'soft', lengthMm: 31.0, weightG: 0.4 },
+  // === COSMO ===
+  { name: 'Fit Point PLUS', type: 'soft', lengthMm: 25.0, weightG: 0.29 },
+  { name: 'Fit Point PLUS Short', type: 'soft', lengthMm: 19.0, weightG: 0.29 },
+  // === スティール ===
   { name: 'スティールポイント（標準）', type: 'steel', lengthMm: 32.0, weightG: 1.5 },
 ];
 

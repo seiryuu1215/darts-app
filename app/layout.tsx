@@ -46,8 +46,15 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#1976d2',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#1976d2' },
+    { media: '(prefers-color-scheme: dark)', color: '#121212' },
+  ],
 };
+
+// JS実行前にテーマを判定し data-theme 属性を付与するスクリプト
+// globals.css の html[data-theme='dark'] body ルールで背景色が即座に適用される
+const themeInitScript = `(function(){try{var s=localStorage.getItem('colorMode');var d=s||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');if(d==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}})()`;
 
 export default function RootLayout({
   children,
@@ -55,7 +62,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
           <Header />

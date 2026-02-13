@@ -220,7 +220,7 @@ components/
 │   └── DartForm.tsx           # 登録・編集フォーム
 ├── barrels/                   # バレル
 │   ├── BarrelCard.tsx         # バレル商品カード + アフィリエイトボタン
-│   ├── BarrelSimulator.tsx    # SVGバレル形状シミュレーター
+│   ├── BarrelSimulator.tsx    # 実寸スケールバレル比較シミュレーター
 │   └── BarrelQuiz.tsx         # 6ステップ診断クイズ (MUI Stepper)
 ├── articles/                  # 記事
 │   ├── ArticleCard.tsx        # 記事一覧カード

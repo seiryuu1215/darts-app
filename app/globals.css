@@ -1,3 +1,12 @@
+/*
+ * JS実行前にダークモード背景を適用してFOUCを防止
+ * layout.tsx のインラインスクリプトが <html data-theme="dark"> を付与
+ */
+html[data-theme='dark'] body {
+  background-color: #121212;
+  color: #fff;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
