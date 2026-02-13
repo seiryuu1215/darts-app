@@ -69,11 +69,13 @@
 ### DARTSLIVE スタッツ連携（PRO）
 
 - DARTSLIVE アカウントからスタッツを自動取得（Puppeteer によるサーバーサイドスクレイピング）
+- プロフィール情報（カード名・通り名・プロフィール画像・ホームショップ）の取得・表示
 - Rating / 01 / Cricket / COUNT-UP の月間推移グラフ（Recharts）
 - 直近プレイデータの可視化
 - 前回との比較（±表示）
 - レーティング目標分析（次のRt到達に必要なPPD/MPRを算出）
 - カウントアップのRt期待値基準カラー表示
+- 期間別スタッツ集計（今日/今週/今月/累計）
 
 ### 手動スタッツ記録
 
@@ -127,24 +129,24 @@
 
 ## 技術スタック
 
-| カテゴリ       | 技術                                          |
-| -------------- | --------------------------------------------- |
-| フレームワーク | Next.js 16 (App Router)                       |
-| 言語           | TypeScript 5 (strict)                         |
-| UI             | React 19, MUI v7                              |
-| 認証           | NextAuth.js 4 + Firebase Authentication       |
-| データベース   | Cloud Firestore                               |
-| ストレージ     | Firebase Storage                              |
-| 決済           | Stripe (Subscription / Webhook)               |
-| グラフ         | Recharts 3                                    |
-| スクレイピング | Puppeteer 24                                  |
-| エラー監視     | Sentry                                        |
-| テスト         | Vitest (38 tests)                             |
-| フォーマッター | Prettier                                      |
-| CI             | GitHub Actions (lint / format / test / build) |
-| PWA            | Serwist (Workbox ベース)                      |
-| ホスティング   | Vercel                                        |
-| IaC            | Firebase CLI (firestore.rules / indexes)      |
+| カテゴリ       | 技術                                                     |
+| -------------- | -------------------------------------------------------- |
+| フレームワーク | Next.js 16 (App Router)                                  |
+| 言語           | TypeScript 5 (strict)                                    |
+| UI             | React 19, MUI v7                                         |
+| 認証           | NextAuth.js 4 + Firebase Authentication                  |
+| データベース   | Cloud Firestore                                          |
+| ストレージ     | Firebase Storage                                         |
+| 決済           | Stripe (Subscription / Webhook)                          |
+| グラフ         | Recharts 3                                               |
+| スクレイピング | Puppeteer 24                                             |
+| エラー監視     | Sentry                                                   |
+| テスト         | Vitest (39 tests)                                        |
+| フォーマッター | Prettier                                                 |
+| CI             | GitHub Actions (lint / format / test / build)            |
+| PWA            | Serwist (Workbox ベース)                                 |
+| ホスティング   | Vercel                                                   |
+| IaC            | Firebase CLI (firestore.rules / storage.rules / indexes) |
 
 ## アーキテクチャ
 
@@ -210,7 +212,8 @@ graph TB
 - **Stripe課金**: Checkout Session → Webhook → Firestore ロール更新のサーバーサイド完結フロー
 - **アフィリエイト基盤**: `lib/affiliate.ts` による環境変数ベースのURL変換（6ショップ対応）
 - **ダークモード**: インラインスクリプトによるFOUC防止 + localStorage永続化 + OS設定連動
-- **Firestore ルール管理**: `firestore.rules` / `firestore.indexes.json` によるコード管理（Firebase CLI デプロイ）
+- **Firebase ルール管理**: `firestore.rules` / `storage.rules` / `firestore.indexes.json` によるコード管理（Firebase CLI デプロイ）
+- **レートリミッター**: `lib/api-middleware.ts` による IP ベースのリクエスト制限（60 req/min）
 - **PWA**: Serwist による Workbox ベースのキャッシュ戦略
 
 ## セットアップ
@@ -251,11 +254,14 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_A8_MEDIA_ID`            | A8.net メディアID（任意）                                 |
 | `LINE_CHANNEL_SECRET`                | LINE Messaging API チャネルシークレット（任意）           |
 | `LINE_CHANNEL_ACCESS_TOKEN`          | LINE チャネルアクセストークン（任意）                     |
+| `SENTRY_DSN`                         | Sentry エラー監視用 DSN（任意）                           |
+| `FIREBASE_SERVICE_ACCOUNT_KEY`       | Firebase Admin SDK サービスアカウント JSON（Vercel用）    |
 
-### Firestore ルールのデプロイ
+### Firebase ルールのデプロイ
 
 ```bash
-npx firebase-tools deploy --only firestore
+npx firebase-tools deploy --only firestore   # Firestore ルール
+npx firebase-tools deploy --only storage     # Storage ルール
 ```
 
 ### 開発サーバー
@@ -288,6 +294,8 @@ darts-app/
 │   │   ├── og/                 #     OGP画像生成 (Edge Runtime)
 │   │   ├── stripe/             #     Stripe Checkout / Webhook
 │   │   ├── line/               #     LINE連携 (Webhook / Link / Unlink)
+│   │   ├── dartslive-stats/    #     DARTSLIVE スクレイピング (Puppeteer)
+│   │   ├── cron/               #     定時バッチ（日次スタッツ取得）
 │   │   └── ...                 #     認証・スタッツ・管理
 │   ├── darts/                  #   セッティング管理
 │   ├── barrels/                #   バレル検索
@@ -324,6 +332,7 @@ darts-app/
 │   ├── firebase-admin.ts       #   Firebase Admin SDK
 │   └── auth.ts                 #   NextAuth 設定
 ├── firestore.rules             # Firestore セキュリティルール（コード管理）
+├── storage.rules               # Firebase Storage セキュリティルール（コード管理）
 ├── firestore.indexes.json      # Firestore 複合インデックス定義
 ├── firebase.json               # Firebase CLI 設定
 ├── types/                      # TypeScript 型定義
@@ -353,16 +362,20 @@ darts-app/
 
 ## セキュリティ
 
-- 認証情報はサーバーサイドのみで処理し、永続化しない
-- Firestore セキュリティルールによるデータアクセス制御（`firestore.rules` でコード管理）
+- 認証情報はサーバーサイドのみで処理し、永続化しない（DARTSLIVE 認証情報含む）
+- **Firestore セキュリティルール**: フィールドレベル制限（`role`・Stripe 関連フィールドのユーザー自己変更を禁止）
+- **Firebase Storage ルール**: 画像のみ（jpeg/png/gif/webp）、5MB 制限、パス別権限（`storage.rules`）
+- **レートリミット**: IP ベースの in-memory レートリミッター（60 req/min）
+- **タイミングセーフ署名検証**: LINE Webhook で `crypto.timingSafeEqual` を使用
+- **SSRF 防止**: OG 画像生成でドメインホワイトリスト（`firebasestorage.googleapis.com` のみ）
+- **SVG ブロック**: 画像プロキシで SVG を除外（XSS 防止）、HTTPS のみ許可
+- **CSV インジェクション防止**: エクスポート時に数式プレフィックス文字をエスケープ
+- **replyCount 不正操作防止**: Firestore ルールで +1 のみ許可
 - 環境変数による秘密情報管理（`.env.local` は Git 管理外）
-- 画像プロキシはホワイトリスト方式（許可ドメインのみ中継）
-- DARTSLIVE 連携は PRO/admin ユーザーのみ利用可能
-- 記事投稿は admin のみ利用可能
 - ロールベースのAPI保護（`lib/permissions.ts` による一元管理）
 - Stripe Webhook 署名検証 + イベント重複排除
-- LINE Webhook 署名検証
 - セキュリティヘッダー（HSTS, X-Frame-Options, CSP 相当）
+- Sentry によるエラー監視・例外追跡
 
 ## ライセンス
 
