@@ -137,6 +137,9 @@ interface DartsliveData {
     statsCriBest: number | null;
     statsPraBest: number | null;
     awards: Record<string, { monthly: number; total: number }>;
+    homeShop?: string;
+    status?: string;
+    myAward?: string;
   };
   monthly: Record<string, { month: string; value: number }[]>;
   recentGames: {
@@ -486,6 +489,11 @@ export default function StatsPage() {
                       sx={{ fontStyle: 'italic', color: 'text.secondary' }}
                     >
                       {c.toorina}
+                    </Typography>
+                  )}
+                  {c.homeShop && (
+                    <Typography variant="caption" color="text.secondary">
+                      {c.homeShop}
                     </Typography>
                   )}
                 </Box>

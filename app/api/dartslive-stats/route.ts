@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { canUseDartslive } from '@/lib/permissions';
 import { z } from 'zod';
@@ -33,47 +33,73 @@ async function login(
   }
 }
 
-/** top.jsp からプレイヤープロフィール（カード名・通り名・プロフィール画像）を取得 */
+/** top.jsp + util/index.jsp からプロフィール情報を取得 */
 async function scrapeProfile(
   page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
-  userId: string,
 ) {
+  // 1. top.jsp: カード名 + プロフィール画像（base64キャプチャ）
   await page.goto('https://card.dartslive.com/t/top.jsp', {
     waitUntil: 'networkidle2',
     timeout: 15000,
   });
 
-  const textData = await page.evaluate(() => {
+  const topData = await page.evaluate(() => {
     const cardName =
       document.querySelector('h2.playerName')?.textContent?.trim() || '';
-    // DARTSLIVE側で省略表示される場合がある（末尾 "..." を除去）
-    const rawTorina =
-      document.querySelector('p.torina, .torina')?.textContent?.trim() || '';
-    const toorina = rawTorina.replace(/\.{3}$/, '');
-    return { cardName, toorina };
+    return { cardName };
   });
 
-  // プロフィール画像: 認証付きURLのためスクリーンショットでキャプチャ → Firebase Storageに保存
-  let cardImageUrl = '';
+  // プロフィール画像: 認証付きURLのためスクリーンショットでbase64キャプチャ
+  let cardImageBase64 = '';
   try {
     const imgEl = await page.$('.profileImg img');
     if (imgEl) {
-      const buffer = await imgEl.screenshot({ type: 'png' });
-      const bucket = adminStorage.bucket();
-      const filePath = `dartslive-profiles/${userId}.png`;
-      const file = bucket.file(filePath);
-      await file.save(buffer as Buffer, {
-        contentType: 'image/png',
-        metadata: { cacheControl: 'public, max-age=86400' },
-      });
-      await file.makePublic();
-      cardImageUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+      const buf = await imgEl.screenshot({ type: 'png', encoding: 'base64' });
+      cardImageBase64 = `data:image/png;base64,${buf}`;
     }
   } catch (err) {
     console.error('Profile image capture error:', err);
   }
 
-  return { ...textData, cardImageUrl };
+  // 2. util/index.jsp: 通り名（フル）+ ホームショップ + ステータス
+  await page.goto('https://card.dartslive.com/t/util/index.jsp', {
+    waitUntil: 'networkidle2',
+    timeout: 15000,
+  });
+
+  const utilData = await page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('a'));
+    let toorina = '';
+    let homeShop = '';
+    let status = '';
+    let myAward = '';
+
+    for (const link of links) {
+      const text = link.textContent || '';
+      if (link.href.includes('nickname')) {
+        // 通り名\n\t\n\t@seiryuu_darts → extract after 通り名
+        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        toorina = parts.length > 1 ? parts[parts.length - 1] : '';
+      } else if (link.href.includes('homeshop')) {
+        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        homeShop = parts.length > 1 ? parts[parts.length - 1] : '';
+      } else if (link.href.includes('status')) {
+        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        status = parts.length > 1 ? parts[parts.length - 1] : '';
+      } else if (link.href.includes('aws')) {
+        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        myAward = parts.length > 1 ? parts[1] : '';
+      }
+    }
+
+    return { toorina, homeShop, status, myAward };
+  });
+
+  return {
+    cardName: topData.cardName,
+    cardImageBase64,
+    ...utilData,
+  };
 }
 
 /** play/index.jsp から現在スタッツ + Awards を取得 */
@@ -377,7 +403,7 @@ export const POST = withErrorHandler(
         }
 
         // 順次取得（同一ページインスタンスなので）
-        const profile = await scrapeProfile(page, userId);
+        const profile = await scrapeProfile(page);
         const currentStats = await scrapeCurrentStats(page);
         const monthly = await scrapeMonthlyData(page);
         const recentGames = await scrapeRecentGames(page);
@@ -392,7 +418,10 @@ export const POST = withErrorHandler(
             ...currentStats,
             cardName: profile.cardName,
             toorina: profile.toorina,
-            cardImageUrl: profile.cardImageUrl,
+            cardImageUrl: profile.cardImageBase64,
+            homeShop: profile.homeShop,
+            status: profile.status,
+            myAward: profile.myAward,
           },
           monthly,
           recentGames,
@@ -414,7 +443,8 @@ export const POST = withErrorHandler(
           flight: currentStats.flight,
           cardName: profile.cardName,
           toorina: profile.toorina,
-          cardImageUrl: profile.cardImageUrl,
+          cardImageUrl: profile.cardImageBase64,
+          homeShop: profile.homeShop,
           stats01Avg: currentStats.stats01Avg,
           statsCriAvg: currentStats.statsCriAvg,
           statsPraAvg: currentStats.statsPraAvg,
