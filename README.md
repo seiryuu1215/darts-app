@@ -69,13 +69,18 @@
 ### DARTSLIVE スタッツ連携（PRO）
 
 - DARTSLIVE アカウントからスタッツを自動取得（Puppeteer によるサーバーサイドスクレイピング）
-- プロフィール情報（カード名・通り名・プロフィール画像・ホームショップ）の取得・表示
+- **プレイヤープロフィールカード**（カード名・通り名・プロフィール画像・ホームショップ + Google Maps 連携）
 - Rating / 01 / Cricket / COUNT-UP の月間推移グラフ（Recharts）
+- **パーセンタイル表示**（上位X%チップ — DARTSLIVE公式分布2024推定に基づく）
+- **ブル統計カード**（D-BULL / S-BULL 累計 + ドーナツチャート + 月間バーチャート）
+- **COUNT-UP ±差分チャート**（直近30回のスコア変動を緑/赤で可視化）
 - 直近プレイデータの可視化
 - 前回との比較（±表示）
 - レーティング目標分析（次のRt到達に必要なPPD/MPRを算出）
 - カウントアップのRt期待値基準カラー表示
 - 期間別スタッツ集計（今日/今週/今月/累計）
+- **おすすめブランドPRセクション**（JOKER DRIVER / JD ULTIMATE / POINT ARM）
+- **モジュラーアーキテクチャ**: 14コンポーネントに分割（`components/stats/`）
 
 ### 手動スタッツ記録
 
@@ -317,6 +322,14 @@ darts-app/
 │   ├── affiliate/              #   AffiliateButton
 │   ├── darts/                  #   DartCard, DartDetail, DartForm
 │   ├── barrels/                #   BarrelCard, BarrelSimulator, BarrelQuiz
+│   ├── stats/                  #   スタッツダッシュボード（14コンポーネント）
+│   │   ├── PlayerProfileCard   #     プロフィール（Google Maps連携）
+│   │   ├── RatingHeroCard      #     レーティング + パーセンタイル
+│   │   ├── GameStatsCards      #     01/Cricket/CU + パーセンタイル
+│   │   ├── BullStatsCard       #     ブル統計 + チャート
+│   │   ├── CountUpDeltaChart   #     COUNT-UP ±差分
+│   │   ├── PercentileChip      #     上位X%バッジ
+│   │   └── ...                 #     他8コンポーネント
 │   ├── discussions/            #   DiscussionCard, ReplyForm, ReplyList, CategoryTabs
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
@@ -327,6 +340,9 @@ darts-app/
 │   ├── darts-parts.ts          #   チップ・シャフト・フライトのマスターデータ
 │   ├── recommend-barrels.ts    #   レコメンドエンジン + クイズスコアリング
 │   ├── calc-totals.ts          #   スペック合計計算
+│   ├── dartslive-rating.ts     #   DARTSLIVE Rt計算（PPD/MPR⇔Rt変換）
+│   ├── dartslive-colors.ts     #   フライト・カテゴリカラー定義
+│   ├── dartslive-percentile.ts #   パーセンタイル分布データ + 推定関数
 │   ├── line.ts                 #   LINE Messaging API ヘルパー
 │   ├── firebase.ts             #   Firebase クライアント初期化
 │   ├── firebase-admin.ts       #   Firebase Admin SDK

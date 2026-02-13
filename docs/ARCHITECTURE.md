@@ -308,6 +308,21 @@ components/
 ├── comment/                   # コメント
 │   ├── CommentForm.tsx
 │   └── CommentList.tsx
+├── stats/                     # スタッツダッシュボード（14コンポーネント）
+│   ├── PlayerProfileCard.tsx  # プレイヤープロフィール（通り名・ホームショップ・Google Maps連携）
+│   ├── RatingHeroCard.tsx     # レーティング + フライト + 進捗バー + パーセンタイル
+│   ├── PeriodStatsPanel.tsx   # 期間タブ（今日/今週/今月/累計）+ サマリーテーブル
+│   ├── GameStatsCards.tsx     # 01/Cricket/COUNT-UP 3カード（パーセンタイル付き）
+│   ├── BullStatsCard.tsx      # ブル累計表示 + ドーナツチャート + 月間バーチャート
+│   ├── CountUpDeltaChart.tsx  # カウントアップ ±差分バーチャート（緑/赤色分け）
+│   ├── RatingTargetCard.tsx   # レーティング目標分析
+│   ├── MonthlyTrendChart.tsx  # 月間推移グラフ
+│   ├── RecentGamesChart.tsx   # 直近ゲーム結果チャート
+│   ├── RecentDaySummary.tsx   # 直近プレイ日サマリー
+│   ├── AwardsTable.tsx        # アワードテーブル
+│   ├── PercentileChip.tsx     # 上位X%バッジ（再利用可能）
+│   ├── PRSiteSection.tsx      # おすすめブランドPRカード
+│   └── StatsLoginDialog.tsx   # DARTSLIVE ログインダイアログ
 ├── OnboardingDialog.tsx       # 初回ログイン時のオンボーディング
 ├── ProPaywall.tsx             # PRO アップグレード誘導
 ├── UserAvatar.tsx             # DiceBear アバター

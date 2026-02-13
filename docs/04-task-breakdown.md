@@ -132,7 +132,7 @@
 
 ### 5.3 スタッツダッシュボード
 
-- [x] ダッシュボードページ（`app/stats/page.tsx`）
+- [x] ダッシュボードページ（`app/stats/page.tsx`）— オーケストレーター（約295行）
   - [x] DARTSLIVE風UI（フライトカラー、カテゴリカラー）
   - [x] Rating Hero Card（フライト階級バッジ）
   - [x] 3カテゴリカード（01=赤, Cricket=青, CU=緑）
@@ -141,6 +141,14 @@
   - [x] 直近プレイ ComposedChart
   - [x] Awards テーブル
   - [x] 使用中ダーツ表示
+  - [x] **コンポーネント分割（1608行→14コンポーネント + 295行オーケストレーター）**
+  - [x] PlayerProfileCard（通り名・ホームショップ・Google Maps連携）
+  - [x] PeriodStatsPanel（今日/今週/今月/累計タブ）
+  - [x] BullStatsCard（D-BULL/S-BULL 累計 + ドーナツチャート + 月間バーチャート）
+  - [x] CountUpDeltaChart（COUNT-UP ±差分バーチャート、緑/赤色分け）
+  - [x] PercentileChip（上位X%バッジ — Rating/PPD/MPR/COUNT-UP）
+  - [x] PRSiteSection（おすすめブランド3社 — JOKER DRIVER / JD ULTIMATE / POINT ARM）
+  - [x] `lib/dartslive-percentile.ts`（パーセンタイル分布データ + 推定関数）
 
 ### 5.4 トップページ連携
 

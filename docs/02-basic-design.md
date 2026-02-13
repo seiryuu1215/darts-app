@@ -400,6 +400,21 @@ darts-app/
 │   ├── layout/                   #   Header, Footer
 │   ├── darts/                    #   DartCard, DartForm, DartDetail
 │   ├── barrels/                  #   BarrelCard
+│   ├── stats/                    #   スタッツダッシュボード（14コンポーネント）
+│   │   ├── PlayerProfileCard     #     プロフィール（通り名・ホームショップ・Maps連携）
+│   │   ├── RatingHeroCard        #     レーティング + フライト + パーセンタイル
+│   │   ├── PeriodStatsPanel      #     期間タブ + サマリー
+│   │   ├── GameStatsCards        #     01/Cricket/CU カード（パーセンタイル付き）
+│   │   ├── BullStatsCard         #     ブル統計 + ドーナツ/バーチャート
+│   │   ├── CountUpDeltaChart     #     COUNT-UP ±差分バーチャート
+│   │   ├── RatingTargetCard      #     レーティング目標分析
+│   │   ├── MonthlyTrendChart     #     月間推移グラフ
+│   │   ├── RecentGamesChart      #     直近ゲーム結果チャート
+│   │   ├── RecentDaySummary      #     直近プレイ日サマリー
+│   │   ├── AwardsTable           #     アワードテーブル
+│   │   ├── PercentileChip        #     上位X%バッジ（再利用可能）
+│   │   ├── PRSiteSection         #     おすすめブランドPRカード
+│   │   └── StatsLoginDialog      #     DARTSLIVE ログインダイアログ
 │   ├── articles/                 #   ArticleCard, MarkdownContent
 │   ├── comment/                  #   CommentList, CommentForm
 │   └── auth/                     #   LoginForm, RegisterForm
@@ -410,7 +425,11 @@ darts-app/
 │   ├── darts-parts.ts            #   パーツマスタデータ
 │   ├── calc-totals.ts            #   スペック計算
 │   ├── recommend-barrels.ts      #   レコメンドエンジン
-│   └── comparison.ts             #   比較ユーティリティ
+│   ├── comparison.ts             #   比較ユーティリティ
+│   ├── dartslive-rating.ts       #   DARTSLIVE レーティング計算（PPD/MPR⇔Rt変換）
+│   ├── dartslive-colors.ts       #   フライト・カテゴリカラー定義
+│   ├── dartslive-percentile.ts   #   パーセンタイル分布データ + 推定関数
+│   └── permissions.ts            #   ロール別権限判定ユーティリティ
 ├── types/                        # 型定義
 │   ├── index.ts                  #   共通型
 │   └── next-auth.d.ts            #   NextAuth型拡張
