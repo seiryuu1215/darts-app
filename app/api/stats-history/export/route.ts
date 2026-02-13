@@ -8,7 +8,7 @@ export const GET = withErrorHandler(
     const colRef = adminDb.collection(`users/${userId}/dartsLiveStats`);
     const snapshot = await colRef.orderBy('date', 'asc').get();
 
-    const header = '日付,Rating,PPD,MPR,ゲーム数,コンディション,メモ';
+    const header = '日付,Rating,PPD,MPR,ゲーム数,コンディション,D-BULL,S-BULL,メモ';
     const rows: string[] = [header];
 
     snapshot.forEach((doc) => {
@@ -20,11 +20,13 @@ export const GET = withErrorHandler(
       const mpr = d.cricketStats?.mpr ?? '';
       const games = d.gamesPlayed ?? '';
       const condition = d.condition ?? '';
+      const dBull = d.bullStats?.dBull ?? '';
+      const sBull = d.bullStats?.sBull ?? '';
       let memo = (d.memo ?? '').replace(/"/g, '""');
       // CSV injection防止: 先頭が =, +, -, @, \t, \r の場合はシングルクォートで無害化
       if (/^[=+\-@\t\r]/.test(memo)) memo = `'${memo}`;
 
-      rows.push(`${dateStr},${rating},${ppd},${mpr},${games},${condition},"${memo}"`);
+      rows.push(`${dateStr},${rating},${ppd},${mpr},${games},${condition},${dBull},${sBull},"${memo}"`);
     });
 
     const csv = rows.join('\n');

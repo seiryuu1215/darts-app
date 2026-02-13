@@ -61,11 +61,26 @@ async function scrapeStats(
       }
     });
 
+    // Awards (D-BULL / S-BULL)
+    let dBullTotal = 0;
+    let sBullTotal = 0;
+    document.querySelectorAll('table tr').forEach((row) => {
+      const th = row.querySelector('th')?.textContent?.trim();
+      const totalTd = row.querySelector('td.total');
+      if (th && totalTd) {
+        const val = parseInt(totalTd.textContent?.trim()?.replace(/,/g, '') || '0', 10);
+        if (th === 'D-BULL' && !isNaN(val)) dBullTotal = val;
+        if (th === 'S-BULL' && !isNaN(val)) sBullTotal = val;
+      }
+    });
+
     return {
       rating: ratingRef ?? ratingInt,
       ratingInt,
       stats01Avg: stats01Avg === null || isNaN(stats01Avg) ? null : stats01Avg,
       statsCriAvg: statsCriAvg === null || isNaN(statsCriAvg) ? null : statsCriAvg,
+      dBullTotal,
+      sBullTotal,
     };
   });
 }
@@ -147,6 +162,7 @@ export async function GET(request: NextRequest) {
                   ratingInt: stats.ratingInt,
                   stats01Avg: stats.stats01Avg,
                   statsCriAvg: stats.statsCriAvg,
+                  bullStats: { dBull: stats.dBullTotal, sBull: stats.sBullTotal },
                   prevRating: prevData?.rating ?? null,
                   prevStats01Avg: prevData?.stats01Avg ?? null,
                   prevStatsCriAvg: prevData?.statsCriAvg ?? null,
@@ -179,6 +195,8 @@ export async function GET(request: NextRequest) {
                   ppd: stats.stats01Avg,
                   mpr: stats.statsCriAvg,
                   avg01: stats.stats01Avg,
+                  dBullTotal: stats.dBullTotal,
+                  sBullTotal: stats.sBullTotal,
                 },
                 condition: null,
                 updatedAt: FieldValue.serverTimestamp(),

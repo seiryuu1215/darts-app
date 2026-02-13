@@ -2,6 +2,7 @@
 
 import { Paper, Box, Typography, useTheme } from '@mui/material';
 import AdjustIcon from '@mui/icons-material/Adjust';
+import PercentileChip from './PercentileChip';
 import {
   ResponsiveContainer,
   PieChart,
@@ -14,13 +15,22 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
+  LineChart,
+  Line,
 } from 'recharts';
+
+export interface BullHistoryEntry {
+  date: string;
+  dBull: number | null;
+  sBull: number | null;
+}
 
 interface BullStatsCardProps {
   awards: Record<string, { monthly: number; total: number }>;
+  bullHistory?: BullHistoryEntry[];
 }
 
-export default function BullStatsCard({ awards }: BullStatsCardProps) {
+export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const chartText = isDark ? '#ccc' : '#666';
@@ -55,9 +65,10 @@ export default function BullStatsCard({ awards }: BullStatsCardProps) {
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
         <AdjustIcon sx={{ fontSize: 18, color: DBULL_COLOR }} />
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', flex: 1 }}>
           ブル統計
         </Typography>
+        <PercentileChip type="bull" value={totalBulls} />
       </Box>
 
       {/* 数値サマリー */}
@@ -161,6 +172,52 @@ export default function BullStatsCard({ awards }: BullStatsCardProps) {
           </Box>
         )}
       </Box>
+
+      {/* ブル累計推移チャート */}
+      {bullHistory && bullHistory.length >= 2 && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            ブル累計推移
+          </Typography>
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart
+              data={bullHistory.map((h) => ({
+                date: h.date.slice(5, 10).replace('-', '/'),
+                'D-BULL': h.dBull,
+                'S-BULL': h.sBull,
+                合計: (h.dBull ?? 0) + (h.sBull ?? 0),
+              }))}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+              <XAxis dataKey="date" fontSize={10} tick={{ fill: chartText }} />
+              <YAxis fontSize={10} tick={{ fill: chartText }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: chartTooltipBg,
+                  border: `1px solid ${chartTooltipBorder}`,
+                  borderRadius: 6,
+                  color: chartText,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="D-BULL"
+                stroke={DBULL_COLOR}
+                dot={false}
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="S-BULL"
+                stroke={SBULL_COLOR}
+                dot={false}
+                strokeWidth={2}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Box>
+      )}
     </Paper>
   );
 }

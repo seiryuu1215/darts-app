@@ -4,7 +4,7 @@ import { Chip, Tooltip } from '@mui/material';
 import { getPercentile, getPercentileColor } from '@/lib/dartslive-percentile';
 
 interface PercentileChipProps {
-  type: 'rating' | 'ppd' | 'mpr' | 'countup';
+  type: 'rating' | 'ppd' | 'mpr' | 'countup' | 'bull';
   value: number;
 }
 
@@ -13,6 +13,7 @@ const TYPE_LABELS: Record<string, string> = {
   ppd: 'PPD',
   mpr: 'MPR',
   countup: 'COUNT-UP',
+  bull: 'ブル累計',
 };
 
 export default function PercentileChip({ type, value }: PercentileChipProps) {
@@ -22,7 +23,7 @@ export default function PercentileChip({ type, value }: PercentileChipProps) {
 
   return (
     <Tooltip
-      title={`あなたの ${label} ${type === 'countup' ? Math.round(value) : value.toFixed(2)} は DARTSLIVEプレイヤーの上位約 ${percentile}% に位置します。\n※ DARTSLIVE公式分布(2024)を参考にした推定値です`}
+      title={`あなたの ${label} ${type === 'countup' || type === 'bull' ? Math.round(value).toLocaleString() : value.toFixed(2)} は DARTSLIVEプレイヤーの上位約 ${percentile}% に位置します。\n※ DARTSLIVE公式分布(2024)を参考にした推定値です`}
       arrow
     >
       <Chip

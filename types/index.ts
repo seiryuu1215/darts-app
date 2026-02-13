@@ -176,6 +176,7 @@ export interface DartsLiveStats {
   };
   bullRate: number | null;
   hatTricks: number | null;
+  bullStats?: { dBull: number; sBull: number } | null;
   condition: 1 | 2 | 3 | 4 | 5;
   memo: string;
   createdAt: Timestamp;

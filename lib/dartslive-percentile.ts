@@ -85,7 +85,21 @@ const COUNTUP_THRESHOLDS = [
   { value: 900, percentile: 0.3 },
 ];
 
-type PercentileType = 'rating' | 'ppd' | 'mpr' | 'countup';
+// ブル累計 分布 (Rating帯 × 平均プレイ期間から推定)
+const BULL_THRESHOLDS = [
+  { value: 50, percentile: 85 },
+  { value: 100, percentile: 75 },
+  { value: 200, percentile: 60 },
+  { value: 500, percentile: 40 },
+  { value: 1000, percentile: 25 },
+  { value: 2000, percentile: 15 },
+  { value: 3000, percentile: 10 },
+  { value: 5000, percentile: 5 },
+  { value: 10000, percentile: 2 },
+  { value: 20000, percentile: 0.5 },
+];
+
+type PercentileType = 'rating' | 'ppd' | 'mpr' | 'countup' | 'bull';
 
 function interpolatePercentile(
   thresholds: { value: number; percentile: number }[],
@@ -127,7 +141,13 @@ export function getPercentile(type: PercentileType, value: number): number {
   }
 
   const thresholds =
-    type === 'ppd' ? PPD_THRESHOLDS : type === 'mpr' ? MPR_THRESHOLDS : COUNTUP_THRESHOLDS;
+    type === 'ppd'
+      ? PPD_THRESHOLDS
+      : type === 'mpr'
+        ? MPR_THRESHOLDS
+        : type === 'bull'
+          ? BULL_THRESHOLDS
+          : COUNTUP_THRESHOLDS;
   return Math.max(0.1, Math.round(interpolatePercentile(thresholds, value) * 10) / 10);
 }
 

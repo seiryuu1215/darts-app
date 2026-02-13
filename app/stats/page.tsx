@@ -66,6 +66,8 @@ interface StatsHistoryRecord {
   gamesPlayed: number;
   condition: number | null;
   memo: string;
+  dBull: number | null;
+  sBull: number | null;
 }
 
 interface DartsliveData {
@@ -380,7 +382,12 @@ export default function StatsPage() {
             />
 
             {/* 5. Bull Stats */}
-            <BullStatsCard awards={c.awards} />
+            <BullStatsCard
+              awards={c.awards}
+              bullHistory={periodRecords
+                .filter((r) => r.dBull != null || r.sBull != null)
+                .map((r) => ({ date: r.date, dBull: r.dBull, sBull: r.sBull }))}
+            />
 
             {/* 6. COUNT-UP Delta */}
             <CountUpDeltaChart games={dlData.recentGames.games} />

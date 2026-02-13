@@ -76,6 +76,8 @@ export const GET = withErrorHandler(
       gamesPlayed: number;
       condition: number | null;
       memo: string;
+      dBull: number | null;
+      sBull: number | null;
     }> = [];
 
     snapshot.forEach((doc) => {
@@ -90,6 +92,8 @@ export const GET = withErrorHandler(
         gamesPlayed: d.gamesPlayed ?? 0,
         condition: d.condition ?? null,
         memo: d.memo ?? '',
+        dBull: d.bullStats?.dBull ?? null,
+        sBull: d.bullStats?.sBull ?? null,
       });
     });
 

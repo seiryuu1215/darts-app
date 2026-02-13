@@ -193,6 +193,10 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
       },
       bullRate: null,
       hatTricks: null,
+      bullStats:
+        stats.dBullTotal != null && stats.sBullTotal != null
+          ? { dBull: Number(stats.dBullTotal), sBull: Number(stats.sBullTotal) }
+          : null,
       condition,
       memo,
       createdAt: FieldValue.serverTimestamp(),
