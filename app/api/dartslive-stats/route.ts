@@ -44,8 +44,7 @@ async function scrapeProfile(
   });
 
   const topData = await page.evaluate(() => {
-    const cardName =
-      document.querySelector('h2.playerName')?.textContent?.trim() || '';
+    const cardName = document.querySelector('h2.playerName')?.textContent?.trim() || '';
     return { cardName };
   });
 
@@ -78,16 +77,28 @@ async function scrapeProfile(
       const text = link.textContent || '';
       if (link.href.includes('nickname')) {
         // 通り名\n\t\n\t@seiryuu_darts → extract after 通り名
-        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        const parts = text
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
         toorina = parts.length > 1 ? parts[parts.length - 1] : '';
       } else if (link.href.includes('homeshop')) {
-        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        const parts = text
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
         homeShop = parts.length > 1 ? parts[parts.length - 1] : '';
       } else if (link.href.includes('status')) {
-        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        const parts = text
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
         status = parts.length > 1 ? parts[parts.length - 1] : '';
       } else if (link.href.includes('aws')) {
-        const parts = text.split('\n').map(s => s.trim()).filter(Boolean);
+        const parts = text
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
         myAward = parts.length > 1 ? parts[1] : '';
       }
     }
