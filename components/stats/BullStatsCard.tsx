@@ -72,8 +72,8 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
       </Box>
 
       {/* 数値サマリー */}
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Paper variant="outlined" sx={{ flex: 1, p: 1.5, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        <Paper variant="outlined" sx={{ flex: '1 1 auto', minWidth: 90, p: 1.5, textAlign: 'center' }}>
           <Typography variant="caption" sx={{ color: DBULL_COLOR, fontWeight: 'bold' }}>
             D-BULL
           </Typography>
@@ -84,7 +84,7 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
             今月 {dBull.monthly}
           </Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ flex: 1, p: 1.5, textAlign: 'center' }}>
+        <Paper variant="outlined" sx={{ flex: '1 1 auto', minWidth: 90, p: 1.5, textAlign: 'center' }}>
           <Typography variant="caption" sx={{ color: SBULL_COLOR, fontWeight: 'bold' }}>
             S-BULL
           </Typography>
@@ -95,7 +95,7 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
             今月 {sBull.monthly}
           </Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ flex: 1, p: 1.5, textAlign: 'center' }}>
+        <Paper variant="outlined" sx={{ flex: '1 1 auto', minWidth: 90, p: 1.5, textAlign: 'center' }}>
           <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
             累計ブル
           </Typography>

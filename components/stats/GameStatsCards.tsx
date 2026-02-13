@@ -31,7 +31,7 @@ export default function GameStatsCards({
   expectedCountUp,
 }: GameStatsCardsProps) {
   return (
-    <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+    <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
       {/* 01 */}
       <Paper sx={{ flex: 1, p: 1.5, borderRadius: 2, borderTop: `3px solid ${COLOR_01}` }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

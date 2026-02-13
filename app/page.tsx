@@ -99,12 +99,6 @@ const featureCards: FeatureCard[] = [
     icon: <QuizIcon sx={{ fontSize: 40 }} />,
   },
   {
-    title: 'ディスカッション',
-    description: 'テーマ別掲示板で知見を共有',
-    href: '/discussions',
-    icon: <ForumIcon sx={{ fontSize: 40 }} />,
-  },
-  {
     title: 'セッティング比較',
     description: '自分のセッティングを並べて比較',
     href: '/darts/compare',
@@ -308,7 +302,7 @@ export default function HomePage() {
                       textDecoration: 'none',
                       display: 'flex',
                       flexDirection: 'row',
-                      height: 100,
+                      height: 110,
                       borderLeft: 4,
                       borderColor: color === 'info' ? 'info.main' : 'grey.500',
                     }}
@@ -354,7 +348,16 @@ export default function HomePage() {
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap>
                         {activeDart.barrel.brand} {activeDart.barrel.name} (
-                        {activeDart.barrel.weight}g)
+                        {activeDart.barrel.weight}g
+                        {activeDart.barrel.maxDiameter
+                          ? ` / Φ${activeDart.barrel.maxDiameter}mm`
+                          : ''}
+                        )
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ opacity: 0.7 }}>
+                        {[activeDart.tip.name, activeDart.shaft.name, activeDart.flight.name]
+                          .filter(Boolean)
+                          .join(' / ')}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -363,7 +366,7 @@ export default function HomePage() {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      height: 100,
+                      height: 110,
                       px: 2,
                       borderLeft: 4,
                       borderColor: color === 'info' ? 'info.main' : 'grey.500',

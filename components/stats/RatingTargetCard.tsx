@@ -29,7 +29,7 @@ export default function RatingTargetCard({
           01 Rt: {target.current01Rt.toFixed(2)} / Cri Rt: {target.currentCriRt.toFixed(2)}
         </Typography>
       </Box>
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
         <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderColor: COLOR_01 + '44' }}>
           <Typography variant="caption" sx={{ color: COLOR_01, fontWeight: 'bold' }}>
             01だけで上げる場合
@@ -74,7 +74,7 @@ export default function RatingTargetCard({
         <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
           均等に上げる場合
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               PPD{' '}

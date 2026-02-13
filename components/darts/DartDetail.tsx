@@ -39,6 +39,7 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -75,6 +76,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
   const [newMemoText, setNewMemoText] = useState('');
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyMemo, setHistoryMemo] = useState('');
+  const [historyStartDate, setHistoryStartDate] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const isOwner = session?.user?.id === dart.userId;
   const activeField = dart.tip.type === 'soft' ? 'activeSoftDartId' : 'activeSteelDartId';
@@ -177,6 +179,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
     } else {
       // 使用中にする → ダイアログを開く
       setHistoryMemo('');
+      setHistoryStartDate(new Date().toISOString().slice(0, 10));
       setHistoryDialogOpen(true);
     }
   };
@@ -230,6 +233,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       }
 
       // 新しい履歴エントリ作成
+      const today = new Date().toISOString().slice(0, 10);
+      const useCustomDate = historyStartDate && historyStartDate !== today;
       await addDoc(histRef, {
         dartId,
         dartType: dart.tip.type,
@@ -239,7 +244,9 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         shaft: dart.shaft,
         flight: dart.flight,
         imageUrl: dart.imageUrls[0] || null,
-        startedAt: serverTimestamp(),
+        startedAt: useCustomDate
+          ? Timestamp.fromDate(new Date(historyStartDate + 'T00:00:00'))
+          : serverTimestamp(),
         endedAt: null,
         changeType,
         changedParts,
@@ -767,6 +774,16 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           <DialogContentText sx={{ mb: 2 }}>
             「{dart.title}」を使用中にします。変更理由を記録できます（任意）。
           </DialogContentText>
+          <TextField
+            label="開始日"
+            type="date"
+            fullWidth
+            value={historyStartDate}
+            onChange={(e) => setHistoryStartDate(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            disabled={historyLoading}
+            sx={{ mb: 2 }}
+          />
           <TextField
             autoFocus
             fullWidth

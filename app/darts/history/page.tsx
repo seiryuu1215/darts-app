@@ -11,9 +11,19 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import Link from 'next/link';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -48,6 +58,12 @@ export default function SettingHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [dartType, setDartType] = useState<'soft' | 'steel'>('soft');
+  const [editEntry, setEditEntry] = useState<SettingHistory | null>(null);
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editIsCurrent, setEditIsCurrent] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -73,6 +89,68 @@ export default function SettingHistoryPage() {
     };
     fetchHistory();
   }, [session]);
+
+  const openEditDialog = (entry: SettingHistory) => {
+    const startTs = entry.startedAt as { toDate?: () => Date } | null;
+    const endTs = entry.endedAt as { toDate?: () => Date } | null;
+    setEditEntry(entry);
+    setEditStartDate(
+      startTs?.toDate ? startTs.toDate().toISOString().slice(0, 10) : '',
+    );
+    setEditEndDate(
+      endTs?.toDate ? endTs.toDate().toISOString().slice(0, 10) : '',
+    );
+    setEditIsCurrent(entry.endedAt === null);
+    setEditError('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!session?.user?.id || !editEntry?.id) return;
+    if (!editStartDate) {
+      setEditError('開始日は必須です');
+      return;
+    }
+    if (!editIsCurrent && editEndDate) {
+      if (new Date(editEndDate) <= new Date(editStartDate)) {
+        setEditError('終了日は開始日より後にしてください');
+        return;
+      }
+    }
+    setEditSaving(true);
+    try {
+      const ref = doc(db, 'users', session.user.id, 'settingHistory', editEntry.id);
+      await updateDoc(ref, {
+        startedAt: Timestamp.fromDate(new Date(editStartDate + 'T00:00:00')),
+        endedAt: editIsCurrent
+          ? null
+          : editEndDate
+            ? Timestamp.fromDate(new Date(editEndDate + 'T00:00:00'))
+            : null,
+      });
+      // ローカルステートを更新
+      setHistory((prev) =>
+        prev.map((h) =>
+          h.id === editEntry.id
+            ? {
+                ...h,
+                startedAt: Timestamp.fromDate(new Date(editStartDate + 'T00:00:00')),
+                endedAt: editIsCurrent
+                  ? null
+                  : editEndDate
+                    ? Timestamp.fromDate(new Date(editEndDate + 'T00:00:00'))
+                    : null,
+              }
+            : h,
+        ),
+      );
+      setEditEntry(null);
+    } catch (err) {
+      console.error('期間更新エラー:', err);
+      setEditError('保存に失敗しました');
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   if (status === 'loading') return null;
   if (!session) return null;
@@ -194,6 +272,16 @@ export default function SettingHistoryPage() {
                       {days && ` (${days}日間)`}
                     </Typography>
                     {isCurrent && <Chip label="使用中" size="small" color="success" />}
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openEditDialog(entry);
+                      }}
+                      sx={{ ml: 'auto' }}
+                    >
+                      <EditIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
                   </Box>
 
                   {/* 変更タイプチップ */}
@@ -275,6 +363,62 @@ export default function SettingHistoryPage() {
           })}
         </Box>
       )}
+      {/* 期間編集ダイアログ */}
+      <Dialog
+        open={!!editEntry}
+        onClose={() => !editSaving && setEditEntry(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>使用期間を編集</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="開始日"
+              type="date"
+              value={editStartDate}
+              onChange={(e) => setEditStartDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              disabled={editSaving}
+              required
+            />
+            <TextField
+              label="終了日"
+              type="date"
+              value={editEndDate}
+              onChange={(e) => setEditEndDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              disabled={editSaving || editIsCurrent}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editIsCurrent}
+                  onChange={(e) => {
+                    setEditIsCurrent(e.target.checked);
+                    if (e.target.checked) setEditEndDate('');
+                  }}
+                  disabled={editSaving}
+                />
+              }
+              label="現在も使用中"
+            />
+            {editError && (
+              <Typography variant="caption" color="error">
+                {editError}
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditEntry(null)} disabled={editSaving}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSaveEdit} variant="contained" disabled={editSaving}>
+            {editSaving ? '保存中...' : '保存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

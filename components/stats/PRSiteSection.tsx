@@ -6,21 +6,21 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 const PR_BRANDS = [
   {
-    name: 'JOKER DRIVER',
+    name: 'JOKER DIRECT',
     description: '日本製高精度バレル',
-    url: 'https://www.jokerdriver.com/',
+    url: 'https://jokerdirect.jp/smp/',
     color: '#1a1a1a',
   },
   {
-    name: 'JOKER DRIVER ULTIMATE',
+    name: 'JOKER DRIVER',
     description: 'プレミアムライン',
-    url: 'https://jokerdriver-ultimate.com/',
+    url: 'https://jokerdriver.com',
     color: '#8B6914',
   },
   {
-    name: 'POINT ARM',
+    name: 'one mode',
     description: 'ポイントアーム搭載バレル',
-    url: 'https://one-mode.jp/',
+    url: 'https://onemode.base.shop',
     color: '#2E7D32',
   },
 ];

@@ -41,7 +41,7 @@ export default function AwardsTable({ awards }: AwardsTableProps) {
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
         Award & Feats
       </Typography>
-      <TableContainer>
+      <TableContainer sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>

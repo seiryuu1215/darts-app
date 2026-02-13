@@ -85,7 +85,7 @@ export default function CountUpDeltaChart({ games }: CountUpDeltaChartProps) {
         直近{chartData.length}回のスコア変動（緑=UP, 赤=DOWN）
       </Typography>
       <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ minWidth: Math.max(300, chartData.length * 18) }}>
+        <Box sx={{ minWidth: Math.max(280, chartData.length * 14) }}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
