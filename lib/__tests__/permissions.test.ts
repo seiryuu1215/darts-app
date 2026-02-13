@@ -60,8 +60,11 @@ describe('canUseDartslive', () => {
 });
 
 describe('canWriteArticles', () => {
-  it('returns true for pro', () => {
-    expect(canWriteArticles('pro')).toBe(true);
+  it('returns true for admin', () => {
+    expect(canWriteArticles('admin')).toBe(true);
+  });
+  it('returns false for pro', () => {
+    expect(canWriteArticles('pro')).toBe(false);
   });
   it('returns false for general', () => {
     expect(canWriteArticles('general')).toBe(false);
