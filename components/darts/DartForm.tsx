@@ -366,7 +366,7 @@ export default function DartForm({
       const targetDartId = dartId || doc(collection(db, 'darts')).id;
 
       for (const file of newImages) {
-        const storageRef = ref(storage, `images/darts/${targetDartId}/${file.name}`);
+        const storageRef = ref(storage, `darts/${session.user.id}/${targetDartId}/${file.name}`);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
         uploadedUrls.push(url);
