@@ -103,7 +103,7 @@ async function main() {
   // 管理者ユーザー
   const userSnapshot = await db
     .collection('users')
-    .where('email', '==', 'mt.oikawa@gmail.com')
+    .where('email', '==', process.env.ADMIN_EMAIL || '')
     .get();
   let userId = '',
     userName = '';

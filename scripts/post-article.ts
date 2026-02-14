@@ -153,7 +153,7 @@ async function main() {
   }
 
   // 管理者ユーザー取得
-  const ADMIN_EMAIL = 'mt.oikawa@gmail.com';
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
   const userSnapshot = await db.collection('users').where('email', '==', ADMIN_EMAIL).get();
   let userId = '';
   let userName = '';

@@ -26,7 +26,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
 
 const db = getFirestore(app);
 
-const ADMIN_EMAIL = 'mt.oikawa@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 
 const article = {
   slug: 'darts-lab-future-features',

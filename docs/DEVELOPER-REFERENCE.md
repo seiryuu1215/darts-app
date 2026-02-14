@@ -894,6 +894,34 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 - しかしNextAuthのJWTは次回トークンリフレッシュまで古いroleを持つ
 - `jwt` コールバックで毎回Firestoreからroleを再取得して対策済みだが、これも読み取りコストが発生する
 
+**7. ENCRYPTION_KEY のローテーション手順**
+
+DL認証情報の暗号化に使用する `ENCRYPTION_KEY`（AES-256-GCM）を更新する手順:
+
+```bash
+# 1. 新しい鍵を生成
+openssl rand -hex 32
+
+# 2. Vercel に新しい鍵を設定
+#    Vercel Dashboard → Settings → Environment Variables → ENCRYPTION_KEY を更新
+
+# 3. 既存の暗号化データを再暗号化
+#    現時点では既存の暗号化データ（users/{uid}/dartsliveCache の encryptedEmail/encryptedPassword）は
+#    旧鍵で暗号化されているため、鍵変更後は復号に失敗する。
+#    → 対象ユーザーに LINE から DL 認証情報を再登録してもらう必要がある。
+#
+#    もしダウンタイムなしで移行したい場合:
+#    a) 新旧両方の鍵で復号を試みるフォールバック処理を lib/crypto.ts に追加
+#    b) 全ユーザーの暗号化データを旧鍵で復号 → 新鍵で再暗号化する移行スクリプトを実行
+#    c) フォールバック処理を削除
+
+# 4. .env.local も更新
+#    ENCRYPTION_KEY=<新しい鍵>
+
+# 5. デプロイ
+vercel --prod
+```
+
 ---
 
 ## 9. テスト・CI・デプロイ

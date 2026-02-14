@@ -8,7 +8,7 @@
 | 初回作成日     | 2025-02-09                                                  |
 | 最終更新日     | 2026-02-13                                                  |
 | 対象範囲       | アプリケーション全体（GitHub公開 + Vercel本番デプロイ前提） |
-| 総合評価       | **B+**（重大脆弱性なし、改善推奨事項あり）                  |
+| 総合評価       | **A-**（重大脆弱性なし、全中優先度項目対応済み）            |
 
 ---
 
@@ -28,7 +28,7 @@
 | 10  | ファイルアップロード             |   OK   | Storage ルールで型制限 + 5MB上限 + パス認可              |
 | 11  | Webhook署名検証                  |   OK   | Stripe署名検証 + LINE HMAC-SHA256 timingSafeEqual        |
 | 12  | CSVインジェクション              |   OK   | 数式プレフィックス無害化済み                             |
-| 13  | セキュリティヘッダー             | 要改善 | 6種設定済みだがCSP未設定                                 |
+| 13  | セキュリティヘッダー             |   OK   | 7種設定済み（CSP nonce方式含む）                         |
 | 14  | レートリミット                   | 要改善 | インメモリ実装（サーバーレス環境の制約あり）             |
 | 15  | 依存ライブラリ                   |   OK   | `npm audit` 脆弱性0件（2026-02-13時点）                  |
 | 16  | エラーハンドリング               |   OK   | Sentry連携 + 汎用エラーメッセージ（内部詳細非露出）      |
@@ -95,9 +95,9 @@
 - [x] 権限関数は `lib/permissions.ts` に一元化
 - [x] `ADMIN_EMAIL` は `process.env.ADMIN_EMAIL` から読み取り
 
-**残存リスク:**
+**対応済み:**
 
-- スクリプト4ファイルに管理者メールアドレスがハードコード（後述 §2.3）
+- ~~スクリプト5ファイルに管理者メールアドレスがハードコード~~ → `process.env.ADMIN_EMAIL` に統一済み
 
 ---
 
@@ -131,16 +131,10 @@
 - [x] `lib/auth.ts` の `ADMIN_EMAIL` は環境変数化済み
 - [x] Firebase サービスアカウント JSON は未コミット
 
-**残存リスク（低）:**
+**対応済み:**
 
-- `scripts/` 配下4ファイルにメールアドレス `mt.oikawa@gmail.com` がハードコード
-  - `scripts/set-admin.ts:15`
-  - `scripts/seed-article.ts:29`
-  - `scripts/seed-articles-batch.ts:26`
-  - `scripts/post-article.ts:156`
-  - `scripts/post-article-from-json.ts:106`
-  - **影響**: 管理用スクリプト（本番実行されない）。GitHub公開時にメールが公開される
-  - **対応案**: `process.env.ADMIN_EMAIL` に統一するか、公開を許容
+- ~~`scripts/` 配下5ファイルにメールアドレスがハードコード~~ → `process.env.ADMIN_EMAIL` に統一済み
+  - `scripts/set-admin.ts`, `scripts/seed-article.ts`, `scripts/seed-articles-batch.ts`, `scripts/post-article.ts`, `scripts/post-article-from-json.ts`
 
 ---
 
@@ -314,9 +308,9 @@
 - [x] 認証タグによる改ざん検出
 - [x] 鍵は環境変数管理（ソースコードに含まれない）
 
-**改善推奨:**
+**対応済み:**
 
-- [ ] 鍵ローテーション手順の文書化
+- [x] 鍵ローテーション手順を `docs/DEVELOPER-REFERENCE.md` §8 に文書化済み
 
 ---
 
@@ -341,22 +335,26 @@ if (/^[=+\-@\t\r]/.test(memo)) memo = `'${memo}`;
 
 **ファイル:** `next.config.ts`（全ルートに適用）
 
-| ヘッダー                    | 値                                         |    状態    |
-| --------------------------- | ------------------------------------------ | :--------: |
-| `X-Content-Type-Options`    | `nosniff`                                  |     OK     |
-| `X-Frame-Options`           | `DENY`                                     |     OK     |
-| `Referrer-Policy`           | `strict-origin-when-cross-origin`          |     OK     |
-| `X-DNS-Prefetch-Control`    | `on`                                       |     OK     |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains`      |     OK     |
-| `Permissions-Policy`        | `camera=(), microphone=(), geolocation=()` |     OK     |
-| `Content-Security-Policy`   | **未設定**                                 | **要改善** |
+| ヘッダー                    | 値                                         | 状態 |
+| --------------------------- | ------------------------------------------ | :--: |
+| `X-Content-Type-Options`    | `nosniff`                                  |  OK  |
+| `X-Frame-Options`           | `DENY`                                     |  OK  |
+| `Referrer-Policy`           | `strict-origin-when-cross-origin`          |  OK  |
+| `X-DNS-Prefetch-Control`    | `on`                                       |  OK  |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains`      |  OK  |
+| `Permissions-Policy`        | `camera=(), microphone=(), geolocation=()` |  OK  |
+| `Content-Security-Policy`   | nonce方式（`proxy.ts` で設定）             |  OK  |
 
-**CSP未設定のリスク:**
+**CSP実装済み（`proxy.ts`）:**
 
-- HTTPレイヤーでのXSS緩和策がない
-- インラインスクリプト（テーマ初期化）がある場合、nonce/hash方式のCSPが必要
-- **影響度**: React自動エスケープでXSSリスク自体は低いため、実質的な攻撃面は限定的
-- **対応案**: `script-src 'self' 'nonce-{random}'` を導入（インラインスクリプトにnonce付与が必要）
+- `script-src 'self' 'nonce-{random}'` — インラインスクリプトにnonce付与
+- `style-src 'self' 'unsafe-inline'` — MUI/Emotion CSS-in-JS に必要
+- `img-src` — Firebase Storage, dartshive, wsrv.nl, dicebear, Twitter 画像を許可
+- `connect-src` — Firebase, Sentry の接続を許可
+- `frame-src` — Twitter埋め込みのみ許可
+- `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`
+- リクエストごとに `crypto.randomUUID()` でnonce生成
+- `app/layout.tsx` でnonceをインラインスクリプトに付与
 
 ---
 
@@ -467,11 +465,11 @@ found 0 vulnerabilities
 - [x] 画像プロキシAPIにSSRF対策済み
 - [x] Firestoreセキュリティルール設定済み
 - [x] Storageセキュリティルール設定済み
-- [x] セキュリティヘッダー設定済み（CSP除く）
+- [x] セキュリティヘッダー全7種設定済み（CSP nonce方式含む）
 
 ### 3.2 残存リスク（低）
 
-- [ ] `scripts/` 配下5ファイルにメールアドレスがハードコード（管理用スクリプト）
+- [x] ~~`scripts/` 配下5ファイルにメールアドレスがハードコード~~ → 環境変数化済み
 - [ ] Git履歴に過去コミットされた秘密情報がないか確認（`git log --all -p | grep -i secret` 等）
 
 ### 3.3 公開しても問題ない情報
@@ -491,7 +489,7 @@ found 0 vulnerabilities
 | `NEXT_PUBLIC_*`       | 公開変数として設定（ビルド時に埋め込み）                    |
 | Vercel Cron           | `vercel.json` で `/api/cron/daily-stats` のスケジュール設定 |
 | Preview Deployments   | 必要に応じてパスワード保護                                  |
-| Security Headers      | `next.config.ts` で6種設定済み                              |
+| Security Headers      | `next.config.ts` で6種 + `proxy.ts` でCSP設定済み           |
 
 ---
 
@@ -510,14 +508,14 @@ found 0 vulnerabilities
 | 7   | Webhook署名検証          | **完了** | Stripe + LINE 両方実装済み                           |
 | 8   | DL認証情報暗号化         | **完了** | AES-256-GCM（Cron用）                                |
 
-### 中優先度（今後検討）
+### 中優先度
 
-| #   | 項目                              | 説明                                      |
-| --- | --------------------------------- | ----------------------------------------- |
-| 1   | CSPヘッダー追加                   | `Content-Security-Policy` のnonce方式導入 |
-| 2   | scriptsのメールアドレス環境変数化 | 5ファイルのハードコード解消               |
-| 3   | 暗号鍵ローテーション手順文書化    | `ENCRYPTION_KEY` の更新手順               |
-| 4   | Redis分散レートリミット           | ユーザー増加時に検討                      |
+| #   | 項目                              | 状態     | 説明                                                    |
+| --- | --------------------------------- | -------- | ------------------------------------------------------- |
+| 1   | CSPヘッダー追加                   | **完了** | `proxy.ts` でnonce方式CSP導入、`layout.tsx` にnonce付与 |
+| 2   | scriptsのメールアドレス環境変数化 | **完了** | 5ファイルを `process.env.ADMIN_EMAIL` に統一            |
+| 3   | 暗号鍵ローテーション手順文書化    | **完了** | `docs/DEVELOPER-REFERENCE.md` §8 に記載                 |
+| 4   | Redis分散レートリミット           | 未着手   | ユーザー増加時に検討                                    |
 
 ### 低優先度
 

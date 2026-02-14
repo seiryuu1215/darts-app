@@ -12,7 +12,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-const ADMIN_EMAIL = 'mt.oikawa@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+if (!ADMIN_EMAIL) {
+  console.error('ADMIN_EMAILが設定されていません');
+  process.exit(1);
+}
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 if (!projectId) {
