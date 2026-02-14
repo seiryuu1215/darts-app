@@ -30,10 +30,14 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [bookmarked, setBookmarked] = useState(isBookmarked ?? false);
-  // isBookmarked prop が変わったら同期
-  if (isBookmarked !== undefined && isBookmarked !== bookmarked) {
-    setBookmarked(isBookmarked);
-  }
+  const [localToggled, setLocalToggled] = useState(false);
+
+  // 親のisBookmarked propが変わったら同期（ただしユーザーがローカルで操作済みなら無視）
+  useEffect(() => {
+    if (isBookmarked !== undefined && !localToggled) {
+      setBookmarked(isBookmarked);
+    }
+  }, [isBookmarked, localToggled]);
 
   useEffect(() => {
     // 親からisBookmarkedが提供されている場合はfetchスキップ
@@ -49,12 +53,17 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const handleBookmark = async () => {
     if (!session?.user?.id || !barrel.id) return;
     const bmRef = doc(db, 'users', session.user.id, 'barrelBookmarks', barrel.id);
-    if (bookmarked) {
-      await deleteDoc(bmRef);
-    } else {
-      await setDoc(bmRef, { barrelId: barrel.id, createdAt: serverTimestamp() });
+    try {
+      if (bookmarked) {
+        await deleteDoc(bmRef);
+      } else {
+        await setDoc(bmRef, { barrelId: barrel.id, createdAt: serverTimestamp() });
+      }
+      setBookmarked(!bookmarked);
+      setLocalToggled(true);
+    } catch (err) {
+      console.error('ブックマークエラー:', err);
     }
-    setBookmarked(!bookmarked);
   };
 
   const handleDraft = () => {
