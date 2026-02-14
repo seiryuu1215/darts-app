@@ -61,7 +61,8 @@ export default function RecentGamesChart({
 
   const selectedGame = playableGames.find((g) => g.category === gameChartCategory)
     || playableGames[0];
-  const isCountUpCategory = gameChartCategory.includes('COUNT');
+  const activeCat = selectedGame?.category ?? gameChartCategory;
+  const isCountUpCategory = activeCat.includes('COUNT');
   const gameChartData =
     selectedGame?.scores.map((score, i) => {
       const avg = selectedGame.scores.slice(0, i + 1).reduce((a, b) => a + b, 0) / (i + 1);
@@ -71,7 +72,7 @@ export default function RecentGamesChart({
   const gameAvg = selectedGame
     ? selectedGame.scores.reduce((a, b) => a + b, 0) / selectedGame.scores.length
     : 0;
-  const baseColor = getGameColor(gameChartCategory);
+  const baseColor = getGameColor(activeCat);
   const threshold = isCountUpCategory && expectedCountUp != null ? expectedCountUp : gameAvg;
   const dangerThreshold = isCountUpCategory ? dangerCountUp : null;
   const excellentThreshold = isCountUpCategory ? excellentCountUp : null;
@@ -218,7 +219,7 @@ export default function RecentGamesChart({
               <Chip
                 key={i}
                 label={
-                  gameChartCategory.includes('CRICKET') && !gameChartCategory.includes('COUNT')
+                  activeCat.includes('CRICKET') && !activeCat.includes('COUNT')
                     ? s.toFixed(2)
                     : s
                 }
