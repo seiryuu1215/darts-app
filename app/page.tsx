@@ -344,16 +344,24 @@ export default function HomePage() {
                         />
                       </Box>
                       <Typography variant="subtitle2" noWrap>
-                        {activeDart.title}
+                        {activeDart.barrel.name}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {activeDart.barrel.brand} {activeDart.barrel.name} (
-                        {activeDart.barrel.weight}g
-                        {activeDart.barrel.maxDiameter
-                          ? ` / Φ${activeDart.barrel.maxDiameter}mm`
-                          : ''}
-                        )
-                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', my: 0.3 }}>
+                        <Chip
+                          label={`${activeDart.barrel.weight}g`}
+                          size="small"
+                          variant="outlined"
+                          sx={{ height: 18, '& .MuiChip-label': { px: 0.7, fontSize: '0.65rem' } }}
+                        />
+                        {activeDart.barrel.maxDiameter && (
+                          <Chip
+                            label={`Φ${activeDart.barrel.maxDiameter}mm`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 18, '& .MuiChip-label': { px: 0.7, fontSize: '0.65rem' } }}
+                          />
+                        )}
+                      </Box>
                       <Typography variant="caption" color="text.secondary" noWrap sx={{ opacity: 0.7 }}>
                         {[activeDart.tip.name, activeDart.shaft.name, activeDart.flight.name]
                           .filter(Boolean)
