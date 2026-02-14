@@ -358,11 +358,19 @@ export default function HomePage() {
                             label={`Φ${activeDart.barrel.maxDiameter}mm`}
                             size="small"
                             variant="outlined"
-                            sx={{ height: 18, '& .MuiChip-label': { px: 0.7, fontSize: '0.65rem' } }}
+                            sx={{
+                              height: 18,
+                              '& .MuiChip-label': { px: 0.7, fontSize: '0.65rem' },
+                            }}
                           />
                         )}
                       </Box>
-                      <Typography variant="caption" color="text.secondary" noWrap sx={{ opacity: 0.7 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                        sx={{ opacity: 0.7 }}
+                      >
                         {[activeDart.tip.name, activeDart.shaft.name, activeDart.flight.name]
                           .filter(Boolean)
                           .join(' / ')}

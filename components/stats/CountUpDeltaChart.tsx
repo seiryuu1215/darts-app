@@ -79,7 +79,9 @@ export default function CountUpDeltaChart({ games, avgScore }: CountUpDeltaChart
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}
+      >
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           COUNT-UP ±差分
         </Typography>

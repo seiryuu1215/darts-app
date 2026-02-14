@@ -59,8 +59,8 @@ export default function RecentGamesChart({
 
   if (playableGames.length === 0) return null;
 
-  const selectedGame = playableGames.find((g) => g.category === gameChartCategory)
-    || playableGames[0];
+  const selectedGame =
+    playableGames.find((g) => g.category === gameChartCategory) || playableGames[0];
   const activeCat = selectedGame?.category ?? gameChartCategory;
   const isCountUpCategory = activeCat.includes('COUNT');
   const gameChartData =
@@ -219,9 +219,7 @@ export default function RecentGamesChart({
               <Chip
                 key={i}
                 label={
-                  activeCat.includes('CRICKET') && !activeCat.includes('COUNT')
-                    ? s.toFixed(2)
-                    : s
+                  activeCat.includes('CRICKET') && !activeCat.includes('COUNT') ? s.toFixed(2) : s
                 }
                 size="small"
                 variant={chipColor ? 'filled' : 'outlined'}

@@ -65,6 +65,7 @@ darts-app/
 ```
 
 **読む順序のおすすめ:**
+
 1. `types/index.ts` — まずデータモデルを把握
 2. `lib/permissions.ts` — ロール体系を理解
 3. `app/layout.tsx` + `components/Providers.tsx` — アプリの骨格
@@ -103,16 +104,22 @@ export default function RootLayout({ children }) {
     <html>
       <body>
         {/* ↓ テーマのチラつき防止（React hydration前に実行） */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           (function() {
             var t = localStorage.getItem('colorMode') ||
                     (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', t);
           })();
-        ` }} />
+        `,
+          }}
+        />
 
-        <Providers>       {/* SessionProvider + ThemeProvider + Firebase同期 */}
-          <Header />       {/* ナビゲーションバー */}
+        <Providers>
+          {' '}
+          {/* SessionProvider + ThemeProvider + Firebase同期 */}
+          <Header /> {/* ナビゲーションバー */}
           <main>{children}</main>
           <Footer />
         </Providers>
@@ -123,6 +130,7 @@ export default function RootLayout({ children }) {
 ```
 
 **ポイント:**
+
 - `suppressHydrationWarning` が `<html>` と `<body>` についている。これはダークモードの `data-theme` 属性がサーバーとクライアントで異なるためのReact警告抑制
 - インラインスクリプトでテーマを即座に適用し、白→黒のフラッシュを防止
 
@@ -150,9 +158,9 @@ export default function AdminPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'loading') return;  // セッション読み込み中は何もしない
+    if (status === 'loading') return; // セッション読み込み中は何もしない
     if (!session || session.user.role !== 'admin') {
-      router.push('/');  // 未認証 or 権限不足 → リダイレクト
+      router.push('/'); // 未認証 or 権限不足 → リダイレクト
       return;
     }
     // データフェッチ
@@ -171,9 +179,9 @@ export default function AdminPage() {
 
 ### なぜ2つの認証が必要？
 
-| レイヤー | 使うもの | 何のため？ |
-|----------|----------|-----------|
-| **NextAuth.js** | JWTセッション | ページのログイン状態管理、APIルートの認証 |
+| レイヤー          | 使うもの         | 何のため？                                          |
+| ----------------- | ---------------- | --------------------------------------------------- |
+| **NextAuth.js**   | JWTセッション    | ページのログイン状態管理、APIルートの認証           |
 | **Firebase Auth** | カスタムトークン | **クライアントからFirestoreに直接読み書き**するため |
 
 Firestoreのセキュリティルール（`firestore.rules`）は `request.auth` を見て認証判定する。これはFirebase Authのトークンでしか動かない。だからNextAuthで認証した後、Firebase Authにもログインさせる必要がある。
@@ -208,14 +216,16 @@ Firestoreのセキュリティルール（`firestore.rules`）は `request.auth`
 ```typescript
 // lib/auth.ts（重要部分のみ）
 export const authOptions: NextAuthOptions = {
-  session: { strategy: 'jwt' },  // DBセッションではなくJWTを使用
+  session: { strategy: 'jwt' }, // DBセッションではなくJWTを使用
 
   providers: [
     CredentialsProvider({
       async authorize(credentials) {
         // Firebase Auth でメール/パスワード認証
         const userCredential = await signInWithEmailAndPassword(
-          getAuth(), credentials.email, credentials.password
+          getAuth(),
+          credentials.email,
+          credentials.password,
         );
         const uid = userCredential.user.uid;
 
@@ -224,7 +234,7 @@ export const authOptions: NextAuthOptions = {
         const role = userDoc.data()?.role ?? 'general';
 
         return { id: uid, email: credentials.email, role };
-      }
+      },
     }),
     // GoogleProviderもあり
   ],
@@ -245,32 +255,32 @@ export const authOptions: NextAuthOptions = {
     },
     // セッションオブジェクトに情報を公開
     async session({ session, token }) {
-      session.user.id = token.sub;     // Firebase UID
+      session.user.id = token.sub; // Firebase UID
       session.user.role = token.role;
       session.user.subscriptionStatus = token.subscriptionStatus;
       return session;
-    }
-  }
+    },
+  },
 };
 ```
 
 ### Firebase SDK 2種類の使い分け
 
-| SDK | 初期化ファイル | 用途 | 実行環境 |
-|-----|------|------|---------|
-| **Client SDK** | `lib/firebase.ts` | Firestore読み書き、Storage画像アップロード | ブラウザ |
-| **Admin SDK** | `lib/firebase-admin.ts` | ユーザー管理、カスタムトークン発行、Cron処理 | サーバー（API Routes） |
+| SDK            | 初期化ファイル          | 用途                                         | 実行環境               |
+| -------------- | ----------------------- | -------------------------------------------- | ---------------------- |
+| **Client SDK** | `lib/firebase.ts`       | Firestore読み書き、Storage画像アップロード   | ブラウザ               |
+| **Admin SDK**  | `lib/firebase-admin.ts` | ユーザー管理、カスタムトークン発行、Cron処理 | サーバー（API Routes） |
 
 ```typescript
 // lib/firebase.ts — Client SDK（NEXT_PUBLIC_ 環境変数を使用）
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-export const db = getFirestore(app);      // ← コンポーネントで import して使う
+export const db = getFirestore(app); // ← コンポーネントで import して使う
 export const storage = getStorage(app);
 export const auth = getAuth(app);
 
 // lib/firebase-admin.ts — Admin SDK（秘密鍵を使用）
 const app = initializeApp({ credential: cert(serviceAccount) });
-export const adminDb = getFirestore(app);  // ← API Routeで import して使う
+export const adminDb = getFirestore(app); // ← API Routeで import して使う
 ```
 
 **重要:** Client SDKは `NEXT_PUBLIC_` プレフィックスの環境変数を使うため、ブラウザに公開される。ただしFirebase APIキーは「このプロジェクトにアクセスする識別子」であり、セキュリティルールが実際のアクセス制御を担う。
@@ -328,10 +338,10 @@ const q = query(
   collection(db, 'darts'),
   where('userId', '==', session.user.id),
   orderBy('createdAt', 'desc'),
-  limit(20)
+  limit(20),
 );
 const snapshot = await getDocs(q);
-const darts = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Dart));
+const darts = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Dart);
 ```
 
 **書き込み（クライアントから直接）:**
@@ -407,6 +417,7 @@ service cloud.firestore {
 ```
 
 **ルール設計のポイント:**
+
 - `read: if true` → 未ログインでも閲覧OK（公開データ）
 - `read: if isSignedIn()` → ログインユーザーのみ
 - `write: if false` → Admin SDKからのみ操作可能
@@ -421,6 +432,7 @@ service cloud.firestore {
 アプリのランディングページ。ログイン状態で表示内容が大きく変わる。
 
 **構成:**
+
 ```
 ホーム画面
 ├── 使用中ダーツカード（ログイン時のみ）
@@ -438,14 +450,17 @@ service cloud.firestore {
 ```
 
 **2カラムレイアウトの実装（`components/layout/TwoColumnLayout.tsx`）:**
+
 ```tsx
 // PC: メインコンテンツ + サイドバー の2カラム
 // モバイル: メインコンテンツのみ1カラム
-<Box sx={{
-  display: 'flex',
-  gap: 3,
-  flexDirection: { xs: 'column', md: 'row' }  // ← MUIのレスポンシブブレークポイント
-}}>
+<Box
+  sx={{
+    display: 'flex',
+    gap: 3,
+    flexDirection: { xs: 'column', md: 'row' }, // ← MUIのレスポンシブブレークポイント
+  }}
+>
   <Box sx={{ flex: 1 }}>{children}</Box>
   <Box sx={{ width: { md: 300 }, display: { xs: 'none', md: 'block' } }}>
     <Sidebar />
@@ -520,7 +535,7 @@ const handleImageUpload = async (files: FileList) => {
     //                               ↑ storage.rules のパスと一致させる必要がある！
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
-    setImageUrls(prev => [...prev, url]);
+    setImageUrls((prev) => [...prev, url]);
   }
 };
 
@@ -542,14 +557,15 @@ useEffect(() => {
 
 ```typescript
 // 3つの状態ソース
-const [localOverride, setLocalOverride] = useState<boolean | null>(null);  // ユーザー操作
-const [fetched, setFetched] = useState<boolean | null>(null);              // Firestoreから取得
+const [localOverride, setLocalOverride] = useState<boolean | null>(null); // ユーザー操作
+const [fetched, setFetched] = useState<boolean | null>(null); // Firestoreから取得
 
 // 優先順位: ローカル操作 > 親からのprop > Firestore取得結果 > false
 const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 ```
 
 **なぜこうなっているか:**
+
 - 親コンポーネントの `isBookmarked` propは、ユーザーがブックマーク操作しても即座に更新されない（親の再fetchが必要）
 - 以前は `useEffect` で親のpropを `useState` に同期していたが、ユーザーのローカル操作を上書きしてしまうバグがあった
 - `??`（Nullish Coalescing）で「まだ値がない」状態と「falseと確定」を区別している
@@ -579,6 +595,7 @@ const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 ### 6-1. Stripe（サブスクリプション決済）
 
 **フロー:**
+
 ```
 ユーザー → /pricing → 「PRO登録」ボタン
     ↓
@@ -599,9 +616,9 @@ POST /api/stripe/webhook  ← Stripeが自動的に呼ぶ
 ```typescript
 // 1. 署名検証 — これがないと偽のWebhookを受け入れてしまう
 const event = stripe.webhooks.constructEvent(
-  await req.text(),                    // 生のリクエストボディ
+  await req.text(), // 生のリクエストボディ
   req.headers.get('stripe-signature'), // Stripeが付与する署名ヘッダー
-  process.env.STRIPE_WEBHOOK_SECRET   // 照合用シークレット
+  process.env.STRIPE_WEBHOOK_SECRET, // 照合用シークレット
 );
 
 // 2. 冪等性チェック — 同じイベントが2回来ても2回処理しない
@@ -612,10 +629,10 @@ await eventRef.set({ type: event.type, processed: true, createdAt: new Date() })
 
 // 3. イベント種別ごとの処理
 switch (event.type) {
-  case 'checkout.session.completed':   // 初回購入完了
+  case 'checkout.session.completed': // 初回購入完了
   case 'customer.subscription.updated': // プラン変更・更新
   case 'customer.subscription.deleted': // 解約
-  case 'invoice.payment_failed':       // 支払い失敗
+  case 'invoice.payment_failed': // 支払い失敗
 }
 ```
 
@@ -624,6 +641,7 @@ switch (event.type) {
 公式APIがないため、Puppeteerでブラウザを自動操作してデータ取得。
 
 **制約と設計:**
+
 - Vercel Serverless Functions上でChromiumを起動（`@sparticuz/chromium` パッケージ）
 - タイムアウト: 60秒（`maxDuration = 60`）
 - 認証情報はリクエストボディで受け取り、**サーバーメモリ上でのみ使用**、永続化しない
@@ -653,11 +671,13 @@ switch (event.type) {
 ### 6-3. LINE Messaging API
 
 **機能:**
+
 1. **アカウント連携** — WebアプリとLINEアカウントを紐づけ
 2. **日次スタッツ通知** — Cronで自動取得 → LINE Pushメッセージ
 3. **コンディション記録** — LINEチャットで「★3」→ メモ入力 → Firestore保存
 
 **連携フロー:**
+
 ```
 [Webアプリ] POST /api/line/link → 8桁コード生成（10分有効）
     ↓
@@ -671,6 +691,7 @@ switch (event.type) {
 ```
 
 **日次Cron（`app/api/cron/daily-stats/route.ts`）:**
+
 ```
 Vercel Cron → POST /api/cron/daily-stats (Bearer token認証)
     ↓
@@ -692,17 +713,18 @@ LINE連携ユーザーを全件取得
 export function getShopLinks(barrel: BarrelProduct): ShopLink[] {
   const searchQuery = `${barrel.brand} ${barrel.name}`;
   return [
-    { name: 'ダーツハイブ', url: toDartshiveAffiliateUrl(searchQuery) },  // A8.net経由
-    { name: 'エスダーツ',   url: toSdartsSearchUrl(searchQuery) },
-    { name: 'MAXIM',       url: toMaximSearchUrl(searchQuery) },
-    { name: 'TiTO',        url: toTitoSearchUrl(searchQuery) },
-    { name: '楽天市場',    url: toRakutenSearchUrl(searchQuery) },       // アフィリエイトID付き
-    { name: 'Amazon',      url: toAmazonSearchUrl(searchQuery) },        // アソシエイトタグ付き
+    { name: 'ダーツハイブ', url: toDartshiveAffiliateUrl(searchQuery) }, // A8.net経由
+    { name: 'エスダーツ', url: toSdartsSearchUrl(searchQuery) },
+    { name: 'MAXIM', url: toMaximSearchUrl(searchQuery) },
+    { name: 'TiTO', url: toTitoSearchUrl(searchQuery) },
+    { name: '楽天市場', url: toRakutenSearchUrl(searchQuery) }, // アフィリエイトID付き
+    { name: 'Amazon', url: toAmazonSearchUrl(searchQuery) }, // アソシエイトタグ付き
   ];
 }
 ```
 
 **UIコンポーネント（`components/affiliate/AffiliateButton.tsx`）:**
+
 - ドロップダウンメニューで6ショップを選択
 - すべて `target="_blank"` + `rel="noopener noreferrer"` で外部遷移
 
@@ -725,18 +747,18 @@ export function isAdmin(role?: string): boolean {
   return role === 'admin';
 }
 export function canUseDartslive(role?: string): boolean {
-  return isPro(role);  // Pro以上
+  return isPro(role); // Pro以上
 }
 export function canCreateDiscussion(role?: string): boolean {
-  return isPro(role);  // Pro以上
+  return isPro(role); // Pro以上
 }
 export function canReplyDiscussion(role?: string): boolean {
-  return !!role;  // ログインしていれば誰でも
+  return !!role; // ログインしていれば誰でも
 }
 
 // セッティング登録上限
 export function getSettingsLimit(role?: string): number | null {
-  return isPro(role) ? null : 1;  // 無料: 1個, Pro: 無制限
+  return isPro(role) ? null : 1; // 無料: 1個, Pro: 無制限
 }
 ```
 
@@ -746,20 +768,24 @@ APIルートの認証・エラーハンドリングを共通化する合成パ�
 
 ```typescript
 // 使い方（API Route内）
-export const POST = withErrorHandler(         // 3. try-catch + Sentry
-  withPermission(                              // 2. 権限チェック
-    canUseDartslive,                           // ← permissions.tsの関数を渡す
+export const POST = withErrorHandler(
+  // 3. try-catch + Sentry
+  withPermission(
+    // 2. 権限チェック
+    canUseDartslive, // ← permissions.tsの関数を渡す
     'DARTSLIVE連携はPROプラン以上です',
-    async (req, { userId, role }) => {         // 1. 実際の処理
+    async (req, { userId, role }) => {
+      // 1. 実際の処理
       // ここに来たときは認証+権限が保証されている
       return NextResponse.json({ ok: true });
-    }
+    },
   ),
-  'DARTSLIVE error'
+  'DARTSLIVE error',
 );
 ```
 
 **レートリミット:**
+
 ```typescript
 // インメモリMap（Vercelのサーバーレス環境ではインスタンス間で共有されない）
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -775,15 +801,15 @@ DARTSLIVE のレーティング計算式を再実装:
 // 01レーティング
 function calc01Rating(ppd: number): number {
   if (ppd < 40) return 1;
-  if (ppd < 95) return (ppd - 30) / 5;    // PPD 40 → Rt2, PPD 80 → Rt10
-  return (ppd - 4) / 7;                     // PPD 95以上は緩やかなカーブ
+  if (ppd < 95) return (ppd - 30) / 5; // PPD 40 → Rt2, PPD 80 → Rt10
+  return (ppd - 4) / 7; // PPD 95以上は緩やかなカーブ
 }
 
 // Cricketレーティング
 function calcCriRating(mpr: number): number {
-  if (mpr < 1.30) return 1;
-  if (mpr < 3.50) return (mpr * 100 - 90) / 20;  // MPR 1.3 → Rt2
-  return (mpr * 100 - 25) / 25;                    // MPR 3.5以上
+  if (mpr < 1.3) return 1;
+  if (mpr < 3.5) return (mpr * 100 - 90) / 20; // MPR 1.3 → Rt2
+  return (mpr * 100 - 25) / 25; // MPR 3.5以上
 }
 
 // 総合レーティング = (01Rt + CriRt) / 2
@@ -801,19 +827,19 @@ function ppdForRating(targetRt: number): number {
 
 100点満点のスコアリング:
 
-| 要素 | 配点 | ロジック |
-|------|------|---------|
-| 重量 | 30点 | 理想との差3g以内で線形減衰 |
-| 最大径 | 25点 | 理想との差1mm以内で線形減衰 |
-| 全長 | 25点 | 理想との差6mm以内で線形減衰 |
-| カット | 15点 | 完全一致=15、部分一致=8 |
-| ブランド | 5点 | 完全一致のみ |
+| 要素     | 配点 | ロジック                    |
+| -------- | ---- | --------------------------- |
+| 重量     | 30点 | 理想との差3g以内で線形減衰  |
+| 最大径   | 25点 | 理想との差1mm以内で線形減衰 |
+| 全長     | 25点 | 理想との差6mm以内で線形減衰 |
+| カット   | 15点 | 完全一致=15、部分一致=8     |
+| ブランド | 5点  | 完全一致のみ                |
 
 ```typescript
 // 3つの入口
-recommendBarrels(userDarts)           // ユーザーの既存セッティングから分析
-recommendFromBarrelsWithAnalysis(barrels, textOffset)  // 選択バレルから + テキスト補正
-recommendFromQuizWithAnalysis(answers) // 6問の診断クイズから
+recommendBarrels(userDarts); // ユーザーの既存セッティングから分析
+recommendFromBarrelsWithAnalysis(barrels, textOffset); // 選択バレルから + テキスト補正
+recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 ```
 
 ---
@@ -822,42 +848,48 @@ recommendFromQuizWithAnalysis(answers) // 6問の診断クイズから
 
 ### 設計判断
 
-| 判断 | 理由 |
-|------|------|
-| **全ページ`'use client'`** | Firestore Client SDKをブラウザで使うため。Server Componentsにすると全クエリをAPI Route経由にする必要があり、開発コストが大幅増加 |
-| **NextAuth + Firebase Auth のデュアル認証** | NextAuthだけだとFirestoreセキュリティルールが使えない。Firebase Authだけだとサーバーサイドのセッション管理が面倒 |
-| **グローバル状態管理なし（Redux/Zustand不使用）** | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向 |
-| **Recharts** | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
-| **Puppeteerスクレイピング** | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得） |
-| **インメモリレートリミット** | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分 |
+| 判断                                              | 理由                                                                                                                                   |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **全ページ`'use client'`**                        | Firestore Client SDKをブラウザで使うため。Server Componentsにすると全クエリをAPI Route経由にする必要があり、開発コストが大幅増加       |
+| **NextAuth + Firebase Auth のデュアル認証**       | NextAuthだけだとFirestoreセキュリティルールが使えない。Firebase Authだけだとサーバーサイドのセッション管理が面倒                       |
+| **グローバル状態管理なし（Redux/Zustand不使用）** | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
+| **Recharts**                                      | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
+| **Puppeteerスクレイピング**                       | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
+| **インメモリレートリミット**                      | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分                        |
 
 ### 知っておくべき懸念点
 
 **1. Puppeteer の不安定性**
+
 - DARTSLIVEサイトのHTML構造変更で即座に壊れる
 - Vercelの関数タイムアウト（60秒）内に処理が完了しないケースがある
 - `@sparticuz/chromium` パッケージのバージョンとChromiumの互換性問題が起きることがある
 
 **2. Firestore のコスト**
+
 - 読み取り課金モデル（50,000読み取り/日が無料枠）
 - ホーム画面でセッティング一覧+バレルランキングを取得するだけで数十読み取りが発生
 - ユーザー増加時はFirestoreのクエリ最適化やキャッシュ戦略が必要
 
 **3. セキュリティルールの複雑性**
+
 - `firestore.rules` が約170行で、ロール判定のためにユーザードキュメントを `get()` する箇所がある
 - このFirestore読み取りも課金対象（セキュリティルール内の `get()` は1回の読み取りとしてカウント）
 
 **4. レートリミットの限界**
+
 - `lib/api-middleware.ts` のレートリミットはインメモリMapベース
 - Vercelのサーバーレス関数は複数インスタンスが独立に起動するため、**インスタンス間でリミットが共有されない**
 - 本格運用時は Vercel KV や Upstash Redis への移行を検討
 
 **5. 画像アップロードパスの注意**
+
 - Storage ルール: `match /darts/{userId}/{allPaths=**}` — パスにユーザーIDが含まれる
 - アップロードコード: `ref(storage, \`darts/${session.user.id}/${dartId}/${file.name}\`)`
 - この2つが一致しないとPermission Deniedになる（実際に起きたバグ）
 
 **6. NextAuth JWT の更新タイミング**
+
 - ロール変更（general→pro）はStripe Webhookで即座にFirestoreに反映される
 - しかしNextAuthのJWTは次回トークンリフレッシュまで古いroleを持つ
 - `jwt` コールバックで毎回Firestoreからroleを再取得して対策済みだが、これも読み取りコストが発生する
@@ -883,6 +915,7 @@ npm run test:watch # ウォッチモード
 | **合計** | | **65** |
 
 **テストされていないもの:**
+
 - Reactコンポーネント（React Testing Library未導入）
 - Firestoreセキュリティルール（Firebase Emulator未使用）
 - E2Eテスト（Playwright/Cypress未導入）
@@ -893,22 +926,25 @@ npm run test:watch # ウォッチモード
 ```yaml
 # .github/workflows/ci.yml（推定構成）
 - npm ci
-- npm run lint     # ESLint
-- npm run build    # Next.jsビルド（型エラー検出）
-- npm test         # Vitest
+- npm run lint # ESLint
+- npm run build # Next.jsビルド（型エラー検出）
+- npm test # Vitest
 ```
 
 ### デプロイ
 
 **自動デプロイ:**
+
 - `git push origin main` → Vercelが自動検知してビルド・デプロイ
 
 **手動デプロイ:**
+
 ```bash
 vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 ```
 
 **環境変数の管理:**
+
 - ローカル: `.env.local`（Git管理外）
 - Vercel: ダッシュボードの Environment Variables で設定
 - 全環境変数の一覧は `docs/ARCHITECTURE.md` を参照
@@ -920,65 +956,69 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 よく触るファイルへのクイックリファレンス。
 
 ### ページ
-| URL | ファイル | 概要 |
-|-----|---------|------|
-| `/` | `app/page.tsx` | ホーム画面 |
-| `/darts` | `app/darts/page.tsx` | セッティング一覧 |
-| `/darts/new` | `app/darts/new/page.tsx` | セッティング登録 |
-| `/darts/[id]` | `app/darts/[id]/page.tsx` | セッティング詳細 |
-| `/barrels` | `app/barrels/page.tsx` | バレル検索 |
-| `/barrels/recommend` | `app/barrels/recommend/page.tsx` | おすすめバレル |
-| `/barrels/simulator` | `app/barrels/simulator/page.tsx` | 実寸シミュレーター |
-| `/barrels/quiz` | `app/barrels/quiz/page.tsx` | バレル診断 |
-| `/stats` | `app/stats/page.tsx` | スタッツダッシュボード |
-| `/articles` | `app/articles/page.tsx` | 記事一覧 |
-| `/discussions` | `app/discussions/page.tsx` | 掲示板 |
-| `/bookmarks` | `app/bookmarks/page.tsx` | ブックマーク |
-| `/darts/compare` | `app/darts/compare/page.tsx` | セッティング比較 |
-| `/darts/history` | `app/darts/history/page.tsx` | セッティング使用履歴 |
-| `/reference` | `app/reference/page.tsx` | シャフト早見表 |
-| `/pricing` | `app/pricing/page.tsx` | 料金プラン |
+
+| URL                  | ファイル                         | 概要                   |
+| -------------------- | -------------------------------- | ---------------------- |
+| `/`                  | `app/page.tsx`                   | ホーム画面             |
+| `/darts`             | `app/darts/page.tsx`             | セッティング一覧       |
+| `/darts/new`         | `app/darts/new/page.tsx`         | セッティング登録       |
+| `/darts/[id]`        | `app/darts/[id]/page.tsx`        | セッティング詳細       |
+| `/barrels`           | `app/barrels/page.tsx`           | バレル検索             |
+| `/barrels/recommend` | `app/barrels/recommend/page.tsx` | おすすめバレル         |
+| `/barrels/simulator` | `app/barrels/simulator/page.tsx` | 実寸シミュレーター     |
+| `/barrels/quiz`      | `app/barrels/quiz/page.tsx`      | バレル診断             |
+| `/stats`             | `app/stats/page.tsx`             | スタッツダッシュボード |
+| `/articles`          | `app/articles/page.tsx`          | 記事一覧               |
+| `/discussions`       | `app/discussions/page.tsx`       | 掲示板                 |
+| `/bookmarks`         | `app/bookmarks/page.tsx`         | ブックマーク           |
+| `/darts/compare`     | `app/darts/compare/page.tsx`     | セッティング比較       |
+| `/darts/history`     | `app/darts/history/page.tsx`     | セッティング使用履歴   |
+| `/reference`         | `app/reference/page.tsx`         | シャフト早見表         |
+| `/pricing`           | `app/pricing/page.tsx`           | 料金プラン             |
 
 ### API
-| エンドポイント | ファイル | 用途 |
-|-------------|---------|------|
-| `POST /api/dartslive-stats` | `app/api/dartslive-stats/route.ts` | DLスクレイピング |
-| `GET /api/dartslive-stats` | 同上 | キャッシュ取得 |
-| `POST /api/stripe/checkout` | `app/api/stripe/checkout/route.ts` | 決済セッション作成 |
-| `POST /api/stripe/webhook` | `app/api/stripe/webhook/route.ts` | Stripe Webhook |
-| `POST /api/line/webhook` | `app/api/line/webhook/route.ts` | LINE Webhook |
-| `POST /api/line/link` | `app/api/line/link/route.ts` | LINE連携コード発行 |
-| `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ |
-| `GET /api/stats-history` | `app/api/stats-history/route.ts` | 期間別スタッツ |
-| `GET /api/og` | `app/api/og/route.ts` | OGP画像生成（Edge） |
+
+| エンドポイント               | ファイル                            | 用途                |
+| ---------------------------- | ----------------------------------- | ------------------- |
+| `POST /api/dartslive-stats`  | `app/api/dartslive-stats/route.ts`  | DLスクレイピング    |
+| `GET /api/dartslive-stats`   | 同上                                | キャッシュ取得      |
+| `POST /api/stripe/checkout`  | `app/api/stripe/checkout/route.ts`  | 決済セッション作成  |
+| `POST /api/stripe/webhook`   | `app/api/stripe/webhook/route.ts`   | Stripe Webhook      |
+| `POST /api/line/webhook`     | `app/api/line/webhook/route.ts`     | LINE Webhook        |
+| `POST /api/line/link`        | `app/api/line/link/route.ts`        | LINE連携コード発行  |
+| `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ          |
+| `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ      |
+| `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge） |
 
 ### コア
-| ファイル | 役割 |
-|---------|------|
-| `types/index.ts` | 全型定義 |
-| `lib/auth.ts` | NextAuth設定 |
-| `lib/firebase.ts` | Client SDK初期化 |
-| `lib/firebase-admin.ts` | Admin SDK初期化 |
-| `lib/permissions.ts` | 権限管理 |
-| `lib/api-middleware.ts` | API共通処理 |
-| `lib/affiliate.ts` | アフィリエイトリンク |
-| `lib/recommend-barrels.ts` | レコメンドエンジン |
-| `lib/dartslive-rating.ts` | Rt計算 |
-| `lib/dartslive-percentile.ts` | パーセンタイル |
-| `lib/dartslive-colors.ts` | フライト色定義 |
-| `firestore.rules` | DBセキュリティルール |
-| `storage.rules` | ストレージルール |
-| `components/Providers.tsx` | Context全体ラッパー |
+
+| ファイル                      | 役割                 |
+| ----------------------------- | -------------------- |
+| `types/index.ts`              | 全型定義             |
+| `lib/auth.ts`                 | NextAuth設定         |
+| `lib/firebase.ts`             | Client SDK初期化     |
+| `lib/firebase-admin.ts`       | Admin SDK初期化      |
+| `lib/permissions.ts`          | 権限管理             |
+| `lib/api-middleware.ts`       | API共通処理          |
+| `lib/affiliate.ts`            | アフィリエイトリンク |
+| `lib/recommend-barrels.ts`    | レコメンドエンジン   |
+| `lib/dartslive-rating.ts`     | Rt計算               |
+| `lib/dartslive-percentile.ts` | パーセンタイル       |
+| `lib/dartslive-colors.ts`     | フライト色定義       |
+| `firestore.rules`             | DBセキュリティルール |
+| `storage.rules`               | ストレージルール     |
+| `components/Providers.tsx`    | Context全体ラッパー  |
 
 ### スタッツコンポーネント（`components/stats/`）
-| コンポーネント | 使っているチャート |
-|-------------|---------------|
-| `BullStatsCard.tsx` | PieChart（ドーナツ）+ LineChart |
-| `CountUpDeltaChart.tsx` | BarChart（±差分） |
-| `MonthlyTrendChart.tsx` | LineChart |
-| `RecentGamesChart.tsx` | ComposedChart（Bar + Line） |
-| `GameStatsCards.tsx` | なし（数値表示のみ） |
-| `RatingHeroCard.tsx` | なし（大きなRt表示） |
-| `RatingTargetCard.tsx` | なし（テーブル表示） |
-| `AwardsTable.tsx` | なし（MUI Table） |
-| `PercentileChip.tsx` | なし（再利用可能バッジ） |
+
+| コンポーネント          | 使っているチャート              |
+| ----------------------- | ------------------------------- |
+| `BullStatsCard.tsx`     | PieChart（ドーナツ）+ LineChart |
+| `CountUpDeltaChart.tsx` | BarChart（±差分）               |
+| `MonthlyTrendChart.tsx` | LineChart                       |
+| `RecentGamesChart.tsx`  | ComposedChart（Bar + Line）     |
+| `GameStatsCards.tsx`    | なし（数値表示のみ）            |
+| `RatingHeroCard.tsx`    | なし（大きなRt表示）            |
+| `RatingTargetCard.tsx`  | なし（テーブル表示）            |
+| `AwardsTable.tsx`       | なし（MUI Table）               |
+| `PercentileChip.tsx`    | なし（再利用可能バッジ）        |

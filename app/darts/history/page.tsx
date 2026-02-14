@@ -94,12 +94,8 @@ export default function SettingHistoryPage() {
     const startTs = entry.startedAt as { toDate?: () => Date } | null;
     const endTs = entry.endedAt as { toDate?: () => Date } | null;
     setEditEntry(entry);
-    setEditStartDate(
-      startTs?.toDate ? startTs.toDate().toISOString().slice(0, 10) : '',
-    );
-    setEditEndDate(
-      endTs?.toDate ? endTs.toDate().toISOString().slice(0, 10) : '',
-    );
+    setEditStartDate(startTs?.toDate ? startTs.toDate().toISOString().slice(0, 10) : '');
+    setEditEndDate(endTs?.toDate ? endTs.toDate().toISOString().slice(0, 10) : '');
     setEditIsCurrent(entry.endedAt === null);
     setEditError('');
   };
