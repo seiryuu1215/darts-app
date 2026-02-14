@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 
 const AWARD_ORDER = [
+  'D-BULL',
+  'S-BULL',
   'LOW TON',
   'HIGH TON',
   'HAT TRICK',
@@ -31,8 +33,15 @@ interface AwardsTableProps {
 }
 
 export default function AwardsTable({ awards }: AwardsTableProps) {
-  // ブル以外のアワードを表示（ブルは BullStatsCard で表示）
   const filteredAwards = AWARD_ORDER.filter((key) => awards[key]);
+
+  // ブル合計
+  const dBull = awards['D-BULL'];
+  const sBull = awards['S-BULL'];
+  const hasBullTotal = dBull && sBull;
+  const bullTotal = hasBullTotal
+    ? { monthly: dBull.monthly + sBull.monthly, total: dBull.total + sBull.total }
+    : null;
 
   if (filteredAwards.length === 0) return null;
 
@@ -62,6 +71,15 @@ export default function AwardsTable({ awards }: AwardsTableProps) {
                 </TableCell>
               </TableRow>
             ))}
+            {bullTotal && (
+              <TableRow sx={{ bgcolor: 'action.hover' }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>BULL 合計</TableCell>
+                <TableCell align="right">{bullTotal.monthly.toLocaleString()}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                  {bullTotal.total.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

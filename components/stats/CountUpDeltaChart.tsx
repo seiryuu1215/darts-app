@@ -48,9 +48,10 @@ function DeltaTooltipContent({ active, payload, tooltipBg, tooltipBorder, textCo
 
 interface CountUpDeltaChartProps {
   games: { category: string; scores: number[] }[];
+  avgScore?: number | null;
 }
 
-export default function CountUpDeltaChart({ games }: CountUpDeltaChartProps) {
+export default function CountUpDeltaChart({ games, avgScore }: CountUpDeltaChartProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const chartText = isDark ? '#ccc' : '#666';
@@ -78,9 +79,16 @@ export default function CountUpDeltaChart({ games }: CountUpDeltaChartProps) {
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1.5 }}>
-        COUNT-UP ±差分
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          COUNT-UP ±差分
+        </Typography>
+        {avgScore != null && (
+          <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
+            平均 {Math.round(avgScore)}点
+          </Typography>
+        )}
+      </Box>
       <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
         直近{chartData.length}回のスコア変動（緑=UP, 赤=DOWN）
       </Typography>

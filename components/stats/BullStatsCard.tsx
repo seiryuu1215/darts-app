@@ -9,14 +9,12 @@ import {
   Pie,
   Cell,
   Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Legend,
   LineChart,
   Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from 'recharts';
 
 export interface BullHistoryEntry {
@@ -41,21 +39,12 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
   const dBull = awards['D-BULL'] ?? { monthly: 0, total: 0 };
   const sBull = awards['S-BULL'] ?? { monthly: 0, total: 0 };
   const totalBulls = dBull.total + sBull.total;
-  const monthlyBulls = dBull.monthly + sBull.monthly;
 
   if (totalBulls === 0) return null;
 
   const pieData = [
     { name: 'D-BULL', value: dBull.total },
     { name: 'S-BULL', value: sBull.total },
-  ];
-
-  const barData = [
-    {
-      name: '今月',
-      'D-BULL': dBull.monthly,
-      'S-BULL': sBull.monthly,
-    },
   ];
 
   const DBULL_COLOR = '#FFB300'; // 金
@@ -103,70 +92,41 @@ export default function BullStatsCard({ awards, bullHistory }: BullStatsCardProp
             {totalBulls.toLocaleString()}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            今月 {monthlyBulls}
+            今月 {dBull.monthly + sBull.monthly}
           </Typography>
         </Paper>
       </Box>
 
-      {/* チャートエリア */}
-      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-        {/* ドーナツチャート */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-            D-BULL / S-BULL 比率
-          </Typography>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={40}
-                outerRadius={65}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                <Cell fill={DBULL_COLOR} />
-                <Cell fill={SBULL_COLOR} />
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: chartTooltipBg,
-                  border: `1px solid ${chartTooltipBorder}`,
-                  borderRadius: 6,
-                  color: chartText,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
-
-        {/* 今月バーチャート */}
-        {monthlyBulls > 0 && (
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-              今月のブル
-            </Typography>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="name" fontSize={11} tick={{ fill: chartText }} />
-                <YAxis fontSize={11} tick={{ fill: chartText }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: chartTooltipBg,
-                    border: `1px solid ${chartTooltipBorder}`,
-                    borderRadius: 6,
-                    color: chartText,
-                  }}
-                />
-                <Bar dataKey="D-BULL" stackId="bull" fill={DBULL_COLOR} radius={[2, 2, 0, 0]} />
-                <Bar dataKey="S-BULL" stackId="bull" fill={SBULL_COLOR} radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Box>
-        )}
+      {/* ドーナツチャート */}
+      <Box>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+          D-BULL / S-BULL 比率
+        </Typography>
+        <ResponsiveContainer width="100%" height={160}>
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={65}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              <Cell fill={DBULL_COLOR} />
+              <Cell fill={SBULL_COLOR} />
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: chartTooltipBg,
+                border: `1px solid ${chartTooltipBorder}`,
+                borderRadius: 6,
+                color: chartText,
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+          </PieChart>
+        </ResponsiveContainer>
       </Box>
 
       {/* ブル累計推移チャート */}

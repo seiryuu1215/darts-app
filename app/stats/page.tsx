@@ -390,7 +390,7 @@ export default function StatsPage() {
             />
 
             {/* 6. COUNT-UP Delta */}
-            <CountUpDeltaChart games={dlData.recentGames.games} />
+            <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
 
             {/* 7. Rating Target */}
             {c.stats01Avg != null && c.statsCriAvg != null && (

@@ -55,9 +55,12 @@ export default function RecentGamesChart({
   const chartTooltipBorder = isDark ? '#444' : '#ddd';
   const chartAvgLine = isDark ? '#90caf9' : '#1565c0';
 
-  if (games.length === 0) return null;
+  const playableGames = games.filter((g) => g.scores.length >= 5);
 
-  const selectedGame = games.find((g) => g.category === gameChartCategory);
+  if (playableGames.length === 0) return null;
+
+  const selectedGame = playableGames.find((g) => g.category === gameChartCategory)
+    || playableGames[0];
   const isCountUpCategory = gameChartCategory.includes('COUNT');
   const gameChartData =
     selectedGame?.scores.map((score, i) => {
@@ -94,7 +97,7 @@ export default function RecentGamesChart({
           }}
           size="small"
         >
-          {games.map((g) => (
+          {playableGames.map((g) => (
             <ToggleButton
               key={g.category}
               value={g.category}
