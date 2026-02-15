@@ -5,6 +5,7 @@
 [![MUI](https://img.shields.io/badge/MUI-v7-007FFF?logo=mui&logoColor=white)](https://mui.com/)
 [![Stripe](https://img.shields.io/badge/Stripe-Subscription-635BFF?logo=stripe&logoColor=white)](https://stripe.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)](https://vercel.com/)
+[![Capacitor](https://img.shields.io/badge/Capacitor-iOS-119EFF?logo=capacitor&logoColor=white)](https://capacitorjs.com/)
 [![CI](https://github.com/seiryuu1215/darts-app/actions/workflows/ci.yml/badge.svg)](https://github.com/seiryuu1215/darts-app/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
@@ -110,10 +111,19 @@
 - LINE アカウントとの連携・解除
 - LINE 経由でのスタッツ通知
 
-### PWA
+### XP / 経験値システム
 
-- Service Worker によるオフラインキャッシュ
+- スタッツ記録・ディスカッション投稿・アワード獲得でXPを獲得
+- 20段階のダーツテーマランク（Rookie → THE GOD）
+- 12種類の実績（初スタッツ・100ゲーム・Rating 5.00 到達など）
+- ダッシュボードにXPバー表示、スタッツページに実績一覧・XP履歴
+
+### PWA & iOS ネイティブアプリ
+
+- Service Worker によるオフラインキャッシュ（Serwist）
 - モバイルでホーム画面に追加して使用可能
+- **Capacitor** によるiOSネイティブアプリ対応（WebView + Vercel リモートURL方式）
+- Safe area対応（`viewport-fit: cover`）
 
 ## ロール別機能一覧
 
@@ -150,6 +160,7 @@
 | フォーマッター | Prettier                                                 |
 | CI             | GitHub Actions (lint / format / test / build)            |
 | PWA            | Serwist (Workbox ベース)                                 |
+| モバイル       | Capacitor 8 (iOS WebView)                                |
 | ホスティング   | Vercel                                                   |
 | IaC            | Firebase CLI (firestore.rules / storage.rules / indexes) |
 
@@ -157,9 +168,10 @@
 
 ```mermaid
 graph TB
-    subgraph Client["Browser / PWA"]
+    subgraph Client["Browser / PWA / iOS"]
         App["Next.js 16<br/>React 19 + MUI v7"]
         SW["Service Worker"]
+        Cap["Capacitor<br/>iOS WebView"]
     end
 
     subgraph Vercel
@@ -219,7 +231,8 @@ graph TB
 - **ダークモード**: インラインスクリプトによるFOUC防止 + localStorage永続化 + OS設定連動
 - **Firebase ルール管理**: `firestore.rules` / `storage.rules` / `firestore.indexes.json` によるコード管理（Firebase CLI デプロイ）
 - **レートリミッター**: `lib/api-middleware.ts` による IP ベースのリクエスト制限（60 req/min）
-- **PWA**: Serwist による Workbox ベースのキャッシュ戦略
+- **XPシステム**: スタッツ記録・アワード・ストリークでXP付与、20段階ランク、12実績
+- **PWA + ネイティブ**: Serwist による Workbox ベースのキャッシュ戦略 + Capacitor iOS 対応（WebView リモートURL方式）
 
 ## セットアップ
 
@@ -290,6 +303,24 @@ npm run test:watch  # ウォッチモード
 npm run build  # Webpack モードで Service Worker も生成
 ```
 
+### iOS ネイティブアプリ（Capacitor）
+
+```bash
+npx cap sync ios     # Web → iOS プロジェクト同期
+npx cap open ios     # Xcode で開く
+```
+
+本番は `capacitor.config.ts` の `server.url` に Vercel URL を指定（リモートURL方式）。
+開発時はローカル dev server のIPに切り替え:
+
+```typescript
+// capacitor.config.ts
+server: {
+  url: 'http://<PCのIP>:3000',
+  cleartext: true,
+}
+```
+
 ## ディレクトリ構成
 
 ```
@@ -300,6 +331,7 @@ darts-app/
 │   │   ├── stripe/             #     Stripe Checkout / Webhook
 │   │   ├── line/               #     LINE連携 (Webhook / Link / Unlink)
 │   │   ├── dartslive-stats/    #     DARTSLIVE スクレイピング (Puppeteer)
+│   │   ├── progression/        #     XP取得・付与API
 │   │   ├── cron/               #     定時バッチ（日次スタッツ取得）
 │   │   └── ...                 #     認証・スタッツ・管理
 │   ├── darts/                  #   セッティング管理
@@ -330,6 +362,7 @@ darts-app/
 │   │   ├── CountUpDeltaChart   #     COUNT-UP ±差分
 │   │   ├── PercentileChip      #     上位X%バッジ
 │   │   └── ...                 #     他8コンポーネント
+│   ├── progression/            #   XpBar, AchievementList, XpHistoryList, LevelUpSnackbar
 │   ├── discussions/            #   DiscussionCard, ReplyForm, ReplyList, CategoryTabs
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
@@ -343,6 +376,11 @@ darts-app/
 │   ├── dartslive-rating.ts     #   DARTSLIVE Rt計算（PPD/MPR⇔Rt変換）
 │   ├── dartslive-colors.ts     #   フライト・カテゴリカラー定義
 │   ├── dartslive-percentile.ts #   パーセンタイル分布データ + 推定関数
+│   ├── progression/            #   XPエンジン・ランク・実績定義
+│   │   ├── xp-rules.ts        #     XPアクション定義（11種）
+│   │   ├── ranks.ts            #     20段階ランク定義
+│   │   ├── achievements.ts     #     12実績定義
+│   │   └── xp-engine.ts        #     レベル計算・実績チェック
 │   ├── line.ts                 #   LINE Messaging API ヘルパー
 │   ├── firebase.ts             #   Firebase クライアント初期化
 │   ├── firebase-admin.ts       #   Firebase Admin SDK
@@ -352,6 +390,8 @@ darts-app/
 ├── firestore.indexes.json      # Firestore 複合インデックス定義
 ├── firebase.json               # Firebase CLI 設定
 ├── types/                      # TypeScript 型定義
+├── ios/                        # Capacitor iOS Xcode プロジェクト
+├── capacitor.config.ts         # Capacitor 設定（本番: Vercel URL）
 ├── scripts/                    # スクレイピング・データ管理スクリプト
 ├── docs/                       # 設計ドキュメント
 │   ├── ARCHITECTURE.md         #   アーキテクチャ設計書 (Mermaid図付き)
@@ -379,7 +419,7 @@ darts-app/
 ## セキュリティ
 
 - 認証情報はサーバーサイドのみで処理し、永続化しない（DARTSLIVE 認証情報含む）
-- **Firestore セキュリティルール**: フィールドレベル制限（`role`・Stripe 関連フィールドのユーザー自己変更を禁止）
+- **Firestore セキュリティルール**: フィールドレベル制限（`role`・Stripe 関連・XP/レベル/ランクフィールドのユーザー自己変更を禁止）
 - **Firebase Storage ルール**: 画像のみ（jpeg/png/gif/webp）、5MB 制限、パス別権限（`storage.rules`）
 - **レートリミット**: IP ベースの in-memory レートリミッター（60 req/min）
 - **タイミングセーフ署名検証**: LINE Webhook で `crypto.timingSafeEqual` を使用
