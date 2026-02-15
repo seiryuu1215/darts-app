@@ -7,8 +7,13 @@ import {
   LinearProgress,
   Skeleton,
   Collapse,
+  IconButton,
+  Chip,
+  Tooltip,
 } from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useSession } from 'next-auth/react';
+import { XP_RULES } from '@/lib/progression/xp-rules';
 
 interface ProgressionData {
   xp: number;
@@ -21,11 +26,28 @@ interface ProgressionData {
   milestones: string[];
 }
 
+// XPルールをカテゴリ分けして表示
+const XP_CATEGORIES = [
+  {
+    label: 'プレイ',
+    rules: ['stats_record', 'games_10', 'play_streak_3', 'play_streak_7', 'play_streak_30', 'condition_record'],
+  },
+  {
+    label: 'アワード',
+    rules: ['award_hat_trick', 'award_ton_80', 'award_3_black', 'award_9_mark', 'award_low_ton', 'award_high_ton'],
+  },
+  {
+    label: 'その他',
+    rules: ['rating_milestone', 'discussion_post', 'goal_achieved'],
+  },
+];
+
 export default function XpBar() {
   const { data: session } = useSession();
   const [data, setData] = useState<ProgressionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -63,7 +85,6 @@ export default function XpBar() {
 
   return (
     <Box
-      onClick={() => setExpanded(!expanded)}
       sx={{
         mb: 2,
         px: 2,
@@ -74,12 +95,12 @@ export default function XpBar() {
         borderColor: 'divider',
         borderLeft: 4,
         borderLeftColor: rankColor,
-        cursor: 'pointer',
-        transition: 'box-shadow 0.2s',
-        '&:hover': { boxShadow: 2 },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box
+        onClick={() => setExpanded(!expanded)}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+      >
         <Typography sx={{ fontSize: '1.2rem', lineHeight: 1 }}>{data.rankIcon || '🎯'}</Typography>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
@@ -112,16 +133,73 @@ export default function XpBar() {
 
       <Collapse in={expanded}>
         <Box sx={{ mt: 1.5, pt: 1, borderTop: 1, borderColor: 'divider' }}>
-          {data.nextLevelXp != null && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-              次のレベルまで {xpToNext.toLocaleString()} XP
-            </Typography>
-          )}
-          {data.milestones && data.milestones.length > 0 && (
-            <Typography variant="caption" color="text.secondary">
-              達成マイルストーン: {data.milestones.length}個
-            </Typography>
-          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              {data.nextLevelXp != null && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  次のレベルまで {xpToNext.toLocaleString()} XP
+                </Typography>
+              )}
+              {data.milestones && data.milestones.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  達成マイルストーン: {data.milestones.length}個
+                </Typography>
+              )}
+            </Box>
+            <Tooltip title="XP獲得条件">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRules(!showRules);
+                }}
+                sx={{ ml: 1 }}
+              >
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          <Collapse in={showRules}>
+            <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}
+              >
+                XP獲得条件
+              </Typography>
+              {XP_CATEGORIES.map((cat) => (
+                <Box key={cat.label} sx={{ mb: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mb: 0.3 }}
+                  >
+                    {cat.label}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {cat.rules
+                      .filter((id) => XP_RULES[id])
+                      .map((id) => {
+                        const rule = XP_RULES[id];
+                        return (
+                          <Chip
+                            key={id}
+                            label={`${rule.label} +${rule.xp}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              height: 22,
+                              '& .MuiChip-label': { px: 0.8, fontSize: '0.65rem' },
+                            }}
+                          />
+                        );
+                      })}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Collapse>
         </Box>
       </Collapse>
     </Box>
