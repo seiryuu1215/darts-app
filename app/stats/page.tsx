@@ -27,6 +27,10 @@ import { calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
 import { canUseDartslive, canExportCsv } from '@/lib/permissions';
 import ProPaywall from '@/components/ProPaywall';
 
+// Progression components
+import AchievementList from '@/components/progression/AchievementList';
+import XpHistoryList from '@/components/progression/XpHistoryList';
+
 // Stats components
 import PlayerProfileCard from '@/components/stats/PlayerProfileCard';
 import RatingHeroCard from '@/components/stats/RatingHeroCard';
@@ -132,6 +136,10 @@ export default function StatsPage() {
   const [periodSummary, setPeriodSummary] = useState<StatsHistorySummary | null>(null);
   const [periodRecords, setPeriodRecords] = useState<StatsHistoryRecord[]>([]);
   const [periodLoading, setPeriodLoading] = useState(false);
+  const [achievements, setAchievements] = useState<string[]>([]);
+  const [xpHistory, setXpHistory] = useState<
+    { id: string; action: string; xp: number; detail: string; createdAt: string }[]
+  >([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -185,6 +193,20 @@ export default function StatsPage() {
       }
     };
     fetchActiveDart();
+
+    // Progression data
+    const fetchProgression = async () => {
+      try {
+        const res = await fetch('/api/progression');
+        if (!res.ok) return;
+        const json = await res.json();
+        setAchievements(json.achievements ?? []);
+        setXpHistory(json.history ?? []);
+      } catch {
+        // ignore
+      }
+    };
+    fetchProgression();
   }, [session, canDartslive]);
 
   useEffect(() => {
@@ -542,6 +564,12 @@ export default function StatsPage() {
 
         {/* 15. PR Site Section */}
         <PRSiteSection />
+
+        {/* 16. Progression */}
+        <Box sx={{ mt: 4 }}>
+          <AchievementList unlockedIds={achievements} />
+          <XpHistoryList history={xpHistory} />
+        </Box>
       </Box>
 
       {/* Login Dialog */}

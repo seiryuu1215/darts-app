@@ -37,7 +37,8 @@ service cloud.firestore {
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['role', 'stripeCustomerId', 'subscriptionId',
                                      'subscriptionStatus', 'subscriptionCurrentPeriodEnd',
-                                     'subscriptionTrialEnd']));
+                                     'subscriptionTrialEnd',
+                                     'xp', 'level', 'rank', 'achievements']));
       allow delete: if isAdmin();
 
       // likes
@@ -70,6 +71,12 @@ service cloud.firestore {
       match /settingHistory/{historyId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId);
+      }
+
+      // xpHistory (read: owner, write: backend only via Admin SDK)
+      match /xpHistory/{docId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
       }
 
       // dartsliveCache (backend only via Admin SDK)

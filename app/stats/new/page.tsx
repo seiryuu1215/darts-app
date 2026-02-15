@@ -22,6 +22,29 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { collection, doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+async function grantXp(action: string, detail?: string, count?: number) {
+  try {
+    await fetch('/api/progression', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, detail, count }),
+    });
+  } catch {
+    // XP付与失敗はサイレントに無視
+  }
+}
+
+function grantStatsXp({ hatTricks }: { hatTricks: number }) {
+  // 基本XP
+  grantXp('stats_record', 'スタッツ記録');
+  // コンディション記録
+  grantXp('condition_record', 'コンディション記録');
+  // HAT TRICK
+  if (hatTricks > 0) {
+    grantXp('award_hat_trick', `HAT TRICK ${hatTricks}回`, hatTricks);
+  }
+}
+
 export default function StatsNewPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -132,6 +155,11 @@ export default function StatsNewPage() {
         memo,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+      });
+
+      // XP付与: スタッツ記録
+      grantStatsXp({
+        hatTricks: hatTricks ? Number(hatTricks) : 0,
       });
 
       router.push('/stats');

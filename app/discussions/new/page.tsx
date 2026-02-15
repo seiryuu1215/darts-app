@@ -103,6 +103,13 @@ function NewDiscussionContent() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      // XP付与: ディスカッション投稿
+      fetch('/api/progression', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'discussion_post', detail: 'ディスカッション投稿' }),
+      }).catch(() => {});
+
       router.push(`/discussions/${discussionId}`);
     } catch (err: unknown) {
       if (err instanceof Error) {

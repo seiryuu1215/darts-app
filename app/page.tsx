@@ -34,6 +34,7 @@ import DartCard from '@/components/darts/DartCard';
 import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import ArticleCard from '@/components/articles/ArticleCard';
 import OnboardingDialog from '@/components/OnboardingDialog';
+import XpBar from '@/components/progression/XpBar';
 import ForumIcon from '@mui/icons-material/Forum';
 import type { Dart, Article, Discussion } from '@/types';
 import { CATEGORY_LABELS } from '@/types';
@@ -277,6 +278,8 @@ export default function HomePage() {
       <Typography variant="h4" sx={{ mb: 3 }}>
         ダッシュボード
       </Typography>
+
+      {session && <XpBar />}
 
       {session && (
         <Box sx={{ mb: 4 }}>

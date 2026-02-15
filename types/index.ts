@@ -30,6 +30,10 @@ export interface User {
   subscriptionStatus?: StripeSubscriptionStatus | null;
   subscriptionCurrentPeriodEnd?: Timestamp | null;
   subscriptionTrialEnd?: Timestamp | null;
+  xp?: number;
+  level?: number;
+  rank?: string;
+  achievements?: string[];
   dartsHistory: string;
   homeShop: string;
   createdAt: Timestamp;
@@ -260,6 +264,15 @@ export interface DiscussionReply {
   userRating: number | null;
   userBarrelName: string | null;
   text: string;
+  createdAt: Timestamp;
+}
+
+// XP History
+export interface XpHistoryEntry {
+  id?: string;
+  action: string;
+  xp: number;
+  detail: string;
   createdAt: Timestamp;
 }
 
