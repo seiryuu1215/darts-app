@@ -20,6 +20,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import type { BarrelProduct } from '@/types';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 interface BarrelCardProps {
   barrel: BarrelProduct;
@@ -109,7 +110,7 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
         <CardMedia
           component="img"
           height="160"
-          image={barrel.imageUrl.replace(/^http:\/\//, 'https://')}
+          image={getBarrelImageUrl(barrel.imageUrl) ?? ''}
           alt={barrel.name}
           sx={{ objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
         />

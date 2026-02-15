@@ -49,6 +49,7 @@ import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import { BARREL_CUTS } from '@/lib/darts-parts';
 import { recommendBarrels } from '@/lib/recommend-barrels';
 import { toDartshiveAffiliateUrl, getAffiliateConfig } from '@/lib/affiliate';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -360,7 +361,7 @@ export default function BarrelsPage() {
                     <CardMedia
                       component="img"
                       height="120"
-                      image={item.imageUrl}
+                      image={getBarrelImageUrl(item.imageUrl) ?? ''}
                       alt={item.name}
                       sx={{ objectFit: 'cover' }}
                     />

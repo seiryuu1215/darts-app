@@ -36,3 +36,21 @@ export function getProxyImageUrl(imageUrl: string): string {
   // For display, wsrv.nl is more reliable on Vercel
   return `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&n=-1`;
 }
+
+/** Normalize barrel image URL and proxy through wsrv.nl for reliable display */
+export function getBarrelImageUrl(imageUrl: string | null): string | null {
+  if (!imageUrl) return null;
+  let url = imageUrl;
+  // Protocol-relative → HTTPS
+  if (url.startsWith('//')) {
+    url = `https:${url}`;
+  }
+  // Relative path → absolute dartshive URL
+  if (url.startsWith('/')) {
+    url = `https://www.dartshive.jp${url}`;
+  }
+  // HTTP → HTTPS
+  url = url.replace(/^http:\/\//, 'https://');
+  // Proxy through wsrv.nl to avoid hotlinking / CORS issues
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&n=-1`;
+}

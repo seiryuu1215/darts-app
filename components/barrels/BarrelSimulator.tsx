@@ -2,6 +2,7 @@
 
 import { Box, Typography, Chip } from '@mui/material';
 import type { BarrelProduct } from '@/types';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 interface BarrelSimulatorProps {
   barrels: BarrelProduct[];
@@ -72,7 +73,7 @@ function BarrelImage({
     >
       <Box
         component="img"
-        src={barrel.imageUrl}
+        src={getBarrelImageUrl(barrel.imageUrl) ?? ''}
         alt={`${barrel.brand} ${barrel.name}`}
         sx={{
           display: 'block',

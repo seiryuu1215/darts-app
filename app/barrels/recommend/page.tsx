@@ -34,6 +34,7 @@ import { recommendFromBarrelsWithAnalysis, getBarrelType } from '@/lib/recommend
 import type { BarrelAnalysis } from '@/lib/recommend-barrels';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { BarrelProduct } from '@/types';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 export default function RecommendPage() {
   const { data: session, status } = useSession();
@@ -268,7 +269,7 @@ export default function RecommendPage() {
                       <CardMedia
                         component="img"
                         height="100"
-                        image={barrel.imageUrl}
+                        image={getBarrelImageUrl(barrel.imageUrl) ?? ''}
                         alt={barrel.name}
                         sx={{ objectFit: 'cover' }}
                       />

@@ -34,6 +34,7 @@ import type { BarrelProduct } from '@/types';
 import BarrelSimulator from '@/components/barrels/BarrelSimulator';
 import AffiliateButton from '@/components/affiliate/AffiliateButton';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 const MAX_BARRELS = 2;
 
@@ -255,7 +256,7 @@ function SimulatorContent() {
                     <CardMedia
                       component="img"
                       height="100"
-                      image={barrel.imageUrl}
+                      image={getBarrelImageUrl(barrel.imageUrl) ?? ''}
                       alt={barrel.name}
                       sx={{ objectFit: 'cover' }}
                     />

@@ -47,6 +47,7 @@ import {
 } from '@/lib/darts-parts';
 import type { TipSpec, ShaftSpec, FlightSpec, CondorAxeSpec } from '@/lib/darts-parts';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 interface DartFormProps {
   initialData?: Dart;
@@ -1033,7 +1034,7 @@ export default function DartForm({
                   <ListItemButton onClick={() => handleSelectBarrel(result)}>
                     <ListItemAvatar>
                       <Avatar
-                        src={result.imageUrl || undefined}
+                        src={getBarrelImageUrl(result.imageUrl ?? null) ?? undefined}
                         variant="rounded"
                         sx={{ width: 48, height: 48 }}
                       >
