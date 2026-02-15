@@ -111,16 +111,20 @@
 
 ### XP / 経験値システム
 
-- スタッツ記録・ディスカッション投稿・アワード獲得でXPを獲得
-- 20段階のダーツテーマランク（Rookie → THE GOD）
+- 14種のXP獲得ルール（スタッツ記録・アワード・連続プレイ・目標達成など）
+- 日次Cron（JST 10:00）でDARTSLIVEスタッツ差分からXP自動付与 + ポップアップ通知
+- 20段階のダーツテーマランク（Rookie 🎯 → THE GOD 🏆）、各ランクにアイコン・色付き
 - 12種類の実績（初スタッツ・100ゲーム・Rating 5.00 到達など）
-- ダッシュボードにXPバー表示、スタッツページに実績一覧・XP履歴
+- ダッシュボードにコンパクトなランクカード（タップで詳細展開）、スタッツページに実績一覧・XP履歴
 
 ### 目標設定・進捗トラッキング
 
-- 月間/年間の目標を設定（ブル数・ゲーム数・Rating・プレイ日数・HAT TRICK）
-- DARTSLIVE スタッツから進捗をリアルタイム計算
-- 目標達成時に自動 XP 付与
+- 月間/年間の目標を設定（ブル数・Rating・HAT TRICK・CUスコア）
+- 月間目標: 最大3つ、年間目標: 最大1つ
+- DARTSLIVE スタッツから進捗をリアルタイム計算（月間ブル・HAT TRICK はDARTSLIVEの「今月」値を直接使用）
+- 既に達成済みの値では目標作成不可（バリデーション）
+- 目標達成時に XP 50pt 付与 + 紙吹雪アニメーション付きお祝いダイアログ → 達成後に自動削除
+- 期限切れ未達成の月間目標は翌月に自動引き継ぎ
 - 日割りペース・達成予測の表示
 
 ### PWA & iOS ネイティブアプリ
@@ -161,7 +165,7 @@
 | グラフ         | Recharts 3                                               |
 | スクレイピング | Puppeteer 24                                             |
 | エラー監視     | Sentry                                                   |
-| テスト         | Vitest (110+ tests)                                      |
+| テスト         | Vitest (125+ tests)                                      |
 | フォーマッター | Prettier                                                 |
 | CI             | GitHub Actions (lint / format / test / build)            |
 | PWA            | Serwist (Workbox ベース)                                 |
@@ -236,7 +240,7 @@ graph TB
 - **ダークモード**: インラインスクリプトによるFOUC防止 + localStorage永続化 + OS設定連動
 - **Firebase ルール管理**: `firestore.rules` / `storage.rules` / `firestore.indexes.json` によるコード管理（Firebase CLI デプロイ）
 - **レートリミッター**: `lib/api-middleware.ts` による IP ベースのリクエスト制限（60 req/min）
-- **XPシステム**: スタッツ記録・アワード・ストリークでXP付与、20段階ランク、12実績
+- **XPシステム**: 14種のXPルール、日次Cron自動付与+通知、20段階ランク（アイコン・色付き）、12実績
 - **PWA + ネイティブ**: Serwist による Workbox ベースのキャッシュ戦略 + Capacitor iOS 対応（WebView リモートURL方式）
 
 ## セットアップ
@@ -337,8 +341,9 @@ darts-app/
 │   │   ├── line/               #     LINE連携 (Webhook / Link / Unlink)
 │   │   ├── dartslive-stats/    #     DARTSLIVE スクレイピング (Puppeteer)
 │   │   ├── progression/        #     XP取得・付与API
-│   │   ├── goals/              #     目標CRUD・進捗計算API
-│   │   ├── cron/               #     定時バッチ（日次スタッツ取得）
+│   │   ├── goals/              #     目標CRUD・進捗計算・達成判定API
+│   │   ├── notifications/      #     XP通知取得・既読API
+│   │   ├── cron/               #     定時バッチ（日次スタッツ取得+XP自動付与）
 │   │   └── ...                 #     認証・スタッツ・管理
 │   ├── darts/                  #   セッティング管理
 │   ├── barrels/                #   バレル検索
@@ -369,7 +374,8 @@ darts-app/
 │   │   ├── PercentileChip      #     上位X%バッジ
 │   │   └── ...                 #     他8コンポーネント
 │   ├── progression/            #   XpBar, AchievementList, XpHistoryList, LevelUpSnackbar
-│   ├── goals/                  #   GoalSection, GoalCard, GoalSettingDialog
+│   ├── notifications/          #   XpNotificationDialog
+│   ├── goals/                  #   GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
 │   ├── discussions/            #   DiscussionCard, ReplyForm, ReplyList, CategoryTabs
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
@@ -385,7 +391,7 @@ darts-app/
 │   ├── dartslive-percentile.ts #   パーセンタイル分布データ + 推定関数
 │   ├── goals.ts                #   目標定義・進捗計算ヘルパー
 │   ├── progression/            #   XPエンジン・ランク・実績定義
-│   │   ├── xp-rules.ts        #     XPアクション定義（12種）
+│   │   ├── xp-rules.ts        #     XPアクション定義（14種）
 │   │   ├── ranks.ts            #     20段階ランク定義
 │   │   ├── achievements.ts     #     12実績定義
 │   │   └── xp-engine.ts        #     レベル計算・実績チェック
