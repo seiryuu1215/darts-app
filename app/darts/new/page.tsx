@@ -70,7 +70,6 @@ function NewDartContent() {
           setCopyData({
             ...data,
             title: `${data.title}（コピー）`,
-            imageUrls: [],
           });
         }
       } catch {
