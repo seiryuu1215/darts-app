@@ -134,6 +134,29 @@ export const GET = withErrorHandler(
       allRecords = statsSnap.docs.map((doc) => toStatsRecord(doc.data()));
     }
 
+    // dartsliveCache/latest を最新データポイントとして補完
+    // （cronが昨日取得済みだが、dartsLiveStatsにまだ反映されていないケースをカバー）
+    const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
+    if (cacheDoc.exists) {
+      const c = cacheDoc.data()!;
+      const cacheDate = c.updatedAt?.toDate?.() ?? now;
+      const cacheRecord: StatsRecord = {
+        date: cacheDate.toISOString(),
+        rating: c.rating ?? null,
+        gamesPlayed: 0,
+        dBull: c.bullStats?.dBull ?? null,
+        sBull: c.bullStats?.sBull ?? null,
+        hatTricks: c.hatTricks ?? null,
+      };
+      // dartsLiveStatsの最新レコードより新しい場合のみ追加
+      const lastRecordDate = allRecords.length > 0
+        ? new Date(allRecords[allRecords.length - 1].date).getTime()
+        : 0;
+      if (cacheDate.getTime() > lastRecordDate) {
+        allRecords.push(cacheRecord);
+      }
+    }
+
     // 各目標の current を計算
     const goals = await Promise.all(
       rawGoals.map(async (goal) => {
