@@ -35,6 +35,8 @@ import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import ArticleCard from '@/components/articles/ArticleCard';
 import OnboardingDialog from '@/components/OnboardingDialog';
 import XpBar from '@/components/progression/XpBar';
+import Shop from '@/components/progression/Shop';
+import GoalSection from '@/components/goals/GoalSection';
 import ForumIcon from '@mui/icons-material/Forum';
 import type { Dart, Article, Discussion } from '@/types';
 import { CATEGORY_LABELS } from '@/types';
@@ -279,7 +281,12 @@ export default function HomePage() {
         ダッシュボード
       </Typography>
 
-      {session && <XpBar />}
+      {session && (
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+          <Box sx={{ flex: 1 }}><XpBar /></Box>
+          <Shop />
+        </Box>
+      )}
 
       {session && (
         <Box sx={{ mb: 4 }}>
@@ -490,6 +497,8 @@ export default function HomePage() {
             </Box>
           );
         })()}
+
+      {session && <GoalSection />}
 
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (

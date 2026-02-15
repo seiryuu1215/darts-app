@@ -276,6 +276,38 @@ export interface XpHistoryEntry {
   createdAt: Timestamp;
 }
 
+// Inventory (shop items)
+export interface UserInventory {
+  streak_freeze?: number;
+  double_xp?: number;
+  streak_revive?: number;
+}
+
+// Goals
+export type GoalType = 'bulls' | 'games' | 'rating' | 'cu_score' | 'play_days' | 'hat_tricks';
+export type GoalPeriod = 'monthly' | 'yearly';
+
+export interface Goal {
+  id?: string;
+  type: GoalType;
+  period: GoalPeriod;
+  target: number;
+  current: number;
+  startDate: Timestamp;
+  endDate: Timestamp;
+  achievedAt: Timestamp | null;
+  xpAwarded: boolean;
+}
+
+export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
+  bulls: 'ブル数',
+  games: 'ゲーム数',
+  rating: 'Rating',
+  cu_score: 'CU最高スコア',
+  play_days: 'プレイ日数',
+  hat_tricks: 'HAT TRICK',
+};
+
 // Affiliate
 export type ShopType = 'dartshive' | 'sdarts' | 'maxim' | 'tito' | 'rakuten' | 'amazon';
 

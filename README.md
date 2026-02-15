@@ -25,8 +25,6 @@
 
 ## Screenshots
 
-<!-- TODO: スクリーンショットを docs/screenshots/ に追加してパスを更新 -->
-
 |               ホーム               |                バレル検索                |               スタッツ               |
 | :--------------------------------: | :--------------------------------------: | :----------------------------------: |
 | ![Home](docs/screenshots/home.png) | ![Barrels](docs/screenshots/barrels.png) | ![Stats](docs/screenshots/stats.png) |

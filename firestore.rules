@@ -83,6 +83,14 @@ service cloud.firestore {
       match /dartsliveCache/{docId} {
         allow read, write: if false;
       }
+
+      // goals
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
 
     // ──────────────────────────────
