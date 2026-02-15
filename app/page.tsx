@@ -283,10 +283,14 @@ export default function HomePage() {
 
       {session && (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-          <Box sx={{ flex: 1 }}><XpBar /></Box>
+          <Box sx={{ flex: 1 }}>
+            <XpBar />
+          </Box>
           <Shop />
         </Box>
       )}
+
+      {session && <GoalSection />}
 
       {session && (
         <Box sx={{ mb: 4 }}>
@@ -497,8 +501,6 @@ export default function HomePage() {
             </Box>
           );
         })()}
-
-      {session && <GoalSection />}
 
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (

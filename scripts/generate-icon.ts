@@ -35,7 +35,11 @@ const SVG = `
 
 async function main() {
   const sizes = [
-    { name: 'AppIcon-512@2x.png', dir: 'ios/App/App/Assets.xcassets/AppIcon.appiconset', size: 1024 },
+    {
+      name: 'AppIcon-512@2x.png',
+      dir: 'ios/App/App/Assets.xcassets/AppIcon.appiconset',
+      size: 1024,
+    },
     { name: 'icon-192.png', dir: 'public/icons', size: 192 },
     { name: 'icon-512.png', dir: 'public/icons', size: 512 },
     { name: 'icon-512-maskable.png', dir: 'public/icons', size: 512 },
@@ -43,10 +47,7 @@ async function main() {
 
   for (const { name, dir, size } of sizes) {
     const outPath = path.join(process.cwd(), dir, name);
-    await sharp(Buffer.from(SVG))
-      .resize(size, size)
-      .png()
-      .toFile(outPath);
+    await sharp(Buffer.from(SVG)).resize(size, size).png().toFile(outPath);
     console.log(`Generated: ${outPath} (${size}x${size})`);
   }
 }

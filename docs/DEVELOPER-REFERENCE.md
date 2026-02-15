@@ -37,6 +37,7 @@ darts-app/
 │   │   ├── dartslive-stats/# Puppeteerスクレイピング
 │   │   ├── stripe/         # 決済
 │   │   ├── line/           # LINE連携
+│   │   ├── goals/          # 目標CRUD・進捗計算
 │   │   └── cron/           # 定期バッチ
 │   └── sw.ts               # Service Worker（PWA）
 ├── components/             # UIコンポーネント（機能ごとにフォルダ分け）
@@ -45,6 +46,7 @@ darts-app/
 │   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
 │   ├── stats/              # 14個のスタッツ可視化コンポーネント
 │   ├── affiliate/          # AffiliateButton, AffiliateBanner
+│   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog
 │   ├── discussions/        # DiscussionCard, ReplyForm, ReplyList
 │   ├── articles/           # ArticleCard, MarkdownContent
 │   └── Providers.tsx       # 全プロバイダーをまとめるラッパー
@@ -55,6 +57,7 @@ darts-app/
 │   ├── permissions.ts      # ロール別権限関数
 │   ├── api-middleware.ts   # API共通ミドルウェア
 │   ├── affiliate.ts        # アフィリエイトリンク生成
+│   ├── goals.ts            # 目標定義・進捗計算ヘルパー
 │   ├── recommend-barrels.ts# バレルレコメンドエンジン
 │   ├── dartslive-rating.ts # Rt計算・逆算ロジック
 │   └── dartslive-percentile.ts # パーセンタイル分布
@@ -304,7 +307,8 @@ User (ユーザー)
     ├── bookmarks/{dartId}
     ├── barrelBookmarks/{barrelId}
     ├── settingHistory/{historyId}    ← セッティング使用履歴
-    └── dartsLiveStats/{statsId}      ← スタッツ記録
+    ├── dartsLiveStats/{statsId}      ← スタッツ記録
+    └── goals/{goalId}                ← 目標設定・進捗
 
 Dart (セッティング)
 ├── userId → User への参照
@@ -435,8 +439,11 @@ service cloud.firestore {
 
 ```
 ホーム画面
+├── XPバー + ショップ（ログイン時のみ）
+├── GoalSection（目標進捗、ログイン時のみ）
 ├── 使用中ダーツカード（ログイン時のみ）
 │   └── アクティブなソフト/スティールダーツを表示
+├── DARTSLIVE Stats サマリー（ログイン時のみ）
 ├── Feature Cards（8個のウィジェットグリッド）
 │   ├── みんなのセッティング、バレル検索、シャフト早見表、記事
 │   ├── シミュレーター、バレル診断
@@ -940,7 +947,9 @@ npm run test:watch # ウォッチモード
 | `permissions.test.ts` | 全権限関数の正常系/異常系 | ~20 |
 | `dartslive-percentile.test.ts` | パーセンタイル計算・補間 | ~15 |
 | `route.test.ts` (Stripe) | Webhook署名検証・イベント処理 | 6 |
-| **合計** | | **65** |
+| `goals.test.ts` | 目標定義・進捗計算ヘルパー | ~30 |
+| `xp-engine.test.ts` | レベル計算・ランク判定 | ~20 |
+| **合計** | | **110+** |
 
 **テストされていないもの:**
 
@@ -1017,6 +1026,9 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ          |
 | `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ      |
 | `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge） |
+| `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算   |
+| `POST /api/goals`            | 同上                                | 目標作成            |
+| `DELETE /api/goals`          | 同上                                | 目標削除            |
 
 ### コア
 
@@ -1033,6 +1045,7 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `lib/dartslive-rating.ts`     | Rt計算               |
 | `lib/dartslive-percentile.ts` | パーセンタイル       |
 | `lib/dartslive-colors.ts`     | フライト色定義       |
+| `lib/goals.ts`                | 目標定義・進捗計算   |
 | `firestore.rules`             | DBセキュリティルール |
 | `storage.rules`               | ストレージルール     |
 | `components/Providers.tsx`    | Context全体ラッパー  |

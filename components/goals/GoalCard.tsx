@@ -1,15 +1,18 @@
 'use client';
 
-import { Box, Card, CardContent, LinearProgress, Typography, IconButton, Chip } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  LinearProgress,
+  Typography,
+  IconButton,
+  Chip,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { GOAL_TYPE_LABELS } from '@/types';
-import {
-  getProgressPercent,
-  getRemainingDays,
-  getDailyPace,
-  getEstimatedDays,
-} from '@/lib/goals';
+import { getProgressPercent, getRemainingDays, getDailyPace, getEstimatedDays } from '@/lib/goals';
 
 interface GoalCardProps {
   goal: {
@@ -42,7 +45,9 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
       }}
     >
       <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {isAchieved && <CheckCircleIcon color="success" sx={{ fontSize: 18 }} />}
             <Typography variant="subtitle2" fontWeight="bold">
@@ -84,8 +89,7 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
           <Typography variant="caption" color="text.secondary">
             {remaining > 0 ? (
               <>
-                残り{remaining}日
-                {dailyPace > 0 && ` · 1日あたり約${dailyPace}`}
+                残り{remaining}日{dailyPace > 0 && ` · 1日あたり約${dailyPace}`}
                 {estimated != null && estimated > 0 && ` · 予測${estimated}日で達成`}
               </>
             ) : (

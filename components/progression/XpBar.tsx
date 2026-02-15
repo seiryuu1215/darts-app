@@ -38,9 +38,7 @@ export default function XpBar() {
   }, [session]);
 
   if (!session || loading) {
-    return loading && session ? (
-      <Skeleton variant="rounded" height={64} sx={{ mb: 2 }} />
-    ) : null;
+    return loading && session ? <Skeleton variant="rounded" height={64} sx={{ mb: 2 }} /> : null;
   }
 
   if (!data) return null;

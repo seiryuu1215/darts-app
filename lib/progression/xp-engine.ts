@@ -40,10 +40,7 @@ export interface UserStatsSnapshot {
   level: number;
 }
 
-export function checkAchievements(
-  stats: UserStatsSnapshot,
-  existing: string[],
-): string[] {
+export function checkAchievements(stats: UserStatsSnapshot, existing: string[]): string[] {
   const newAchievements: string[] = [];
   const has = (id: string) => existing.includes(id);
 
@@ -52,8 +49,10 @@ export function checkAchievements(
   if (!has('games_500') && stats.totalGames >= 500) newAchievements.push('games_500');
   if (!has('streak_7') && stats.streak >= 7) newAchievements.push('streak_7');
   if (!has('streak_30') && stats.streak >= 30) newAchievements.push('streak_30');
-  if (!has('rating_5') && stats.rating != null && stats.rating >= 5) newAchievements.push('rating_5');
-  if (!has('rating_8') && stats.rating != null && stats.rating >= 8) newAchievements.push('rating_8');
+  if (!has('rating_5') && stats.rating != null && stats.rating >= 5)
+    newAchievements.push('rating_5');
+  if (!has('rating_8') && stats.rating != null && stats.rating >= 8)
+    newAchievements.push('rating_8');
   if (!has('hat_trick_50') && stats.hatTricks >= 50) newAchievements.push('hat_trick_50');
   if (!has('ton_80_10') && stats.ton80 >= 10) newAchievements.push('ton_80_10');
   if (!has('bull_master') && stats.dBullRate != null && stats.dBullRate >= 50)

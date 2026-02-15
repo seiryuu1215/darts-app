@@ -403,14 +403,17 @@ export const POST = withErrorHandler(
 
         // 不要リソースをブロックして高速化
         await page.setRequestInterception(true);
-        page.on('request', (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
-          const type = req.resourceType();
-          if (['stylesheet', 'font', 'media'].includes(type)) {
-            req.abort();
-          } else {
-            req.continue();
-          }
-        });
+        page.on(
+          'request',
+          (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
+            const type = req.resourceType();
+            if (['stylesheet', 'font', 'media'].includes(type)) {
+              req.abort();
+            } else {
+              req.continue();
+            }
+          },
+        );
 
         // ログイン
         try {
@@ -437,14 +440,17 @@ export const POST = withErrorHandler(
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           );
           await p.setRequestInterception(true);
-          p.on('request', (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
-            const type = req.resourceType();
-            if (['stylesheet', 'font', 'image', 'media'].includes(type)) {
-              req.abort();
-            } else {
-              req.continue();
-            }
-          });
+          p.on(
+            'request',
+            (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
+              const type = req.resourceType();
+              if (['stylesheet', 'font', 'image', 'media'].includes(type)) {
+                req.abort();
+              } else {
+                req.continue();
+              }
+            },
+          );
           await p.setCookie(...cookies);
           return p;
         };
@@ -452,11 +458,19 @@ export const POST = withErrorHandler(
         const [monthly, recentGames] = await Promise.all([
           (async () => {
             const p = await createAuthPage();
-            try { return await scrapeMonthlyData(p); } finally { await p.close(); }
+            try {
+              return await scrapeMonthlyData(p);
+            } finally {
+              await p.close();
+            }
           })(),
           (async () => {
             const p = await createAuthPage();
-            try { return await scrapeRecentGames(p); } finally { await p.close(); }
+            try {
+              return await scrapeRecentGames(p);
+            } finally {
+              await p.close();
+            }
           })(),
         ]);
 

@@ -16,4 +16,5 @@ export const XP_RULES: Record<string, XpRule> = {
   award_3_black: { id: 'award_3_black', xp: 15, label: '3 IN A BLACK' },
   discussion_post: { id: 'discussion_post', xp: 5, label: 'ディスカッション投稿' },
   condition_record: { id: 'condition_record', xp: 3, label: 'コンディション記録' },
+  goal_achieved: { id: 'goal_achieved', xp: 50, label: '目標達成' },
 } as const;

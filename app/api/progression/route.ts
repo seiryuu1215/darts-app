@@ -72,10 +72,7 @@ export const POST = withErrorHandler(
     const userRef = adminDb.doc(`users/${userId}`);
 
     // XPを加算
-    await userRef.set(
-      { xp: FieldValue.increment(xpGained) },
-      { merge: true },
-    );
+    await userRef.set({ xp: FieldValue.increment(xpGained) }, { merge: true });
 
     // 更新後のユーザーデータを取得
     const updatedUser = await userRef.get();

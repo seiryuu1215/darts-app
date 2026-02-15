@@ -1,9 +1,9 @@
 ---
 name: Feature Request
 about: 機能追加の提案
-title: "[Feature] "
+title: '[Feature] '
 labels: enhancement
-assignees: ""
+assignees: ''
 ---
 
 ## 概要

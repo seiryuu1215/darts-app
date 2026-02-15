@@ -6,7 +6,12 @@ export interface AchievementDefinition {
 }
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
-  { id: 'first_stats', name: '初めてのスタッツ', description: '初めてスタッツを記録した', icon: '📝' },
+  {
+    id: 'first_stats',
+    name: '初めてのスタッツ',
+    description: '初めてスタッツを記録した',
+    icon: '📝',
+  },
   { id: 'games_100', name: '100ゲーム達成', description: '累計100ゲームプレイ', icon: '🎯' },
   { id: 'games_500', name: '500ゲーム達成', description: '累計500ゲームプレイ', icon: '🏆' },
   { id: 'streak_7', name: '1週間連続', description: '7日連続プレイ', icon: '🔥' },
@@ -20,6 +25,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: 'level_10', name: 'レベル10', description: 'レベル10に到達', icon: '🏅' },
 ];
 
-export const ACHIEVEMENT_MAP = Object.fromEntries(
-  ACHIEVEMENTS.map((a) => [a.id, a]),
-) as Record<string, AchievementDefinition>;
+export const ACHIEVEMENT_MAP = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a])) as Record<
+  string,
+  AchievementDefinition
+>;

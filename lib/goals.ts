@@ -3,6 +3,18 @@
  */
 import type { GoalType, GoalPeriod } from '@/types';
 
+/**
+ * dartsLiveStats レコードの最小インターフェース（進捗計算用）
+ */
+export interface StatsRecord {
+  date: string; // ISO string
+  rating: number | null;
+  gamesPlayed: number;
+  dBull: number | null;
+  sBull: number | null;
+  hatTricks: number | null;
+}
+
 export interface GoalTypeDef {
   type: GoalType;
   label: string;
@@ -82,14 +94,13 @@ export function getDailyPace(current: number, target: number, remainingDays: num
 /**
  * 達成予測日数を計算（現在のペースに基づく）
  */
-export function getEstimatedDays(
-  current: number,
-  target: number,
-  startDate: Date,
-): number | null {
+export function getEstimatedDays(current: number, target: number, startDate: Date): number | null {
   if (current <= 0) return null;
   const now = new Date();
-  const daysSinceStart = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const daysSinceStart = Math.max(
+    1,
+    Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+  );
   const dailyRate = current / daysSinceStart;
   if (dailyRate <= 0) return null;
   const remaining = target - current;
@@ -123,4 +134,49 @@ export function getYearlyRange(): { startDate: Date; endDate: Date } {
   const startDate = new Date(now.getFullYear(), 0, 1);
   const endDate = new Date(now.getFullYear(), 11, 31);
   return { startDate, endDate };
+}
+
+/**
+ * 目標タイプに応じた current 値を dartsLiveStats レコードから計算する。
+ *
+ * @param type - 目標タイプ
+ * @param records - 目標期間内の dartsLiveStats レコード（date 昇順）
+ * @param baselineRecord - 期間開始前の最新レコード（累計値の差分計算用）
+ */
+export function calculateGoalCurrent(
+  type: GoalType,
+  records: StatsRecord[],
+  baselineRecord?: StatsRecord,
+): number {
+  if (records.length === 0) return 0;
+
+  switch (type) {
+    case 'bulls': {
+      const first = baselineRecord ?? records[0];
+      const last = records[records.length - 1];
+      const firstBulls = (first.dBull ?? 0) + (first.sBull ?? 0);
+      const lastBulls = (last.dBull ?? 0) + (last.sBull ?? 0);
+      return Math.max(0, lastBulls - firstBulls);
+    }
+    case 'games':
+      return records.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
+    case 'rating': {
+      const last = records[records.length - 1];
+      return last.rating ?? 0;
+    }
+    case 'cu_score':
+      // COUNT-UP 最高スコアは dartsLiveStats に未格納のためスキップ
+      return 0;
+    case 'play_days': {
+      const uniqueDates = new Set(records.map((r) => r.date.slice(0, 10)));
+      return uniqueDates.size;
+    }
+    case 'hat_tricks': {
+      const first = baselineRecord ?? records[0];
+      const last = records[records.length - 1];
+      return Math.max(0, (last.hatTricks ?? 0) - (first.hatTricks ?? 0));
+    }
+    default:
+      return 0;
+  }
 }

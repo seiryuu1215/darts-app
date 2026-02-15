@@ -1,9 +1,9 @@
 ---
 name: Bug Report
 about: バグの報告
-title: "[Bug] "
+title: '[Bug] '
 labels: bug
-assignees: ""
+assignees: ''
 ---
 
 ## 概要

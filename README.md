@@ -116,6 +116,13 @@
 - 12種類の実績（初スタッツ・100ゲーム・Rating 5.00 到達など）
 - ダッシュボードにXPバー表示、スタッツページに実績一覧・XP履歴
 
+### 目標設定・進捗トラッキング
+
+- 月間/年間の目標を設定（ブル数・ゲーム数・Rating・プレイ日数・HAT TRICK）
+- DARTSLIVE スタッツから進捗をリアルタイム計算
+- 目標達成時に自動 XP 付与
+- 日割りペース・達成予測の表示
+
 ### PWA & iOS ネイティブアプリ
 
 - Service Worker によるオフラインキャッシュ（Serwist）
@@ -154,7 +161,7 @@
 | グラフ         | Recharts 3                                               |
 | スクレイピング | Puppeteer 24                                             |
 | エラー監視     | Sentry                                                   |
-| テスト         | Vitest (39 tests)                                        |
+| テスト         | Vitest (110+ tests)                                      |
 | フォーマッター | Prettier                                                 |
 | CI             | GitHub Actions (lint / format / test / build)            |
 | PWA            | Serwist (Workbox ベース)                                 |
@@ -330,6 +337,7 @@ darts-app/
 │   │   ├── line/               #     LINE連携 (Webhook / Link / Unlink)
 │   │   ├── dartslive-stats/    #     DARTSLIVE スクレイピング (Puppeteer)
 │   │   ├── progression/        #     XP取得・付与API
+│   │   ├── goals/              #     目標CRUD・進捗計算API
 │   │   ├── cron/               #     定時バッチ（日次スタッツ取得）
 │   │   └── ...                 #     認証・スタッツ・管理
 │   ├── darts/                  #   セッティング管理
@@ -361,6 +369,7 @@ darts-app/
 │   │   ├── PercentileChip      #     上位X%バッジ
 │   │   └── ...                 #     他8コンポーネント
 │   ├── progression/            #   XpBar, AchievementList, XpHistoryList, LevelUpSnackbar
+│   ├── goals/                  #   GoalSection, GoalCard, GoalSettingDialog
 │   ├── discussions/            #   DiscussionCard, ReplyForm, ReplyList, CategoryTabs
 │   ├── articles/               #   ArticleCard, MarkdownContent
 │   └── comment/                #   CommentForm, CommentList
@@ -374,8 +383,9 @@ darts-app/
 │   ├── dartslive-rating.ts     #   DARTSLIVE Rt計算（PPD/MPR⇔Rt変換）
 │   ├── dartslive-colors.ts     #   フライト・カテゴリカラー定義
 │   ├── dartslive-percentile.ts #   パーセンタイル分布データ + 推定関数
+│   ├── goals.ts                #   目標定義・進捗計算ヘルパー
 │   ├── progression/            #   XPエンジン・ランク・実績定義
-│   │   ├── xp-rules.ts        #     XPアクション定義（11種）
+│   │   ├── xp-rules.ts        #     XPアクション定義（12種）
 │   │   ├── ranks.ts            #     20段階ランク定義
 │   │   ├── achievements.ts     #     12実績定義
 │   │   └── xp-engine.ts        #     レベル計算・実績チェック

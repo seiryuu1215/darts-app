@@ -90,13 +90,7 @@ export default function Shop() {
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>XPショップ</span>
-            {data && (
-              <Chip
-                label={`${data.xp.toLocaleString()} XP`}
-                color="primary"
-                size="small"
-              />
-            )}
+            {data && <Chip label={`${data.xp.toLocaleString()} XP`} color="primary" size="small" />}
           </Box>
         </DialogTitle>
         <DialogContent>

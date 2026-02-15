@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FlagIcon from '@mui/icons-material/Flag';
@@ -25,23 +25,26 @@ export default function GoalSection() {
   const { data: session } = useSession();
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const fetchGoals = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const res = await fetch('/api/goals');
-      if (res.ok) {
-        const json = await res.json();
-        setGoals(json.goals || []);
-      }
-    } catch {
-      // ignore
-    }
-  }, [session]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    if (!session?.user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/goals');
+        if (res.ok && !cancelled) {
+          const json = await res.json();
+          setGoals(json.goals || []);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session, refreshKey]);
 
   const handleSave = async (data: {
     type: GoalType;
@@ -57,7 +60,7 @@ export default function GoalSection() {
         body: JSON.stringify(data),
       });
       if (res.ok) {
-        fetchGoals();
+        setRefreshKey((k) => k + 1);
       }
     } catch {
       // ignore
@@ -68,7 +71,7 @@ export default function GoalSection() {
     try {
       const res = await fetch(`/api/goals?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchGoals();
+        setRefreshKey((k) => k + 1);
       }
     } catch {
       // ignore

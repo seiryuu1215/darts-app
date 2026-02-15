@@ -85,9 +85,7 @@ export default function GoalSettingDialog({ open, onClose, onSave }: GoalSetting
             size="small"
             value={target}
             onChange={(e) => setTarget(e.target.value)}
-            placeholder={
-              goalDef?.defaultTargets[period as 'monthly' | 'yearly']?.toString() || ''
-            }
+            placeholder={goalDef?.defaultTargets[period as 'monthly' | 'yearly']?.toString() || ''}
           />
         </Box>
       </DialogContent>
