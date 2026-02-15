@@ -26,6 +26,7 @@ export default function GoalSection() {
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeDaily, setActiveDaily] = useState(0);
   const [activeMonthly, setActiveMonthly] = useState(0);
   const [activeYearly, setActiveYearly] = useState(0);
   const [celebrateGoal, setCelebrateGoal] = useState<GoalData | null>(null);
@@ -39,6 +40,7 @@ export default function GoalSection() {
         if (res.ok && !cancelled) {
           const json = await res.json();
           setGoals(json.goals || []);
+          setActiveDaily(json.activeDaily ?? 0);
           setActiveMonthly(json.activeMonthly ?? 0);
           setActiveYearly(json.activeYearly ?? 0);
 
@@ -128,6 +130,7 @@ export default function GoalSection() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
+        activeDaily={activeDaily}
         activeMonthly={activeMonthly}
         activeYearly={activeYearly}
       />

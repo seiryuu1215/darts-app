@@ -285,7 +285,7 @@ export interface UserInventory {
 
 // Goals
 export type GoalType = 'bulls' | 'games' | 'rating' | 'cu_score' | 'play_days' | 'hat_tricks';
-export type GoalPeriod = 'monthly' | 'yearly';
+export type GoalPeriod = 'monthly' | 'yearly' | 'daily';
 
 export interface Goal {
   id?: string;
@@ -297,6 +297,7 @@ export interface Goal {
   endDate: Timestamp;
   achievedAt: Timestamp | null;
   xpAwarded: boolean;
+  baseline?: number | null;
 }
 
 export const GOAL_TYPE_LABELS: Record<GoalType, string> = {

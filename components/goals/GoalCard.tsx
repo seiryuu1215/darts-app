@@ -51,7 +51,7 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
               {label}
             </Typography>
             <Chip
-              label={goal.period === 'monthly' ? '月間' : '年間'}
+              label={goal.period === 'daily' ? '日間' : goal.period === 'monthly' ? '月間' : '年間'}
               size="small"
               sx={{ height: 20, '& .MuiChip-label': { px: 0.8, fontSize: '0.65rem' } }}
             />
@@ -83,7 +83,9 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
         />
 
         <Typography variant="caption" color="text.secondary">
-          {remaining > 0 ? (
+          {goal.period === 'daily' ? (
+            '本日中'
+          ) : remaining > 0 ? (
             <>
               残り{remaining}日{dailyPace > 0 && ` · 1日あたり約${dailyPace}`}
               {estimated != null && estimated > 0 && ` · 予測${estimated}日で達成`}

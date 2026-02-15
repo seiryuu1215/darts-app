@@ -19,7 +19,7 @@ export interface GoalTypeDef {
   type: GoalType;
   label: string;
   unit: string;
-  defaultTargets: { monthly?: number; yearly?: number };
+  defaultTargets: { monthly?: number; yearly?: number; daily?: number };
   periods: GoalPeriod[];
 }
 
@@ -28,15 +28,15 @@ export const GOAL_TYPES: GoalTypeDef[] = [
     type: 'bulls',
     label: 'ブル数',
     unit: '回',
-    defaultTargets: { monthly: 5000 },
-    periods: ['monthly'],
+    defaultTargets: { monthly: 5000, daily: 300 },
+    periods: ['monthly', 'daily'],
   },
   {
     type: 'games',
     label: 'ゲーム数',
     unit: 'ゲーム',
-    defaultTargets: { monthly: 100 },
-    periods: ['monthly'],
+    defaultTargets: { monthly: 100, daily: 30 },
+    periods: ['monthly', 'daily'],
   },
   {
     type: 'rating',
@@ -63,8 +63,8 @@ export const GOAL_TYPES: GoalTypeDef[] = [
     type: 'hat_tricks',
     label: 'HAT TRICK',
     unit: '回',
-    defaultTargets: { monthly: 50 },
-    periods: ['monthly'],
+    defaultTargets: { monthly: 50, daily: 5 },
+    periods: ['monthly', 'daily'],
   },
 ];
 
@@ -133,6 +133,19 @@ export function getYearlyRange(): { startDate: Date; endDate: Date } {
   const now = new Date();
   const startDate = new Date(now.getFullYear(), 0, 1);
   const endDate = new Date(now.getFullYear(), 11, 31);
+  return { startDate, endDate };
+}
+
+/**
+ * デイリー目標の日付範囲を生成（今日の0:00〜23:59 JST）
+ */
+export function getDailyRange(): { startDate: Date; endDate: Date } {
+  const now = new Date();
+  const jstOffset = 9 * 60 * 60 * 1000;
+  const jstNow = new Date(now.getTime() + jstOffset);
+  const jstToday = new Date(Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()));
+  const startDate = new Date(jstToday.getTime() - jstOffset);
+  const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
   return { startDate, endDate };
 }
 

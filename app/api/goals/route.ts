@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { calculateGoalCurrent, getMonthlyRange, type StatsRecord } from '@/lib/goals';
+import { calculateGoalCurrent, getMonthlyRange, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 
+const DAILY_LIMIT = 3;
 const MONTHLY_LIMIT = 3;
 const YEARLY_LIMIT = 1;
 
@@ -88,7 +89,7 @@ export const GET = withErrorHandler(
       .get();
 
     if (snapshot.empty) {
-      return NextResponse.json({ goals: [], activeMonthly: 0, activeYearly: 0 });
+      return NextResponse.json({ goals: [], activeDaily: 0, activeMonthly: 0, activeYearly: 0 });
     }
 
     const rawGoals = snapshot.docs.map((doc) => {
@@ -103,6 +104,7 @@ export const GET = withErrorHandler(
         achievedAt: (d.achievedAt?.toDate?.() ?? null) as Date | null,
         xpAwarded: (d.xpAwarded ?? false) as boolean,
         carryOver: (d.carryOver ?? false) as boolean,
+        baseline: (d.baseline ?? null) as number | null,
         newlyAchieved: false,
       };
     });
@@ -150,14 +152,31 @@ export const GET = withErrorHandler(
             achievedAt: null,
             xpAwarded: false,
             carryOver: true,
+            baseline: null,
             newlyAchieved: false,
           });
         }
       }
     }
 
+    // 期限切れdaily目標の自動削除（引き継ぎなし）
+    for (const goal of rawGoals) {
+      if (
+        goal.period === 'daily' &&
+        !goal.achievedAt &&
+        goal.endDate &&
+        goal.endDate.getTime() < now.getTime()
+      ) {
+        await adminDb.doc(`users/${userId}/goals/${goal.id}`).delete();
+      }
+    }
+    // 削除済みdailyを除外
+    const activeRawGoals = rawGoals.filter(
+      (g) => !(g.period === 'daily' && !g.achievedAt && g.endDate && g.endDate.getTime() < now.getTime()),
+    );
+
     // 全目標の期間をカバーする最小日付を求める
-    const startDates = rawGoals.map((g) => g.startDate).filter((d): d is Date => d !== null);
+    const startDates = activeRawGoals.map((g) => g.startDate).filter((d): d is Date => d !== null);
     const earliestStart =
       startDates.length > 0 ? new Date(Math.min(...startDates.map((d) => d.getTime()))) : null;
 
@@ -233,11 +252,53 @@ export const GET = withErrorHandler(
       newlyAchieved: boolean;
     }[] = [];
 
-    for (const goal of rawGoals) {
+    for (const goal of activeRawGoals) {
       let current = 0;
 
+      // daily目標: baseline差分で計算
+      if (goal.period === 'daily' && goal.baseline !== null && goal.baseline !== undefined) {
+        if (goal.type === 'bulls') {
+          let totalBulls = 0;
+          if (cacheData) {
+            let dBull: number | null = cacheData.bullStats?.dBull ?? null;
+            let sBull: number | null = cacheData.bullStats?.sBull ?? null;
+            if (dBull === null && cacheData.fullData) {
+              try {
+                const full = JSON.parse(cacheData.fullData);
+                const awards = full?.current?.awards ?? {};
+                dBull = awards['D-BULL']?.total ?? null;
+                sBull = awards['S-BULL']?.total ?? null;
+              } catch { /* ignore */ }
+            }
+            totalBulls = (dBull ?? 0) + (sBull ?? 0);
+          }
+          current = Math.max(0, totalBulls - goal.baseline);
+        } else if (goal.type === 'hat_tricks') {
+          let totalHatTricks = 0;
+          if (cacheData) {
+            totalHatTricks = cacheData.hatTricks ?? 0;
+            if (!totalHatTricks && cacheData.fullData) {
+              try {
+                const full = JSON.parse(cacheData.fullData);
+                const awards = full?.current?.awards ?? {};
+                totalHatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0;
+              } catch { /* ignore */ }
+            }
+          }
+          current = Math.max(0, totalHatTricks - goal.baseline);
+        } else if (goal.type === 'games') {
+          // 本日のgamesPlayed合計をdartsLiveStatsから取得
+          const { startDate: dailyStart, endDate: dailyEnd } = getDailyRange();
+          const dailyRecords = allRecords.filter((r) => {
+            const t = new Date(r.date).getTime();
+            return t >= dailyStart.getTime() && t <= dailyEnd.getTime();
+          });
+          const todayGames = dailyRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
+          current = Math.max(0, todayGames - goal.baseline);
+        }
+      }
       // 月間ブル・ハットトリック目標: DARTSLIVEの「今月」値を直接使用
-      if (goal.period === 'monthly' && goal.type === 'bulls' && cachedMonthlyBulls !== null) {
+      else if (goal.period === 'monthly' && goal.type === 'bulls' && cachedMonthlyBulls !== null) {
         current = cachedMonthlyBulls;
       } else if (
         goal.period === 'monthly' &&
@@ -287,14 +348,16 @@ export const GET = withErrorHandler(
       if (current >= goal.target && goal.target > 0 && !goal.achievedAt) {
         newlyAchieved = true;
 
-        // XP付与
+        // XP付与（daily: 10 XP, monthly/yearly: 50 XP）
         if (!goal.xpAwarded) {
+          const xpAmount = goal.period === 'daily' ? 10 : 50;
+          const xpAction = goal.period === 'daily' ? 'daily_goal_achieved' : 'goal_achieved';
           try {
             const userRef = adminDb.doc(`users/${userId}`);
-            await userRef.set({ xp: FieldValue.increment(50) }, { merge: true });
+            await userRef.set({ xp: FieldValue.increment(xpAmount) }, { merge: true });
             await adminDb.collection(`users/${userId}/xpHistory`).add({
-              action: 'goal_achieved',
-              xp: 50,
+              action: xpAction,
+              xp: xpAmount,
               detail: `目標達成: ${goal.type}`,
               createdAt: FieldValue.serverTimestamp(),
             });
@@ -333,10 +396,11 @@ export const GET = withErrorHandler(
     }
 
     // アクティブ数を算出
-    const activeMonthly = countActiveGoals(rawGoals, 'monthly');
-    const activeYearly = countActiveGoals(rawGoals, 'yearly');
+    const activeDaily = countActiveGoals(activeRawGoals, 'daily');
+    const activeMonthly = countActiveGoals(activeRawGoals, 'monthly');
+    const activeYearly = countActiveGoals(activeRawGoals, 'yearly');
 
-    return NextResponse.json({ goals: responseGoals, activeMonthly, activeYearly });
+    return NextResponse.json({ goals: responseGoals, activeDaily, activeMonthly, activeYearly });
   }),
   'Goals GET error',
 );
@@ -373,12 +437,11 @@ export const POST = withErrorHandler(
       return !d.achievedAt && endD && endD.getTime() >= now.getTime();
     }).length;
 
-    const limit = period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT;
+    const limit = period === 'daily' ? DAILY_LIMIT : period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT;
+    const periodLabel = period === 'daily' ? '日間' : period === 'monthly' ? '月間' : '年間';
     if (activeCount >= limit) {
       return NextResponse.json(
-        {
-          error: `${period === 'monthly' ? '月間' : '年間'}目標の上限（${limit}つ）に達しています`,
-        },
+        { error: `${periodLabel}目標の上限（${limit}つ）に達しています` },
         { status: 400 },
       );
     }
@@ -411,6 +474,47 @@ export const POST = withErrorHandler(
       );
     }
 
+    // daily目標の場合はbaseline（現在の累計値スナップショット）を保存
+    let baseline: number | null = null;
+    if (period === 'daily') {
+      if (type === 'bulls' || type === 'hat_tricks') {
+        if (type === 'bulls') {
+          let dBull: number | null = cacheData?.bullStats?.dBull ?? null;
+          let sBull: number | null = cacheData?.bullStats?.sBull ?? null;
+          if (dBull === null && cacheData?.fullData) {
+            try {
+              const full = JSON.parse(cacheData.fullData);
+              const awards = full?.current?.awards ?? {};
+              dBull = awards['D-BULL']?.total ?? null;
+              sBull = awards['S-BULL']?.total ?? null;
+            } catch { /* ignore */ }
+          }
+          baseline = (dBull ?? 0) + (sBull ?? 0);
+        } else {
+          let hatTricks: number | null = cacheData?.hatTricks ?? null;
+          if (hatTricks === null && cacheData?.fullData) {
+            try {
+              const full = JSON.parse(cacheData.fullData);
+              const awards = full?.current?.awards ?? {};
+              hatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
+            } catch { /* ignore */ }
+          }
+          baseline = hatTricks ?? 0;
+        }
+      } else if (type === 'games') {
+        // 本日のgamesPlayed合計をdartsLiveStatsから取得
+        const { startDate: dailyStart, endDate: dailyEnd } = getDailyRange();
+        const statsQuery = adminDb
+          .collection(`users/${userId}/dartsLiveStats`)
+          .where('date', '>=', dailyStart)
+          .where('date', '<=', dailyEnd)
+          .orderBy('date', 'asc');
+        const statsSnap = await statsQuery.get();
+        const todayGames = statsSnap.docs.reduce((sum, doc) => sum + (doc.data().gamesPlayed ?? 0), 0);
+        baseline = todayGames;
+      }
+    }
+
     const docRef = await adminDb.collection(`users/${userId}/goals`).add({
       type,
       period,
@@ -421,6 +525,7 @@ export const POST = withErrorHandler(
       achievedAt: null,
       xpAwarded: false,
       carryOver: false,
+      ...(baseline !== null ? { baseline } : {}),
       createdAt: FieldValue.serverTimestamp(),
     });
 
