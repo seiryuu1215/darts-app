@@ -46,6 +46,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   const mode: 'light' | 'dark' = stored ?? (prefersDark ? 'dark' : 'light');
 
   // data-theme 属性をReact側と同期（インラインスクリプトで初期設定済み）
+  // data-hydrated でトランジションを有効化（FOUC防止）
   useEffect(() => {
     if (mode === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -53,6 +54,13 @@ export default function Providers({ children }: { children: ReactNode }) {
       document.documentElement.removeAttribute('data-theme');
     }
   }, [mode]);
+
+  useEffect(() => {
+    // MUI hydration完了後にトランジションを有効化
+    requestAnimationFrame(() => {
+      document.documentElement.setAttribute('data-hydrated', '');
+    });
+  }, []);
 
   const colorMode = useMemo(
     () => ({
@@ -86,9 +94,8 @@ export default function Providers({ children }: { children: ReactNode }) {
           },
           MuiCssBaseline: {
             styleOverrides: {
-              body: {
-                transition: 'background-color 0.3s ease, color 0.3s ease',
-              },
+              // トランジションは globals.css の data-hydrated で制御（FOUC防止）
+              body: {},
             },
           },
         },

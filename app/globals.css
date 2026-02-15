@@ -1,12 +1,53 @@
 /*
  * JS実行前にダークモード背景を適用してFOUCを防止
  * layout.tsx のインラインスクリプトが <html data-theme="dark"> を付与
+ *
+ * MUI hydration 前にコンポーネント背景もカバーすることで
+ * Card/Paper/AppBar/Footer 等の白フラッシュを防止
  */
+
+/* ── ダークモード: body ── */
 html[data-theme='dark'] body {
   background-color: #121212;
   color: #fff;
 }
 
+/* ── ダークモード: MUI コンポーネント背景 ── */
+html[data-theme='dark'] .MuiPaper-root,
+html[data-theme='dark'] .MuiCard-root {
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+html[data-theme='dark'] .MuiAppBar-root {
+  background-color: #1976d2;
+}
+
+html[data-theme='dark'] .MuiDrawer-paper {
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+html[data-theme='dark'] .MuiDivider-root {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme='dark'] .MuiLinearProgress-root {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme='dark'] .MuiSkeleton-root {
+  background-color: rgba(255, 255, 255, 0.11);
+}
+
+/* ── hydration前はトランジション無効 ── */
 body {
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* hydration完了後のみトランジション有効化 */
+html[data-hydrated] body,
+html[data-hydrated] .MuiPaper-root,
+html[data-hydrated] .MuiCard-root {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
