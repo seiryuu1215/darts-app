@@ -30,7 +30,7 @@ interface GoalSettingDialogProps {
     target: number;
     startDate: string;
     endDate: string;
-  }) => void;
+  }) => Promise<string | null>;
   activeMonthly: number;
   activeYearly: number;
 }
@@ -44,6 +44,7 @@ export default function GoalSettingDialog({
 }: GoalSettingDialogProps) {
   const [type, setType] = useState<GoalType>('bulls');
   const [target, setTarget] = useState('');
+  const [error, setError] = useState('');
 
   const goalDef = GOAL_TYPES.find((g) => g.type === type);
   const period = goalDef?.periods[0] || 'monthly';
@@ -52,12 +53,13 @@ export default function GoalSettingDialog({
   const isYearlyFull = activeYearly >= YEARLY_LIMIT;
   const isPeriodDisabled = period === 'monthly' ? isMonthlyFull : isYearlyFull;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!target || Number(target) <= 0 || isPeriodDisabled) return;
+    setError('');
 
     const range = period === 'monthly' ? getMonthlyRange() : getYearlyRange();
 
-    onSave({
+    const err = await onSave({
       type,
       period,
       target: Number(target),
@@ -65,8 +67,14 @@ export default function GoalSettingDialog({
       endDate: range.endDate.toISOString().split('T')[0],
     });
 
+    if (err) {
+      setError(err);
+      return;
+    }
+
     setType('bulls');
     setTarget('');
+    setError('');
     onClose();
   };
 
@@ -119,6 +127,12 @@ export default function GoalSettingDialog({
             placeholder={goalDef?.defaultTargets[period as 'monthly' | 'yearly']?.toString() || ''}
             disabled={isPeriodDisabled}
           />
+
+          {error && (
+            <Typography variant="caption" color="error">
+              {error}
+            </Typography>
+          )}
 
           <Typography variant="caption" color="text.secondary">
             月間: {activeMonthly}/{MONTHLY_LIMIT} ・ 年間: {activeYearly}/{YEARLY_LIMIT}

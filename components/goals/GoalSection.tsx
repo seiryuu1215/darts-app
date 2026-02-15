@@ -18,8 +18,6 @@ interface GoalData {
   current: number;
   startDate: string;
   endDate: string;
-  achievedAt: string | null;
-  xpAwarded: boolean;
   newlyAchieved?: boolean;
 }
 
@@ -44,12 +42,14 @@ export default function GoalSection() {
           setActiveMonthly(json.activeMonthly ?? 0);
           setActiveYearly(json.activeYearly ?? 0);
 
-          // 新たに達成された目標をお祝い表示
-          const newlyAchieved = (json.goals || []).find(
+          // 新たに達成された目標をお祝い表示（達成目標はAPI側で削除済み）
+          const achieved = (json.goals || []).find(
             (g: GoalData) => g.newlyAchieved,
           );
-          if (newlyAchieved) {
-            setCelebrateGoal(newlyAchieved);
+          if (achieved) {
+            setCelebrateGoal(achieved);
+            // 達成目標をリストから除外
+            setGoals((json.goals || []).filter((g: GoalData) => !g.newlyAchieved));
           }
         }
       } catch {
@@ -67,7 +67,7 @@ export default function GoalSection() {
     target: number;
     startDate: string;
     endDate: string;
-  }) => {
+  }): Promise<string | null> => {
     try {
       const res = await fetch('/api/goals', {
         method: 'POST',
@@ -76,9 +76,12 @@ export default function GoalSection() {
       });
       if (res.ok) {
         setRefreshKey((k) => k + 1);
+        return null;
       }
+      const json = await res.json();
+      return json.error || '目標の作成に失敗しました';
     } catch {
-      // ignore
+      return '通信エラーが発生しました';
     }
   };
 

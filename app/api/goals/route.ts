@@ -37,6 +37,47 @@ function countActiveGoals(
 }
 
 /**
+ * キャッシュから月間アワード値を取得
+ */
+function getMonthlyAwardsFromCache(cacheData: FirebaseFirestore.DocumentData | null): {
+  monthlyBulls: number | null;
+  monthlyHatTricks: number | null;
+} {
+  if (!cacheData) return { monthlyBulls: null, monthlyHatTricks: null };
+
+  let monthlyBulls: number | null = null;
+  let monthlyHatTricks: number | null = null;
+
+  const dBullM = cacheData.bullStats?.dBullMonthly ?? null;
+  const sBullM = cacheData.bullStats?.sBullMonthly ?? null;
+  if (dBullM !== null || sBullM !== null) {
+    monthlyBulls = (dBullM ?? 0) + (sBullM ?? 0);
+  }
+  monthlyHatTricks = cacheData.hatTricksMonthly ?? null;
+
+  // fullData JSONからもフォールバック
+  if (monthlyBulls === null && cacheData.fullData) {
+    try {
+      const full = JSON.parse(cacheData.fullData);
+      const awards = full?.current?.awards ?? {};
+      const dm = awards['D-BULL']?.monthly ?? null;
+      const sm = awards['S-BULL']?.monthly ?? null;
+      if (dm !== null || sm !== null) {
+        monthlyBulls = (dm ?? 0) + (sm ?? 0);
+      }
+      if (monthlyHatTricks === null) {
+        monthlyHatTricks =
+          awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { monthlyBulls, monthlyHatTricks };
+}
+
+/**
  * GET /api/goals — ユーザーの目標一覧を取得（dartsLiveStats から current をリアルタイム計算）
  */
 export const GET = withErrorHandler(
@@ -75,7 +116,6 @@ export const GET = withErrorHandler(
         goal.endDate &&
         goal.endDate.getTime() < now.getTime()
       ) {
-        // 今月の同タイプ目標が既に存在するかチェック
         const { startDate: newStart, endDate: newEnd } = getMonthlyRange();
         const alreadyCarried = rawGoals.some(
           (g) =>
@@ -87,7 +127,6 @@ export const GET = withErrorHandler(
         );
 
         if (!alreadyCarried) {
-          // 新月の期間にコピー
           const newGoalRef = await adminDb.collection(`users/${userId}/goals`).add({
             type: goal.type,
             period: goal.period,
@@ -122,7 +161,7 @@ export const GET = withErrorHandler(
     const earliestStart =
       startDates.length > 0 ? new Date(Math.min(...startDates.map((d) => d.getTime()))) : null;
 
-    // dartsLiveStats レコードをまとめて取得（ベースラインも含め少し前から）
+    // dartsLiveStats レコードをまとめて取得
     let allRecords: StatsRecord[] = [];
     if (earliestStart) {
       const baselineStart = new Date(earliestStart.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -134,19 +173,17 @@ export const GET = withErrorHandler(
       allRecords = statsSnap.docs.map((doc) => toStatsRecord(doc.data()));
     }
 
-    // dartsliveCache/latest を取得（月間値 & 最新データポイント補完用）
+    // dartsliveCache/latest を取得
     const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
     const cacheData = cacheDoc.exists ? cacheDoc.data()! : null;
 
     if (cacheData) {
       const cacheDate = cacheData.updatedAt?.toDate?.() ?? now;
 
-      // bullStats: 直接フィールド or fullData JSON から取得
       let dBull: number | null = cacheData.bullStats?.dBull ?? null;
       let sBull: number | null = cacheData.bullStats?.sBull ?? null;
       let hatTricks: number | null = cacheData.hatTricks ?? null;
 
-      // bullStatsが無い場合、fullData内のawardsから復元
       if (dBull === null && cacheData.fullData) {
         try {
           const full = JSON.parse(cacheData.fullData);
@@ -157,7 +194,7 @@ export const GET = withErrorHandler(
             hatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
           }
         } catch {
-          // JSON parse error — ignore
+          // ignore
         }
       }
 
@@ -169,123 +206,137 @@ export const GET = withErrorHandler(
         sBull,
         hatTricks,
       };
-      // dartsLiveStatsの最新レコードより新しい場合のみ追加
-      const lastRecordDate = allRecords.length > 0
-        ? new Date(allRecords[allRecords.length - 1].date).getTime()
-        : 0;
+      const lastRecordDate =
+        allRecords.length > 0
+          ? new Date(allRecords[allRecords.length - 1].date).getTime()
+          : 0;
       if (cacheDate.getTime() > lastRecordDate) {
         allRecords.push(cacheRecord);
       }
     }
 
-    // キャッシュから月間アワード値を取得（DARTSLIVEの「今月」カラム）
-    let cachedMonthlyBulls: number | null = null;
-    let cachedMonthlyHatTricks: number | null = null;
-    if (cacheData) {
-      const dBullM = cacheData.bullStats?.dBullMonthly ?? null;
-      const sBullM = cacheData.bullStats?.sBullMonthly ?? null;
-      if (dBullM !== null || sBullM !== null) {
-        cachedMonthlyBulls = (dBullM ?? 0) + (sBullM ?? 0);
-      }
-      cachedMonthlyHatTricks = cacheData.hatTricksMonthly ?? null;
-
-      // fullData JSONからもフォールバック
-      if (cachedMonthlyBulls === null && cacheData.fullData) {
-        try {
-          const full = JSON.parse(cacheData.fullData);
-          const awards = full?.current?.awards ?? {};
-          const dm = awards['D-BULL']?.monthly ?? null;
-          const sm = awards['S-BULL']?.monthly ?? null;
-          if (dm !== null || sm !== null) {
-            cachedMonthlyBulls = (dm ?? 0) + (sm ?? 0);
-          }
-          if (cachedMonthlyHatTricks === null) {
-            cachedMonthlyHatTricks = awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
+    const { monthlyBulls: cachedMonthlyBulls, monthlyHatTricks: cachedMonthlyHatTricks } =
+      getMonthlyAwardsFromCache(cacheData);
 
     // 各目標の current を計算
-    const goals = await Promise.all(
-      rawGoals.map(async (goal) => {
-        let current = 0;
+    const responseGoals: {
+      id: string;
+      type: string;
+      period: string;
+      target: number;
+      current: number;
+      startDate: string;
+      endDate: string;
+      achievedAt: string | null;
+      xpAwarded: boolean;
+      carryOver: boolean;
+      newlyAchieved: boolean;
+    }[] = [];
 
-        // 月間ブル・ハットトリック目標: DARTSLIVEの「今月」値を直接使用
-        if (goal.period === 'monthly' && goal.type === 'bulls' && cachedMonthlyBulls !== null) {
-          current = cachedMonthlyBulls;
-        } else if (goal.period === 'monthly' && goal.type === 'hat_tricks' && cachedMonthlyHatTricks !== null) {
-          current = cachedMonthlyHatTricks;
-        } else if (goal.type !== 'cu_score' && goal.startDate && goal.endDate && allRecords.length > 0) {
-          const startMs = goal.startDate.getTime();
-          const endMs = goal.endDate.getTime() + 24 * 60 * 60 * 1000;
+    for (const goal of rawGoals) {
+      let current = 0;
 
-          const periodRecords = allRecords.filter((r) => {
-            const t = new Date(r.date).getTime();
-            return t >= startMs && t < endMs;
-          });
+      // 月間ブル・ハットトリック目標: DARTSLIVEの「今月」値を直接使用
+      if (goal.period === 'monthly' && goal.type === 'bulls' && cachedMonthlyBulls !== null) {
+        current = cachedMonthlyBulls;
+      } else if (
+        goal.period === 'monthly' &&
+        goal.type === 'hat_tricks' &&
+        cachedMonthlyHatTricks !== null
+      ) {
+        current = cachedMonthlyHatTricks;
+      } else if (
+        goal.type !== 'cu_score' &&
+        goal.startDate &&
+        goal.endDate &&
+        allRecords.length > 0
+      ) {
+        const startMs = goal.startDate.getTime();
+        const endMs = goal.endDate.getTime() + 24 * 60 * 60 * 1000;
 
-          let baselineRecord: StatsRecord | undefined;
-          if (goal.type === 'bulls' || goal.type === 'hat_tricks') {
-            const beforeRecords = allRecords.filter((r) => new Date(r.date).getTime() < startMs);
-            if (beforeRecords.length > 0) {
-              baselineRecord = beforeRecords[beforeRecords.length - 1];
-            }
-          }
+        const periodRecords = allRecords.filter((r) => {
+          const t = new Date(r.date).getTime();
+          return t >= startMs && t < endMs;
+        });
 
-          current = calculateGoalCurrent(goal.type, periodRecords, baselineRecord);
-        }
-
-        // 達成判定: current >= target かつ未達成
-        let newlyAchieved = false;
-        if (current >= goal.target && goal.target > 0 && !goal.achievedAt) {
-          const achievedNow = new Date();
-          const goalRef = adminDb.doc(`users/${userId}/goals/${goal.id}`);
-          await goalRef.update({ achievedAt: Timestamp.fromDate(achievedNow) });
-          goal.achievedAt = achievedNow;
-          newlyAchieved = true;
-
-          if (!goal.xpAwarded) {
-            try {
-              const userRef = adminDb.doc(`users/${userId}`);
-              await userRef.set({ xp: FieldValue.increment(50) }, { merge: true });
-              await adminDb.collection(`users/${userId}/xpHistory`).add({
-                action: 'goal_achieved',
-                xp: 50,
-                detail: `目標達成: ${goal.type}`,
-                createdAt: FieldValue.serverTimestamp(),
-              });
-              await goalRef.update({ xpAwarded: true });
-              goal.xpAwarded = true;
-            } catch (e) {
-              console.error('Goal XP award error:', e);
-            }
+        let baselineRecord: StatsRecord | undefined;
+        if (goal.type === 'bulls' || goal.type === 'hat_tricks') {
+          const beforeRecords = allRecords.filter(
+            (r) => new Date(r.date).getTime() < startMs,
+          );
+          if (beforeRecords.length > 0) {
+            baselineRecord = beforeRecords[beforeRecords.length - 1];
           }
         }
 
-        return {
-          id: goal.id,
-          type: goal.type,
-          period: goal.period,
-          target: goal.target,
-          current,
-          startDate: goal.startDate?.toISOString() ?? '',
-          endDate: goal.endDate?.toISOString() ?? '',
-          achievedAt: goal.achievedAt?.toISOString?.() ?? null,
-          xpAwarded: goal.xpAwarded,
-          carryOver: goal.carryOver,
-          newlyAchieved,
-        };
-      }),
-    );
+        current = calculateGoalCurrent(goal.type, periodRecords, baselineRecord);
+      }
+
+      // 誤達成の修正: achievedAt が設定されているが current < target なら解除
+      if (goal.achievedAt && current < goal.target) {
+        await adminDb.doc(`users/${userId}/goals/${goal.id}`).update({
+          achievedAt: null,
+          xpAwarded: false,
+        });
+        goal.achievedAt = null;
+        goal.xpAwarded = false;
+      }
+
+      // 達成判定: current >= target かつ未達成
+      let newlyAchieved = false;
+      if (current >= goal.target && goal.target > 0 && !goal.achievedAt) {
+        newlyAchieved = true;
+
+        // XP付与
+        if (!goal.xpAwarded) {
+          try {
+            const userRef = adminDb.doc(`users/${userId}`);
+            await userRef.set({ xp: FieldValue.increment(50) }, { merge: true });
+            await adminDb.collection(`users/${userId}/xpHistory`).add({
+              action: 'goal_achieved',
+              xp: 50,
+              detail: `目標達成: ${goal.type}`,
+              createdAt: FieldValue.serverTimestamp(),
+            });
+          } catch (e) {
+            console.error('Goal XP award error:', e);
+          }
+        }
+
+        // 達成した目標をFirestoreから削除
+        await adminDb.doc(`users/${userId}/goals/${goal.id}`).delete();
+      }
+
+      // 既に達成済み（過去の達成）はレスポンスに含めない
+      if (goal.achievedAt && !newlyAchieved) {
+        continue;
+      }
+
+      // 期限切れ目標も除外（引き継ぎ済みの場合）
+      if (!goal.achievedAt && goal.endDate && goal.endDate.getTime() < now.getTime()) {
+        continue;
+      }
+
+      responseGoals.push({
+        id: goal.id,
+        type: goal.type,
+        period: goal.period,
+        target: goal.target,
+        current,
+        startDate: goal.startDate?.toISOString() ?? '',
+        endDate: goal.endDate?.toISOString() ?? '',
+        achievedAt: newlyAchieved ? now.toISOString() : null,
+        xpAwarded: goal.xpAwarded,
+        carryOver: goal.carryOver,
+        newlyAchieved,
+      });
+    }
 
     // アクティブ数を算出
     const activeMonthly = countActiveGoals(rawGoals, 'monthly');
     const activeYearly = countActiveGoals(rawGoals, 'yearly');
 
-    return NextResponse.json({ goals, activeMonthly, activeYearly });
+    return NextResponse.json({ goals: responseGoals, activeMonthly, activeYearly });
   }),
   'Goals GET error',
 );
@@ -328,6 +379,34 @@ export const POST = withErrorHandler(
         {
           error: `${period === 'monthly' ? '月間' : '年間'}目標の上限（${limit}つ）に達しています`,
         },
+        { status: 400 },
+      );
+    }
+
+    // 既達成チェック: 現在値が既にtarget以上なら設定させない
+    const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
+    const cacheData = cacheDoc.exists ? cacheDoc.data()! : null;
+
+    if (period === 'monthly') {
+      const { monthlyBulls, monthlyHatTricks } = getMonthlyAwardsFromCache(cacheData);
+
+      if (type === 'bulls' && monthlyBulls !== null && monthlyBulls >= target) {
+        return NextResponse.json(
+          { error: '今月のブル数が既に目標値に達しています。より高い目標を設定してください。' },
+          { status: 400 },
+        );
+      }
+      if (type === 'hat_tricks' && monthlyHatTricks !== null && monthlyHatTricks >= target) {
+        return NextResponse.json(
+          { error: '今月のHAT TRICK数が既に目標値に達しています。より高い目標を設定してください。' },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (type === 'rating' && cacheData?.rating != null && cacheData.rating >= target) {
+      return NextResponse.json(
+        { error: '現在のRatingが既に目標値に達しています。より高い目標を設定してください。' },
         { status: 400 },
       );
     }

@@ -36,7 +36,6 @@ import SportsBarIcon from '@mui/icons-material/SportsBar';
 import BuildIcon from '@mui/icons-material/Build';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ForumIcon from '@mui/icons-material/Forum';
-import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
@@ -92,7 +91,6 @@ export default function Header() {
           items: [
             { label: 'スタッツ記録', href: '/stats' },
             { label: '目標', href: '/#goals' },
-            { label: 'ランキング', href: '/ranking' },
           ],
         },
         {
@@ -207,10 +205,6 @@ export default function Header() {
                 </Button>
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
-                </Button>
-                <Button color="inherit" component={Link} href="/ranking" size="small">
-                  <LeaderboardIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                  ランキング
                 </Button>
                 {!userIsPro && (
                   <Button
