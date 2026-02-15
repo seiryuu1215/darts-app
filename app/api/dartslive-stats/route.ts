@@ -502,6 +502,7 @@ export const POST = withErrorHandler(
         };
 
         // フルデータ + サマリーを保存
+        const awards = currentStats.awards || {};
         const cacheData = {
           // サマリー（トップページ表示用）
           rating: currentStats.rating,
@@ -514,6 +515,12 @@ export const POST = withErrorHandler(
           stats01Avg: currentStats.stats01Avg,
           statsCriAvg: currentStats.statsCriAvg,
           statsPraAvg: currentStats.statsPraAvg,
+          // ブル・アワード累計（目標進捗計算用）
+          bullStats: {
+            dBull: awards['D-BULL']?.total ?? 0,
+            sBull: awards['S-BULL']?.total ?? 0,
+          },
+          hatTricks: awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0,
           // 前回との差分
           prevRating: responseData.prev?.rating ?? null,
           prevStats01Avg: responseData.prev?.stats01Avg ?? null,

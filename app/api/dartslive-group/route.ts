@@ -235,22 +235,29 @@ async function scrapeGroupData(page: PuppeteerPage): Promise<{
     }
   }
 
-  // Step 4: 見つからない場合、デバッグ用に現在のページ情報を返す
-  // トップページに戻って全リンクを収集
-  await page.goto('https://card.dartslive.com/t/top.jsp', {
-    waitUntil: 'domcontentloaded',
-    timeout: 15000,
-  });
-  const topLinks = await collectLinks(page);
-  const linkSummary = topLinks
-    .filter((l) => l.href.includes('card.dartslive.com'))
-    .map((l) => `${l.text}: ${l.href}`)
-    .join('\n');
+  // Step 4: 見つからない場合、デバッグ用に複数ページのリンク情報を収集
+  const debugPages: string[] = [];
+
+  for (const debugUrl of [
+    'https://card.dartslive.com/t/top.jsp',
+    'https://card.dartslive.com/t/util/index.jsp',
+  ]) {
+    try {
+      await page.goto(debugUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      const links = await collectLinks(page);
+      const filtered = links
+        .filter((l) => l.href.includes('card.dartslive.com') && l.text.length > 0)
+        .map((l) => `  ${l.text} → ${l.href}`);
+      debugPages.push(`[${debugUrl}]\n${filtered.join('\n')}`);
+    } catch {
+      debugPages.push(`[${debugUrl}] 取得失敗`);
+    }
+  }
 
   return {
     groupName: '',
     members: [],
-    debugInfo: `グループページが見つかりませんでした。\n発見したリンク:\n${linkSummary}`,
+    debugInfo: `グループページが見つかりませんでした。\n\n${debugPages.join('\n\n')}`,
   };
 }
 

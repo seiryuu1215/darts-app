@@ -140,13 +140,34 @@ export const GET = withErrorHandler(
     if (cacheDoc.exists) {
       const c = cacheDoc.data()!;
       const cacheDate = c.updatedAt?.toDate?.() ?? now;
+
+      // bullStats: 直接フィールド or fullData JSON から取得
+      let dBull: number | null = c.bullStats?.dBull ?? null;
+      let sBull: number | null = c.bullStats?.sBull ?? null;
+      let hatTricks: number | null = c.hatTricks ?? null;
+
+      // bullStatsが無い場合、fullData内のawardsから復元
+      if (dBull === null && c.fullData) {
+        try {
+          const full = JSON.parse(c.fullData);
+          const awards = full?.current?.awards ?? {};
+          dBull = awards['D-BULL']?.total ?? null;
+          sBull = awards['S-BULL']?.total ?? null;
+          if (hatTricks === null) {
+            hatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
+          }
+        } catch {
+          // JSON parse error — ignore
+        }
+      }
+
       const cacheRecord: StatsRecord = {
         date: cacheDate.toISOString(),
         rating: c.rating ?? null,
         gamesPlayed: 0,
-        dBull: c.bullStats?.dBull ?? null,
-        sBull: c.bullStats?.sBull ?? null,
-        hatTricks: c.hatTricks ?? null,
+        dBull,
+        sBull,
+        hatTricks,
       };
       // dartsLiveStatsの最新レコードより新しい場合のみ追加
       const lastRecordDate = allRecords.length > 0
