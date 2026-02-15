@@ -11,9 +11,9 @@
 2. [ルーティングの仕組み（App Router）](#2-ルーティングの仕組みapp-router)
 3. [認証アーキテクチャ（デュアル認証）](#3-認証アーキテクチャデュアル認証)
 4. [データ層（Firestore + 型定義）](#4-データ層firestore--型定義)
-5. [主要コンポーネントと実装パターン](#5-主要コンポーネントと実装パターン)
-6. [外部サービス連携](#6-外部サービス連携)
-7. [ビジネスロジック](#7-ビジネスロジック)
+5. [主要コンポーネントと実装パターン](#5-主要コンポーネントと実装パターン)（ホーム画面、スタッツ、Header、XpBar等）
+6. [外部サービス連携](#6-外部サービス連携)（Stripe、DARTSLIVE、LINE、アフィリエイト）
+7. [ビジネスロジック](#7-ビジネスロジック)（権限、API、Rt計算、XP/ランク、目標、通知、レコメンド）
 8. [知っておくべき設計判断と懸念点](#8-知っておくべき設計判断と懸念点)
 9. [テスト・CI・デプロイ](#9-テストciデプロイ)
 10. [ファイル索引](#10-ファイル索引)
@@ -46,7 +46,9 @@ darts-app/
 │   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
 │   ├── stats/              # 14個のスタッツ可視化コンポーネント
 │   ├── affiliate/          # AffiliateButton, AffiliateBanner
-│   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog
+│   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
+│   ├── progression/        # XpBar, LevelUpSnackbar
+│   ├── notifications/      # XpNotificationDialog
 │   ├── discussions/        # DiscussionCard, ReplyForm, ReplyList
 │   ├── articles/           # ArticleCard, MarkdownContent
 │   └── Providers.tsx       # 全プロバイダーをまとめるラッパー
@@ -60,7 +62,12 @@ darts-app/
 │   ├── goals.ts            # 目標定義・進捗計算ヘルパー
 │   ├── recommend-barrels.ts# バレルレコメンドエンジン
 │   ├── dartslive-rating.ts # Rt計算・逆算ロジック
-│   └── dartslive-percentile.ts # パーセンタイル分布
+│   ├── dartslive-percentile.ts # パーセンタイル分布
+│   └── progression/        # XPシステム
+│       ├── xp-rules.ts     # XP獲得ルール定義
+│       ├── xp-engine.ts    # レベル計算・Cron XP算出
+│       ├── ranks.ts        # ランク定義（アイコン・色付き）
+│       └── milestones.ts   # マイルストーン（バッジ）定義
 ├── types/index.ts          # 全型定義
 ├── firestore.rules         # Firestoreセキュリティルール
 ├── storage.rules           # Storageセキュリティルール
@@ -308,7 +315,10 @@ User (ユーザー)
     ├── barrelBookmarks/{barrelId}
     ├── settingHistory/{historyId}    ← セッティング使用履歴
     ├── dartsLiveStats/{statsId}      ← スタッツ記録
-    └── goals/{goalId}                ← 目標設定・進捗
+    ├── goals/{goalId}                ← 目標設定・進捗（達成時に削除）
+    ├── notifications/{notifId}       ← XP通知（未読/既読）
+    ├── xpHistory/{historyId}         ← XP獲得履歴
+    └── dartsliveCache/latest         ← DARTSLIVEキャッシュ（最新スタッツ）
 
 Dart (セッティング)
 ├── userId → User への参照
@@ -439,8 +449,10 @@ service cloud.firestore {
 
 ```
 ホーム画面
-├── XPバー + ショップ（ログイン時のみ）
 ├── GoalSection（目標進捗、ログイン時のみ）
+│   └── 目標達成時に GoalAchievedDialog（紙吹雪お祝い）
+├── XpBar（コンパクトなランクカード、ログイン時のみ）
+│   └── タップで詳細展開（次レベルまでのXP、XP獲得条件一覧）
 ├── 使用中ダーツカード（ログイン時のみ）
 │   └── アクティブなソフト/スティールダーツを表示
 ├── DARTSLIVE Stats サマリー（ログイン時のみ）
@@ -450,10 +462,11 @@ service cloud.firestore {
 │   └── セッティング比較、ブックマーク（ログイン時のみ）
 ├── 新着セッティング（公開データ）
 ├── 最新ディスカッション
+├── XpNotificationDialog（Cron XP付与後にポップアップ）
+├── LevelUpSnackbar（レベルアップ時にスナックバー）
 └── Sidebar（PC: 右カラム）
     ├── 人気バレルランキング
-    ├── 新着記事
-    └── ショップバナー
+    └── 新着記事
 ```
 
 **2カラムレイアウトの実装（`components/layout/TwoColumnLayout.tsx`）:**
@@ -577,7 +590,21 @@ const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 - 以前は `useEffect` で親のpropを `useState` に同期していたが、ユーザーのローカル操作を上書きしてしまうバグがあった
 - `??`（Nullish Coalescing）で「まだ値がない」状態と「falseと確定」を区別している
 
-### 5-5. MUI レスポンシブパターン
+### 5-5. モバイルドロワーメニュー（`components/layout/Header.tsx`）
+
+モバイルメニューは5つのグループに分類されたアコーディオン式:
+
+| グループ | アイコン | 項目 |
+|---------|---------|------|
+| ダーツ | SportsBar | セッティング, セッティング履歴, バレル検索, おすすめバレル |
+| ツール | Build | シミュレーター, 診断クイズ, セッティング比較 |
+| スタッツ・記録 | BarChart | スタッツ記録, 目標 |
+| コミュニティ | Forum | 記事, ディスカッション |
+| マイページ | Person | プロフィール, ブックマーク, サブスク/PRO, 管理画面（admin） |
+
+`openGroups` state + MUI `Collapse` で各グループの開閉を管理。未ログイン時はマイページグループとスタッツ・記録グループが非表示。
+
+### 5-6. MUI レスポンシブパターン
 
 ```tsx
 // MUI の sx prop でブレークポイント別にスタイル指定
@@ -666,7 +693,12 @@ switch (event.type) {
     awards: {
       'D-BULL': { monthly: 12, total: 456 },
       'S-BULL': { monthly: 34, total: 890 },
-      'HAT-TRICK': { monthly: 2, total: 15 },
+      'HAT TRICK': { monthly: 2, total: 15 },
+      'TON 80': { monthly: 0, total: 3 },
+      'LOW TON': { monthly: 5, total: 120 },
+      'HIGH TON': { monthly: 1, total: 30 },
+      '3 IN A BLACK': { monthly: 0, total: 1 },
+      '9 MARK': { monthly: 0, total: 2 },
       // ...
     }
   },
@@ -700,15 +732,35 @@ switch (event.type) {
 **日次Cron（`app/api/cron/daily-stats/route.ts`）:**
 
 ```
-Vercel Cron → POST /api/cron/daily-stats (Bearer token認証)
+Vercel Cron (JST 10:00 = UTC 1:00) → POST /api/cron/daily-stats (Bearer token認証)
     ↓
 LINE連携ユーザーを全件取得
     ↓
 各ユーザーごとに:
   1. 暗号化されたDL認証情報を復号
-  2. Puppeteerでスクレイピング
-  3. 前回と変化があれば → LINE Push通知
-  4. 会話状態を 'waiting_condition' に設定
+  2. Puppeteerでスクレイピング（今月/累計のアワード値も取得）
+  3. dartsliveCache/latest にキャッシュ保存（bullStats, hatTricks含む）
+  4. 前回/今回の差分からXPアクション算出（calculateCronXp）
+  5. XP付与 → xpHistory記録 → 通知ドキュメント作成
+  6. 前回と変化があれば → LINE Push通知
+  7. 会話状態を 'waiting_condition' に設定
+```
+
+**キャッシュ構造（`dartsliveCache/latest`）:**
+
+```json
+{
+  "rating": 8.52,
+  "flight": "BB",
+  "bullStats": {
+    "dBull": 456, "sBull": 890,
+    "dBullMonthly": 12, "sBullMonthly": 34
+  },
+  "hatTricks": 15,
+  "hatTricksMonthly": 2,
+  "fullData": "{ ... JSONスクレイピング全データ ... }",
+  "updatedAt": "Timestamp"
+}
 ```
 
 ### 6-4. アフィリエイト（`lib/affiliate.ts`）
@@ -830,7 +882,111 @@ function ppdForRating(targetRt: number): number {
 }
 ```
 
-### 7-4. バレルレコメンドエンジン（`lib/recommend-barrels.ts`）
+### 7-4. XPプログレッションシステム
+
+ユーザーのプレイ活動に応じてXPを付与し、レベル・ランクで成長を可視化するシステム。
+
+**構成ファイル:**
+
+| ファイル | 役割 |
+|---------|------|
+| `lib/progression/xp-rules.ts` | XP獲得ルール定義（14種類） |
+| `lib/progression/xp-engine.ts` | レベル計算・Cron XP差分算出・実績チェック |
+| `lib/progression/ranks.ts` | 20段階のランク定義（アイコン・色付き） |
+| `lib/progression/milestones.ts` | 累計XPマイルストーン（バッジのみ） |
+| `app/api/progression/route.ts` | GET: XP/レベル取得、POST: XP付与 |
+
+**XP獲得ルール:**
+
+| ルールID | XP | トリガー |
+|---------|-----|---------|
+| `stats_record` | 10 | スタッツ手動記録 |
+| `games_10` | 20 | 累計ゲーム数10の倍数 |
+| `play_streak_3/7/30` | 15/50/200 | 連続プレイ日数 |
+| `rating_milestone` | 30 | Rating整数到達 |
+| `award_hat_trick` | 5 | HAT TRICK |
+| `award_ton_80` | 10 | TON 80 |
+| `award_3_black` | 15 | 3 IN A BLACK |
+| `award_9_mark` | 10 | 9マーク |
+| `award_low_ton/high_ton` | 3/5 | LOW TON / HIGH TON |
+| `discussion_post` | 5 | ディスカッション投稿 |
+| `condition_record` | 3 | コンディション記録 |
+| `goal_achieved` | 50 | 目標達成 |
+
+**ランク体系（20段階）:**
+
+Lv.1 Rookie 🎯 → Lv.10 AA Player 💎 → Lv.15 Champion ⭐ → Lv.20 THE GOD 🏆
+
+各ランクに `icon`（絵文字）と `color`（UIアクセント色）が定義されている。`XpBar` コンポーネントはランクの色で左ボーダーを表示し、タップで詳細（次レベルまでのXP、XP獲得条件カテゴリ別一覧）が展開される。
+
+**Cron XP自動付与の流れ（`app/api/cron/daily-stats/route.ts`）:**
+
+```
+Vercel Cron (JST 10:00 = UTC 1:00) → POST /api/cron/daily-stats
+    ↓
+LINE連携ユーザーごとに DARTSLIVEスクレイピング
+    ↓
+前回/今回のスタッツ比較 → calculateCronXp(prev, current)
+    ↓
+差分からXPアクション算出（ゲーム数、アワード数、連続プレイ等）
+    ↓
+users/{userId} にXP加算 + xpHistory に記録
+    ↓
+users/{userId}/notifications に通知ドキュメント作成
+    ↓
+次回アプリ起動時に XpNotificationDialog でポップアップ表示
+```
+
+### 7-5. 目標システム（`app/api/goals/route.ts` + `components/goals/`）
+
+ユーザーが月間/年間の目標を設定し、DARTSLIVEスタッツから進捗を自動計算する。
+
+**目標タイプ:** `bulls`（ブル数）, `hat_tricks`（HAT TRICK数）, `rating`（Rt到達）, `cu_score`（CUスコア）
+
+**ルール:**
+- 月間目標: 最大3つ、年間目標: 最大1つ（アクティブ = 未達成 & 期間内）
+- 月間ブル・HAT TRICK目標はDARTSLIVEの「今月」列の値を直接使用（差分計算ではない）
+- 既に達成済みの値で目標設定はできない（POST時にバリデーション）
+- 期限切れ未達成の月間目標は翌月に自動引き継ぎ（`carryOver: true`）
+
+**達成フロー（GET /api/goals 内で処理）:**
+
+```
+goals一覧取得 → 各goalのcurrent計算
+    ↓
+current >= target かつ未達成？
+    ↓  YES
+XP 50pt 付与 → xpHistory記録 → Firestoreから目標を削除
+    ↓
+レスポンスに newlyAchieved: true で返却
+    ↓
+GoalSection → GoalAchievedDialog（紙吹雪お祝い表示）
+```
+
+**誤達成の自動修正:** `achievedAt` が設定されているが `current < target` の場合、`achievedAt` をクリア（キャッシュデータの変動による誤判定対策）。
+
+### 7-6. 通知システム
+
+**Firestore構造（`users/{userId}/notifications`）:**
+
+```json
+{
+  "type": "xp_gained",
+  "title": "デイリーXP獲得!",
+  "details": [
+    { "action": "games_10", "xp": 20, "label": "累計ゲーム数10の倍数" }
+  ],
+  "totalXp": 20,
+  "read": false,
+  "createdAt": "Timestamp"
+}
+```
+
+**API:** `GET /api/notifications`（未読取得）、`PATCH /api/notifications`（既読マーク）
+
+**フロー:** Cron XP付与 → 通知作成 → アプリ起動時にfetch → `XpNotificationDialog` 表示 → 閉じたら既読PATCH
+
+### 7-7. バレルレコメンドエンジン（`lib/recommend-barrels.ts`）
 
 100点満点のスコアリング:
 
@@ -940,16 +1096,17 @@ npm test          # テスト実行
 npm run test:watch # ウォッチモード
 ```
 
-**テストされているもの（`lib/__tests__/`）:**
+**テストされているもの:**
 | ファイル | 内容 | テスト数 |
 |---------|------|---------|
-| `api-middleware.test.ts` | 認証・権限・エラーハンドリング | 10 |
-| `permissions.test.ts` | 全権限関数の正常系/異常系 | ~20 |
-| `dartslive-percentile.test.ts` | パーセンタイル計算・補間 | ~15 |
-| `route.test.ts` (Stripe) | Webhook署名検証・イベント処理 | 6 |
-| `goals.test.ts` | 目標定義・進捗計算ヘルパー | ~30 |
-| `xp-engine.test.ts` | レベル計算・ランク判定 | ~20 |
-| **合計** | | **110+** |
+| `lib/__tests__/api-middleware.test.ts` | 認証・権限・エラーハンドリング | 10 |
+| `lib/__tests__/permissions.test.ts` | 全権限関数の正常系/異常系 | ~20 |
+| `lib/__tests__/dartslive-percentile.test.ts` | パーセンタイル計算・補間 | ~15 |
+| `app/api/stripe/webhook/__tests__/route.test.ts` | Webhook署名検証・イベント処理 | 6 |
+| `lib/__tests__/goals.test.ts` | 目標定義・進捗計算ヘルパー | ~30 |
+| `lib/__tests__/xp-engine.test.ts` | レベル計算・ランク判定 | ~20 |
+| `lib/progression/__tests__/xp-engine.test.ts` | Cron XP差分計算・実績チェック | ~25 |
+| **合計** | | **125+** |
 
 **テストされていないもの:**
 
@@ -1026,9 +1183,13 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ          |
 | `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ      |
 | `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge） |
-| `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算   |
-| `POST /api/goals`            | 同上                                | 目標作成            |
+| `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算+達成判定   |
+| `POST /api/goals`            | 同上                                | 目標作成（既達成チェック付き）|
 | `DELETE /api/goals`          | 同上                                | 目標削除            |
+| `GET /api/progression`       | `app/api/progression/route.ts`      | XP/レベル/ランク取得 |
+| `POST /api/progression`      | 同上                                | XP付与+マイルストーン |
+| `GET /api/notifications`     | `app/api/notifications/route.ts`    | 未読通知取得         |
+| `PATCH /api/notifications`   | 同上                                | 通知既読マーク       |
 
 ### コア
 
@@ -1046,9 +1207,25 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `lib/dartslive-percentile.ts` | パーセンタイル       |
 | `lib/dartslive-colors.ts`     | フライト色定義       |
 | `lib/goals.ts`                | 目標定義・進捗計算   |
+| `lib/progression/xp-rules.ts` | XP獲得ルール（14種類）|
+| `lib/progression/xp-engine.ts`| レベル計算・Cron XP算出 |
+| `lib/progression/ranks.ts`    | ランク定義（20段階、アイコン・色） |
+| `lib/progression/milestones.ts`| マイルストーン（バッジ）定義 |
 | `firestore.rules`             | DBセキュリティルール |
 | `storage.rules`               | ストレージルール     |
 | `components/Providers.tsx`    | Context全体ラッパー  |
+
+### 目標・進捗・通知コンポーネント
+
+| コンポーネント | 概要 |
+| ------------- | ---- |
+| `components/goals/GoalSection.tsx` | 目標一覧表示 + API連携 |
+| `components/goals/GoalCard.tsx` | 個別目標カード（進捗バー、残日数） |
+| `components/goals/GoalSettingDialog.tsx` | 目標作成ダイアログ（上限チェック付き） |
+| `components/goals/GoalAchievedDialog.tsx` | 目標達成お祝い（紙吹雪アニメーション） |
+| `components/progression/XpBar.tsx` | コンパクトなランクカード（展開式） |
+| `components/progression/LevelUpSnackbar.tsx` | レベルアップ通知 |
+| `components/notifications/XpNotificationDialog.tsx` | Cron XP獲得通知ダイアログ |
 
 ### スタッツコンポーネント（`components/stats/`）
 
