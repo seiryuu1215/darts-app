@@ -109,7 +109,7 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
         <CardMedia
           component="img"
           height="160"
-          image={barrel.imageUrl}
+          image={barrel.imageUrl.replace(/^http:\/\//, 'https://')}
           alt={barrel.name}
           sx={{ objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
         />

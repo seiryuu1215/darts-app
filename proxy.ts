@@ -11,6 +11,7 @@ export function proxy(request: NextRequest) {
       "img-src 'self' data: blob:",
       'https://firebasestorage.googleapis.com',
       'https://storage.googleapis.com',
+      'https://dartshive.jp',
       'https://*.dartshive.jp',
       'https://wsrv.nl',
       'https://api.dicebear.com',

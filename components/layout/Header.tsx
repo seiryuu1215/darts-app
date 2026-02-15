@@ -88,7 +88,10 @@ export default function Header() {
 
   return (
     <>
-      <AppBar position="static">
+      <AppBar
+        position="static"
+        sx={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <Toolbar>
           <Typography
             variant="h6"

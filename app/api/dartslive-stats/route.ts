@@ -39,7 +39,7 @@ async function scrapeProfile(
 ) {
   // 1. top.jsp: カード名 + プロフィール画像（base64キャプチャ）
   await page.goto('https://card.dartslive.com/t/top.jsp', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'domcontentloaded',
     timeout: 15000,
   });
 
@@ -62,7 +62,7 @@ async function scrapeProfile(
 
   // 2. util/index.jsp: 通り名（フル）+ ホームショップ + ステータス
   await page.goto('https://card.dartslive.com/t/util/index.jsp', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'domcontentloaded',
     timeout: 15000,
   });
 
@@ -118,7 +118,7 @@ async function scrapeCurrentStats(
   page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
 ) {
   await page.goto('https://card.dartslive.com/t/play/index.jsp', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'domcontentloaded',
     timeout: 15000,
   });
 
@@ -214,9 +214,10 @@ async function scrapeMonthlyData(
 
   const monthly: Record<string, { month: string; value: number }[]> = {};
 
+  // 順次取得（同一ページなので並列不可だが、domcontentloaded で高速化）
   for (const tab of tabs) {
     await page.goto(`https://card.dartslive.com/t/play/monthly.jsp${tab.param}`, {
-      waitUntil: 'networkidle2',
+      waitUntil: 'domcontentloaded',
       timeout: 15000,
     });
 
@@ -247,7 +248,7 @@ async function scrapeRecentGames(
   page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
 ) {
   await page.goto('https://card.dartslive.com/t/playdata.jsp', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'domcontentloaded',
     timeout: 15000,
   });
 
@@ -400,6 +401,17 @@ export const POST = withErrorHandler(
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         );
 
+        // 不要リソースをブロックして高速化
+        await page.setRequestInterception(true);
+        page.on('request', (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
+          const type = req.resourceType();
+          if (['stylesheet', 'font', 'media'].includes(type)) {
+            req.abort();
+          } else {
+            req.continue();
+          }
+        });
+
         // ログイン
         try {
           await login(page, email, password);
@@ -413,11 +425,40 @@ export const POST = withErrorHandler(
           throw e;
         }
 
-        // 順次取得（同一ページインスタンスなので）
+        // プロフィール・現在スタッツを順次取得（認証Cookie共有のため同一ページ）
         const profile = await scrapeProfile(page);
         const currentStats = await scrapeCurrentStats(page);
-        const monthly = await scrapeMonthlyData(page);
-        const recentGames = await scrapeRecentGames(page);
+
+        // 月間データ・直近ゲームを並列取得（別ページで同時実行）
+        const cookies = await page.cookies();
+        const createAuthPage = async () => {
+          const p = await browser!.newPage();
+          await p.setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          );
+          await p.setRequestInterception(true);
+          p.on('request', (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
+            const type = req.resourceType();
+            if (['stylesheet', 'font', 'image', 'media'].includes(type)) {
+              req.abort();
+            } else {
+              req.continue();
+            }
+          });
+          await p.setCookie(...cookies);
+          return p;
+        };
+
+        const [monthly, recentGames] = await Promise.all([
+          (async () => {
+            const p = await createAuthPage();
+            try { return await scrapeMonthlyData(p); } finally { await p.close(); }
+          })(),
+          (async () => {
+            const p = await createAuthPage();
+            try { return await scrapeRecentGames(p); } finally { await p.close(); }
+          })(),
+        ]);
 
         // Firestoreに最新スタッツを保存
         const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);

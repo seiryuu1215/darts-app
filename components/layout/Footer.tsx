@@ -103,7 +103,7 @@ export default function Footer() {
         borderColor: 'divider',
         mt: 6,
         pt: 4,
-        pb: 3,
+        pb: 'calc(12px + env(safe-area-inset-bottom, 0px))',
         bgcolor: 'background.default',
       }}
     >

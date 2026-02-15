@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.darts.app',
+  appId: 'com.seiryuu.dartslab',
   appName: 'Darts Lab',
   webDir: 'out',
   server: {
