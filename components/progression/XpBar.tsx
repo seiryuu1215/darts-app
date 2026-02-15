@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Typography, LinearProgress, Skeleton } from '@mui/material';
+import {
+  Box,
+  Typography,
+  LinearProgress,
+  Skeleton,
+  Collapse,
+} from '@mui/material';
 import { useSession } from 'next-auth/react';
 
 interface ProgressionData {
@@ -10,12 +16,16 @@ interface ProgressionData {
   rank: string;
   currentLevelXp: number;
   nextLevelXp: number | null;
+  rankIcon: string;
+  rankColor: string;
+  milestones: string[];
 }
 
 export default function XpBar() {
   const { data: session } = useSession();
   const [data, setData] = useState<ProgressionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -38,7 +48,7 @@ export default function XpBar() {
   }, [session]);
 
   if (!session || loading) {
-    return loading && session ? <Skeleton variant="rounded" height={64} sx={{ mb: 2 }} /> : null;
+    return loading && session ? <Skeleton variant="rounded" height={48} sx={{ mb: 2 }} /> : null;
   }
 
   if (!data) return null;
@@ -49,46 +59,71 @@ export default function XpBar() {
       : 100;
 
   const xpToNext = data.nextLevelXp != null ? data.nextLevelXp - data.xp : 0;
+  const rankColor = data.rankColor || '#1976d2';
 
   return (
     <Box
+      onClick={() => setExpanded(!expanded)}
       sx={{
         mb: 2,
-        p: 2,
+        px: 2,
+        py: 1.5,
         borderRadius: 2,
         bgcolor: 'background.paper',
         border: 1,
         borderColor: 'divider',
+        borderLeft: 4,
+        borderLeftColor: rankColor,
+        cursor: 'pointer',
+        transition: 'box-shadow 0.2s',
+        '&:hover': { boxShadow: 2 },
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            Lv.{data.level}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {data.rank}
-          </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography sx={{ fontSize: '1.2rem', lineHeight: 1 }}>{data.rankIcon || '🎯'}</Typography>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', color: rankColor }}>
+              Lv.{data.level}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {data.rank}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(progressPercent, 100)}
+            sx={{
+              height: 4,
+              borderRadius: 2,
+              mt: 0.5,
+              bgcolor: 'action.hover',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 2,
+                bgcolor: rankColor,
+              },
+            }}
+          />
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
           {data.xp.toLocaleString()} XP
         </Typography>
       </Box>
-      <LinearProgress
-        variant="determinate"
-        value={Math.min(progressPercent, 100)}
-        sx={{
-          height: 8,
-          borderRadius: 4,
-          bgcolor: 'action.hover',
-          '& .MuiLinearProgress-bar': { borderRadius: 4 },
-        }}
-      />
-      {data.nextLevelXp != null && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          次のレベルまで {xpToNext.toLocaleString()} XP
-        </Typography>
-      )}
+
+      <Collapse in={expanded}>
+        <Box sx={{ mt: 1.5, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+          {data.nextLevelXp != null && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              次のレベルまで {xpToNext.toLocaleString()} XP
+            </Typography>
+          )}
+          {data.milestones && data.milestones.length > 0 && (
+            <Typography variant="caption" color="text.secondary">
+              達成マイルストーン: {data.milestones.length}個
+            </Typography>
+          )}
+        </Box>
+      </Collapse>
     </Box>
   );
 }

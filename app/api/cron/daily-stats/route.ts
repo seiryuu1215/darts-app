@@ -5,6 +5,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
 import { sendLinePushMessage, buildStatsFlexMessage } from '@/lib/line';
+import { calculateCronXp, calculateLevel, type CronStatsSnapshot } from '@/lib/progression/xp-engine';
 
 export const maxDuration = 300;
 
@@ -203,7 +204,80 @@ export async function GET(request: NextRequest) {
               });
 
               results.push({ userId, status: 'notified' });
-            } else {
+            }
+
+            // XP自動付与: 前回/今回スタッツ差分からXPを算出
+            try {
+              const prevSnapshot: CronStatsSnapshot = {
+                totalGames: prevData?.totalGames ?? 0,
+                streak: prevData?.streak ?? 0,
+                rating: prevData?.rating ?? null,
+                hatTricks: prevData?.hatTricks ?? 0,
+                ton80: prevData?.ton80 ?? 0,
+                threeInABlack: prevData?.threeInABlack ?? 0,
+                nineMark: prevData?.nineMark ?? 0,
+                lowTon: prevData?.lowTon ?? 0,
+                highTon: prevData?.highTon ?? 0,
+              };
+              const currentSnapshot: CronStatsSnapshot = {
+                totalGames: stats.dBullTotal > 0 ? (prevData?.totalGames ?? 0) : 0, // ゲーム数はキャッシュから
+                streak: prevData?.streak ?? 0,
+                rating: stats.rating,
+                hatTricks: prevData?.hatTricks ?? 0,
+                ton80: prevData?.ton80 ?? 0,
+                threeInABlack: prevData?.threeInABlack ?? 0,
+                nineMark: prevData?.nineMark ?? 0,
+                lowTon: prevData?.lowTon ?? 0,
+                highTon: prevData?.highTon ?? 0,
+              };
+
+              const xpActions = calculateCronXp(
+                prevData ? prevSnapshot : null,
+                currentSnapshot,
+              );
+
+              if (xpActions.length > 0) {
+                const totalXpGained = xpActions.reduce((sum, a) => sum + a.xp, 0);
+                const userRef = adminDb.doc(`users/${userId}`);
+
+                // XP加算
+                await userRef.set({ xp: FieldValue.increment(totalXpGained) }, { merge: true });
+
+                // レベル更新
+                const updatedUser = await userRef.get();
+                const updatedXp = updatedUser.data()?.xp ?? 0;
+                const levelInfo = calculateLevel(updatedXp);
+                await userRef.update({ level: levelInfo.level, rank: levelInfo.rank });
+
+                // XP履歴記録
+                for (const action of xpActions) {
+                  await adminDb.collection(`users/${userId}/xpHistory`).add({
+                    action: action.action,
+                    xp: action.xp,
+                    detail: `${action.label} x${action.count}`,
+                    createdAt: FieldValue.serverTimestamp(),
+                  });
+                }
+
+                // 通知をFirestoreに保存
+                await adminDb.collection(`users/${userId}/notifications`).add({
+                  type: 'xp_gained',
+                  title: 'デイリーXP獲得!',
+                  details: xpActions.map((a) => ({
+                    action: a.action,
+                    xp: a.xp,
+                    label: a.label,
+                  })),
+                  totalXp: totalXpGained,
+                  read: false,
+                  createdAt: FieldValue.serverTimestamp(),
+                });
+              }
+            } catch (xpErr) {
+              console.error(`XP grant error for user ${userId}:`, xpErr);
+            }
+
+            if (!hasChange) {
               results.push({ userId, status: 'no_change' });
             }
           } finally {

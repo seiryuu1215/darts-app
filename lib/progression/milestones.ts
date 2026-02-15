@@ -1,5 +1,5 @@
 /**
- * 累計XPマイルストーン報酬定義
+ * 累計XPマイルストーン定義（バッジのみ）
  */
 
 export interface MilestoneDef {
@@ -7,7 +7,6 @@ export interface MilestoneDef {
   xp: number;
   label: string;
   badge: string;
-  rewards?: { itemId: string; quantity: number }[];
 }
 
 export const MILESTONES: MilestoneDef[] = [
@@ -22,28 +21,24 @@ export const MILESTONES: MilestoneDef[] = [
     xp: 1000,
     label: '継続は力なり',
     badge: 'silver',
-    rewards: [{ itemId: 'streak_freeze', quantity: 1 }],
   },
   {
     id: 'iron_will',
     xp: 5000,
     label: '鉄の意志',
     badge: 'gold',
-    rewards: [{ itemId: 'streak_freeze', quantity: 2 }],
   },
   {
     id: 'elite',
     xp: 10000,
     label: 'エリート',
     badge: 'platinum',
-    rewards: [{ itemId: 'double_xp', quantity: 1 }],
   },
   {
     id: 'legend',
     xp: 25000,
     label: 'レジェンド',
     badge: 'diamond',
-    rewards: [{ itemId: 'streak_revive', quantity: 1 }],
   },
   {
     id: 'divine',

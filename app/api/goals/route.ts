@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { calculateGoalCurrent, type StatsRecord } from '@/lib/goals';
+import { calculateGoalCurrent, getMonthlyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
+
+const MONTHLY_LIMIT = 3;
+const YEARLY_LIMIT = 1;
 
 /**
  * dartsLiveStats ドキュメントを StatsRecord に変換
@@ -21,6 +24,19 @@ function toStatsRecord(d: FirebaseFirestore.DocumentData): StatsRecord {
 }
 
 /**
+ * アクティブ目標数を数える（未達成 & 期間内）
+ */
+function countActiveGoals(
+  goals: { period: string; achievedAt: Date | null; endDate: Date | null }[],
+  period: string,
+): number {
+  const now = new Date();
+  return goals.filter(
+    (g) => g.period === period && !g.achievedAt && g.endDate && g.endDate.getTime() >= now.getTime(),
+  ).length;
+}
+
+/**
  * GET /api/goals — ユーザーの目標一覧を取得（dartsLiveStats から current をリアルタイム計算）
  */
 export const GET = withErrorHandler(
@@ -31,7 +47,7 @@ export const GET = withErrorHandler(
       .get();
 
     if (snapshot.empty) {
-      return NextResponse.json({ goals: [] });
+      return NextResponse.json({ goals: [], activeMonthly: 0, activeYearly: 0 });
     }
 
     const rawGoals = snapshot.docs.map((doc) => {
@@ -39,14 +55,67 @@ export const GET = withErrorHandler(
       return {
         id: doc.id,
         type: d.type as GoalType,
-        period: d.period,
-        target: d.target,
+        period: d.period as string,
+        target: d.target as number,
         startDate: (d.startDate?.toDate?.() ?? null) as Date | null,
         endDate: (d.endDate?.toDate?.() ?? null) as Date | null,
         achievedAt: (d.achievedAt?.toDate?.() ?? null) as Date | null,
-        xpAwarded: d.xpAwarded ?? false,
+        xpAwarded: (d.xpAwarded ?? false) as boolean,
+        carryOver: (d.carryOver ?? false) as boolean,
+        newlyAchieved: false,
       };
     });
+
+    // 期限切れ未達成monthly目標の自動引き継ぎ
+    const now = new Date();
+    for (const goal of rawGoals) {
+      if (
+        goal.period === 'monthly' &&
+        !goal.achievedAt &&
+        goal.endDate &&
+        goal.endDate.getTime() < now.getTime()
+      ) {
+        // 今月の同タイプ目標が既に存在するかチェック
+        const { startDate: newStart, endDate: newEnd } = getMonthlyRange();
+        const alreadyCarried = rawGoals.some(
+          (g) =>
+            g.type === goal.type &&
+            g.startDate &&
+            g.startDate.getTime() >= newStart.getTime() &&
+            g.endDate &&
+            g.endDate.getTime() <= newEnd.getTime() + 24 * 60 * 60 * 1000,
+        );
+
+        if (!alreadyCarried) {
+          // 新月の期間にコピー
+          const newGoalRef = await adminDb.collection(`users/${userId}/goals`).add({
+            type: goal.type,
+            period: goal.period,
+            target: goal.target,
+            current: 0,
+            startDate: Timestamp.fromDate(newStart),
+            endDate: Timestamp.fromDate(newEnd),
+            achievedAt: null,
+            xpAwarded: false,
+            carryOver: true,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+
+          rawGoals.push({
+            id: newGoalRef.id,
+            type: goal.type,
+            period: goal.period,
+            target: goal.target,
+            startDate: newStart,
+            endDate: newEnd,
+            achievedAt: null,
+            xpAwarded: false,
+            carryOver: true,
+            newlyAchieved: false,
+          });
+        }
+      }
+    }
 
     // 全目標の期間をカバーする最小日付を求める
     const startDates = rawGoals.map((g) => g.startDate).filter((d): d is Date => d !== null);
@@ -56,7 +125,6 @@ export const GET = withErrorHandler(
     // dartsLiveStats レコードをまとめて取得（ベースラインも含め少し前から）
     let allRecords: StatsRecord[] = [];
     if (earliestStart) {
-      // ベースライン用に期間開始の30日前から取得
       const baselineStart = new Date(earliestStart.getTime() - 30 * 24 * 60 * 60 * 1000);
       const statsQuery = adminDb
         .collection(`users/${userId}/dartsLiveStats`)
@@ -73,15 +141,13 @@ export const GET = withErrorHandler(
 
         if (goal.type !== 'cu_score' && goal.startDate && goal.endDate && allRecords.length > 0) {
           const startMs = goal.startDate.getTime();
-          const endMs = goal.endDate.getTime() + 24 * 60 * 60 * 1000; // endDate の翌日まで含める
+          const endMs = goal.endDate.getTime() + 24 * 60 * 60 * 1000;
 
-          // 期間内レコード
           const periodRecords = allRecords.filter((r) => {
             const t = new Date(r.date).getTime();
             return t >= startMs && t < endMs;
           });
 
-          // ベースライン: 期間開始前の最新レコード（累計値差分用）
           let baselineRecord: StatsRecord | undefined;
           if (goal.type === 'bulls' || goal.type === 'hat_tricks') {
             const beforeRecords = allRecords.filter((r) => new Date(r.date).getTime() < startMs);
@@ -94,13 +160,14 @@ export const GET = withErrorHandler(
         }
 
         // 達成判定: current >= target かつ未達成
+        let newlyAchieved = false;
         if (current >= goal.target && goal.target > 0 && !goal.achievedAt) {
-          const now = new Date();
+          const achievedNow = new Date();
           const goalRef = adminDb.doc(`users/${userId}/goals/${goal.id}`);
-          await goalRef.update({ achievedAt: Timestamp.fromDate(now) });
-          goal.achievedAt = now;
+          await goalRef.update({ achievedAt: Timestamp.fromDate(achievedNow) });
+          goal.achievedAt = achievedNow;
+          newlyAchieved = true;
 
-          // XP 付与
           if (!goal.xpAwarded) {
             try {
               const userRef = adminDb.doc(`users/${userId}`);
@@ -129,11 +196,17 @@ export const GET = withErrorHandler(
           endDate: goal.endDate?.toISOString() ?? '',
           achievedAt: goal.achievedAt?.toISOString?.() ?? null,
           xpAwarded: goal.xpAwarded,
+          carryOver: goal.carryOver,
+          newlyAchieved,
         };
       }),
     );
 
-    return NextResponse.json({ goals });
+    // アクティブ数を算出
+    const activeMonthly = countActiveGoals(rawGoals, 'monthly');
+    const activeYearly = countActiveGoals(rawGoals, 'yearly');
+
+    return NextResponse.json({ goals, activeMonthly, activeYearly });
   }),
   'Goals GET error',
 );
@@ -157,6 +230,29 @@ export const POST = withErrorHandler(
       return NextResponse.json({ error: '必須フィールドが不足しています' }, { status: 400 });
     }
 
+    // アクティブ目標数の上限チェック
+    const now = new Date();
+    const existingSnap = await adminDb
+      .collection(`users/${userId}/goals`)
+      .where('period', '==', period)
+      .get();
+
+    const activeCount = existingSnap.docs.filter((doc) => {
+      const d = doc.data();
+      const endD = d.endDate?.toDate?.();
+      return !d.achievedAt && endD && endD.getTime() >= now.getTime();
+    }).length;
+
+    const limit = period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT;
+    if (activeCount >= limit) {
+      return NextResponse.json(
+        {
+          error: `${period === 'monthly' ? '月間' : '年間'}目標の上限（${limit}つ）に達しています`,
+        },
+        { status: 400 },
+      );
+    }
+
     const docRef = await adminDb.collection(`users/${userId}/goals`).add({
       type,
       period,
@@ -166,6 +262,7 @@ export const POST = withErrorHandler(
       endDate: Timestamp.fromDate(new Date(endDate)),
       achievedAt: null,
       xpAwarded: false,
+      carryOver: false,
       createdAt: FieldValue.serverTimestamp(),
     });
 

@@ -7,6 +7,7 @@ import FlagIcon from '@mui/icons-material/Flag';
 import { useSession } from 'next-auth/react';
 import GoalCard from './GoalCard';
 import GoalSettingDialog from './GoalSettingDialog';
+import GoalAchievedDialog from './GoalAchievedDialog';
 import type { GoalType, GoalPeriod } from '@/types';
 
 interface GoalData {
@@ -19,6 +20,7 @@ interface GoalData {
   endDate: string;
   achievedAt: string | null;
   xpAwarded: boolean;
+  newlyAchieved?: boolean;
 }
 
 export default function GoalSection() {
@@ -26,6 +28,9 @@ export default function GoalSection() {
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeMonthly, setActiveMonthly] = useState(0);
+  const [activeYearly, setActiveYearly] = useState(0);
+  const [celebrateGoal, setCelebrateGoal] = useState<GoalData | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -36,6 +41,16 @@ export default function GoalSection() {
         if (res.ok && !cancelled) {
           const json = await res.json();
           setGoals(json.goals || []);
+          setActiveMonthly(json.activeMonthly ?? 0);
+          setActiveYearly(json.activeYearly ?? 0);
+
+          // 新たに達成された目標をお祝い表示
+          const newlyAchieved = (json.goals || []).find(
+            (g: GoalData) => g.newlyAchieved,
+          );
+          if (newlyAchieved) {
+            setCelebrateGoal(newlyAchieved);
+          }
         }
       } catch {
         // ignore
@@ -108,6 +123,15 @@ export default function GoalSection() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
+        activeMonthly={activeMonthly}
+        activeYearly={activeYearly}
+      />
+
+      <GoalAchievedDialog
+        open={!!celebrateGoal}
+        goalType={celebrateGoal?.type || ''}
+        target={celebrateGoal?.target || 0}
+        onClose={() => setCelebrateGoal(null)}
       />
     </Box>
   );

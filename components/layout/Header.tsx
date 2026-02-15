@@ -32,58 +32,121 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SportsBarIcon from '@mui/icons-material/SportsBar';
+import BuildIcon from '@mui/icons-material/Build';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ForumIcon from '@mui/icons-material/Forum';
+import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 import { ColorModeContext } from '@/components/Providers';
+
+interface DrawerGroup {
+  label: string;
+  icon: React.ReactNode;
+  items: { label: string; href: string }[];
+}
 
 export default function Header() {
   const { data: session } = useSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [barrelMenuEl, setBarrelMenuEl] = useState<null | HTMLElement>(null);
-  const [barrelDrawerOpen, setBarrelDrawerOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
 
   const isAdmin = session?.user?.role === 'admin';
   const userIsPro = session?.user?.role === 'pro' || isAdmin;
 
-  // モバイルドロワー用メニュー（よく使う順）
-  const drawerItems = session
+  const toggleGroup = (label: string) => {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  // グループ化されたドロワーメニュー
+  const drawerGroups: DrawerGroup[] = session
     ? [
-        { label: 'セッティング', href: '/darts' },
-        { label: 'セッティング履歴', href: '/darts/history' },
-        { label: 'バレル検索', href: '/barrels' },
-        { label: 'おすすめバレル', href: '/barrels/recommend' },
-        { label: 'シミュレーター', href: '/barrels/simulator' },
-        { label: '診断クイズ', href: '/barrels/quiz' },
-        { label: 'スタッツ記録', href: '/stats' },
-        { label: '記事', href: '/articles' },
-        { label: 'ディスカッション', href: '/discussions' },
-        { label: 'セッティング比較', href: '/darts/compare' },
-        { label: 'ブックマーク', href: '/bookmarks' },
-        { label: 'プロフィール', href: '/profile/edit' },
-        ...(userIsPro
-          ? [{ label: 'サブスクリプション', href: '/profile/subscription' }]
-          : [{ label: 'PROプラン', href: '/pricing' }]),
-        ...(isAdmin
-          ? [
-              { label: 'ユーザ管理', href: '/admin/users' },
-              { label: '料金設定', href: '/admin/pricing' },
-            ]
-          : []),
+        {
+          label: 'ダーツ',
+          icon: <SportsBarIcon />,
+          items: [
+            { label: 'セッティング', href: '/darts' },
+            { label: 'セッティング履歴', href: '/darts/history' },
+            { label: 'バレル検索', href: '/barrels' },
+            { label: 'おすすめバレル', href: '/barrels/recommend' },
+          ],
+        },
+        {
+          label: 'ツール',
+          icon: <BuildIcon />,
+          items: [
+            { label: 'シミュレーター', href: '/barrels/simulator' },
+            { label: '診断クイズ', href: '/barrels/quiz' },
+            { label: 'セッティング比較', href: '/darts/compare' },
+          ],
+        },
+        {
+          label: 'スタッツ・記録',
+          icon: <BarChartIcon />,
+          items: [
+            { label: 'スタッツ記録', href: '/stats' },
+            { label: '目標', href: '/#goals' },
+            { label: 'ランキング', href: '/ranking' },
+          ],
+        },
+        {
+          label: 'コミュニティ',
+          icon: <ForumIcon />,
+          items: [
+            { label: '記事', href: '/articles' },
+            { label: 'ディスカッション', href: '/discussions' },
+          ],
+        },
+        {
+          label: 'マイページ',
+          icon: <PersonIcon />,
+          items: [
+            { label: 'プロフィール', href: '/profile/edit' },
+            { label: 'ブックマーク', href: '/bookmarks' },
+            ...(userIsPro
+              ? [{ label: 'サブスクリプション', href: '/profile/subscription' }]
+              : [{ label: 'PROプラン', href: '/pricing' }]),
+            ...(isAdmin
+              ? [
+                  { label: 'ユーザ管理', href: '/admin/users' },
+                  { label: '料金設定', href: '/admin/pricing' },
+                ]
+              : []),
+          ],
+        },
       ]
     : [
-        { label: 'セッティング', href: '/darts' },
-        { label: 'バレル検索', href: '/barrels' },
-        { label: 'おすすめバレル', href: '/barrels/recommend' },
-        { label: 'シミュレーター', href: '/barrels/simulator' },
-        { label: '診断クイズ', href: '/barrels/quiz' },
-        { label: '記事', href: '/articles' },
-        { label: 'ディスカッション', href: '/discussions' },
-        { label: 'ログイン', href: '/login' },
-        { label: '新規登録', href: '/register' },
+        {
+          label: 'ダーツ',
+          icon: <SportsBarIcon />,
+          items: [
+            { label: 'セッティング', href: '/darts' },
+            { label: 'バレル検索', href: '/barrels' },
+            { label: 'おすすめバレル', href: '/barrels/recommend' },
+          ],
+        },
+        {
+          label: 'ツール',
+          icon: <BuildIcon />,
+          items: [
+            { label: 'シミュレーター', href: '/barrels/simulator' },
+            { label: '診断クイズ', href: '/barrels/quiz' },
+          ],
+        },
+        {
+          label: 'コミュニティ',
+          icon: <ForumIcon />,
+          items: [
+            { label: '記事', href: '/articles' },
+            { label: 'ディスカッション', href: '/discussions' },
+          ],
+        },
       ];
 
   return (
@@ -144,6 +207,10 @@ export default function Header() {
                 </Button>
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
+                </Button>
+                <Button color="inherit" component={Link} href="/ranking" size="small">
+                  <LeaderboardIcon sx={{ fontSize: 18, mr: 0.5 }} />
+                  ランキング
                 </Button>
                 {!userIsPro && (
                   <Button
@@ -295,7 +362,7 @@ export default function Header() {
         </Toolbar>
       </AppBar>
 
-      {/* モバイルドロワー */}
+      {/* モバイルドロワー（グループ化） */}
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box sx={{ width: 250 }} role="navigation" aria-label="メインメニュー">
           {session && (
@@ -310,7 +377,7 @@ export default function Header() {
             </Box>
           )}
           <Divider />
-          <List onClick={() => setDrawerOpen(false)}>
+          <List>
             <ListItem disablePadding>
               <ListItemButton onClick={colorMode.toggleColorMode}>
                 <ListItemIcon>
@@ -321,19 +388,75 @@ export default function Header() {
                 />
               </ListItemButton>
             </ListItem>
-            {drawerItems.map((item) => (
-              <ListItem key={item.href} disablePadding>
-                <ListItemButton component={Link} href={item.href}>
-                  <ListItemText primary={item.label} />
+            <Divider sx={{ my: 0.5 }} />
+            {drawerGroups.map((group) => (
+              <Box key={group.label}>
+                <ListItemButton onClick={() => toggleGroup(group.label)}>
+                  <ListItemIcon>{group.icon}</ListItemIcon>
+                  <ListItemText primary={group.label} />
+                  {openGroups[group.label] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </ListItemButton>
-              </ListItem>
+                <Collapse in={openGroups[group.label]} timeout="auto" unmountOnExit>
+                  <List disablePadding>
+                    {group.items.map((item) => (
+                      <ListItem key={item.href} disablePadding>
+                        <ListItemButton
+                          component={Link}
+                          href={item.href}
+                          sx={{ pl: 6 }}
+                          onClick={() => setDrawerOpen(false)}
+                        >
+                          <ListItemText
+                            primary={item.label}
+                            primaryTypographyProps={{ variant: 'body2' }}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Collapse>
+              </Box>
             ))}
+            {!session && (
+              <>
+                <Divider sx={{ my: 0.5 }} />
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={Link}
+                    href="/login"
+                    onClick={() => setDrawerOpen(false)}
+                  >
+                    <ListItemText primary="ログイン" />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={Link}
+                    href="/register"
+                    onClick={() => setDrawerOpen(false)}
+                  >
+                    <ListItemText primary="新規登録" />
+                  </ListItemButton>
+                </ListItem>
+              </>
+            )}
             {session && (
-              <ListItem disablePadding>
-                <ListItemButton onClick={() => signOut()}>
-                  <ListItemText primary="ログアウト" />
-                </ListItemButton>
-              </ListItem>
+              <>
+                <Divider sx={{ my: 0.5 }} />
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      signOut();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <LogoutIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="ログアウト" />
+                  </ListItemButton>
+                </ListItem>
+              </>
             )}
           </List>
         </Box>

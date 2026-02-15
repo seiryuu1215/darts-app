@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { XP_RULES } from '@/lib/progression/xp-rules';
-import { calculateLevel } from '@/lib/progression/xp-engine';
+import { calculateLevel, getRankVisual } from '@/lib/progression/xp-engine';
+import { MILESTONES } from '@/lib/progression/milestones';
 import { FieldValue } from 'firebase-admin/firestore';
 
 /**
@@ -35,13 +36,18 @@ export const GET = withErrorHandler(
       };
     });
 
+    const visual = getRankVisual(levelInfo.level);
+
     return NextResponse.json({
       xp,
       level: levelInfo.level,
       rank: levelInfo.rank,
+      rankIcon: visual.icon,
+      rankColor: visual.color,
       currentLevelXp: levelInfo.currentLevelXp,
       nextLevelXp: levelInfo.nextLevelXp,
       achievements,
+      milestones: userData.milestones || [],
       history,
     });
   }),
@@ -97,6 +103,9 @@ export const POST = withErrorHandler(
 
     const leveledUp = levelInfo.level > oldLevel;
 
+    // マイルストーンチェック（バッジ記録のみ、報酬なし）
+    await checkMilestones(userRef, userId, userData, newXp);
+
     return NextResponse.json({
       xpGained,
       totalXp: newXp,
@@ -109,3 +118,30 @@ export const POST = withErrorHandler(
   }),
   'Progression POST error',
 );
+
+/**
+ * マイルストーン到達チェック（バッジ記録のみ）
+ */
+async function checkMilestones(
+  userRef: FirebaseFirestore.DocumentReference,
+  userId: string,
+  userData: FirebaseFirestore.DocumentData,
+  totalXp: number,
+) {
+  const existingMilestones: string[] = userData.milestones || [];
+
+  for (const milestone of MILESTONES) {
+    if (totalXp >= milestone.xp && !existingMilestones.includes(milestone.id)) {
+      await userRef.update({
+        milestones: FieldValue.arrayUnion(milestone.id),
+      });
+
+      await adminDb.collection(`users/${userId}/xpHistory`).add({
+        action: 'milestone',
+        xp: 0,
+        detail: `マイルストーン達成: ${milestone.label}`,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+  }
+}

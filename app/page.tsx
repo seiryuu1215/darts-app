@@ -35,8 +35,9 @@ import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
 import ArticleCard from '@/components/articles/ArticleCard';
 import OnboardingDialog from '@/components/OnboardingDialog';
 import XpBar from '@/components/progression/XpBar';
-import Shop from '@/components/progression/Shop';
 import GoalSection from '@/components/goals/GoalSection';
+import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
+import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import ForumIcon from '@mui/icons-material/Forum';
 import type { Dart, Article, Discussion } from '@/types';
 import { CATEGORY_LABELS } from '@/types';
@@ -128,6 +129,45 @@ export default function HomePage() {
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
   const [recentDiscussions, setRecentDiscussions] = useState<Discussion[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [xpNotifications, setXpNotifications] = useState<
+    { id: string; type: string; title: string; details: { action: string; xp: number; label: string }[]; totalXp: number }[]
+  >([]);
+  const [showXpNotification, setShowXpNotification] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ level: number; rank: string } | null>(null);
+
+  // 通知取得
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.notifications?.length > 0) {
+          setXpNotifications(json.notifications);
+          setShowXpNotification(true);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, [session]);
+
+  const handleCloseXpNotification = async () => {
+    setShowXpNotification(false);
+    const ids = xpNotifications.map((n) => n.id);
+    if (ids.length > 0) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        });
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // ユーザーデータ統合取得（オンボーディング判定 + アクティブダーツ）
   useEffect(() => {
@@ -281,16 +321,9 @@ export default function HomePage() {
         ダッシュボード
       </Typography>
 
-      {session && (
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-          <Box sx={{ flex: 1 }}>
-            <XpBar />
-          </Box>
-          <Shop />
-        </Box>
-      )}
-
       {session && <GoalSection />}
+
+      {session && <XpBar />}
 
       {session && (
         <Box sx={{ mb: 4 }}>
@@ -657,6 +690,21 @@ export default function HomePage() {
             </Grid>
           ))}
         </Grid>
+      )}
+
+      <XpNotificationDialog
+        open={showXpNotification}
+        notifications={xpNotifications}
+        onClose={handleCloseXpNotification}
+      />
+
+      {levelUpInfo && (
+        <LevelUpSnackbar
+          open={!!levelUpInfo}
+          level={levelUpInfo.level}
+          rank={levelUpInfo.rank}
+          onClose={() => setLevelUpInfo(null)}
+        />
       )}
     </Container>
   );
