@@ -134,22 +134,22 @@ export const GET = withErrorHandler(
       allRecords = statsSnap.docs.map((doc) => toStatsRecord(doc.data()));
     }
 
-    // dartsliveCache/latest を最新データポイントとして補完
-    // （cronが昨日取得済みだが、dartsLiveStatsにまだ反映されていないケースをカバー）
+    // dartsliveCache/latest を取得（月間値 & 最新データポイント補完用）
     const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
-    if (cacheDoc.exists) {
-      const c = cacheDoc.data()!;
-      const cacheDate = c.updatedAt?.toDate?.() ?? now;
+    const cacheData = cacheDoc.exists ? cacheDoc.data()! : null;
+
+    if (cacheData) {
+      const cacheDate = cacheData.updatedAt?.toDate?.() ?? now;
 
       // bullStats: 直接フィールド or fullData JSON から取得
-      let dBull: number | null = c.bullStats?.dBull ?? null;
-      let sBull: number | null = c.bullStats?.sBull ?? null;
-      let hatTricks: number | null = c.hatTricks ?? null;
+      let dBull: number | null = cacheData.bullStats?.dBull ?? null;
+      let sBull: number | null = cacheData.bullStats?.sBull ?? null;
+      let hatTricks: number | null = cacheData.hatTricks ?? null;
 
       // bullStatsが無い場合、fullData内のawardsから復元
-      if (dBull === null && c.fullData) {
+      if (dBull === null && cacheData.fullData) {
         try {
-          const full = JSON.parse(c.fullData);
+          const full = JSON.parse(cacheData.fullData);
           const awards = full?.current?.awards ?? {};
           dBull = awards['D-BULL']?.total ?? null;
           sBull = awards['S-BULL']?.total ?? null;
@@ -163,7 +163,7 @@ export const GET = withErrorHandler(
 
       const cacheRecord: StatsRecord = {
         date: cacheDate.toISOString(),
-        rating: c.rating ?? null,
+        rating: cacheData.rating ?? null,
         gamesPlayed: 0,
         dBull,
         sBull,
@@ -178,12 +178,47 @@ export const GET = withErrorHandler(
       }
     }
 
+    // キャッシュから月間アワード値を取得（DARTSLIVEの「今月」カラム）
+    let cachedMonthlyBulls: number | null = null;
+    let cachedMonthlyHatTricks: number | null = null;
+    if (cacheData) {
+      const dBullM = cacheData.bullStats?.dBullMonthly ?? null;
+      const sBullM = cacheData.bullStats?.sBullMonthly ?? null;
+      if (dBullM !== null || sBullM !== null) {
+        cachedMonthlyBulls = (dBullM ?? 0) + (sBullM ?? 0);
+      }
+      cachedMonthlyHatTricks = cacheData.hatTricksMonthly ?? null;
+
+      // fullData JSONからもフォールバック
+      if (cachedMonthlyBulls === null && cacheData.fullData) {
+        try {
+          const full = JSON.parse(cacheData.fullData);
+          const awards = full?.current?.awards ?? {};
+          const dm = awards['D-BULL']?.monthly ?? null;
+          const sm = awards['S-BULL']?.monthly ?? null;
+          if (dm !== null || sm !== null) {
+            cachedMonthlyBulls = (dm ?? 0) + (sm ?? 0);
+          }
+          if (cachedMonthlyHatTricks === null) {
+            cachedMonthlyHatTricks = awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     // 各目標の current を計算
     const goals = await Promise.all(
       rawGoals.map(async (goal) => {
         let current = 0;
 
-        if (goal.type !== 'cu_score' && goal.startDate && goal.endDate && allRecords.length > 0) {
+        // 月間ブル・ハットトリック目標: DARTSLIVEの「今月」値を直接使用
+        if (goal.period === 'monthly' && goal.type === 'bulls' && cachedMonthlyBulls !== null) {
+          current = cachedMonthlyBulls;
+        } else if (goal.period === 'monthly' && goal.type === 'hat_tricks' && cachedMonthlyHatTricks !== null) {
+          current = cachedMonthlyHatTricks;
+        } else if (goal.type !== 'cu_score' && goal.startDate && goal.endDate && allRecords.length > 0) {
           const startMs = goal.startDate.getTime();
           const endMs = goal.endDate.getTime() + 24 * 60 * 60 * 1000;
 

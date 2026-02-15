@@ -43,49 +43,6 @@ async function collectLinks(page: PuppeteerPage): Promise<{ href: string; text: 
   );
 }
 
-/** グループ関連リンクをナビゲーションから探す */
-async function findGroupPageUrl(page: PuppeteerPage): Promise<string | null> {
-  const GROUP_KEYWORDS = ['group', 'friend', 'community', 'member'];
-  const GROUP_JP_KEYWORDS = ['グループ', '仲間', 'フレンド', 'メンバー'];
-
-  // 1. トップページのリンクを探す
-  await page.goto('https://card.dartslive.com/t/top.jsp', {
-    waitUntil: 'domcontentloaded',
-    timeout: 15000,
-  });
-
-  let links = await collectLinks(page);
-  for (const link of links) {
-    const hrefLower = link.href.toLowerCase();
-    const textLower = link.text.toLowerCase();
-    if (
-      GROUP_KEYWORDS.some((k) => hrefLower.includes(k)) ||
-      GROUP_JP_KEYWORDS.some((k) => textLower.includes(k) || link.text.includes(k))
-    ) {
-      return link.href;
-    }
-  }
-
-  // 2. ユーティリティページのリンクも確認
-  await page.goto('https://card.dartslive.com/t/util/index.jsp', {
-    waitUntil: 'domcontentloaded',
-    timeout: 15000,
-  });
-
-  links = await collectLinks(page);
-  for (const link of links) {
-    const hrefLower = link.href.toLowerCase();
-    const textLower = link.text.toLowerCase();
-    if (
-      GROUP_KEYWORDS.some((k) => hrefLower.includes(k)) ||
-      GROUP_JP_KEYWORDS.some((k) => textLower.includes(k) || link.text.includes(k))
-    ) {
-      return link.href;
-    }
-  }
-
-  return null;
-}
 
 /** ページからグループメンバーデータを抽出（柔軟なセレクタ） */
 async function tryExtractGroupData(
@@ -192,42 +149,52 @@ async function tryExtractGroupData(
   });
 }
 
-/** グループページを発見してスクレイピング */
+/** グループページをスクレイピング */
 async function scrapeGroupData(page: PuppeteerPage): Promise<{
   groupName: string;
   members: GroupMember[];
-  debugInfo?: string;
+  pageHtml?: string;
 }> {
-  // Step 1: ナビゲーションからグループページを探す
-  const discoveredUrl = await findGroupPageUrl(page);
+  // グループページへ直接アクセス（URLはデバッグで確認済み）
+  const groupUrl = 'https://card.dartslive.com/t/group/index.jsp';
+  try {
+    await page.goto(groupUrl, {
+      waitUntil: 'networkidle2',
+      timeout: 15000,
+    });
+  } catch {
+    return { groupName: '', members: [], pageHtml: 'ページ読み込みタイムアウト' };
+  }
 
-  // Step 2: 試すURLリスト
-  const candidateUrls = [
-    discoveredUrl,
-    'https://card.dartslive.com/t/group/index.jsp',
-    'https://card.dartslive.com/t/group/',
-    'https://card.dartslive.com/t/friend/index.jsp',
-    'https://card.dartslive.com/t/friend/',
-    'https://card.dartslive.com/t/community/index.jsp',
-  ].filter((url): url is string => !!url);
+  if (page.url().includes('login.jsp')) {
+    return { groupName: '', members: [], pageHtml: 'ログインページにリダイレクトされました' };
+  }
 
-  // Step 3: 各URLを試す
-  for (const url of candidateUrls) {
+  // まずメンバー抽出を試す
+  const data = await tryExtractGroupData(page);
+  if (data.members.length > 0) {
+    return {
+      groupName: data.groupName || 'マイグループ',
+      members: data.members,
+    };
+  }
+
+  // メンバーが見つからない場合: ページ内のリンクを確認
+  // グループ一覧→個別グループページへの遷移が必要かもしれない
+  const links = await collectLinks(page);
+  const groupLinks = links.filter(
+    (l) => l.href.includes('group') && l.href !== groupUrl && l.text.length > 0,
+  );
+
+  // グループへのリンクがあれば最初のグループに入る
+  for (const gl of groupLinks) {
     try {
-      const res = await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 10000,
-      });
-      if (!res || res.status() >= 400) continue;
-
-      // ログインページにリダイレクトされた場合はスキップ
-      if (page.url().includes('login.jsp')) continue;
-
-      const data = await tryExtractGroupData(page);
-      if (data.members.length > 0) {
+      await page.goto(gl.href, { waitUntil: 'networkidle2', timeout: 15000 });
+      const subData = await tryExtractGroupData(page);
+      if (subData.members.length > 0) {
         return {
-          groupName: data.groupName || 'マイグループ',
-          members: data.members,
+          groupName: subData.groupName || gl.text || 'マイグループ',
+          members: subData.members,
         };
       }
     } catch {
@@ -235,29 +202,18 @@ async function scrapeGroupData(page: PuppeteerPage): Promise<{
     }
   }
 
-  // Step 4: 見つからない場合、デバッグ用に複数ページのリンク情報を収集
-  const debugPages: string[] = [];
-
-  for (const debugUrl of [
-    'https://card.dartslive.com/t/top.jsp',
-    'https://card.dartslive.com/t/util/index.jsp',
-  ]) {
-    try {
-      await page.goto(debugUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
-      const links = await collectLinks(page);
-      const filtered = links
-        .filter((l) => l.href.includes('card.dartslive.com') && l.text.length > 0)
-        .map((l) => `  ${l.text} → ${l.href}`);
-      debugPages.push(`[${debugUrl}]\n${filtered.join('\n')}`);
-    } catch {
-      debugPages.push(`[${debugUrl}] 取得失敗`);
-    }
-  }
+  // デバッグ用: ページのHTML構造を返す（最大3000文字）
+  const htmlSnippet = await page.evaluate(() => {
+    // body内のテキスト構造を取得
+    const body = document.body;
+    if (!body) return 'body要素なし';
+    return body.innerHTML.substring(0, 3000);
+  });
 
   return {
     groupName: '',
     members: [],
-    debugInfo: `グループページが見つかりませんでした。\n\n${debugPages.join('\n\n')}`,
+    pageHtml: htmlSnippet,
   };
 }
 
@@ -344,7 +300,7 @@ export const POST = withErrorHandler(
           return NextResponse.json(
             {
               error: 'グループデータを取得できませんでした。グループに参加しているか確認してください。',
-              debugInfo: groupData.debugInfo || null,
+              pageHtml: groupData.pageHtml || null,
             },
             { status: 404 },
           );

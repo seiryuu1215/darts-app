@@ -515,12 +515,15 @@ export const POST = withErrorHandler(
           stats01Avg: currentStats.stats01Avg,
           statsCriAvg: currentStats.statsCriAvg,
           statsPraAvg: currentStats.statsPraAvg,
-          // ブル・アワード累計（目標進捗計算用）
+          // ブル・アワード（目標進捗計算用：累計+月間）
           bullStats: {
             dBull: awards['D-BULL']?.total ?? 0,
             sBull: awards['S-BULL']?.total ?? 0,
+            dBullMonthly: awards['D-BULL']?.monthly ?? 0,
+            sBullMonthly: awards['S-BULL']?.monthly ?? 0,
           },
           hatTricks: awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0,
+          hatTricksMonthly: awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? 0,
           // 前回との差分
           prevRating: responseData.prev?.rating ?? null,
           prevStats01Avg: responseData.prev?.stats01Avg ?? null,

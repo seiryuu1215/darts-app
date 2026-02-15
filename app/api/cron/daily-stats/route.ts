@@ -62,16 +62,32 @@ async function scrapeStats(
       }
     });
 
-    // Awards (D-BULL / S-BULL)
+    // Awards (D-BULL / S-BULL / HAT TRICK) — 今月 & 累計
     let dBullTotal = 0;
     let sBullTotal = 0;
+    let dBullMonthly = 0;
+    let sBullMonthly = 0;
+    let hatTricksTotal = 0;
+    let hatTricksMonthly = 0;
     document.querySelectorAll('table tr').forEach((row) => {
       const th = row.querySelector('th')?.textContent?.trim();
       const totalTd = row.querySelector('td.total');
-      if (th && totalTd) {
-        const val = parseInt(totalTd.textContent?.trim()?.replace(/,/g, '') || '0', 10);
-        if (th === 'D-BULL' && !isNaN(val)) dBullTotal = val;
-        if (th === 'S-BULL' && !isNaN(val)) sBullTotal = val;
+      const tds = Array.from(row.querySelectorAll('td'));
+      if (th && totalTd && tds.length >= 2) {
+        const monthlyVal = parseInt(tds[0]?.textContent?.trim()?.replace(/,/g, '') || '0', 10);
+        const totalVal = parseInt(totalTd.textContent?.trim()?.replace(/,/g, '') || '0', 10);
+        if (th === 'D-BULL' && !isNaN(totalVal)) {
+          dBullTotal = totalVal;
+          dBullMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
+        }
+        if (th === 'S-BULL' && !isNaN(totalVal)) {
+          sBullTotal = totalVal;
+          sBullMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
+        }
+        if (th === 'HAT TRICK' && !isNaN(totalVal)) {
+          hatTricksTotal = totalVal;
+          hatTricksMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
+        }
       }
     });
 
@@ -82,6 +98,10 @@ async function scrapeStats(
       statsCriAvg: statsCriAvg === null || isNaN(statsCriAvg) ? null : statsCriAvg,
       dBullTotal,
       sBullTotal,
+      dBullMonthly,
+      sBullMonthly,
+      hatTricksTotal,
+      hatTricksMonthly,
     };
   });
 }
@@ -163,7 +183,14 @@ export async function GET(request: NextRequest) {
                   ratingInt: stats.ratingInt,
                   stats01Avg: stats.stats01Avg,
                   statsCriAvg: stats.statsCriAvg,
-                  bullStats: { dBull: stats.dBullTotal, sBull: stats.sBullTotal },
+                  bullStats: {
+                    dBull: stats.dBullTotal,
+                    sBull: stats.sBullTotal,
+                    dBullMonthly: stats.dBullMonthly,
+                    sBullMonthly: stats.sBullMonthly,
+                  },
+                  hatTricks: stats.hatTricksTotal,
+                  hatTricksMonthly: stats.hatTricksMonthly,
                   prevRating: prevData?.rating ?? null,
                   prevStats01Avg: prevData?.stats01Avg ?? null,
                   prevStatsCriAvg: prevData?.statsCriAvg ?? null,
