@@ -42,6 +42,7 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
         borderLeft: 4,
         borderColor: isAchieved ? 'success.main' : 'primary.main',
         position: 'relative',
+        height: '100%',
       }}
     >
       <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FlagIcon from '@mui/icons-material/Flag';
 import { useSession } from 'next-auth/react';
@@ -112,11 +112,13 @@ export default function GoalSection() {
           目標を設定して進捗を追跡しよう
         </Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Grid container spacing={1.5}>
           {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} />
+            <Grid size={{ xs: 12, sm: 6 }} key={goal.id}>
+              <GoalCard goal={goal} onDelete={handleDelete} />
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       )}
 
       <GoalSettingDialog

@@ -6,21 +6,18 @@ import {
   Typography,
   Box,
   Card,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  CardContent,
   ToggleButton,
   ToggleButtonGroup,
   Button,
   CircularProgress,
   Chip,
   Alert,
+  Avatar,
 } from '@mui/material';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useSession } from 'next-auth/react';
 
 interface GroupMember {
@@ -28,7 +25,6 @@ interface GroupMember {
   rating: number;
   ppd: number;
   mpr: number;
-  cardImageUrl?: string;
 }
 
 interface GroupData {
@@ -38,6 +34,29 @@ interface GroupData {
 }
 
 type SortKey = 'rating' | 'ppd' | 'mpr';
+
+const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
+const MEDAL_LABELS = ['1st', '2nd', '3rd'];
+
+function StatLabel({ label, value, active }: { label: string; value: string; active: boolean }) {
+  return (
+    <Box sx={{ textAlign: 'center', minWidth: 48 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', fontSize: '0.6rem', lineHeight: 1.2 }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: active ? 'bold' : 'normal', fontSize: '0.85rem' }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+}
 
 export default function RankingPage() {
   const { data: session } = useSession();
@@ -94,7 +113,7 @@ export default function RankingPage() {
 
   if (!session) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
         <Typography color="text.secondary" textAlign="center">
           ログインが必要です
         </Typography>
@@ -103,10 +122,12 @@ export default function RankingPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <LeaderboardIcon color="primary" sx={{ fontSize: 32 }} />
-        <Typography variant="h4">グループランキング</Typography>
+    <Container maxWidth="sm" sx={{ py: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <LeaderboardIcon color="primary" sx={{ fontSize: 28 }} />
+        <Typography variant="h5" fontWeight="bold">
+          ランキング
+        </Typography>
       </Box>
 
       {loading ? (
@@ -114,27 +135,33 @@ export default function RankingPage() {
           <CircularProgress />
         </Box>
       ) : !group || group.members.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            グループデータがありません
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            DARTSLIVEでグループに参加している場合、データを取得できます
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={refreshing ? <CircularProgress size={18} /> : <RefreshIcon />}
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            グループデータを取得
-          </Button>
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </Box>
+        <Card sx={{ textAlign: 'center', py: 6 }}>
+          <CardContent>
+            <EmojiEventsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+              グループデータがありません
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              DARTSLIVEでグループに参加している場合、
+              <br />
+              データを取得できます
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={refreshing ? <CircularProgress size={18} /> : <RefreshIcon />}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              size="small"
+            >
+              グループデータを取得
+            </Button>
+            {error && (
+              <Alert severity="error" sx={{ mt: 2, textAlign: 'left' }}>
+                {error}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <>
           <Box
@@ -142,123 +169,124 @@ export default function RankingPage() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              mb: 2,
-              flexWrap: 'wrap',
-              gap: 1,
+              mb: 1.5,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="h6">{group.groupName}</Typography>
-              <Chip label={`${group.members.length}人`} size="small" />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                {group.groupName}
+              </Typography>
+              <Chip label={`${group.members.length}人`} size="small" sx={{ height: 20 }} />
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ToggleButtonGroup
-                value={sortBy}
-                exclusive
-                onChange={(_, v) => v && setSortBy(v)}
-                size="small"
-              >
-                <ToggleButton value="rating">Rating</ToggleButton>
-                <ToggleButton value="ppd">PPD</ToggleButton>
-                <ToggleButton value="mpr">MPR</ToggleButton>
-              </ToggleButtonGroup>
-              <Button
-                size="small"
-                startIcon={refreshing ? <CircularProgress size={14} /> : <RefreshIcon />}
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                更新
-              </Button>
-            </Box>
+            <Button
+              size="small"
+              startIcon={refreshing ? <CircularProgress size={14} /> : <RefreshIcon />}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              sx={{ minWidth: 0, px: 1 }}
+            >
+              更新
+            </Button>
           </Box>
 
+          <ToggleButtonGroup
+            value={sortBy}
+            exclusive
+            onChange={(_, v) => v && setSortBy(v)}
+            size="small"
+            fullWidth
+            sx={{ mb: 1.5 }}
+          >
+            <ToggleButton value="rating">Rating</ToggleButton>
+            <ToggleButton value="ppd">PPD</ToggleButton>
+            <ToggleButton value="mpr">MPR</ToggleButton>
+          </ToggleButtonGroup>
+
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 1.5 }}>
               {error}
             </Alert>
           )}
 
-          <TableContainer component={Card}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell width={40}>#</TableCell>
-                  <TableCell>名前</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: sortBy === 'rating' ? 'bold' : 'normal' }}>
-                    Rating
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: sortBy === 'ppd' ? 'bold' : 'normal' }}>
-                    PPD
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: sortBy === 'mpr' ? 'bold' : 'normal' }}>
-                    MPR
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedMembers.map((member, index) => (
-                  <TableRow
-                    key={member.name}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {sortedMembers.map((member, index) => {
+              const isTop3 = index < 3;
+              const medalColor = isTop3 ? MEDAL_COLORS[index] : undefined;
+
+              return (
+                <Card
+                  key={member.name}
+                  sx={{
+                    borderLeft: isTop3 ? 3 : 1,
+                    borderLeftColor: medalColor || 'divider',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <CardContent
                     sx={{
-                      bgcolor: index < 3 ? 'action.hover' : 'transparent',
+                      py: 1,
+                      px: 1.5,
+                      '&:last-child': { pb: 1 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
                     }}
                   >
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: index < 3 ? 'bold' : 'normal',
-                          color:
-                            index === 0
-                              ? '#FFD700'
-                              : index === 1
-                                ? '#C0C0C0'
-                                : index === 2
-                                  ? '#CD7F32'
-                                  : 'inherit',
-                        }}
-                      >
-                        {index + 1}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                        {member.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: sortBy === 'rating' ? 'bold' : 'normal' }}
-                      >
-                        {member.rating.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: sortBy === 'ppd' ? 'bold' : 'normal' }}
-                      >
-                        {member.ppd.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: sortBy === 'mpr' ? 'bold' : 'normal' }}
-                      >
-                        {member.mpr.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                    {/* 順位 */}
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        bgcolor: medalColor || 'action.selected',
+                        color: isTop3 ? '#fff' : 'text.secondary',
+                      }}
+                    >
+                      {isTop3 ? MEDAL_LABELS[index] : index + 1}
+                    </Avatar>
+
+                    {/* 名前 */}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: isTop3 ? 'bold' : 'medium',
+                        flex: 1,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {member.name}
+                    </Typography>
+
+                    {/* スタッツ */}
+                    <Box sx={{ display: 'flex', gap: 1.5 }}>
+                      <StatLabel
+                        label="Rt"
+                        value={member.rating.toFixed(2)}
+                        active={sortBy === 'rating'}
+                      />
+                      <StatLabel
+                        label="PPD"
+                        value={member.ppd.toFixed(2)}
+                        active={sortBy === 'ppd'}
+                      />
+                      <StatLabel
+                        label="MPR"
+                        value={member.mpr.toFixed(2)}
+                        active={sortBy === 'mpr'}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
 
           {group.updatedAt && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
               最終更新:{' '}
               {new Date(group.updatedAt).toLocaleDateString('ja-JP', {
                 month: 'long',
