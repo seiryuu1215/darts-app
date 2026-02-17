@@ -10,6 +10,7 @@ interface GoalAchievedDialogProps {
   open: boolean;
   goalType: string;
   target: number;
+  xpAmount?: number;
   onClose: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function GoalAchievedDialog({
   open,
   goalType,
   target,
+  xpAmount = 50,
   onClose,
 }: GoalAchievedDialogProps) {
   const label = GOAL_TYPE_LABELS[goalType as GoalType] || goalType;
@@ -91,7 +93,7 @@ export default function GoalAchievedDialog({
             {label}: {target.toLocaleString()} を達成しました!
           </Typography>
           <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
-            +50 XP 獲得!
+            +{xpAmount} XP 獲得!
           </Typography>
         </Box>
       </DialogContent>

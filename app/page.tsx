@@ -13,34 +13,27 @@ import {
   CardMedia,
   Chip,
 } from '@mui/material';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import SearchIcon from '@mui/icons-material/Search';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HistoryIcon from '@mui/icons-material/History';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import ArticleIcon from '@mui/icons-material/Article';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import QuizIcon from '@mui/icons-material/Quiz';
-import { collection, getDocs, orderBy, query, limit, doc, getDoc, where } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, getDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DartCard from '@/components/darts/DartCard';
-import DartCardSkeleton from '@/components/darts/DartCardSkeleton';
-import ArticleCard from '@/components/articles/ArticleCard';
 import OnboardingDialog from '@/components/OnboardingDialog';
 import XpBar from '@/components/progression/XpBar';
 import GoalSection from '@/components/goals/GoalSection';
 import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
-import ForumIcon from '@mui/icons-material/Forum';
-import type { Dart, Article, Discussion } from '@/types';
-import { CATEGORY_LABELS } from '@/types';
+import type { Dart } from '@/types';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -67,12 +60,6 @@ interface FeatureCard {
 
 const featureCards: FeatureCard[] = [
   {
-    title: 'みんなのセッティング',
-    description: '他のプレイヤーのセッティングを見る',
-    href: '/darts',
-    icon: <FormatListBulletedIcon sx={{ fontSize: 40 }} />,
-  },
-  {
     title: 'バレル検索',
     description: 'ブランド・スペックで絞り込み',
     href: '/barrels',
@@ -83,12 +70,6 @@ const featureCards: FeatureCard[] = [
     description: 'シャフト重量を一覧で比較',
     href: '/reference',
     icon: <StraightenIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    title: '記事',
-    description: 'ダーツの知見・ノウハウ記事',
-    href: '/articles',
-    icon: <ArticleIcon sx={{ fontSize: 40 }} />,
   },
   {
     title: 'シミュレーター',
@@ -120,14 +101,10 @@ const featureCards: FeatureCard[] = [
 
 export default function HomePage() {
   const { data: session } = useSession();
-  const [recentDarts, setRecentDarts] = useState<Dart[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
   const [activeSteelDart, setActiveSteelDart] = useState<Dart | null>(null);
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
-  const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
-  const [recentDiscussions, setRecentDiscussions] = useState<Discussion[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [xpNotifications, setXpNotifications] = useState<
     { id: string; type: string; title: string; details: { action: string; xp: number; label: string }[]; totalXp: number }[]
@@ -247,65 +224,7 @@ export default function HomePage() {
     fetchDlCache();
   }, [session]);
 
-  useEffect(() => {
-    const fetchRecent = async () => {
-      try {
-        const q = query(collection(db, 'darts'), orderBy('createdAt', 'desc'), limit(10));
-        const snapshot = await getDocs(q);
-        setRecentDarts(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Dart[],
-        );
-      } catch (err) {
-        console.error('最新セッティング取得エラー:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    const fetchDiscussions = async () => {
-      try {
-        const q = query(collection(db, 'discussions'), orderBy('lastRepliedAt', 'desc'), limit(5));
-        const snap = await getDocs(q);
-        setRecentDiscussions(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Discussion));
-      } catch {
-        /* ignore */
-      }
-    };
-    fetchRecent();
-    fetchDiscussions();
-  }, []);
-
-  // おすすめ記事取得
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const q = query(
-          collection(db, 'articles'),
-          where('isFeatured', '==', true),
-          where('isDraft', '==', false),
-        );
-        const snapshot = await getDocs(q);
-        setFeaturedArticles(
-          snapshot.docs
-            .map((d) => ({ id: d.id, ...d.data() }) as Article)
-            .filter((a) => a.articleType !== 'page')
-            .slice(0, 3),
-        );
-      } catch {
-        // おすすめ記事がない場合は無視
-      }
-    };
-    fetchFeatured();
-  }, []);
-
   const visibleCards = featureCards.filter((card) => !card.authOnly || session);
-
-  // みんなのセッティング: 自分のを除外
-  const othersRecentDarts = session?.user?.id
-    ? recentDarts.filter((d) => d.userId !== session.user.id).slice(0, 3)
-    : recentDarts.slice(0, 3);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -501,6 +420,10 @@ export default function HomePage() {
                         flex: 1,
                         textAlign: 'center',
                         py: 1.5,
+                        minHeight: 64,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
                         borderTop: `3px solid ${item.color}`,
                       }}
                     >
@@ -568,78 +491,6 @@ export default function HomePage() {
         ))}
       </Grid>
 
-      {/* おすすめ記事 */}
-      {featuredArticles.length > 0 && (
-        <Box sx={{ mb: 5 }}>
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AutoAwesomeIcon color="primary" />
-              <Typography variant="h5">おすすめ記事</Typography>
-            </Box>
-            <Button component={Link} href="/articles" endIcon={<ArrowForwardIcon />}>
-              すべての記事
-            </Button>
-          </Box>
-          <Grid container spacing={3}>
-            {featuredArticles.map((article) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={article.id}>
-                <ArticleCard article={article} />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-
-      {/* 最新ディスカッション */}
-      {recentDiscussions.length > 0 && (
-        <Box sx={{ mb: 5 }}>
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ForumIcon color="primary" />
-              <Typography variant="h5">最新ディスカッション</Typography>
-            </Box>
-            <Button component={Link} href="/discussions" endIcon={<ArrowForwardIcon />}>
-              すべて見る
-            </Button>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {recentDiscussions.map((d) => (
-              <Card
-                key={d.id}
-                component={Link}
-                href={`/discussions/${d.id}`}
-                sx={{
-                  textDecoration: 'none',
-                  px: 2,
-                  py: 1.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  '&:hover': { boxShadow: 4 },
-                }}
-              >
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="subtitle2" noWrap>
-                    {d.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {CATEGORY_LABELS[d.category]} · {d.userName} · 返信 {d.replyCount}
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                  {d.lastRepliedAt?.toDate?.()?.toLocaleDateString('ja-JP') || ''}
-                </Typography>
-              </Card>
-            ))}
-          </Box>
-        </Box>
-      )}
-
       {session && myDarts.length > 0 && (
         <Box sx={{ mb: 5 }}>
           <Box
@@ -661,35 +512,6 @@ export default function HomePage() {
               ))}
           </Grid>
         </Box>
-      )}
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">みんなのセッティング</Typography>
-        <Button component={Link} href="/darts" endIcon={<ArrowForwardIcon />}>
-          もっと見る
-        </Button>
-      </Box>
-
-      {loading ? (
-        <Grid container spacing={3}>
-          {[0, 1, 2].map((i) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-              <DartCardSkeleton />
-            </Grid>
-          ))}
-        </Grid>
-      ) : othersRecentDarts.length === 0 ? (
-        <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
-          まだセッティングが登録されていません
-        </Typography>
-      ) : (
-        <Grid container spacing={3}>
-          {othersRecentDarts.map((dart) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dart.id}>
-              <DartCard dart={dart} />
-            </Grid>
-          ))}
-        </Grid>
       )}
 
       <XpNotificationDialog

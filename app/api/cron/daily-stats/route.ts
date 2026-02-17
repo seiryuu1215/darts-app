@@ -6,6 +6,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
 import { sendLinePushMessage, buildStatsFlexMessage } from '@/lib/line';
 import { calculateCronXp, calculateLevel, type CronStatsSnapshot } from '@/lib/progression/xp-engine';
+import { calculateGoalCurrent, getDailyRange, type StatsRecord } from '@/lib/goals';
+import type { GoalType } from '@/types';
 
 export const maxDuration = 300;
 
@@ -302,6 +304,198 @@ export async function GET(request: NextRequest) {
               }
             } catch (xpErr) {
               console.error(`XP grant error for user ${userId}:`, xpErr);
+            }
+
+            // 自動達成チェック: 未達成目標で current >= target のものを自動達成
+            try {
+              const goalsSnap = await adminDb
+                .collection(`users/${userId}/goals`)
+                .where('achievedAt', '==', null)
+                .get();
+
+              if (!goalsSnap.empty) {
+                // dartsLiveStats レコードを取得
+                const goalDocs = goalsSnap.docs.map((d) => ({
+                  id: d.id,
+                  ...d.data(),
+                }));
+
+                const startDates = goalDocs
+                  .map((g) => (g as Record<string, unknown>).startDate)
+                  .filter((d): d is FirebaseFirestore.Timestamp => d != null)
+                  .map((d) => d.toDate());
+
+                const earliestGoalStart = startDates.length > 0
+                  ? new Date(Math.min(...startDates.map((d) => d.getTime())))
+                  : null;
+
+                let goalRecords: StatsRecord[] = [];
+                if (earliestGoalStart) {
+                  const baselineStart = new Date(earliestGoalStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+                  const goalStatsSnap = await adminDb
+                    .collection(`users/${userId}/dartsLiveStats`)
+                    .where('date', '>=', baselineStart)
+                    .orderBy('date', 'asc')
+                    .get();
+                  goalRecords = goalStatsSnap.docs.map((doc) => {
+                    const dd = doc.data();
+                    const dateVal = dd.date?.toDate?.() ?? (dd.date ? new Date(dd.date) : null);
+                    return {
+                      date: dateVal ? dateVal.toISOString() : '',
+                      rating: dd.rating ?? null,
+                      gamesPlayed: dd.gamesPlayed ?? 0,
+                      dBull: dd.bullStats?.dBull ?? null,
+                      sBull: dd.bullStats?.sBull ?? null,
+                      hatTricks: dd.hatTricks ?? null,
+                    } as StatsRecord;
+                  });
+                }
+
+                // キャッシュレコードを追加
+                const cacheRefForGoals = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
+                const goalCacheDoc = await cacheRefForGoals.get();
+                const goalCacheData = goalCacheDoc.exists ? goalCacheDoc.data()! : null;
+
+                if (goalCacheData) {
+                  const cacheDate = goalCacheData.updatedAt?.toDate?.() ?? new Date();
+                  let gcDBull: number | null = goalCacheData.bullStats?.dBull ?? null;
+                  let gcSBull: number | null = goalCacheData.bullStats?.sBull ?? null;
+                  let gcHatTricks: number | null = goalCacheData.hatTricks ?? null;
+
+                  if (gcDBull === null && goalCacheData.fullData) {
+                    try {
+                      const full = JSON.parse(goalCacheData.fullData);
+                      const awards = full?.current?.awards ?? {};
+                      gcDBull = awards['D-BULL']?.total ?? null;
+                      gcSBull = awards['S-BULL']?.total ?? null;
+                      if (gcHatTricks === null) {
+                        gcHatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
+                      }
+                    } catch { /* ignore */ }
+                  }
+
+                  const lastDate = goalRecords.length > 0
+                    ? new Date(goalRecords[goalRecords.length - 1].date).getTime()
+                    : 0;
+                  if (cacheDate.getTime() > lastDate) {
+                    goalRecords.push({
+                      date: cacheDate.toISOString(),
+                      rating: goalCacheData.rating ?? null,
+                      gamesPlayed: 0,
+                      dBull: gcDBull,
+                      sBull: gcSBull,
+                      hatTricks: gcHatTricks,
+                    });
+                  }
+                }
+
+                // 月間アワード値
+                let cronMonthlyBulls: number | null = null;
+                let cronMonthlyHatTricks: number | null = null;
+                if (goalCacheData) {
+                  const dBullM = goalCacheData.bullStats?.dBullMonthly ?? null;
+                  const sBullM = goalCacheData.bullStats?.sBullMonthly ?? null;
+                  if (dBullM !== null || sBullM !== null) {
+                    cronMonthlyBulls = (dBullM ?? 0) + (sBullM ?? 0);
+                  }
+                  cronMonthlyHatTricks = goalCacheData.hatTricksMonthly ?? null;
+                }
+
+                for (const goalDoc of goalDocs) {
+                  const g = goalDoc as Record<string, unknown>;
+                  const goalType = g.type as GoalType;
+                  const goalPeriod = g.period as string;
+                  const goalTarget = g.target as number;
+                  const goalBaseline = (g.baseline ?? null) as number | null;
+                  const goalStartDate = (g.startDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
+                  const goalEndDate = (g.endDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
+
+                  // 期限切れは無視
+                  if (goalEndDate && goalEndDate.getTime() < new Date().getTime()) continue;
+
+                  let current = 0;
+
+                  if (goalPeriod === 'daily' && goalBaseline !== null) {
+                    if (goalType === 'bulls' && goalCacheData) {
+                      let dB: number | null = goalCacheData.bullStats?.dBull ?? null;
+                      let sB: number | null = goalCacheData.bullStats?.sBull ?? null;
+                      if (dB === null && goalCacheData.fullData) {
+                        try {
+                          const full = JSON.parse(goalCacheData.fullData);
+                          const awards = full?.current?.awards ?? {};
+                          dB = awards['D-BULL']?.total ?? null;
+                          sB = awards['S-BULL']?.total ?? null;
+                        } catch { /* ignore */ }
+                      }
+                      current = Math.max(0, ((dB ?? 0) + (sB ?? 0)) - goalBaseline);
+                    } else if (goalType === 'hat_tricks' && goalCacheData) {
+                      let ht = goalCacheData.hatTricks ?? 0;
+                      if (!ht && goalCacheData.fullData) {
+                        try {
+                          const full = JSON.parse(goalCacheData.fullData);
+                          const awards = full?.current?.awards ?? {};
+                          ht = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0;
+                        } catch { /* ignore */ }
+                      }
+                      current = Math.max(0, ht - goalBaseline);
+                    } else if (goalType === 'games') {
+                      const { startDate: dStart, endDate: dEnd } = getDailyRange();
+                      const dRecords = goalRecords.filter((r) => {
+                        const t = new Date(r.date).getTime();
+                        return t >= dStart.getTime() && t <= dEnd.getTime();
+                      });
+                      const todayGames = dRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
+                      current = Math.max(0, todayGames - goalBaseline);
+                    }
+                  } else if (goalPeriod === 'monthly' && goalType === 'bulls' && cronMonthlyBulls !== null) {
+                    current = cronMonthlyBulls;
+                  } else if (goalPeriod === 'monthly' && goalType === 'hat_tricks' && cronMonthlyHatTricks !== null) {
+                    current = cronMonthlyHatTricks;
+                  } else if (goalType !== 'cu_score' && goalStartDate && goalEndDate && goalRecords.length > 0) {
+                    const startMs = goalStartDate.getTime();
+                    const endMs = goalEndDate.getTime() + 24 * 60 * 60 * 1000;
+                    const periodRecs = goalRecords.filter((r) => {
+                      const t = new Date(r.date).getTime();
+                      return t >= startMs && t < endMs;
+                    });
+                    let baselineRec: StatsRecord | undefined;
+                    if (goalType === 'bulls' || goalType === 'hat_tricks') {
+                      const beforeRecs = goalRecords.filter(
+                        (r) => new Date(r.date).getTime() < startMs,
+                      );
+                      if (beforeRecs.length > 0) baselineRec = beforeRecs[beforeRecs.length - 1];
+                    }
+                    current = calculateGoalCurrent(goalType, periodRecs, baselineRec);
+                  }
+
+                  if (current >= goalTarget && goalTarget > 0) {
+                    // 自動達成: XP付与 + 削除
+                    const xpAmt = goalPeriod === 'daily' ? 10 : 50;
+                    const xpAct = goalPeriod === 'daily' ? 'daily_goal_achieved' : 'goal_achieved';
+                    const userRef = adminDb.doc(`users/${userId}`);
+                    await userRef.set({ xp: FieldValue.increment(xpAmt) }, { merge: true });
+                    await adminDb.collection(`users/${userId}/xpHistory`).add({
+                      action: xpAct,
+                      xp: xpAmt,
+                      detail: `目標自動達成: ${goalType}`,
+                      createdAt: FieldValue.serverTimestamp(),
+                    });
+                    await adminDb.doc(`users/${userId}/goals/${goalDoc.id}`).delete();
+
+                    // 達成通知をFirestoreに保存
+                    await adminDb.collection(`users/${userId}/notifications`).add({
+                      type: 'goal_achieved',
+                      title: '目標達成!',
+                      details: [{ action: xpAct, xp: xpAmt, label: `${goalType} 目標達成` }],
+                      totalXp: xpAmt,
+                      read: false,
+                      createdAt: FieldValue.serverTimestamp(),
+                    });
+                  }
+                }
+              }
+            } catch (goalErr) {
+              console.error(`Goal auto-achieve error for user ${userId}:`, goalErr);
             }
 
             if (!hasChange) {

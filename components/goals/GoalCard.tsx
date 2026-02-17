@@ -8,8 +8,10 @@ import {
   Typography,
   IconButton,
   Chip,
+  Button,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { GOAL_TYPE_LABELS } from '@/types';
 import { getProgressPercent, getRemainingDays, getDailyPace, getEstimatedDays } from '@/lib/goals';
 
@@ -22,11 +24,13 @@ interface GoalCardProps {
     current: number;
     startDate: string;
     endDate: string;
+    achievable?: boolean;
   };
   onDelete?: (id: string) => void;
+  onAchieve?: (id: string) => void;
 }
 
-export default function GoalCard({ goal, onDelete }: GoalCardProps) {
+export default function GoalCard({ goal, onDelete, onAchieve }: GoalCardProps) {
   const progress = getProgressPercent(goal.current, goal.target);
   const remaining = getRemainingDays(new Date(goal.endDate));
   const dailyPace = getDailyPace(goal.current, goal.target, remaining);
@@ -82,18 +86,32 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
           sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
         />
 
-        <Typography variant="caption" color="text.secondary">
-          {goal.period === 'daily' ? (
-            '本日中'
-          ) : remaining > 0 ? (
-            <>
-              残り{remaining}日{dailyPace > 0 && ` · 1日あたり約${dailyPace}`}
-              {estimated != null && estimated > 0 && ` · 予測${estimated}日で達成`}
-            </>
-          ) : (
-            '期限超過'
-          )}
-        </Typography>
+        {goal.achievable && onAchieve ? (
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={<EmojiEventsIcon />}
+            onClick={() => onAchieve(goal.id)}
+            sx={{ mt: 0.5, fontWeight: 'bold' }}
+            fullWidth
+          >
+            達成!
+          </Button>
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            {goal.period === 'daily' ? (
+              '本日中'
+            ) : remaining > 0 ? (
+              <>
+                残り{remaining}日{dailyPace > 0 && ` · 1日あたり約${dailyPace}`}
+                {estimated != null && estimated > 0 && ` · 予測${estimated}日で達成`}
+              </>
+            ) : (
+              '期限超過'
+            )}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );

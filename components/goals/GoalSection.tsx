@@ -18,7 +18,7 @@ interface GoalData {
   current: number;
   startDate: string;
   endDate: string;
-  newlyAchieved?: boolean;
+  achievable?: boolean;
 }
 
 export default function GoalSection() {
@@ -29,7 +29,7 @@ export default function GoalSection() {
   const [activeDaily, setActiveDaily] = useState(0);
   const [activeMonthly, setActiveMonthly] = useState(0);
   const [activeYearly, setActiveYearly] = useState(0);
-  const [celebrateGoal, setCelebrateGoal] = useState<GoalData | null>(null);
+  const [celebrateGoal, setCelebrateGoal] = useState<{ type: string; target: number; xpAmount: number } | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -43,16 +43,6 @@ export default function GoalSection() {
           setActiveDaily(json.activeDaily ?? 0);
           setActiveMonthly(json.activeMonthly ?? 0);
           setActiveYearly(json.activeYearly ?? 0);
-
-          // 新たに達成された目標をお祝い表示（達成目標はAPI側で削除済み）
-          const achieved = (json.goals || []).find(
-            (g: GoalData) => g.newlyAchieved,
-          );
-          if (achieved) {
-            setCelebrateGoal(achieved);
-            // 達成目標をリストから除外
-            setGoals((json.goals || []).filter((g: GoalData) => !g.newlyAchieved));
-          }
         }
       } catch {
         // ignore
@@ -84,6 +74,27 @@ export default function GoalSection() {
       return json.error || '目標の作成に失敗しました';
     } catch {
       return '通信エラーが発生しました';
+    }
+  };
+
+  const handleAchieve = async (id: string) => {
+    try {
+      const res = await fetch('/api/goals/achieve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goalId: id }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setCelebrateGoal({
+          type: json.goalType,
+          target: json.target,
+          xpAmount: json.xpAwarded,
+        });
+        setRefreshKey((k) => k + 1);
+      }
+    } catch {
+      // ignore
     }
   };
 
@@ -120,7 +131,7 @@ export default function GoalSection() {
         <Grid container spacing={1.5}>
           {goals.map((goal) => (
             <Grid size={{ xs: 12, sm: 6 }} key={goal.id}>
-              <GoalCard goal={goal} onDelete={handleDelete} />
+              <GoalCard goal={goal} onDelete={handleDelete} onAchieve={handleAchieve} />
             </Grid>
           ))}
         </Grid>
@@ -139,6 +150,7 @@ export default function GoalSection() {
         open={!!celebrateGoal}
         goalType={celebrateGoal?.type || ''}
         target={celebrateGoal?.target || 0}
+        xpAmount={celebrateGoal?.xpAmount || 50}
         onClose={() => setCelebrateGoal(null)}
       />
     </Box>

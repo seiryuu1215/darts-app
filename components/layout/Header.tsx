@@ -358,7 +358,7 @@ export default function Header() {
 
       {/* モバイルドロワー（グループ化） */}
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <Box sx={{ width: 250 }} role="navigation" aria-label="メインメニュー">
+        <Box sx={{ width: 250, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100%' }} role="navigation" aria-label="メインメニュー">
           {session && (
             <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <UserAvatar

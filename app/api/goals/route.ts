@@ -105,7 +105,6 @@ export const GET = withErrorHandler(
         xpAwarded: (d.xpAwarded ?? false) as boolean,
         carryOver: (d.carryOver ?? false) as boolean,
         baseline: (d.baseline ?? null) as number | null,
-        newlyAchieved: false,
       };
     });
 
@@ -153,7 +152,6 @@ export const GET = withErrorHandler(
             xpAwarded: false,
             carryOver: true,
             baseline: null,
-            newlyAchieved: false,
           });
         }
       }
@@ -249,7 +247,7 @@ export const GET = withErrorHandler(
       achievedAt: string | null;
       xpAwarded: boolean;
       carryOver: boolean;
-      newlyAchieved: boolean;
+      achievable: boolean;
     }[] = [];
 
     for (const goal of activeRawGoals) {
@@ -343,42 +341,18 @@ export const GET = withErrorHandler(
         goal.xpAwarded = false;
       }
 
-      // 達成判定: current >= target かつ未達成
-      let newlyAchieved = false;
-      if (current >= goal.target && goal.target > 0 && !goal.achievedAt) {
-        newlyAchieved = true;
-
-        // XP付与（daily: 10 XP, monthly/yearly: 50 XP）
-        if (!goal.xpAwarded) {
-          const xpAmount = goal.period === 'daily' ? 10 : 50;
-          const xpAction = goal.period === 'daily' ? 'daily_goal_achieved' : 'goal_achieved';
-          try {
-            const userRef = adminDb.doc(`users/${userId}`);
-            await userRef.set({ xp: FieldValue.increment(xpAmount) }, { merge: true });
-            await adminDb.collection(`users/${userId}/xpHistory`).add({
-              action: xpAction,
-              xp: xpAmount,
-              detail: `目標達成: ${goal.type}`,
-              createdAt: FieldValue.serverTimestamp(),
-            });
-          } catch (e) {
-            console.error('Goal XP award error:', e);
-          }
-        }
-
-        // 達成した目標をFirestoreから削除
-        await adminDb.doc(`users/${userId}/goals/${goal.id}`).delete();
-      }
-
       // 既に達成済み（過去の達成）はレスポンスに含めない
-      if (goal.achievedAt && !newlyAchieved) {
+      if (goal.achievedAt) {
         continue;
       }
 
       // 期限切れ目標も除外（引き継ぎ済みの場合）
-      if (!goal.achievedAt && goal.endDate && goal.endDate.getTime() < now.getTime()) {
+      if (goal.endDate && goal.endDate.getTime() < now.getTime()) {
         continue;
       }
+
+      // 達成可能フラグ: current >= target かつ未達成
+      const achievable = current >= goal.target && goal.target > 0 && !goal.achievedAt;
 
       responseGoals.push({
         id: goal.id,
@@ -388,10 +362,10 @@ export const GET = withErrorHandler(
         current,
         startDate: goal.startDate?.toISOString() ?? '',
         endDate: goal.endDate?.toISOString() ?? '',
-        achievedAt: newlyAchieved ? now.toISOString() : null,
+        achievedAt: null,
         xpAwarded: goal.xpAwarded,
         carryOver: goal.carryOver,
-        newlyAchieved,
+        achievable,
       });
     }
 
