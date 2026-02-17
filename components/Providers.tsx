@@ -5,6 +5,7 @@ import { SessionProvider, useSession } from 'next-auth/react';
 import { ThemeProvider, createTheme, CssBaseline, useMediaQuery } from '@mui/material';
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase';
+import ToastProvider from '@/components/ToastProvider';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -109,7 +110,9 @@ export default function Providers({ children }: { children: ReactNode }) {
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </ColorModeContext.Provider>
     </SessionProvider>

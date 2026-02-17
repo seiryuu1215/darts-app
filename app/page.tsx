@@ -33,6 +33,7 @@ import XpBar from '@/components/progression/XpBar';
 import GoalSection from '@/components/goals/GoalSection';
 import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
+import { useToast } from '@/components/ToastProvider';
 import type { Dart } from '@/types';
 
 import { getFlightColor, COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
@@ -101,6 +102,7 @@ const featureCards: FeatureCard[] = [
 
 export default function HomePage() {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
   const [activeSteelDart, setActiveSteelDart] = useState<Dart | null>(null);
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
@@ -125,10 +127,10 @@ export default function HomePage() {
           setShowXpNotification(true);
         }
       } catch {
-        // ignore
+        showToast('通知の取得に失敗しました');
       }
     })();
-  }, [session]);
+  }, [session, showToast]);
 
   const handleCloseXpNotification = async () => {
     setShowXpNotification(false);
@@ -141,7 +143,7 @@ export default function HomePage() {
           body: JSON.stringify({ ids }),
         });
       } catch {
-        // ignore
+        showToast('通知の既読処理に失敗しました');
       }
     }
   };
@@ -216,13 +218,13 @@ export default function HomePage() {
           });
         }
       } catch {
-        /* ignore */
+        showToast('スタッツの取得に失敗しました');
       }
     };
     fetchUserData();
     fetchMyDarts();
     fetchDlCache();
-  }, [session]);
+  }, [session, showToast]);
 
   const visibleCards = featureCards.filter((card) => !card.authOnly || session);
 

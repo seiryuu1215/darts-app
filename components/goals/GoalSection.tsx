@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import GoalCard from './GoalCard';
 import GoalSettingDialog from './GoalSettingDialog';
 import GoalAchievedDialog from './GoalAchievedDialog';
+import { useToast } from '@/components/ToastProvider';
 import type { GoalType, GoalPeriod } from '@/types';
 
 interface GoalData {
@@ -23,6 +24,7 @@ interface GoalData {
 
 export default function GoalSection() {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -45,13 +47,13 @@ export default function GoalSection() {
           setActiveYearly(json.activeYearly ?? 0);
         }
       } catch {
-        // ignore
+        showToast('目標の取得に失敗しました');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [session, refreshKey]);
+  }, [session, refreshKey, showToast]);
 
   const handleSave = async (data: {
     type: GoalType;
@@ -94,7 +96,7 @@ export default function GoalSection() {
         setRefreshKey((k) => k + 1);
       }
     } catch {
-      // ignore
+      showToast('目標の達成処理に失敗しました');
     }
   };
 
@@ -105,7 +107,7 @@ export default function GoalSection() {
         setRefreshKey((k) => k + 1);
       }
     } catch {
-      // ignore
+      showToast('目標の削除に失敗しました');
     }
   };
 

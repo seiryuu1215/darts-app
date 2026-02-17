@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://darts-app-lime.vercel.app'),
   title: {
     default: 'Darts Lab - ダーツセッティング管理・バレル検索・スタッツ分析',
     template: '%s | Darts Lab',

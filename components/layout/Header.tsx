@@ -40,6 +40,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 import { ColorModeContext } from '@/components/Providers';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface DrawerGroup {
   label: string;
@@ -240,6 +241,8 @@ export default function Header() {
               )}
             </IconButton>
 
+            {session && <NotificationBell />}
+
             {session ? (
               <>
                 <IconButton
@@ -324,6 +327,7 @@ export default function Header() {
 
           {/* モバイル表示 */}
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5 }}>
+            {session && <NotificationBell />}
             {session && (
               <Link href="/profile/edit" style={{ display: 'flex' }}>
                 <Box
