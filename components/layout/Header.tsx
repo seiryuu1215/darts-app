@@ -91,6 +91,7 @@ export default function Header() {
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
+            { label: 'カレンダー', href: '/stats/calendar' },
             { label: '目標', href: '/#goals' },
           ],
         },

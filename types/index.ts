@@ -189,6 +189,7 @@ export interface DartsLiveStats {
   whiteHorse?: number;
   condition: 1 | 2 | 3 | 4 | 5;
   memo: string;
+  challenge: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -314,6 +315,16 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   play_days: 'プレイ日数',
   hat_tricks: 'HAT TRICK',
 };
+
+// Monthly Review
+export interface MonthlyReview {
+  id?: string;
+  yearMonth: string;   // "2026-02"
+  good: string;        // 良かったところ
+  bad: string;         // 悪かったところ
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
 
 // Affiliate
 export type ShopType = 'dartshive' | 'sdarts' | 'maxim' | 'tito' | 'rakuten' | 'amazon';

@@ -91,6 +91,13 @@ service cloud.firestore {
         allow update: if isOwner(userId);
         allow delete: if isOwner(userId);
       }
+
+      // monthlyReviews
+      match /monthlyReviews/{reviewId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isPro();
+        allow delete: if isOwner(userId);
+      }
     }
 
     // ──────────────────────────────
