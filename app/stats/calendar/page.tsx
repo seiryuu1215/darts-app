@@ -9,9 +9,13 @@ import {
   Typography,
   IconButton,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CloseIcon from '@mui/icons-material/Close';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import CalendarGrid from '@/components/stats/CalendarGrid';
 import DayDetailPanel from '@/components/stats/DayDetailPanel';
@@ -28,6 +32,17 @@ interface CalendarRecord {
   challenge: string;
   dBull: number | null;
   sBull: number | null;
+}
+
+const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
+
+function formatDateHeader(dateStr: string): string {
+  const [, monthStr, dayStr] = dateStr.split('-');
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = DAY_NAMES[d.getDay()];
+  return `${month}月${day}日（${dow}）`;
 }
 
 function getJSTNow() {
@@ -154,12 +169,26 @@ export default function CalendarPage() {
             onSelectDate={setSelectedDate}
           />
 
-          {/* 日別詳細 */}
-          {selectedDate && selectedRecords.length > 0 && (
-            <DayDetailPanel date={selectedDate} records={selectedRecords} />
-          )}
         </Box>
       )}
+
+      {/* 日別詳細ダイアログ */}
+      <Dialog
+        open={!!selectedDate && selectedRecords.length > 0}
+        onClose={() => setSelectedDate(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {selectedDate && formatDateHeader(selectedDate)}
+          <IconButton onClick={() => setSelectedDate(null)} aria-label="閉じる">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <DayDetailPanel records={selectedRecords} />
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 }

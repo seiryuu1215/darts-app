@@ -60,14 +60,40 @@ export function getConditionLabel(condition: number): string {
   return CONDITION_LABELS[condition] || '';
 }
 
+/** Rating整数値からフライトカラーを取得 */
+function getRatingColor(rating: number | null): string {
+  if (rating == null) return '#333333';
+  const rt = Math.floor(rating);
+  if (rt >= 14) return '#FDD835'; // SA
+  if (rt >= 12) return '#E65100'; // AA
+  if (rt >= 10) return '#FF9800'; // A
+  if (rt >= 8) return '#7B1FA2'; // BB
+  if (rt >= 6) return '#1E88E5'; // B
+  if (rt >= 4) return '#00ACC1'; // CC
+  if (rt >= 2) return '#4CAF50'; // C
+  return '#808080'; // N
+}
+
 /** スタッツ通知用 Flex Message + Quick Reply (★1〜★5) */
 export function buildStatsFlexMessage(stats: {
   date: string;
   rating: number | null;
   ppd: number | null;
   mpr: number | null;
+  prevRating?: number | null;
   gamesPlayed?: number | null;
   awards?: {
+    dBull?: number;
+    sBull?: number;
+    hatTricks?: number;
+    ton80?: number;
+    lowTon?: number;
+    highTon?: number;
+    threeInABed?: number;
+    threeInABlack?: number;
+    whiteHorse?: number;
+  };
+  prevAwards?: {
     dBull?: number;
     sBull?: number;
     hatTricks?: number;
@@ -82,25 +108,55 @@ export function buildStatsFlexMessage(stats: {
   const ratingStr = stats.rating?.toFixed(2) ?? '--';
   const ppdStr = stats.ppd?.toFixed(2) ?? '--';
   const mprStr = stats.mpr?.toFixed(2) ?? '--';
+  const ratingColor = getRatingColor(stats.rating);
 
-  // Awards セクション構築
+  // Rating 変動表示
+  const ratingChangeContents: object[] = [];
+  if (stats.rating != null && stats.prevRating != null) {
+    const diff = stats.rating - stats.prevRating;
+    if (diff !== 0) {
+      const sign = diff > 0 ? '+' : '';
+      const color = diff > 0 ? '#4CAF50' : '#E53935';
+      ratingChangeContents.push({
+        type: 'text',
+        text: `${sign}${diff.toFixed(2)}`,
+        size: 'xs',
+        color,
+      });
+    }
+  }
+
+  // Awards 差分セクション構築
   const awardsContents: object[] = [];
   if (stats.awards) {
     const a = stats.awards;
-    const awardItems: { label: string; value: number }[] = [
-      { label: 'HAT TRICK', value: a.hatTricks ?? 0 },
-      { label: 'TON 80', value: a.ton80 ?? 0 },
-      { label: 'LOW TON', value: a.lowTon ?? 0 },
-      { label: 'HIGH TON', value: a.highTon ?? 0 },
-      { label: '3 IN A BED', value: a.threeInABed ?? 0 },
-      { label: '3 - BLACK', value: a.threeInABlack ?? 0 },
-      { label: 'WHITE HRS', value: a.whiteHorse ?? 0 },
-      { label: 'D-BULL', value: a.dBull ?? 0 },
-      { label: 'S-BULL', value: a.sBull ?? 0 },
+    const pa = stats.prevAwards ?? {};
+
+    type AwardKey = 'hatTricks' | 'ton80' | 'lowTon' | 'highTon' | 'threeInABed' | 'threeInABlack' | 'whiteHorse' | 'dBull' | 'sBull';
+    const awardDefs: { label: string; key: AwardKey }[] = [
+      { label: 'HAT TRICK', key: 'hatTricks' },
+      { label: 'TON 80', key: 'ton80' },
+      { label: 'LOW TON', key: 'lowTon' },
+      { label: 'HIGH TON', key: 'highTon' },
+      { label: '3 IN A BED', key: 'threeInABed' },
+      { label: '3 - BLACK', key: 'threeInABlack' },
+      { label: 'WHITE HRS', key: 'whiteHorse' },
+      { label: 'D-BULL', key: 'dBull' },
+      { label: 'S-BULL', key: 'sBull' },
     ];
 
-    const hasAnyAward = awardItems.some((item) => item.value > 0);
-    if (hasAnyAward) {
+    // 差分計算: prevAwards がある場合は diff のみ、ない場合は累計値を表示
+    const hasPrev = stats.prevAwards != null;
+    const awardItems = awardDefs
+      .map((def) => {
+        const current = a[def.key] ?? 0;
+        const prev = pa[def.key] ?? 0;
+        const value = hasPrev ? current - prev : current;
+        return { label: def.label, value };
+      })
+      .filter((item) => item.value > 0);
+
+    if (awardItems.length > 0) {
       awardsContents.push({
         type: 'separator',
         margin: 'md',
@@ -127,7 +183,7 @@ export function buildStatsFlexMessage(stats: {
               { type: 'text', text: left.label, size: 'xxs', color: '#888888', flex: 3 },
               {
                 type: 'text',
-                text: String(left.value),
+                text: hasPrev ? `+${left.value}` : String(left.value),
                 size: 'xxs',
                 color: '#333333',
                 flex: 1,
@@ -145,7 +201,7 @@ export function buildStatsFlexMessage(stats: {
               { type: 'text', text: right.label, size: 'xxs', color: '#888888', flex: 3 },
               {
                 type: 'text',
-                text: String(right.value),
+                text: hasPrev ? `+${right.value}` : String(right.value),
                 size: 'xxs',
                 color: '#333333',
                 flex: 1,
@@ -214,7 +270,8 @@ export function buildStatsFlexMessage(stats: {
                 flex: 1,
                 contents: [
                   { type: 'text', text: 'Rating', size: 'xs', color: '#888888' },
-                  { type: 'text', text: ratingStr, size: 'xl', weight: 'bold' },
+                  { type: 'text', text: ratingStr, size: 'xl', weight: 'bold', color: ratingColor },
+                  ...ratingChangeContents,
                 ],
               },
               {
@@ -271,20 +328,87 @@ export function buildStatsFlexMessage(stats: {
   };
 }
 
+/** 実績解除通知 Flex Message */
+export function buildAchievementFlexMessage(
+  achievements: { name: string; icon: string }[],
+): object {
+  const bodyContents: object[] = [
+    {
+      type: 'text',
+      text: '🏆 実績解除!',
+      weight: 'bold',
+      size: 'lg',
+      color: '#333333',
+    },
+    {
+      type: 'separator',
+      margin: 'md',
+    },
+  ];
+
+  for (const a of achievements) {
+    bodyContents.push({
+      type: 'text',
+      text: `${a.icon} ${a.name}`,
+      size: 'sm',
+      margin: 'md',
+      color: '#333333',
+    });
+  }
+
+  return {
+    type: 'flex',
+    altText: `実績解除: ${achievements.map((a) => a.name).join(', ')}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF6F00',
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'text',
+            text: 'Darts Lab',
+            color: '#ffffff',
+            size: 'sm',
+            weight: 'bold',
+          },
+          {
+            type: 'text',
+            text: '実績',
+            color: '#ffffffcc',
+            size: 'xs',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: '16px',
+        spacing: 'sm',
+        contents: bodyContents,
+      },
+    },
+  };
+}
+
 /** 完了通知メッセージ */
 export function buildCompletionMessage(stats: {
   rating: number | null;
   ppd: number | null;
   condition: number;
   memo: string;
+  challenge: string;
 }): object {
   const condLabel = getConditionLabel(stats.condition);
   const ratingStr = stats.rating?.toFixed(2) ?? '--';
   const ppdStr = stats.ppd?.toFixed(2) ?? '--';
   const memoStr = stats.memo || 'なし';
+  const challengeStr = stats.challenge || 'なし';
 
   return {
     type: 'text',
-    text: `記録しました！\nRt.${ratingStr} / PPD ${ppdStr} / ★${stats.condition} ${condLabel}\nメモ: ${memoStr}`,
+    text: `記録しました！\nRt.${ratingStr} / PPD ${ppdStr} / ★${stats.condition} ${condLabel}\nメモ: ${memoStr}\n課題: ${challengeStr}`,
   };
 }

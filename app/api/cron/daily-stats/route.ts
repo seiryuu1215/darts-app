@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
-import { sendLinePushMessage, buildStatsFlexMessage } from '@/lib/line';
+import { sendLinePushMessage, buildStatsFlexMessage, buildAchievementFlexMessage } from '@/lib/line';
 import {
   calculateCronXp,
   calculateLevel,
+  checkAchievements,
   type CronStatsSnapshot,
+  type AchievementSnapshot,
 } from '@/lib/progression/xp-engine';
+import { ACHIEVEMENT_MAP } from '@/lib/progression/achievements';
 import { calculateGoalCurrent, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
@@ -75,6 +78,41 @@ export async function GET(request: NextRequest) {
               prevData.stats01Avg !== stats.stats01Avg ||
               prevData.statsCriAvg !== stats.statsCriAvg;
 
+            // ゲーム数合計を算出 (dartsLiveStatsのgamesPlayed合計)
+            const gamesSnap = await adminDb
+              .collection(`users/${userId}/dartsLiveStats`)
+              .select('gamesPlayed')
+              .get();
+            const totalGames = gamesSnap.docs.reduce((sum, d) => sum + (d.data().gamesPlayed ?? 0), 0);
+
+            // 連続プレイ日数（streak）計算
+            const todayJST = new Date();
+            todayJST.setHours(todayJST.getHours() + 9);
+            const todayStr = `${todayJST.getFullYear()}-${String(todayJST.getMonth() + 1).padStart(2, '0')}-${String(todayJST.getDate()).padStart(2, '0')}`;
+            const prevLastPlayDate = prevData?.lastPlayDate ?? null;
+            const prevStreak = prevData?.currentStreak ?? 0;
+
+            let currentStreak: number;
+            if (hasChange) {
+              // データ変化あり = 今日プレイした
+              if (prevLastPlayDate) {
+                const prevDate = new Date(prevLastPlayDate + 'T00:00:00+09:00');
+                const todayDate = new Date(todayStr + 'T00:00:00+09:00');
+                const diffDays = Math.round((todayDate.getTime() - prevDate.getTime()) / (86400000));
+                if (diffDays === 1) {
+                  currentStreak = prevStreak + 1;
+                } else if (diffDays === 0) {
+                  currentStreak = prevStreak; // 同日
+                } else {
+                  currentStreak = 1; // 途切れた
+                }
+              } else {
+                currentStreak = 1;
+              }
+            } else {
+              currentStreak = prevStreak;
+            }
+
             if (hasChange) {
               // キャッシュ更新
               await cacheRef.set(
@@ -97,6 +135,9 @@ export async function GET(request: NextRequest) {
                   threeInABed: stats.threeInABed,
                   threeInABlack: stats.threeInABlack,
                   whiteHorse: stats.whiteHorse,
+                  totalGames,
+                  lastPlayDate: todayStr,
+                  currentStreak,
                   prevRating: prevData?.rating ?? null,
                   prevStats01Avg: prevData?.stats01Avg ?? null,
                   prevStatsCriAvg: prevData?.statsCriAvg ?? null,
@@ -111,12 +152,13 @@ export async function GET(request: NextRequest) {
               yesterday.setDate(yesterday.getDate() - 1);
               const dateStr = `${yesterday.getFullYear()}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${String(yesterday.getDate()).padStart(2, '0')}`;
 
-              // LINE通知送信
+              // LINE通知送信（前回キャッシュとの差分表示）
               const flexMsg = buildStatsFlexMessage({
                 date: dateStr,
                 rating: stats.rating,
                 ppd: stats.stats01Avg,
                 mpr: stats.statsCriAvg,
+                prevRating: prevData?.rating ?? null,
                 awards: {
                   dBull: stats.dBullTotal,
                   sBull: stats.sBullTotal,
@@ -128,6 +170,19 @@ export async function GET(request: NextRequest) {
                   threeInABlack: stats.threeInABlack,
                   whiteHorse: stats.whiteHorse,
                 },
+                prevAwards: prevData
+                  ? {
+                      dBull: prevData.bullStats?.dBull ?? 0,
+                      sBull: prevData.bullStats?.sBull ?? 0,
+                      hatTricks: prevData.hatTricks ?? 0,
+                      ton80: prevData.ton80 ?? 0,
+                      lowTon: prevData.lowTon ?? 0,
+                      highTon: prevData.highTon ?? 0,
+                      threeInABed: prevData.threeInABed ?? 0,
+                      threeInABlack: prevData.threeInABlack ?? 0,
+                      whiteHorse: prevData.whiteHorse ?? 0,
+                    }
+                  : undefined,
               });
               await sendLinePushMessage(lineUserId, [flexMsg]);
 
@@ -151,6 +206,7 @@ export async function GET(request: NextRequest) {
                   hatTricksTotal: stats.hatTricksTotal,
                 },
                 condition: null,
+                memo: null,
                 updatedAt: FieldValue.serverTimestamp(),
               });
 
@@ -227,6 +283,97 @@ export async function GET(request: NextRequest) {
               }
             } catch (xpErr) {
               console.error(`XP grant error for user ${userId}:`, xpErr);
+            }
+
+            // 実績判定
+            try {
+              const freshUserDoc = await adminDb.doc(`users/${userId}`).get();
+              const freshUserData = freshUserDoc.data() || {};
+              const existingAchievements: string[] = freshUserData.achievements ?? [];
+              const prevHighestRating: number | null = freshUserData.highestRating ?? null;
+              const userLevel: number = freshUserData.level ?? 1;
+
+              // highestRating 更新（不可逆: 最高到達のみ記録）
+              let highestRating = prevHighestRating;
+              if (stats.rating != null) {
+                if (highestRating == null || stats.rating > highestRating) {
+                  highestRating = stats.rating;
+                  await adminDb.doc(`users/${userId}`).update({ highestRating });
+                }
+              }
+
+              // AchievementSnapshot 構築
+              const achievementSnapshot: AchievementSnapshot = {
+                totalGames,
+                currentStreak,
+                highestRating,
+                hatTricksTotal: stats.hatTricksTotal,
+                ton80: stats.ton80,
+                dBullTotal: stats.dBullTotal,
+                sBullTotal: stats.sBullTotal,
+                lowTon: stats.lowTon,
+                highTon: stats.highTon,
+                threeInABed: stats.threeInABed,
+                whiteHorse: stats.whiteHorse,
+                level: userLevel,
+              };
+
+              const newAchievementIds = checkAchievements(achievementSnapshot, existingAchievements);
+
+              if (newAchievementIds.length > 0) {
+                const userRef = adminDb.doc(`users/${userId}`);
+                // achievements 配列に追加
+                await userRef.update({
+                  achievements: FieldValue.arrayUnion(...newAchievementIds),
+                });
+
+                // 各実績10XP付与
+                const achievementXp = newAchievementIds.length * 10;
+                await userRef.set({ xp: FieldValue.increment(achievementXp) }, { merge: true });
+
+                // レベル更新
+                const afterUser = await userRef.get();
+                const afterXp = afterUser.data()?.xp ?? 0;
+                const afterLevel = calculateLevel(afterXp);
+                await userRef.update({ level: afterLevel.level, rank: afterLevel.rank });
+
+                // XP履歴
+                for (const achId of newAchievementIds) {
+                  const def = ACHIEVEMENT_MAP[achId];
+                  await adminDb.collection(`users/${userId}/xpHistory`).add({
+                    action: 'achievement_unlocked',
+                    xp: 10,
+                    detail: `実績解除: ${def?.name ?? achId}`,
+                    createdAt: FieldValue.serverTimestamp(),
+                  });
+                }
+
+                // LINE通知
+                if (lineUserId) {
+                  const achievementDefs = newAchievementIds
+                    .map((id) => ACHIEVEMENT_MAP[id])
+                    .filter(Boolean);
+                  if (achievementDefs.length > 0) {
+                    const flexMsg = buildAchievementFlexMessage(achievementDefs);
+                    await sendLinePushMessage(lineUserId, [flexMsg]);
+                  }
+                }
+
+                // notifications subcollection に保存
+                await adminDb.collection(`users/${userId}/notifications`).add({
+                  type: 'achievement_unlocked',
+                  title: '実績解除!',
+                  details: newAchievementIds.map((id) => ({
+                    id,
+                    name: ACHIEVEMENT_MAP[id]?.name ?? id,
+                  })),
+                  totalXp: achievementXp,
+                  read: false,
+                  createdAt: FieldValue.serverTimestamp(),
+                });
+              }
+            } catch (achErr) {
+              console.error(`Achievement check error for user ${userId}:`, achErr);
             }
 
             // 自動達成チェック: 未達成目標で current >= target のものを自動達成

@@ -1,4 +1,6 @@
 import { RANKS } from './ranks';
+import { ACHIEVEMENTS } from './achievements';
+import type { AchievementCategory } from './achievements';
 
 export interface LevelInfo {
   level: number;
@@ -33,15 +35,18 @@ export function getRankVisual(level: number): { icon: string; color: string } {
   return { icon: rank.icon, color: rank.color };
 }
 
-export interface UserStatsSnapshot {
+export interface AchievementSnapshot {
   totalGames: number;
-  streak: number;
-  rating: number | null;
-  hatTricks: number;
+  currentStreak: number;
+  highestRating: number | null;
+  hatTricksTotal: number;
   ton80: number;
-  dBullRate: number | null;
-  discussionCount: number;
-  statsCount: number;
+  dBullTotal: number;
+  sBullTotal: number;
+  lowTon: number;
+  highTon: number;
+  threeInABed: number;
+  whiteHorse: number;
   level: number;
 }
 
@@ -146,25 +151,53 @@ export function calculateCronXp(
   return actions;
 }
 
-export function checkAchievements(stats: UserStatsSnapshot, existing: string[]): string[] {
-  const newAchievements: string[] = [];
-  const has = (id: string) => existing.includes(id);
+export function checkAchievements(snapshot: AchievementSnapshot, existingIds: string[]): string[] {
+  const newIds: string[] = [];
 
-  if (!has('first_stats') && stats.statsCount >= 1) newAchievements.push('first_stats');
-  if (!has('games_100') && stats.totalGames >= 100) newAchievements.push('games_100');
-  if (!has('games_500') && stats.totalGames >= 500) newAchievements.push('games_500');
-  if (!has('streak_7') && stats.streak >= 7) newAchievements.push('streak_7');
-  if (!has('streak_30') && stats.streak >= 30) newAchievements.push('streak_30');
-  if (!has('rating_5') && stats.rating != null && stats.rating >= 5)
-    newAchievements.push('rating_5');
-  if (!has('rating_8') && stats.rating != null && stats.rating >= 8)
-    newAchievements.push('rating_8');
-  if (!has('hat_trick_50') && stats.hatTricks >= 50) newAchievements.push('hat_trick_50');
-  if (!has('ton_80_10') && stats.ton80 >= 10) newAchievements.push('ton_80_10');
-  if (!has('bull_master') && stats.dBullRate != null && stats.dBullRate >= 50)
-    newAchievements.push('bull_master');
-  if (!has('discussion_10') && stats.discussionCount >= 10) newAchievements.push('discussion_10');
-  if (!has('level_10') && stats.level >= 10) newAchievements.push('level_10');
+  for (const achievement of ACHIEVEMENTS) {
+    if (existingIds.includes(achievement.id)) continue;
 
-  return newAchievements;
+    let value: number | null = null;
+    switch (achievement.category as AchievementCategory) {
+      case 'games':
+        value = snapshot.totalGames;
+        break;
+      case 'streak':
+        value = snapshot.currentStreak;
+        break;
+      case 'rating':
+        value = snapshot.highestRating;
+        break;
+      case 'hat_trick':
+        value = snapshot.hatTricksTotal;
+        break;
+      case 'ton80':
+        value = snapshot.ton80;
+        break;
+      case 'bulls':
+        value = snapshot.dBullTotal + snapshot.sBullTotal;
+        break;
+      case 'low_ton':
+        value = snapshot.lowTon;
+        break;
+      case 'high_ton':
+        value = snapshot.highTon;
+        break;
+      case 'three_bed':
+        value = snapshot.threeInABed;
+        break;
+      case 'white_horse':
+        value = snapshot.whiteHorse;
+        break;
+      case 'level':
+        value = snapshot.level;
+        break;
+    }
+
+    if (value != null && value >= achievement.threshold) {
+      newIds.push(achievement.id);
+    }
+  }
+
+  return newIds;
 }

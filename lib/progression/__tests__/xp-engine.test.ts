@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLevel, checkAchievements, type UserStatsSnapshot } from '../xp-engine';
+import { calculateLevel, checkAchievements, type AchievementSnapshot } from '../xp-engine';
 import { RANKS } from '../ranks';
 
 describe('calculateLevel', () => {
@@ -30,48 +30,81 @@ describe('calculateLevel', () => {
 });
 
 describe('checkAchievements', () => {
-  const baseStats: UserStatsSnapshot = {
+  const baseSnapshot: AchievementSnapshot = {
     totalGames: 0,
-    streak: 0,
-    rating: null,
-    hatTricks: 0,
+    currentStreak: 0,
+    highestRating: null,
+    hatTricksTotal: 0,
     ton80: 0,
-    dBullRate: null,
-    discussionCount: 0,
-    statsCount: 0,
+    dBullTotal: 0,
+    sBullTotal: 0,
+    lowTon: 0,
+    highTon: 0,
+    threeInABed: 0,
+    whiteHorse: 0,
     level: 1,
   };
 
   it('returns empty array when no conditions met', () => {
-    const result = checkAchievements(baseStats, []);
+    const result = checkAchievements(baseSnapshot, []);
     expect(result).toEqual([]);
   });
 
-  it('detects first_stats achievement', () => {
-    const result = checkAchievements({ ...baseStats, statsCount: 1 }, []);
-    expect(result).toContain('first_stats');
-  });
-
   it('detects games_100 achievement', () => {
-    const result = checkAchievements({ ...baseStats, totalGames: 100 }, []);
+    const result = checkAchievements({ ...baseSnapshot, totalGames: 100 }, []);
     expect(result).toContain('games_100');
+    expect(result).toContain('games_50');
   });
 
   it('does not duplicate existing achievements', () => {
-    const result = checkAchievements({ ...baseStats, statsCount: 1 }, ['first_stats']);
-    expect(result).not.toContain('first_stats');
+    const result = checkAchievements({ ...baseSnapshot, totalGames: 100 }, ['games_50']);
+    expect(result).not.toContain('games_50');
+    expect(result).toContain('games_100');
   });
 
   it('detects streak achievements', () => {
-    const result = checkAchievements({ ...baseStats, streak: 30 }, []);
+    const result = checkAchievements({ ...baseSnapshot, currentStreak: 30 }, []);
+    expect(result).toContain('streak_3');
     expect(result).toContain('streak_7');
+    expect(result).toContain('streak_14');
     expect(result).toContain('streak_30');
   });
 
-  it('detects rating achievement', () => {
-    const result = checkAchievements({ ...baseStats, rating: 8.5 }, []);
+  it('detects rating achievement based on highestRating', () => {
+    const result = checkAchievements({ ...baseSnapshot, highestRating: 8.5 }, []);
+    expect(result).toContain('rating_3');
     expect(result).toContain('rating_5');
     expect(result).toContain('rating_8');
+    expect(result).not.toContain('rating_9');
+  });
+
+  it('detects bulls achievement (D+S combined)', () => {
+    const result = checkAchievements({ ...baseSnapshot, dBullTotal: 300, sBullTotal: 250 }, []);
+    expect(result).toContain('bulls_100');
+    expect(result).toContain('bulls_500');
+    expect(result).not.toContain('bulls_1000');
+  });
+
+  it('detects hat_trick achievement', () => {
+    const result = checkAchievements({ ...baseSnapshot, hatTricksTotal: 50 }, []);
+    expect(result).toContain('hat_trick_10');
+    expect(result).toContain('hat_trick_50');
+    expect(result).not.toContain('hat_trick_100');
+  });
+
+  it('detects level achievement', () => {
+    const result = checkAchievements({ ...baseSnapshot, level: 10 }, []);
+    expect(result).toContain('level_5');
+    expect(result).toContain('level_10');
+    expect(result).not.toContain('level_15');
+  });
+
+  it('detects ton80 achievement', () => {
+    const result = checkAchievements({ ...baseSnapshot, ton80: 30 }, []);
+    expect(result).toContain('ton80_5');
+    expect(result).toContain('ton80_10');
+    expect(result).toContain('ton80_30');
+    expect(result).not.toContain('ton80_50');
   });
 });
 

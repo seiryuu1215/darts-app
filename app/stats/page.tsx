@@ -30,6 +30,7 @@ import ProPaywall from '@/components/ProPaywall';
 // Progression components
 import AchievementList from '@/components/progression/AchievementList';
 import XpHistoryList from '@/components/progression/XpHistoryList';
+import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 
 // Stats components
 import PlayerProfileCard from '@/components/stats/PlayerProfileCard';
@@ -137,6 +138,7 @@ export default function StatsPage() {
   const [periodRecords, setPeriodRecords] = useState<StatsHistoryRecord[]>([]);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [achievements, setAchievements] = useState<string[]>([]);
+  const [achievementSnapshot, setAchievementSnapshot] = useState<AchievementSnapshot | null>(null);
   const [xpHistory, setXpHistory] = useState<
     { id: string; action: string; xp: number; detail: string; createdAt: string }[]
   >([]);
@@ -201,6 +203,7 @@ export default function StatsPage() {
         if (!res.ok) return;
         const json = await res.json();
         setAchievements(json.achievements ?? []);
+        setAchievementSnapshot(json.achievementSnapshot ?? null);
         setXpHistory(json.history ?? []);
       } catch {
         // ignore
@@ -567,7 +570,7 @@ export default function StatsPage() {
 
         {/* 16. Progression */}
         <Box sx={{ mt: 4 }}>
-          <AchievementList unlockedIds={achievements} />
+          <AchievementList unlockedIds={achievements} snapshot={achievementSnapshot} />
           <XpHistoryList history={xpHistory} />
         </Box>
       </Box>

@@ -38,6 +38,25 @@ export const GET = withErrorHandler(
 
     const visual = getRankVisual(levelInfo.level);
 
+    // achievementSnapshot: 進捗表示用データ
+    const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
+    const cacheData = cacheDoc.exists ? cacheDoc.data() : null;
+
+    const achievementSnapshot = {
+      totalGames: cacheData?.totalGames ?? 0,
+      currentStreak: cacheData?.currentStreak ?? 0,
+      highestRating: userData.highestRating ?? null,
+      hatTricksTotal: cacheData?.hatTricks ?? 0,
+      ton80: cacheData?.ton80 ?? 0,
+      dBullTotal: cacheData?.bullStats?.dBull ?? 0,
+      sBullTotal: cacheData?.bullStats?.sBull ?? 0,
+      lowTon: cacheData?.lowTon ?? 0,
+      highTon: cacheData?.highTon ?? 0,
+      threeInABed: cacheData?.threeInABed ?? 0,
+      whiteHorse: cacheData?.whiteHorse ?? 0,
+      level: levelInfo.level,
+    };
+
     return NextResponse.json({
       xp,
       level: levelInfo.level,
@@ -47,6 +66,7 @@ export const GET = withErrorHandler(
       currentLevelXp: levelInfo.currentLevelXp,
       nextLevelXp: levelInfo.nextLevelXp,
       achievements,
+      achievementSnapshot,
       milestones: userData.milestones || [],
       history,
     });

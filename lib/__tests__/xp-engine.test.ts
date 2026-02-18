@@ -52,6 +52,8 @@ describe('calculateCronXp', () => {
     nineMark: 0,
     lowTon: 20,
     highTon: 5,
+    threeInABed: 0,
+    whiteHorse: 0,
   };
 
   it('returns empty array when no changes', () => {
@@ -128,6 +130,8 @@ describe('calculateCronXp', () => {
       nineMark: 0,
       lowTon: 10,
       highTon: 2,
+      threeInABed: 0,
+      whiteHorse: 0,
     };
     const result = calculateCronXp(null, current);
     expect(result.find((r) => r.action === 'games_10')).toBeDefined();

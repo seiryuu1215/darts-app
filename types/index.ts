@@ -34,6 +34,7 @@ export interface User {
   level?: number;
   rank?: string;
   achievements?: string[];
+  highestRating?: number | null;
   dartsHistory: string;
   homeShop: string;
   createdAt: Timestamp;

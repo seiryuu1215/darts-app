@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Paper, Divider, Rating, IconButton } from '@mui/material';
+import { Box, Typography, Divider, Rating, IconButton, Paper } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import Link from 'next/link';
 
@@ -17,7 +17,6 @@ interface DayRecord {
 }
 
 interface DayDetailPanelProps {
-  date: string;
   records: DayRecord[];
 }
 
@@ -29,26 +28,11 @@ const CONDITION_LABELS: Record<number, string> = {
   5: '絶好調',
 };
 
-const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
-
-function formatDateHeader(dateStr: string): string {
-  const [, monthStr, dayStr] = dateStr.split('-');
-  const month = parseInt(monthStr, 10);
-  const day = parseInt(dayStr, 10);
-  const d = new Date(dateStr + 'T12:00:00');
-  const dow = DAY_NAMES[d.getDay()];
-  return `${month}月${day}日（${dow}）`;
-}
-
-export default function DayDetailPanel({ date, records }: DayDetailPanelProps) {
+export default function DayDetailPanel({ records }: DayDetailPanelProps) {
   if (records.length === 0) return null;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-        {formatDateHeader(date)}
-      </Typography>
-
+    <Box>
       {records.map((record, idx) => (
         <Box key={record.id}>
           {idx > 0 && <Divider sx={{ my: 2 }} />}
@@ -137,6 +121,6 @@ export default function DayDetailPanel({ date, records }: DayDetailPanelProps) {
           )}
         </Box>
       ))}
-    </Paper>
+    </Box>
   );
 }
