@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue } from 'firebase-admin/firestore';
-import { calculateGoalCurrent, getMonthlyRange, getDailyRange, type StatsRecord } from '@/lib/goals';
+import {
+  calculateGoalCurrent,
+  getMonthlyRange,
+  getDailyRange,
+  type StatsRecord,
+} from '@/lib/goals';
 import type { GoalType } from '@/types';
 
 /**
@@ -49,8 +54,7 @@ function getMonthlyAwardsFromCache(cacheData: FirebaseFirestore.DocumentData | n
         monthlyBulls = (dm ?? 0) + (sm ?? 0);
       }
       if (monthlyHatTricks === null) {
-        monthlyHatTricks =
-          awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
+        monthlyHatTricks = awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
       }
     } catch {
       // ignore
@@ -134,9 +138,7 @@ export const POST = withErrorHandler(
         hatTricks,
       };
       const lastRecordDate =
-        allRecords.length > 0
-          ? new Date(allRecords[allRecords.length - 1].date).getTime()
-          : 0;
+        allRecords.length > 0 ? new Date(allRecords[allRecords.length - 1].date).getTime() : 0;
       if (cacheDate.getTime() > lastRecordDate) {
         allRecords.push(cacheRecord);
       }
@@ -160,7 +162,9 @@ export const POST = withErrorHandler(
               const awards = full?.current?.awards ?? {};
               dBull = awards['D-BULL']?.total ?? null;
               sBull = awards['S-BULL']?.total ?? null;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           totalBulls = (dBull ?? 0) + (sBull ?? 0);
         }
@@ -174,7 +178,9 @@ export const POST = withErrorHandler(
               const full = JSON.parse(cacheData.fullData);
               const awards = full?.current?.awards ?? {};
               totalHatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
         }
         current = Math.max(0, totalHatTricks - goal.baseline);
@@ -213,9 +219,7 @@ export const POST = withErrorHandler(
 
       let baselineRecord: StatsRecord | undefined;
       if (goal.type === 'bulls' || goal.type === 'hat_tricks') {
-        const beforeRecords = allRecords.filter(
-          (r) => new Date(r.date).getTime() < startMs,
-        );
+        const beforeRecords = allRecords.filter((r) => new Date(r.date).getTime() < startMs);
         if (beforeRecords.length > 0) {
           baselineRecord = beforeRecords[beforeRecords.length - 1];
         }
@@ -226,10 +230,7 @@ export const POST = withErrorHandler(
 
     // current >= target を検証
     if (current < goal.target) {
-      return NextResponse.json(
-        { error: 'まだ目標に到達していません' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'まだ目標に到達していません' }, { status: 400 });
     }
 
     // XP付与（daily: 10 XP, monthly/yearly: 50 XP）

@@ -30,11 +30,25 @@ interface ProgressionData {
 const XP_CATEGORIES = [
   {
     label: 'プレイ',
-    rules: ['stats_record', 'games_10', 'play_streak_3', 'play_streak_7', 'play_streak_30', 'condition_record'],
+    rules: [
+      'stats_record',
+      'games_10',
+      'play_streak_3',
+      'play_streak_7',
+      'play_streak_30',
+      'condition_record',
+    ],
   },
   {
     label: 'アワード',
-    rules: ['award_hat_trick', 'award_ton_80', 'award_3_black', 'award_9_mark', 'award_low_ton', 'award_high_ton'],
+    rules: [
+      'award_hat_trick',
+      'award_ton_80',
+      'award_3_black',
+      'award_9_mark',
+      'award_low_ton',
+      'award_high_ton',
+    ],
   },
   {
     label: 'その他',
@@ -162,10 +176,7 @@ export default function XpBar() {
 
           <Collapse in={showRules}>
             <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}
-              >
+              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
                 XP獲得条件
               </Typography>
               {XP_CATEGORIES.map((cat) => (

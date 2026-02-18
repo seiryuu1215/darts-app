@@ -143,7 +143,9 @@ export function getDailyRange(): { startDate: Date; endDate: Date } {
   const now = new Date();
   const jstOffset = 9 * 60 * 60 * 1000;
   const jstNow = new Date(now.getTime() + jstOffset);
-  const jstToday = new Date(Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()));
+  const jstToday = new Date(
+    Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()),
+  );
   const startDate = new Date(jstToday.getTime() - jstOffset);
   const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
   return { startDate, endDate };

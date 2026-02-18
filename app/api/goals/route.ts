@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { calculateGoalCurrent, getMonthlyRange, getDailyRange, type StatsRecord } from '@/lib/goals';
+import {
+  calculateGoalCurrent,
+  getMonthlyRange,
+  getDailyRange,
+  type StatsRecord,
+} from '@/lib/goals';
 import type { GoalType } from '@/types';
 
 const DAILY_LIMIT = 3;
@@ -33,7 +38,8 @@ function countActiveGoals(
 ): number {
   const now = new Date();
   return goals.filter(
-    (g) => g.period === period && !g.achievedAt && g.endDate && g.endDate.getTime() >= now.getTime(),
+    (g) =>
+      g.period === period && !g.achievedAt && g.endDate && g.endDate.getTime() >= now.getTime(),
   ).length;
 }
 
@@ -67,8 +73,7 @@ function getMonthlyAwardsFromCache(cacheData: FirebaseFirestore.DocumentData | n
         monthlyBulls = (dm ?? 0) + (sm ?? 0);
       }
       if (monthlyHatTricks === null) {
-        monthlyHatTricks =
-          awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
+        monthlyHatTricks = awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? null;
       }
     } catch {
       // ignore
@@ -170,7 +175,13 @@ export const GET = withErrorHandler(
     }
     // 削除済みdailyを除外
     const activeRawGoals = rawGoals.filter(
-      (g) => !(g.period === 'daily' && !g.achievedAt && g.endDate && g.endDate.getTime() < now.getTime()),
+      (g) =>
+        !(
+          g.period === 'daily' &&
+          !g.achievedAt &&
+          g.endDate &&
+          g.endDate.getTime() < now.getTime()
+        ),
     );
 
     // 全目標の期間をカバーする最小日付を求める
@@ -224,9 +235,7 @@ export const GET = withErrorHandler(
         hatTricks,
       };
       const lastRecordDate =
-        allRecords.length > 0
-          ? new Date(allRecords[allRecords.length - 1].date).getTime()
-          : 0;
+        allRecords.length > 0 ? new Date(allRecords[allRecords.length - 1].date).getTime() : 0;
       if (cacheDate.getTime() > lastRecordDate) {
         allRecords.push(cacheRecord);
       }
@@ -266,7 +275,9 @@ export const GET = withErrorHandler(
                 const awards = full?.current?.awards ?? {};
                 dBull = awards['D-BULL']?.total ?? null;
                 sBull = awards['S-BULL']?.total ?? null;
-              } catch { /* ignore */ }
+              } catch {
+                /* ignore */
+              }
             }
             totalBulls = (dBull ?? 0) + (sBull ?? 0);
           }
@@ -280,7 +291,9 @@ export const GET = withErrorHandler(
                 const full = JSON.parse(cacheData.fullData);
                 const awards = full?.current?.awards ?? {};
                 totalHatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0;
-              } catch { /* ignore */ }
+              } catch {
+                /* ignore */
+              }
             }
           }
           current = Math.max(0, totalHatTricks - goal.baseline);
@@ -320,9 +333,7 @@ export const GET = withErrorHandler(
 
         let baselineRecord: StatsRecord | undefined;
         if (goal.type === 'bulls' || goal.type === 'hat_tricks') {
-          const beforeRecords = allRecords.filter(
-            (r) => new Date(r.date).getTime() < startMs,
-          );
+          const beforeRecords = allRecords.filter((r) => new Date(r.date).getTime() < startMs);
           if (beforeRecords.length > 0) {
             baselineRecord = beforeRecords[beforeRecords.length - 1];
           }
@@ -411,7 +422,8 @@ export const POST = withErrorHandler(
       return !d.achievedAt && endD && endD.getTime() >= now.getTime();
     }).length;
 
-    const limit = period === 'daily' ? DAILY_LIMIT : period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT;
+    const limit =
+      period === 'daily' ? DAILY_LIMIT : period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT;
     const periodLabel = period === 'daily' ? '日間' : period === 'monthly' ? '月間' : '年間';
     if (activeCount >= limit) {
       return NextResponse.json(
@@ -435,7 +447,9 @@ export const POST = withErrorHandler(
       }
       if (type === 'hat_tricks' && monthlyHatTricks !== null && monthlyHatTricks >= target) {
         return NextResponse.json(
-          { error: '今月のHAT TRICK数が既に目標値に達しています。より高い目標を設定してください。' },
+          {
+            error: '今月のHAT TRICK数が既に目標値に達しています。より高い目標を設定してください。',
+          },
           { status: 400 },
         );
       }
@@ -461,7 +475,9 @@ export const POST = withErrorHandler(
               const awards = full?.current?.awards ?? {};
               dBull = awards['D-BULL']?.total ?? null;
               sBull = awards['S-BULL']?.total ?? null;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           baseline = (dBull ?? 0) + (sBull ?? 0);
         } else {
@@ -471,7 +487,9 @@ export const POST = withErrorHandler(
               const full = JSON.parse(cacheData.fullData);
               const awards = full?.current?.awards ?? {};
               hatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           baseline = hatTricks ?? 0;
         }
@@ -484,7 +502,10 @@ export const POST = withErrorHandler(
           .where('date', '<=', dailyEnd)
           .orderBy('date', 'asc');
         const statsSnap = await statsQuery.get();
-        const todayGames = statsSnap.docs.reduce((sum, doc) => sum + (doc.data().gamesPlayed ?? 0), 0);
+        const todayGames = statsSnap.docs.reduce(
+          (sum, doc) => sum + (doc.data().gamesPlayed ?? 0),
+          0,
+        );
         baseline = todayGames;
       }
     }

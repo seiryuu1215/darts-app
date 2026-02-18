@@ -47,10 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Public darts settings
   let dartsPages: MetadataRoute.Sitemap = [];
   try {
-    const dartsSnap = await adminDb
-      .collection('darts')
-      .where('visibility', '==', 'public')
-      .get();
+    const dartsSnap = await adminDb.collection('darts').where('visibility', '==', 'public').get();
     dartsPages = dartsSnap.docs.map((doc) => ({
       url: `${baseUrl}/darts/${doc.id}`,
       lastModified: doc.data().updatedAt?.toDate?.() ?? new Date(),

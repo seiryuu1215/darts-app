@@ -1,15 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  IconButton,
-  Badge,
-  Popover,
-  Box,
-  Typography,
-  Button,
-  Divider,
-} from '@mui/material';
+import { IconButton, Badge, Popover, Box, Typography, Button, Divider } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 interface Notification {
@@ -72,7 +64,13 @@ export default function NotificationBell() {
 
   return (
     <>
-      <IconButton color="inherit" onClick={handleOpen} size="small" sx={{ ml: 0.5 }} aria-label="通知">
+      <IconButton
+        color="inherit"
+        onClick={handleOpen}
+        size="small"
+        sx={{ ml: 0.5 }}
+        aria-label="通知"
+      >
         <Badge badgeContent={unreadCount} color="error" invisible={unreadCount === 0}>
           <NotificationsIcon fontSize="small" />
         </Badge>
@@ -85,7 +83,15 @@ export default function NotificationBell() {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{ paper: { sx: { width: 320, maxHeight: 400 } } }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+          }}
+        >
           <Typography variant="subtitle2">通知</Typography>
           {unreadCount > 0 && (
             <Button size="small" onClick={handleMarkAllRead}>

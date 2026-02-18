@@ -110,9 +110,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
       </ColorModeContext.Provider>
     </SessionProvider>

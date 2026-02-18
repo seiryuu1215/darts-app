@@ -29,10 +29,10 @@ export default function GoalAchievedDialog({
   const confettiPieces = useMemo(
     () =>
       Array.from({ length: 20 }, (_, i) => ({
-        left: `${(i * 5 + (i * 37) % 100) % 100}%`,
+        left: `${(i * 5 + ((i * 37) % 100)) % 100}%`,
         color: CONFETTI_COLORS[i % 6],
         delay: `${(i * 0.1) % 2}s`,
-        duration: `${1.5 + (i * 0.07) % 1.5}s`,
+        duration: `${1.5 + ((i * 0.07) % 1.5)}s`,
       })),
     [],
   );

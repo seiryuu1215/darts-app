@@ -87,7 +87,12 @@ export function calculateCronXp(
   // games_10: 10ゲーム単位の差分
   const gamesDiff = Math.floor(current.totalGames / 10) - Math.floor(p.totalGames / 10);
   if (gamesDiff > 0) {
-    actions.push({ action: 'games_10', xp: 20 * gamesDiff, label: '累計ゲーム数10の倍数', count: gamesDiff });
+    actions.push({
+      action: 'games_10',
+      xp: 20 * gamesDiff,
+      label: '累計ゲーム数10の倍数',
+      count: gamesDiff,
+    });
   }
 
   // rating_milestone: Rating整数到達
@@ -96,19 +101,25 @@ export function calculateCronXp(
     const curFloor = Math.floor(current.rating);
     if (curFloor > prevFloor) {
       const milestones = curFloor - prevFloor;
-      actions.push({ action: 'rating_milestone', xp: 30 * milestones, label: 'Rating整数到達', count: milestones });
+      actions.push({
+        action: 'rating_milestone',
+        xp: 30 * milestones,
+        label: 'Rating整数到達',
+        count: milestones,
+      });
     }
   }
 
   // Award diffs
-  const awardDiffs: { key: keyof CronStatsSnapshot; action: string; xp: number; label: string }[] = [
-    { key: 'hatTricks', action: 'award_hat_trick', xp: 5, label: 'HAT TRICK' },
-    { key: 'ton80', action: 'award_ton_80', xp: 10, label: 'TON 80' },
-    { key: 'threeInABlack', action: 'award_3_black', xp: 15, label: '3 IN A BLACK' },
-    { key: 'nineMark', action: 'award_9_mark', xp: 10, label: '9マーク' },
-    { key: 'lowTon', action: 'award_low_ton', xp: 3, label: 'LOW TON' },
-    { key: 'highTon', action: 'award_high_ton', xp: 5, label: 'HIGH TON' },
-  ];
+  const awardDiffs: { key: keyof CronStatsSnapshot; action: string; xp: number; label: string }[] =
+    [
+      { key: 'hatTricks', action: 'award_hat_trick', xp: 5, label: 'HAT TRICK' },
+      { key: 'ton80', action: 'award_ton_80', xp: 10, label: 'TON 80' },
+      { key: 'threeInABlack', action: 'award_3_black', xp: 15, label: '3 IN A BLACK' },
+      { key: 'nineMark', action: 'award_9_mark', xp: 10, label: '9マーク' },
+      { key: 'lowTon', action: 'award_low_ton', xp: 3, label: 'LOW TON' },
+      { key: 'highTon', action: 'award_high_ton', xp: 5, label: 'HIGH TON' },
+    ];
 
   for (const { key, action, xp, label } of awardDiffs) {
     const diff = (current[key] as number) - (p[key] as number);

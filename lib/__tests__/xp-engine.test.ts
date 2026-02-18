@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLevel, getRankVisual, calculateCronXp, type CronStatsSnapshot } from '../progression/xp-engine';
+import {
+  calculateLevel,
+  getRankVisual,
+  calculateCronXp,
+  type CronStatsSnapshot,
+} from '../progression/xp-engine';
 
 describe('calculateLevel', () => {
   it('returns Rookie for 0 XP', () => {

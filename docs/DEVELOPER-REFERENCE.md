@@ -594,13 +594,13 @@ const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 
 モバイルメニューは5つのグループに分類されたアコーディオン式:
 
-| グループ | アイコン | 項目 |
-|---------|---------|------|
-| ダーツ | SportsBar | セッティング, セッティング履歴, バレル検索, おすすめバレル |
-| ツール | Build | シミュレーター, 診断クイズ, セッティング比較 |
-| スタッツ・記録 | BarChart | スタッツ記録, 目標 |
-| コミュニティ | Forum | 記事, ディスカッション |
-| マイページ | Person | プロフィール, ブックマーク, サブスク/PRO, 管理画面（admin） |
+| グループ       | アイコン  | 項目                                                        |
+| -------------- | --------- | ----------------------------------------------------------- |
+| ダーツ         | SportsBar | セッティング, セッティング履歴, バレル検索, おすすめバレル  |
+| ツール         | Build     | シミュレーター, 診断クイズ, セッティング比較                |
+| スタッツ・記録 | BarChart  | スタッツ記録, 目標                                          |
+| コミュニティ   | Forum     | 記事, ディスカッション                                      |
+| マイページ     | Person    | プロフィール, ブックマーク, サブスク/PRO, 管理画面（admin） |
 
 `openGroups` state + MUI `Collapse` で各グループの開閉を管理。未ログイン時はマイページグループとスタッツ・記録グループが非表示。
 
@@ -753,8 +753,10 @@ LINE連携ユーザーを全件取得
   "rating": 8.52,
   "flight": "BB",
   "bullStats": {
-    "dBull": 456, "sBull": 890,
-    "dBullMonthly": 12, "sBullMonthly": 34
+    "dBull": 456,
+    "sBull": 890,
+    "dBullMonthly": 12,
+    "sBullMonthly": 34
   },
   "hatTricks": 15,
   "hatTricksMonthly": 2,
@@ -888,30 +890,30 @@ function ppdForRating(targetRt: number): number {
 
 **構成ファイル:**
 
-| ファイル | 役割 |
-|---------|------|
-| `lib/progression/xp-rules.ts` | XP獲得ルール定義（14種類） |
-| `lib/progression/xp-engine.ts` | レベル計算・Cron XP差分算出・実績チェック |
-| `lib/progression/ranks.ts` | 20段階のランク定義（アイコン・色付き） |
-| `lib/progression/milestones.ts` | 累計XPマイルストーン（バッジのみ） |
-| `app/api/progression/route.ts` | GET: XP/レベル取得、POST: XP付与 |
+| ファイル                        | 役割                                      |
+| ------------------------------- | ----------------------------------------- |
+| `lib/progression/xp-rules.ts`   | XP獲得ルール定義（14種類）                |
+| `lib/progression/xp-engine.ts`  | レベル計算・Cron XP差分算出・実績チェック |
+| `lib/progression/ranks.ts`      | 20段階のランク定義（アイコン・色付き）    |
+| `lib/progression/milestones.ts` | 累計XPマイルストーン（バッジのみ）        |
+| `app/api/progression/route.ts`  | GET: XP/レベル取得、POST: XP付与          |
 
 **XP獲得ルール:**
 
-| ルールID | XP | トリガー |
-|---------|-----|---------|
-| `stats_record` | 10 | スタッツ手動記録 |
-| `games_10` | 20 | 累計ゲーム数10の倍数 |
-| `play_streak_3/7/30` | 15/50/200 | 連続プレイ日数 |
-| `rating_milestone` | 30 | Rating整数到達 |
-| `award_hat_trick` | 5 | HAT TRICK |
-| `award_ton_80` | 10 | TON 80 |
-| `award_3_black` | 15 | 3 IN A BLACK |
-| `award_9_mark` | 10 | 9マーク |
-| `award_low_ton/high_ton` | 3/5 | LOW TON / HIGH TON |
-| `discussion_post` | 5 | ディスカッション投稿 |
-| `condition_record` | 3 | コンディション記録 |
-| `goal_achieved` | 50 | 目標達成 |
+| ルールID                 | XP        | トリガー             |
+| ------------------------ | --------- | -------------------- |
+| `stats_record`           | 10        | スタッツ手動記録     |
+| `games_10`               | 20        | 累計ゲーム数10の倍数 |
+| `play_streak_3/7/30`     | 15/50/200 | 連続プレイ日数       |
+| `rating_milestone`       | 30        | Rating整数到達       |
+| `award_hat_trick`        | 5         | HAT TRICK            |
+| `award_ton_80`           | 10        | TON 80               |
+| `award_3_black`          | 15        | 3 IN A BLACK         |
+| `award_9_mark`           | 10        | 9マーク              |
+| `award_low_ton/high_ton` | 3/5       | LOW TON / HIGH TON   |
+| `discussion_post`        | 5         | ディスカッション投稿 |
+| `condition_record`       | 3         | コンディション記録   |
+| `goal_achieved`          | 50        | 目標達成             |
 
 **ランク体系（20段階）:**
 
@@ -944,6 +946,7 @@ users/{userId}/notifications に通知ドキュメント作成
 **目標タイプ:** `bulls`（ブル数）, `hat_tricks`（HAT TRICK数）, `rating`（Rt到達）, `cu_score`（CUスコア）
 
 **ルール:**
+
 - 月間目標: 最大3つ、年間目標: 最大1つ（アクティブ = 未達成 & 期間内）
 - 月間ブル・HAT TRICK目標はDARTSLIVEの「今月」列の値を直接使用（差分計算ではない）
 - 既に達成済みの値で目標設定はできない（POST時にバリデーション）
@@ -973,9 +976,7 @@ GoalSection → GoalAchievedDialog（紙吹雪お祝い表示）
 {
   "type": "xp_gained",
   "title": "デイリーXP獲得!",
-  "details": [
-    { "action": "games_10", "xp": 20, "label": "累計ゲーム数10の倍数" }
-  ],
+  "details": [{ "action": "games_10", "xp": 20, "label": "累計ゲーム数10の倍数" }],
   "totalXp": 20,
   "read": false,
   "createdAt": "Timestamp"
@@ -1172,60 +1173,60 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 
 ### API
 
-| エンドポイント               | ファイル                            | 用途                |
-| ---------------------------- | ----------------------------------- | ------------------- |
-| `POST /api/dartslive-stats`  | `app/api/dartslive-stats/route.ts`  | DLスクレイピング    |
-| `GET /api/dartslive-stats`   | 同上                                | キャッシュ取得      |
-| `POST /api/stripe/checkout`  | `app/api/stripe/checkout/route.ts`  | 決済セッション作成  |
-| `POST /api/stripe/webhook`   | `app/api/stripe/webhook/route.ts`   | Stripe Webhook      |
-| `POST /api/line/webhook`     | `app/api/line/webhook/route.ts`     | LINE Webhook        |
-| `POST /api/line/link`        | `app/api/line/link/route.ts`        | LINE連携コード発行  |
-| `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ          |
-| `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ      |
-| `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge） |
-| `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算+達成判定   |
-| `POST /api/goals`            | 同上                                | 目標作成（既達成チェック付き）|
-| `DELETE /api/goals`          | 同上                                | 目標削除            |
-| `GET /api/progression`       | `app/api/progression/route.ts`      | XP/レベル/ランク取得 |
-| `POST /api/progression`      | 同上                                | XP付与+マイルストーン |
-| `GET /api/notifications`     | `app/api/notifications/route.ts`    | 未読通知取得         |
-| `PATCH /api/notifications`   | 同上                                | 通知既読マーク       |
+| エンドポイント               | ファイル                            | 用途                           |
+| ---------------------------- | ----------------------------------- | ------------------------------ |
+| `POST /api/dartslive-stats`  | `app/api/dartslive-stats/route.ts`  | DLスクレイピング               |
+| `GET /api/dartslive-stats`   | 同上                                | キャッシュ取得                 |
+| `POST /api/stripe/checkout`  | `app/api/stripe/checkout/route.ts`  | 決済セッション作成             |
+| `POST /api/stripe/webhook`   | `app/api/stripe/webhook/route.ts`   | Stripe Webhook                 |
+| `POST /api/line/webhook`     | `app/api/line/webhook/route.ts`     | LINE Webhook                   |
+| `POST /api/line/link`        | `app/api/line/link/route.ts`        | LINE連携コード発行             |
+| `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ                     |
+| `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ                 |
+| `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge）            |
+| `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算+達成判定     |
+| `POST /api/goals`            | 同上                                | 目標作成（既達成チェック付き） |
+| `DELETE /api/goals`          | 同上                                | 目標削除                       |
+| `GET /api/progression`       | `app/api/progression/route.ts`      | XP/レベル/ランク取得           |
+| `POST /api/progression`      | 同上                                | XP付与+マイルストーン          |
+| `GET /api/notifications`     | `app/api/notifications/route.ts`    | 未読通知取得                   |
+| `PATCH /api/notifications`   | 同上                                | 通知既読マーク                 |
 
 ### コア
 
-| ファイル                      | 役割                 |
-| ----------------------------- | -------------------- |
-| `types/index.ts`              | 全型定義             |
-| `lib/auth.ts`                 | NextAuth設定         |
-| `lib/firebase.ts`             | Client SDK初期化     |
-| `lib/firebase-admin.ts`       | Admin SDK初期化      |
-| `lib/permissions.ts`          | 権限管理             |
-| `lib/api-middleware.ts`       | API共通処理          |
-| `lib/affiliate.ts`            | アフィリエイトリンク |
-| `lib/recommend-barrels.ts`    | レコメンドエンジン   |
-| `lib/dartslive-rating.ts`     | Rt計算               |
-| `lib/dartslive-percentile.ts` | パーセンタイル       |
-| `lib/dartslive-colors.ts`     | フライト色定義       |
-| `lib/goals.ts`                | 目標定義・進捗計算   |
-| `lib/progression/xp-rules.ts` | XP獲得ルール（14種類）|
-| `lib/progression/xp-engine.ts`| レベル計算・Cron XP算出 |
-| `lib/progression/ranks.ts`    | ランク定義（20段階、アイコン・色） |
-| `lib/progression/milestones.ts`| マイルストーン（バッジ）定義 |
-| `firestore.rules`             | DBセキュリティルール |
-| `storage.rules`               | ストレージルール     |
-| `components/Providers.tsx`    | Context全体ラッパー  |
+| ファイル                        | 役割                               |
+| ------------------------------- | ---------------------------------- |
+| `types/index.ts`                | 全型定義                           |
+| `lib/auth.ts`                   | NextAuth設定                       |
+| `lib/firebase.ts`               | Client SDK初期化                   |
+| `lib/firebase-admin.ts`         | Admin SDK初期化                    |
+| `lib/permissions.ts`            | 権限管理                           |
+| `lib/api-middleware.ts`         | API共通処理                        |
+| `lib/affiliate.ts`              | アフィリエイトリンク               |
+| `lib/recommend-barrels.ts`      | レコメンドエンジン                 |
+| `lib/dartslive-rating.ts`       | Rt計算                             |
+| `lib/dartslive-percentile.ts`   | パーセンタイル                     |
+| `lib/dartslive-colors.ts`       | フライト色定義                     |
+| `lib/goals.ts`                  | 目標定義・進捗計算                 |
+| `lib/progression/xp-rules.ts`   | XP獲得ルール（14種類）             |
+| `lib/progression/xp-engine.ts`  | レベル計算・Cron XP算出            |
+| `lib/progression/ranks.ts`      | ランク定義（20段階、アイコン・色） |
+| `lib/progression/milestones.ts` | マイルストーン（バッジ）定義       |
+| `firestore.rules`               | DBセキュリティルール               |
+| `storage.rules`                 | ストレージルール                   |
+| `components/Providers.tsx`      | Context全体ラッパー                |
 
 ### 目標・進捗・通知コンポーネント
 
-| コンポーネント | 概要 |
-| ------------- | ---- |
-| `components/goals/GoalSection.tsx` | 目標一覧表示 + API連携 |
-| `components/goals/GoalCard.tsx` | 個別目標カード（進捗バー、残日数） |
-| `components/goals/GoalSettingDialog.tsx` | 目標作成ダイアログ（上限チェック付き） |
-| `components/goals/GoalAchievedDialog.tsx` | 目標達成お祝い（紙吹雪アニメーション） |
-| `components/progression/XpBar.tsx` | コンパクトなランクカード（展開式） |
-| `components/progression/LevelUpSnackbar.tsx` | レベルアップ通知 |
-| `components/notifications/XpNotificationDialog.tsx` | Cron XP獲得通知ダイアログ |
+| コンポーネント                                      | 概要                                   |
+| --------------------------------------------------- | -------------------------------------- |
+| `components/goals/GoalSection.tsx`                  | 目標一覧表示 + API連携                 |
+| `components/goals/GoalCard.tsx`                     | 個別目標カード（進捗バー、残日数）     |
+| `components/goals/GoalSettingDialog.tsx`            | 目標作成ダイアログ（上限チェック付き） |
+| `components/goals/GoalAchievedDialog.tsx`           | 目標達成お祝い（紙吹雪アニメーション） |
+| `components/progression/XpBar.tsx`                  | コンパクトなランクカード（展開式）     |
+| `components/progression/LevelUpSnackbar.tsx`        | レベルアップ通知                       |
+| `components/notifications/XpNotificationDialog.tsx` | Cron XP獲得通知ダイアログ              |
 
 ### スタッツコンポーネント（`components/stats/`）
 

@@ -109,7 +109,13 @@ export default function HomePage() {
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [xpNotifications, setXpNotifications] = useState<
-    { id: string; type: string; title: string; details: { action: string; xp: number; label: string }[]; totalXp: number }[]
+    {
+      id: string;
+      type: string;
+      title: string;
+      details: { action: string; xp: number; label: string }[];
+      totalXp: number;
+    }[]
   >([]);
   const [showXpNotification, setShowXpNotification] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState<{ level: number; rank: string } | null>(null);

@@ -56,8 +56,14 @@ async function clickButtonByText(page, ...texts) {
 async function dismissAllDialogs(page) {
   // MUI Dialog の backdrop をクリックして閉じる or ボタンクリック
   for (let i = 0; i < 5; i++) {
-    const dismissed =
-      (await clickButtonByText(page, 'あとで見る', 'スキップ', 'OK', 'やったー!', '閉じる'));
+    const dismissed = await clickButtonByText(
+      page,
+      'あとで見る',
+      'スキップ',
+      'OK',
+      'やったー!',
+      '閉じる',
+    );
     if (!dismissed) break;
     await delay(500);
   }

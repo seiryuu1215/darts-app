@@ -105,7 +105,8 @@ export default function GoalSettingDialog({
   const handlePeriodChange = (newPeriod: GoalPeriod) => {
     setPeriod(newPeriod);
     if (goalDef) {
-      const defaultTarget = goalDef.defaultTargets[newPeriod as keyof typeof goalDef.defaultTargets];
+      const defaultTarget =
+        goalDef.defaultTargets[newPeriod as keyof typeof goalDef.defaultTargets];
       if (defaultTarget) setTarget(String(defaultTarget));
     }
   };
@@ -159,7 +160,11 @@ export default function GoalSettingDialog({
           {isPeriodDisabled && (
             <Typography variant="caption" color="error">
               {periodLabel(period)}目標の上限（
-              {period === 'daily' ? DAILY_LIMIT : period === 'monthly' ? MONTHLY_LIMIT : YEARLY_LIMIT}
+              {period === 'daily'
+                ? DAILY_LIMIT
+                : period === 'monthly'
+                  ? MONTHLY_LIMIT
+                  : YEARLY_LIMIT}
               つ）に達しています
             </Typography>
           )}
@@ -171,7 +176,8 @@ export default function GoalSettingDialog({
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             placeholder={
-              goalDef?.defaultTargets[period as keyof typeof goalDef.defaultTargets]?.toString() || ''
+              goalDef?.defaultTargets[period as keyof typeof goalDef.defaultTargets]?.toString() ||
+              ''
             }
             disabled={isPeriodDisabled}
           />

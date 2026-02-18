@@ -31,7 +31,11 @@ export default function GoalSection() {
   const [activeDaily, setActiveDaily] = useState(0);
   const [activeMonthly, setActiveMonthly] = useState(0);
   const [activeYearly, setActiveYearly] = useState(0);
-  const [celebrateGoal, setCelebrateGoal] = useState<{ type: string; target: number; xpAmount: number } | null>(null);
+  const [celebrateGoal, setCelebrateGoal] = useState<{
+    type: string;
+    target: number;
+    xpAmount: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;

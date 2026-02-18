@@ -5,7 +5,11 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
 import { sendLinePushMessage, buildStatsFlexMessage } from '@/lib/line';
-import { calculateCronXp, calculateLevel, type CronStatsSnapshot } from '@/lib/progression/xp-engine';
+import {
+  calculateCronXp,
+  calculateLevel,
+  type CronStatsSnapshot,
+} from '@/lib/progression/xp-engine';
 import { calculateGoalCurrent, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 
@@ -260,10 +264,7 @@ export async function GET(request: NextRequest) {
                 highTon: prevData?.highTon ?? 0,
               };
 
-              const xpActions = calculateCronXp(
-                prevData ? prevSnapshot : null,
-                currentSnapshot,
-              );
+              const xpActions = calculateCronXp(prevData ? prevSnapshot : null, currentSnapshot);
 
               if (xpActions.length > 0) {
                 const totalXpGained = xpActions.reduce((sum, a) => sum + a.xp, 0);
@@ -325,13 +326,16 @@ export async function GET(request: NextRequest) {
                   .filter((d): d is FirebaseFirestore.Timestamp => d != null)
                   .map((d) => d.toDate());
 
-                const earliestGoalStart = startDates.length > 0
-                  ? new Date(Math.min(...startDates.map((d) => d.getTime())))
-                  : null;
+                const earliestGoalStart =
+                  startDates.length > 0
+                    ? new Date(Math.min(...startDates.map((d) => d.getTime())))
+                    : null;
 
                 let goalRecords: StatsRecord[] = [];
                 if (earliestGoalStart) {
-                  const baselineStart = new Date(earliestGoalStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+                  const baselineStart = new Date(
+                    earliestGoalStart.getTime() - 30 * 24 * 60 * 60 * 1000,
+                  );
                   const goalStatsSnap = await adminDb
                     .collection(`users/${userId}/dartsLiveStats`)
                     .where('date', '>=', baselineStart)
@@ -369,14 +373,18 @@ export async function GET(request: NextRequest) {
                       gcDBull = awards['D-BULL']?.total ?? null;
                       gcSBull = awards['S-BULL']?.total ?? null;
                       if (gcHatTricks === null) {
-                        gcHatTricks = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
+                        gcHatTricks =
+                          awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? null;
                       }
-                    } catch { /* ignore */ }
+                    } catch {
+                      /* ignore */
+                    }
                   }
 
-                  const lastDate = goalRecords.length > 0
-                    ? new Date(goalRecords[goalRecords.length - 1].date).getTime()
-                    : 0;
+                  const lastDate =
+                    goalRecords.length > 0
+                      ? new Date(goalRecords[goalRecords.length - 1].date).getTime()
+                      : 0;
                   if (cacheDate.getTime() > lastDate) {
                     goalRecords.push({
                       date: cacheDate.toISOString(),
@@ -407,8 +415,10 @@ export async function GET(request: NextRequest) {
                   const goalPeriod = g.period as string;
                   const goalTarget = g.target as number;
                   const goalBaseline = (g.baseline ?? null) as number | null;
-                  const goalStartDate = (g.startDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
-                  const goalEndDate = (g.endDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
+                  const goalStartDate =
+                    (g.startDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
+                  const goalEndDate =
+                    (g.endDate as FirebaseFirestore.Timestamp | null)?.toDate?.() ?? null;
 
                   // 期限切れは無視
                   if (goalEndDate && goalEndDate.getTime() < new Date().getTime()) continue;
@@ -425,9 +435,11 @@ export async function GET(request: NextRequest) {
                           const awards = full?.current?.awards ?? {};
                           dB = awards['D-BULL']?.total ?? null;
                           sB = awards['S-BULL']?.total ?? null;
-                        } catch { /* ignore */ }
+                        } catch {
+                          /* ignore */
+                        }
                       }
-                      current = Math.max(0, ((dB ?? 0) + (sB ?? 0)) - goalBaseline);
+                      current = Math.max(0, (dB ?? 0) + (sB ?? 0) - goalBaseline);
                     } else if (goalType === 'hat_tricks' && goalCacheData) {
                       let ht = goalCacheData.hatTricks ?? 0;
                       if (!ht && goalCacheData.fullData) {
@@ -435,7 +447,9 @@ export async function GET(request: NextRequest) {
                           const full = JSON.parse(goalCacheData.fullData);
                           const awards = full?.current?.awards ?? {};
                           ht = awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0;
-                        } catch { /* ignore */ }
+                        } catch {
+                          /* ignore */
+                        }
                       }
                       current = Math.max(0, ht - goalBaseline);
                     } else if (goalType === 'games') {
@@ -447,11 +461,24 @@ export async function GET(request: NextRequest) {
                       const todayGames = dRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
                       current = Math.max(0, todayGames - goalBaseline);
                     }
-                  } else if (goalPeriod === 'monthly' && goalType === 'bulls' && cronMonthlyBulls !== null) {
+                  } else if (
+                    goalPeriod === 'monthly' &&
+                    goalType === 'bulls' &&
+                    cronMonthlyBulls !== null
+                  ) {
                     current = cronMonthlyBulls;
-                  } else if (goalPeriod === 'monthly' && goalType === 'hat_tricks' && cronMonthlyHatTricks !== null) {
+                  } else if (
+                    goalPeriod === 'monthly' &&
+                    goalType === 'hat_tricks' &&
+                    cronMonthlyHatTricks !== null
+                  ) {
                     current = cronMonthlyHatTricks;
-                  } else if (goalType !== 'cu_score' && goalStartDate && goalEndDate && goalRecords.length > 0) {
+                  } else if (
+                    goalType !== 'cu_score' &&
+                    goalStartDate &&
+                    goalEndDate &&
+                    goalRecords.length > 0
+                  ) {
                     const startMs = goalStartDate.getTime();
                     const endMs = goalEndDate.getTime() + 24 * 60 * 60 * 1000;
                     const periodRecs = goalRecords.filter((r) => {
