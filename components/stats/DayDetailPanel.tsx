@@ -57,7 +57,7 @@ export default function DayDetailPanel({ date, records }: DayDetailPanelProps) {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <IconButton
               component={Link}
-              href={`/stats/${record.id}/edit`}
+              href={`/stats/${record.id}/edit?from=calendar`}
               size="small"
               aria-label="編集"
             >

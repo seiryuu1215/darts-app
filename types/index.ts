@@ -316,16 +316,6 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   hat_tricks: 'HAT TRICK',
 };
 
-// Monthly Review
-export interface MonthlyReview {
-  id?: string;
-  yearMonth: string;   // "2026-02"
-  good: string;        // 良かったところ
-  bad: string;         // 悪かったところ
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
 // Affiliate
 export type ShopType = 'dartshive' | 'sdarts' | 'maxim' | 'tito' | 'rakuten' | 'amazon';
 

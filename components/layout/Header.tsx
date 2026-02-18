@@ -208,6 +208,9 @@ export default function Header() {
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
                 </Button>
+                <Button color="inherit" component={Link} href="/stats/calendar" size="small">
+                  カレンダー
+                </Button>
                 {!userIsPro && (
                   <Button
                     component={Link}

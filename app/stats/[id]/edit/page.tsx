@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
   Container,
   TextField,
@@ -27,7 +27,9 @@ export default function StatsEditPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const statsId = params.id as string;
+  const returnTo = searchParams.get('from') === 'calendar' ? '/stats/calendar' : '/stats';
 
   const [date, setDate] = useState('');
   const [rating, setRating] = useState('');
@@ -119,7 +121,7 @@ export default function StatsEditPage() {
         memo,
         updatedAt: serverTimestamp(),
       });
-      router.push('/stats');
+      router.push(returnTo);
     } catch {
       setError('更新に失敗しました');
     } finally {
@@ -131,7 +133,7 @@ export default function StatsEditPage() {
     if (!session?.user?.id) return;
     try {
       await deleteDoc(doc(db, 'users', session.user.id, 'dartsLiveStats', statsId));
-      router.push('/stats');
+      router.push(returnTo);
     } catch {
       setError('削除に失敗しました');
     }
@@ -302,7 +304,7 @@ export default function StatsEditPage() {
         />
 
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" fullWidth onClick={() => router.push('/stats')}>
+          <Button variant="outlined" fullWidth onClick={() => router.push(returnTo)}>
             キャンセル
           </Button>
           <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">

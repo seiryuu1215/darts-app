@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getStatsRetentionDays } from '@/lib/permissions';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
-import { FieldValue } from 'firebase-admin/firestore';
 
 export const GET = withErrorHandler(
   withAuth(async (request: NextRequest, { userId, role }) => {
@@ -74,87 +73,11 @@ export const GET = withErrorHandler(
       });
     });
 
-    // 集計
-    const totalGames = records.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
-    const playDays = new Set(records.map((r) => r.date.slice(0, 10))).size;
-
-    const validRatings = records.filter((r) => r.rating != null);
-    const validPpd = records.filter((r) => r.ppd != null);
-    const validMpr = records.filter((r) => r.mpr != null);
-    const validCondition = records.filter((r) => r.condition != null);
-
-    const avgRating =
-      validRatings.length > 0
-        ? validRatings.reduce((sum, r) => sum + r.rating!, 0) / validRatings.length
-        : null;
-    const avgPpd =
-      validPpd.length > 0 ? validPpd.reduce((sum, r) => sum + r.ppd!, 0) / validPpd.length : null;
-    const avgMpr =
-      validMpr.length > 0 ? validMpr.reduce((sum, r) => sum + r.mpr!, 0) / validMpr.length : null;
-    const avgCondition =
-      validCondition.length > 0
-        ? validCondition.reduce((sum, r) => sum + r.condition!, 0) / validCondition.length
-        : null;
-
-    const ratingChange =
-      validRatings.length >= 2
-        ? validRatings[validRatings.length - 1].rating! - validRatings[0].rating!
-        : null;
-
-    // monthlyReview を取得
-    const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
-    const reviewDoc = await adminDb.doc(`users/${userId}/monthlyReviews/${yearMonth}`).get();
-    const reviewData = reviewDoc.exists ? reviewDoc.data() : null;
-    const review = reviewData ? { good: reviewData.good ?? '', bad: reviewData.bad ?? '' } : null;
-
     return NextResponse.json({
       year,
       month,
-      summary: {
-        avgRating,
-        avgPpd,
-        avgMpr,
-        avgCondition,
-        totalGames,
-        playDays,
-        ratingChange,
-      },
       records,
-      review,
     });
   }),
   'Stats calendar error',
-);
-
-export const POST = withErrorHandler(
-  withAuth(async (request: NextRequest, { userId }) => {
-    const body = await request.json();
-    const { yearMonth, good, bad } = body;
-
-    if (!yearMonth || typeof yearMonth !== 'string' || !/^\d{4}-\d{2}$/.test(yearMonth)) {
-      return NextResponse.json({ error: 'Invalid yearMonth format' }, { status: 400 });
-    }
-
-    const docRef = adminDb.doc(`users/${userId}/monthlyReviews/${yearMonth}`);
-    const existing = await docRef.get();
-
-    if (existing.exists) {
-      await docRef.update({
-        good: good ?? '',
-        bad: bad ?? '',
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    } else {
-      await docRef.set({
-        yearMonth,
-        good: good ?? '',
-        bad: bad ?? '',
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    }
-
-    return NextResponse.json({ success: true });
-  }),
-  'Stats calendar review save error',
 );

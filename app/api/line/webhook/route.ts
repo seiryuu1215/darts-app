@@ -23,11 +23,13 @@ interface LineEvent {
 async function getConversation(lineUserId: string) {
   const ref = adminDb.doc(`lineConversations/${lineUserId}`);
   const snap = await ref.get();
-  if (!snap.exists) return { state: 'idle' as const, pendingStats: null, condition: null };
+  if (!snap.exists)
+    return { state: 'idle' as const, pendingStats: null, condition: null, memo: null };
   return snap.data() as {
-    state: 'idle' | 'waiting_condition' | 'waiting_memo';
+    state: 'idle' | 'waiting_condition' | 'waiting_memo' | 'waiting_challenge';
     pendingStats: Record<string, unknown> | null;
     condition: number | null;
+    memo: string | null;
   };
 }
 
@@ -129,6 +131,18 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
     return;
   }
 
+  // 「取得」コマンド: どの状態からでも再取得可能
+  if (trimmed === '取得') {
+    await setConversation(lineUserId, {
+      state: 'idle',
+      pendingStats: null,
+      condition: null,
+      memo: null,
+    });
+    await handleFetchStats(event.replyToken, lineUserId);
+    return;
+  }
+
   // 会話状態に応じた処理
   const conv = await getConversation(lineUserId);
 
@@ -167,21 +181,44 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
 
   if (conv.state === 'waiting_memo') {
     const memo = trimmed === 'なし' ? '' : trimmed;
+
+    await setConversation(lineUserId, {
+      state: 'waiting_challenge',
+      memo,
+    });
+
+    await replyLineMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '次回への課題があれば入力してください。（「なし」でスキップ）',
+      },
+    ]);
+    return;
+  }
+
+  if (conv.state === 'waiting_challenge') {
+    const challenge = trimmed === 'なし' ? '' : trimmed;
     const user = await findUserByLineId(lineUserId);
     if (!user || !conv.pendingStats) {
       await replyLineMessage(event.replyToken, [
         { type: 'text', text: 'エラーが発生しました。もう一度お試しください。' },
       ]);
-      await setConversation(lineUserId, { state: 'idle', pendingStats: null, condition: null });
+      await setConversation(lineUserId, {
+        state: 'idle',
+        pendingStats: null,
+        condition: null,
+        memo: null,
+      });
       return;
     }
 
     const stats = conv.pendingStats;
     const condition = conv.condition || 3;
+    const memo = conv.memo || '';
 
     // Firestore に dartsLiveStats レコード作成
     await adminDb.collection(`users/${user.id}/dartsLiveStats`).add({
-      date: stats.date || FieldValue.serverTimestamp(),
+      date: stats.date ? new Date(String(stats.date).replace(/\//g, '-') + 'T00:00:00+09:00') : FieldValue.serverTimestamp(),
       rating: stats.rating ?? null,
       gamesPlayed: stats.gamesPlayed ?? 0,
       zeroOneStats: {
@@ -207,6 +244,7 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
       whiteHorse: stats.whiteHorse ?? undefined,
       condition,
       memo,
+      challenge,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -218,17 +256,17 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
         ppd: (stats.ppd as number) ?? null,
         condition,
         memo,
+        challenge,
       }),
     ]);
 
     // 会話状態リセット
-    await setConversation(lineUserId, { state: 'idle', pendingStats: null, condition: null });
-    return;
-  }
-
-  // 「取得」コマンド: オンデマンドでDARTSLIVEスクレイピング
-  if (trimmed === '取得') {
-    await handleFetchStats(event.replyToken, lineUserId);
+    await setConversation(lineUserId, {
+      state: 'idle',
+      pendingStats: null,
+      condition: null,
+      memo: null,
+    });
     return;
   }
 
@@ -291,17 +329,23 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
 
       const stats = await scrapeStats(page);
 
+      // 前回キャッシュを取得
+      const cacheRef = adminDb.doc(`users/${user.id}/dartsliveCache/latest`);
+      const prevDoc = await cacheRef.get();
+      const prevData = prevDoc.exists ? prevDoc.data() : null;
+
       // 今日の日付文字列 (JST)
       const now = new Date();
       now.setHours(now.getHours() + 9); // UTC→JST
       const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
 
-      // Flex Message でスタッツ表示
+      // Flex Message でスタッツ表示（差分付き）
       const flexMsg = buildStatsFlexMessage({
         date: dateStr,
         rating: stats.rating,
         ppd: stats.stats01Avg,
         mpr: stats.statsCriAvg,
+        prevRating: prevData?.rating ?? null,
         awards: {
           dBull: stats.dBullTotal,
           sBull: stats.sBullTotal,
@@ -313,9 +357,45 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
           threeInABlack: stats.threeInABlack,
           whiteHorse: stats.whiteHorse,
         },
+        prevAwards: prevData
+          ? {
+              dBull: prevData.bullStats?.dBull ?? 0,
+              sBull: prevData.bullStats?.sBull ?? 0,
+              hatTricks: prevData.hatTricks ?? 0,
+              ton80: prevData.ton80 ?? 0,
+              lowTon: prevData.lowTon ?? 0,
+              highTon: prevData.highTon ?? 0,
+              threeInABed: prevData.threeInABed ?? 0,
+              threeInABlack: prevData.threeInABlack ?? 0,
+              whiteHorse: prevData.whiteHorse ?? 0,
+            }
+          : undefined,
       });
 
       await replyLineMessage(replyToken, [flexMsg]);
+
+      // キャッシュ更新
+      await cacheRef.set(
+        {
+          rating: stats.rating,
+          stats01Avg: stats.stats01Avg,
+          statsCriAvg: stats.statsCriAvg,
+          bullStats: {
+            dBull: stats.dBullTotal,
+            sBull: stats.sBullTotal,
+          },
+          hatTricks: stats.hatTricksTotal,
+          ton80: stats.ton80,
+          lowTon: stats.lowTon,
+          highTon: stats.highTon,
+          threeInABed: stats.threeInABed,
+          threeInABlack: stats.threeInABlack,
+          whiteHorse: stats.whiteHorse,
+          prevRating: prevData?.rating ?? null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
 
       // 会話状態を waiting_condition に遷移
       await setConversation(lineUserId, {
@@ -337,6 +417,7 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
           hatTricksTotal: stats.hatTricksTotal,
         },
         condition: null,
+        memo: null,
       });
     } finally {
       await page.close();

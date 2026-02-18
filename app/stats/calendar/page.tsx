@@ -15,7 +15,6 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import CalendarGrid from '@/components/stats/CalendarGrid';
 import DayDetailPanel from '@/components/stats/DayDetailPanel';
-import MonthlyReviewCard from '@/components/stats/MonthlyReviewCard';
 
 interface CalendarRecord {
   id: string;
@@ -29,16 +28,6 @@ interface CalendarRecord {
   challenge: string;
   dBull: number | null;
   sBull: number | null;
-}
-
-interface Summary {
-  avgRating: number | null;
-  avgPpd: number | null;
-  avgMpr: number | null;
-  avgCondition: number | null;
-  totalGames: number;
-  playDays: number;
-  ratingChange: number | null;
 }
 
 function getJSTNow() {
@@ -58,16 +47,6 @@ export default function CalendarPage() {
   const [year, setYear] = useState(jstNow.year);
   const [month, setMonth] = useState(jstNow.month);
   const [records, setRecords] = useState<CalendarRecord[]>([]);
-  const [summary, setSummary] = useState<Summary>({
-    avgRating: null,
-    avgPpd: null,
-    avgMpr: null,
-    avgCondition: null,
-    totalGames: 0,
-    playDays: 0,
-    ratingChange: null,
-  });
-  const [review, setReview] = useState<{ good: string; bad: string } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,28 +58,8 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       setRecords(data.records ?? []);
-      setSummary(data.summary ?? {
-        avgRating: null,
-        avgPpd: null,
-        avgMpr: null,
-        avgCondition: null,
-        totalGames: 0,
-        playDays: 0,
-        ratingChange: null,
-      });
-      setReview(data.review ?? null);
     } catch {
       setRecords([]);
-      setSummary({
-        avgRating: null,
-        avgPpd: null,
-        avgMpr: null,
-        avgCondition: null,
-        totalGames: 0,
-        playDays: 0,
-        ratingChange: null,
-      });
-      setReview(null);
     } finally {
       setLoading(false);
     }
@@ -126,7 +85,6 @@ export default function CalendarPage() {
   };
 
   const handleNextMonth = () => {
-    // 未来月は移動しない
     const { year: nowYear, month: nowMonth } = getJSTNow();
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
@@ -137,7 +95,6 @@ export default function CalendarPage() {
     setMonth(nextMonth);
   };
 
-  // 未来月かどうか
   const isCurrentMonth = year === jstNow.year && month === jstNow.month;
 
   // 選択日のレコード
@@ -149,18 +106,6 @@ export default function CalendarPage() {
         return dateStr === selectedDate;
       })
     : [];
-
-  const handleSaveReview = async (good: string, bad: string) => {
-    const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
-    const res = await fetch('/api/stats-calendar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yearMonth, good, bad }),
-    });
-    if (res.ok) {
-      setReview({ good, bad });
-    }
-  };
 
   if (sessionStatus === 'loading') {
     return (
@@ -213,16 +158,6 @@ export default function CalendarPage() {
           {selectedDate && selectedRecords.length > 0 && (
             <DayDetailPanel date={selectedDate} records={selectedRecords} />
           )}
-
-          {/* 月間レビュー */}
-          <MonthlyReviewCard
-            year={year}
-            month={month}
-            summary={summary}
-            review={review}
-            onSave={handleSaveReview}
-            loading={loading}
-          />
         </Box>
       )}
     </Container>

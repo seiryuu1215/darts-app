@@ -29,7 +29,7 @@ darts-app/
 │   ├── page.tsx            # ホーム画面 /
 │   ├── darts/              # セッティング管理
 │   ├── barrels/            # バレル検索・シミュレーター・診断
-│   ├── stats/              # スタッツダッシュボード
+│   ├── stats/              # スタッツダッシュボード + カレンダー
 │   ├── articles/           # 記事
 │   ├── discussions/        # 掲示板
 │   ├── api/                # サーバーサイドAPI
@@ -37,6 +37,7 @@ darts-app/
 │   │   ├── dartslive-stats/# Puppeteerスクレイピング
 │   │   ├── stripe/         # 決済
 │   │   ├── line/           # LINE連携
+│   │   ├── stats-calendar/  # カレンダー月別レコード取得
 │   │   ├── goals/          # 目標CRUD・進捗計算
 │   │   └── cron/           # 定期バッチ
 │   └── sw.ts               # Service Worker（PWA）
@@ -44,7 +45,7 @@ darts-app/
 │   ├── layout/             # Header, Footer, Sidebar, Breadcrumbs
 │   ├── darts/              # DartCard, DartDetail, DartForm
 │   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
-│   ├── stats/              # 14個のスタッツ可視化コンポーネント
+│   ├── stats/              # 16個のスタッツ可視化コンポーネント（CalendarGrid, DayDetailPanel含む）
 │   ├── affiliate/          # AffiliateButton, AffiliateBanner
 │   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
 │   ├── progression/        # XpBar, LevelUpSnackbar
@@ -510,6 +511,23 @@ service cloud.firestore {
 ├── Manual Input Link      ← 手動記録ページへのリンク
 └── PRSiteSection          ← おすすめブランドPR
 ```
+
+### 5-3. カレンダー画面（`app/stats/calendar/page.tsx`）
+
+月間カレンダーでプレイ日を可視化し、日をタップして詳細を表示。
+
+```
+カレンダー画面
+├── 月ナビ（← 2026年2月 →）    ← 未来月は非表示
+├── CalendarGrid              ← MUI Box CSS Grid（月曜始まり、42セル）
+│   └── プレイ日にコンディション色ドット（緑/黄/赤）
+└── DayDetailPanel            ← 選択日のスタッツ詳細（Rating/PPD/MPR + メモ + 課題）
+    └── 編集ボタン → /stats/[id]/edit?from=calendar
+```
+
+**API:** `GET /api/stats-calendar?year=2026&month=2` → `{ records }` を返す。JST基準の月範囲で `dartsLiveStats` をクエリ。
+
+---
 
 **データフェッチの流れ:**
 
@@ -1163,6 +1181,7 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `/barrels/simulator` | `app/barrels/simulator/page.tsx` | 実寸シミュレーター     |
 | `/barrels/quiz`      | `app/barrels/quiz/page.tsx`      | バレル診断             |
 | `/stats`             | `app/stats/page.tsx`             | スタッツダッシュボード |
+| `/stats/calendar`    | `app/stats/calendar/page.tsx`    | スタッツカレンダー     |
 | `/articles`          | `app/articles/page.tsx`          | 記事一覧               |
 | `/discussions`       | `app/discussions/page.tsx`       | 掲示板                 |
 | `/bookmarks`         | `app/bookmarks/page.tsx`         | ブックマーク           |
@@ -1183,6 +1202,7 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `POST /api/line/link`        | `app/api/line/link/route.ts`        | LINE連携コード発行             |
 | `POST /api/cron/daily-stats` | `app/api/cron/daily-stats/route.ts` | 日次バッチ                     |
 | `GET /api/stats-history`     | `app/api/stats-history/route.ts`    | 期間別スタッツ                 |
+| `GET /api/stats-calendar`    | `app/api/stats-calendar/route.ts`   | 月別カレンダーレコード取得     |
 | `GET /api/og`                | `app/api/og/route.ts`               | OGP画像生成（Edge）            |
 | `GET /api/goals`             | `app/api/goals/route.ts`            | 目標一覧+進捗計算+達成判定     |
 | `POST /api/goals`            | 同上                                | 目標作成（既達成チェック付き） |

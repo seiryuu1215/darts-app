@@ -103,6 +103,7 @@ graph LR
 
     subgraph User["ユーザー"]
         Stats["/stats スタッツ"]
+        StatsCalendar["/stats/calendar カレンダー"]
         StatsNew["/stats/new 記録"]
         Bookmarks["/bookmarks ブックマーク"]
         Profile["/profile/edit プロフィール"]
@@ -119,6 +120,7 @@ graph LR
         Terms["/terms 利用規約"]
     end
 
+    Stats --> StatsCalendar
     Home --> DartsList & BarrelSearch & Articles & Discussions & Stats
     DartsList --> DartsDetail & DartsNew
     DartsDetail --> DartsEdit & DartsCompare
@@ -308,7 +310,7 @@ components/
 ├── comment/                   # コメント
 │   ├── CommentForm.tsx
 │   └── CommentList.tsx
-├── stats/                     # スタッツダッシュボード（14コンポーネント）
+├── stats/                     # スタッツダッシュボード（16コンポーネント）
 │   ├── PlayerProfileCard.tsx  # プレイヤープロフィール（通り名・ホームショップ・Google Maps連携）
 │   ├── RatingHeroCard.tsx     # レーティング + フライト + 進捗バー + パーセンタイル
 │   ├── PeriodStatsPanel.tsx   # 期間タブ（今日/今週/今月/累計）+ サマリーテーブル
@@ -322,7 +324,9 @@ components/
 │   ├── AwardsTable.tsx        # アワードテーブル
 │   ├── PercentileChip.tsx     # 上位X%バッジ（再利用可能）
 │   ├── PRSiteSection.tsx      # おすすめブランドPRカード
-│   └── StatsLoginDialog.tsx   # DARTSLIVE ログインダイアログ
+│   ├── StatsLoginDialog.tsx   # DARTSLIVE ログインダイアログ
+│   ├── CalendarGrid.tsx       # カレンダー月表示（CSS Grid、コンディション色ドット）
+│   └── DayDetailPanel.tsx     # 日別詳細パネル（Rating/PPD/MPR + メモ + 課題）
 ├── OnboardingDialog.tsx       # 初回ログイン時のオンボーディング
 ├── ProPaywall.tsx             # PRO アップグレード誘導
 ├── UserAvatar.tsx             # DiceBear アバター

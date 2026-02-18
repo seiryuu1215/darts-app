@@ -28,6 +28,7 @@
 | S-010 | スタッツダッシュボード | `/stats`                |    必要     | DARTSLIVE風UI、月間グラフ、直近プレイデータ                       |
 | S-011 | スタッツ手動入力       | `/stats/new`            |    必要     | 各種スタッツ入力 + DARTSLIVE自動取得ダイアログ                    |
 | S-012 | スタッツ編集           | `/stats/[id]/edit`      |    必要     | S-011と同一フォーム + 削除機能                                    |
+| S-021 | スタッツカレンダー     | `/stats/calendar`       |    必要     | 月間カレンダー、プレイ日可視化、日別詳細パネル                    |
 | S-013 | 記事一覧               | `/articles`             |    不要     | 記事カード一覧                                                    |
 | S-014 | 記事詳細               | `/articles/[slug]`      |    不要     | Markdownレンダリング                                              |
 | S-015 | 記事投稿               | `/articles/new`         | 必要(pro+)  | Markdown入力フォーム                                              |
@@ -50,6 +51,8 @@
 ├── バレル検索 (/barrels)
 │   └── [このバレルで下書き作成] → セッティング新規作成
 ├── スタッツダッシュボード (/stats)
+│   ├── スタッツカレンダー (/stats/calendar)
+│   │   └── スタッツ編集 (/stats/[id]/edit?from=calendar) → カレンダーに戻る
 │   ├── スタッツ手動入力 (/stats/new) → ダッシュボードに戻る
 │   └── スタッツ編集 (/stats/[id]/edit) → ダッシュボードに戻る
 ├── 記事一覧 (/articles)
@@ -423,6 +426,8 @@ RootLayout (app/layout.tsx)
 | `CountUpDeltaChart` | COUNT-UP±差分可視化            | `games` (recentGames.games)                                      |
 | `PercentileChip`    | 上位X%バッジ（再利用）         | `type: 'rating'\|'ppd'\|'mpr'\|'countup'`, `value`               |
 | `PRSiteSection`     | おすすめブランドPRカード       | なし（静的データ）                                               |
+| `CalendarGrid`      | カレンダー月表示・日選択       | `year`, `month`, `records`, `selectedDate`, `onSelectDate`       |
+| `DayDetailPanel`    | 選択日の詳細スタッツ表示       | `date`, `records`                                                |
 
 ---
 
