@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['puppeteer', 'puppeteer-core', '@sparticuz/chromium', 'firebase-admin'],
   outputFileTracingIncludes: {
     '/api/dartslive-stats': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/cron/daily-stats': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/line/webhook': ['./node_modules/@sparticuz/chromium/bin/**'],
   },
   images: {
     remotePatterns: [

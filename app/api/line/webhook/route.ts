@@ -267,14 +267,12 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
     return;
   }
 
-  let browser: { close: () => Promise<void> } | undefined;
+  let browser: Awaited<ReturnType<typeof import('@/lib/dartslive-scraper').launchBrowser>> | undefined;
   try {
     const dlEmail = decrypt(dlCreds.email);
     const dlPassword = decrypt(dlCreds.password);
 
-    // 動的importでchromium/puppeteerバンドルをwebhook関数から分離
-    const scraperPath = '@/lib/dartslive-scraper';
-    const { launchBrowser, createPage, login, scrapeStats } = await import(/* webpackIgnore: true */ scraperPath);
+    const { launchBrowser, createPage, login, scrapeStats } = await import('@/lib/dartslive-scraper');
 
     browser = await launchBrowser();
     const page = await createPage(browser);
