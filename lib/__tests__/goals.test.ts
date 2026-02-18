@@ -24,7 +24,7 @@ describe('GOAL_TYPES', () => {
     GOAL_TYPES.forEach((g) => {
       expect(g.periods.length).toBeGreaterThan(0);
       g.periods.forEach((p) => {
-        expect(['monthly', 'yearly']).toContain(p);
+        expect(['daily', 'monthly', 'yearly']).toContain(p);
       });
     });
   });
