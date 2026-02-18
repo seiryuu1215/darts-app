@@ -7,15 +7,15 @@ export const POST = withErrorHandler(
   withAuth(async (_req, { userId }) => {
     const userRef = adminDb.doc(`users/${userId}`);
 
+    // 削除前に lineUserId を取得（削除後は undefined になるため）
+    const userSnap = await userRef.get();
+    const lineUserId = userSnap.data()?.lineUserId;
+
     await userRef.update({
       lineUserId: FieldValue.delete(),
       lineNotifyEnabled: false,
       dlCredentialsEncrypted: FieldValue.delete(),
     });
-
-    // 会話状態もクリア
-    const userSnap = await userRef.get();
-    const lineUserId = userSnap.data()?.lineUserId;
     if (lineUserId) {
       await adminDb
         .doc(`lineConversations/${lineUserId}`)

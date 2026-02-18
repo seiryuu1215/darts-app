@@ -6,9 +6,12 @@ import {
   replyLineMessage,
   getConditionLabel,
   buildCompletionMessage,
+  buildStatsFlexMessage,
 } from '@/lib/line';
+import { decrypt } from '@/lib/crypto';
+import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 interface LineEvent {
   type: string;
@@ -192,11 +195,17 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
         highScore: null,
       },
       bullRate: null,
-      hatTricks: null,
+      hatTricks: stats.hatTricksTotal ?? null,
       bullStats:
         stats.dBullTotal != null && stats.sBullTotal != null
           ? { dBull: Number(stats.dBullTotal), sBull: Number(stats.sBullTotal) }
           : null,
+      ton80: stats.ton80 ?? undefined,
+      lowTon: stats.lowTon ?? undefined,
+      highTon: stats.highTon ?? undefined,
+      threeInABed: stats.threeInABed ?? undefined,
+      threeInABlack: stats.threeInABlack ?? undefined,
+      whiteHorse: stats.whiteHorse ?? undefined,
       condition,
       memo,
       createdAt: FieldValue.serverTimestamp(),
@@ -218,13 +227,132 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
     return;
   }
 
+  // 「取得」コマンド: オンデマンドでDARTSLIVEスクレイピング
+  if (trimmed === '取得') {
+    await handleFetchStats(event.replyToken, lineUserId);
+    return;
+  }
+
   // idle 状態での通常メッセージ
   await replyLineMessage(event.replyToken, [
     {
       type: 'text',
-      text: 'Darts Lab Bot です。\n毎朝DARTSLIVEのスタッツを確認して、プレイがあれば通知します。',
+      text: 'Darts Lab Bot です。\n毎朝DARTSLIVEのスタッツを確認して、プレイがあれば通知します。\n\n「取得」と送信すると、今すぐスタッツを取得できます。',
     },
   ]);
+}
+
+/** 「取得」コマンド: オンデマンドスクレイピング */
+async function handleFetchStats(replyToken: string, lineUserId: string) {
+  const user = await findUserByLineId(lineUserId);
+  if (!user) {
+    await replyLineMessage(replyToken, [
+      { type: 'text', text: 'アカウントが連携されていません。先に8桁コードで連携してください。' },
+    ]);
+    return;
+  }
+
+  const userData = user as Record<string, unknown>;
+  const dlCreds = userData.dlCredentialsEncrypted as
+    | { email: string; password: string }
+    | null
+    | undefined;
+
+  if (!dlCreds?.email || !dlCreds?.password) {
+    await replyLineMessage(replyToken, [
+      {
+        type: 'text',
+        text: 'DARTSLIVE認証情報が設定されていません。Webサイトのプロフィール編集ページから設定してください。',
+      },
+    ]);
+    return;
+  }
+
+  let browser;
+  try {
+    const dlEmail = decrypt(dlCreds.email);
+    const dlPassword = decrypt(dlCreds.password);
+
+    browser = await launchBrowser();
+    const page = await createPage(browser);
+
+    try {
+      const loginSuccess = await login(page, dlEmail, dlPassword);
+      if (!loginSuccess) {
+        await replyLineMessage(replyToken, [
+          {
+            type: 'text',
+            text: 'DARTSLIVEへのログインに失敗しました。認証情報を確認してください。',
+          },
+        ]);
+        return;
+      }
+
+      const stats = await scrapeStats(page);
+
+      // 今日の日付文字列 (JST)
+      const now = new Date();
+      now.setHours(now.getHours() + 9); // UTC→JST
+      const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+
+      // Flex Message でスタッツ表示
+      const flexMsg = buildStatsFlexMessage({
+        date: dateStr,
+        rating: stats.rating,
+        ppd: stats.stats01Avg,
+        mpr: stats.statsCriAvg,
+        awards: {
+          dBull: stats.dBullTotal,
+          sBull: stats.sBullTotal,
+          hatTricks: stats.hatTricksTotal,
+          ton80: stats.ton80,
+          lowTon: stats.lowTon,
+          highTon: stats.highTon,
+          threeInABed: stats.threeInABed,
+          threeInABlack: stats.threeInABlack,
+          whiteHorse: stats.whiteHorse,
+        },
+      });
+
+      await replyLineMessage(replyToken, [flexMsg]);
+
+      // 会話状態を waiting_condition に遷移
+      await setConversation(lineUserId, {
+        state: 'waiting_condition',
+        pendingStats: {
+          date: dateStr,
+          rating: stats.rating,
+          ppd: stats.stats01Avg,
+          mpr: stats.statsCriAvg,
+          avg01: stats.stats01Avg,
+          dBullTotal: stats.dBullTotal,
+          sBullTotal: stats.sBullTotal,
+          ton80: stats.ton80,
+          lowTon: stats.lowTon,
+          highTon: stats.highTon,
+          threeInABed: stats.threeInABed,
+          threeInABlack: stats.threeInABlack,
+          whiteHorse: stats.whiteHorse,
+          hatTricksTotal: stats.hatTricksTotal,
+        },
+        condition: null,
+      });
+    } finally {
+      await page.close();
+    }
+  } catch (err) {
+    console.error('Fetch stats error:', err);
+    await replyLineMessage(replyToken, [
+      {
+        type: 'text',
+        text: 'スタッツの取得に失敗しました。DARTSLIVEの認証情報を確認してください。',
+      },
+    ]);
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+  }
 }
 
 /** 8桁コードでアカウント連携 */

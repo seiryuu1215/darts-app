@@ -58,6 +58,8 @@ export interface CronStatsSnapshot {
   nineMark: number;
   lowTon: number;
   highTon: number;
+  threeInABed: number;
+  whiteHorse: number;
 }
 
 export interface CronXpAction {
@@ -82,6 +84,8 @@ export function calculateCronXp(
     nineMark: 0,
     lowTon: 0,
     highTon: 0,
+    threeInABed: 0,
+    whiteHorse: 0,
   };
 
   // games_10: 10ゲーム単位の差分
@@ -119,6 +123,8 @@ export function calculateCronXp(
       { key: 'nineMark', action: 'award_9_mark', xp: 10, label: '9マーク' },
       { key: 'lowTon', action: 'award_low_ton', xp: 3, label: 'LOW TON' },
       { key: 'highTon', action: 'award_high_ton', xp: 5, label: 'HIGH TON' },
+      { key: 'threeInABed', action: 'award_3_bed', xp: 10, label: '3 IN A BED' },
+      { key: 'whiteHorse', action: 'award_white_horse', xp: 15, label: 'WHITE HORSE' },
     ];
 
   for (const { key, action, xp, label } of awardDiffs) {

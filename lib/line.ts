@@ -67,14 +67,107 @@ export function buildStatsFlexMessage(stats: {
   ppd: number | null;
   mpr: number | null;
   gamesPlayed?: number | null;
+  awards?: {
+    dBull?: number;
+    sBull?: number;
+    hatTricks?: number;
+    ton80?: number;
+    lowTon?: number;
+    highTon?: number;
+    threeInABed?: number;
+    threeInABlack?: number;
+    whiteHorse?: number;
+  };
 }): object {
   const ratingStr = stats.rating?.toFixed(2) ?? '--';
   const ppdStr = stats.ppd?.toFixed(2) ?? '--';
   const mprStr = stats.mpr?.toFixed(2) ?? '--';
 
+  // Awards セクション構築
+  const awardsContents: object[] = [];
+  if (stats.awards) {
+    const a = stats.awards;
+    const awardItems: { label: string; value: number }[] = [
+      { label: 'HAT TRICK', value: a.hatTricks ?? 0 },
+      { label: 'TON 80', value: a.ton80 ?? 0 },
+      { label: 'LOW TON', value: a.lowTon ?? 0 },
+      { label: 'HIGH TON', value: a.highTon ?? 0 },
+      { label: '3 IN A BED', value: a.threeInABed ?? 0 },
+      { label: '3 - BLACK', value: a.threeInABlack ?? 0 },
+      { label: 'WHITE HRS', value: a.whiteHorse ?? 0 },
+      { label: 'D-BULL', value: a.dBull ?? 0 },
+      { label: 'S-BULL', value: a.sBull ?? 0 },
+    ];
+
+    const hasAnyAward = awardItems.some((item) => item.value > 0);
+    if (hasAnyAward) {
+      awardsContents.push({
+        type: 'separator',
+        margin: 'md',
+      });
+      awardsContents.push({
+        type: 'text',
+        text: 'AWARDS',
+        size: 'sm',
+        weight: 'bold',
+        margin: 'md',
+        color: '#555555',
+      });
+
+      // 2列レイアウトで表示
+      for (let i = 0; i < awardItems.length; i += 2) {
+        const left = awardItems[i];
+        const right = awardItems[i + 1];
+        const rowContents: object[] = [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            flex: 1,
+            contents: [
+              { type: 'text', text: left.label, size: 'xxs', color: '#888888', flex: 3 },
+              {
+                type: 'text',
+                text: String(left.value),
+                size: 'xxs',
+                color: '#333333',
+                flex: 1,
+                align: 'end',
+              },
+            ],
+          },
+        ];
+        if (right) {
+          rowContents.push({
+            type: 'box',
+            layout: 'horizontal',
+            flex: 1,
+            contents: [
+              { type: 'text', text: right.label, size: 'xxs', color: '#888888', flex: 3 },
+              {
+                type: 'text',
+                text: String(right.value),
+                size: 'xxs',
+                color: '#333333',
+                flex: 1,
+                align: 'end',
+              },
+            ],
+          });
+        }
+        awardsContents.push({
+          type: 'box',
+          layout: 'horizontal',
+          spacing: 'md',
+          margin: 'sm',
+          contents: rowContents,
+        });
+      }
+    }
+  }
+
   return {
     type: 'flex',
-    altText: `昨日のリザルト: Rt.${ratingStr} / PPD ${ppdStr} / MPR ${mprStr}`,
+    altText: `リザルト: Rt.${ratingStr} / PPD ${ppdStr} / MPR ${mprStr}`,
     contents: {
       type: 'bubble',
       header: {
@@ -85,14 +178,14 @@ export function buildStatsFlexMessage(stats: {
         contents: [
           {
             type: 'text',
-            text: '🎯 Darts Lab',
+            text: 'Darts Lab',
             color: '#ffffff',
             size: 'sm',
             weight: 'bold',
           },
           {
             type: 'text',
-            text: '昨日のリザルト',
+            text: 'リザルト',
             color: '#ffffffcc',
             size: 'xs',
           },
@@ -154,6 +247,7 @@ export function buildStatsFlexMessage(stats: {
                 },
               ]
             : []),
+          ...awardsContents,
           {
             type: 'text',
             text: '調子はどうでしたか？',

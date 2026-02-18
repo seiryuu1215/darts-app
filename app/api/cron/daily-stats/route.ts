@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
@@ -12,105 +10,9 @@ import {
 } from '@/lib/progression/xp-engine';
 import { calculateGoalCurrent, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
+import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
 
 export const maxDuration = 300;
-
-/** DARTSLIVE ログイン */
-async function login(
-  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
-  email: string,
-  password: string,
-) {
-  await page.goto('https://card.dartslive.com/account/login.jsp', {
-    waitUntil: 'networkidle2',
-    timeout: 15000,
-  });
-  await page.type('#text', email);
-  await page.type('#password', password);
-  await page.click('input[type="submit"]');
-  await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-
-  if (page.url().includes('login.jsp')) {
-    throw new Error('LOGIN_FAILED');
-  }
-}
-
-/** play/index.jsp からスタッツサマリーを取得 */
-async function scrapeStats(
-  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
-) {
-  await page.goto('https://card.dartslive.com/t/play/index.jsp', {
-    waitUntil: 'networkidle2',
-    timeout: 15000,
-  });
-
-  return page.evaluate(() => {
-    const getNum = (sel: string) => {
-      const t = document.querySelector(sel)?.textContent?.trim() || '';
-      const n = parseFloat(t.replace(/[+]/g, ''));
-      return isNaN(n) ? null : n;
-    };
-
-    const ratingInt = getNum('#statusRtValue');
-    const ratingRef = getNum('#refValue');
-
-    let stats01Avg: number | null = null;
-    let statsCriAvg: number | null = null;
-
-    const statsRows = document.querySelectorAll('table tr');
-    statsRows.forEach((row) => {
-      const kind = row.querySelector('.statsKind')?.textContent?.trim();
-      if (kind === '平均') {
-        const v01 = row.querySelector('.stats01')?.textContent?.trim();
-        const vCri = row.querySelector('.statsCri')?.textContent?.trim();
-        if (v01) stats01Avg = parseFloat(v01);
-        if (vCri) statsCriAvg = parseFloat(vCri);
-      }
-    });
-
-    // Awards (D-BULL / S-BULL / HAT TRICK) — 今月 & 累計
-    let dBullTotal = 0;
-    let sBullTotal = 0;
-    let dBullMonthly = 0;
-    let sBullMonthly = 0;
-    let hatTricksTotal = 0;
-    let hatTricksMonthly = 0;
-    document.querySelectorAll('table tr').forEach((row) => {
-      const th = row.querySelector('th')?.textContent?.trim();
-      const totalTd = row.querySelector('td.total');
-      const tds = Array.from(row.querySelectorAll('td'));
-      if (th && totalTd && tds.length >= 2) {
-        const monthlyVal = parseInt(tds[0]?.textContent?.trim()?.replace(/,/g, '') || '0', 10);
-        const totalVal = parseInt(totalTd.textContent?.trim()?.replace(/,/g, '') || '0', 10);
-        if (th === 'D-BULL' && !isNaN(totalVal)) {
-          dBullTotal = totalVal;
-          dBullMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
-        }
-        if (th === 'S-BULL' && !isNaN(totalVal)) {
-          sBullTotal = totalVal;
-          sBullMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
-        }
-        if (th === 'HAT TRICK' && !isNaN(totalVal)) {
-          hatTricksTotal = totalVal;
-          hatTricksMonthly = isNaN(monthlyVal) ? 0 : monthlyVal;
-        }
-      }
-    });
-
-    return {
-      rating: ratingRef ?? ratingInt,
-      ratingInt,
-      stats01Avg: stats01Avg === null || isNaN(stats01Avg) ? null : stats01Avg,
-      statsCriAvg: statsCriAvg === null || isNaN(statsCriAvg) ? null : statsCriAvg,
-      dBullTotal,
-      sBullTotal,
-      dBullMonthly,
-      sBullMonthly,
-      hatTricksTotal,
-      hatTricksMonthly,
-    };
-  });
-}
 
 export async function GET(request: NextRequest) {
   // Vercel Cron 認証
@@ -139,15 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ブラウザ起動（全ユーザーで共有）
-    const isVercel = process.env.VERCEL === '1';
-    const browser = await puppeteer.launch({
-      args: isVercel ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
-      defaultViewport: { width: 1280, height: 720 },
-      executablePath: isVercel
-        ? await chromium.executablePath()
-        : process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      headless: true,
-    });
+    const browser = await launchBrowser();
 
     try {
       for (const userDoc of eligibleUsers) {
@@ -161,13 +55,13 @@ export async function GET(request: NextRequest) {
           const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
           // 新しいページでスタッツ取得
-          const page = await browser.newPage();
-          await page.setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          );
+          const page = await createPage(browser);
 
           try {
-            await login(page, dlEmail, dlPassword);
+            const loginSuccess = await login(page, dlEmail, dlPassword);
+            if (!loginSuccess) {
+              throw new Error('LOGIN_FAILED');
+            }
             const stats = await scrapeStats(page);
 
             // 前回キャッシュと比較
@@ -197,6 +91,12 @@ export async function GET(request: NextRequest) {
                   },
                   hatTricks: stats.hatTricksTotal,
                   hatTricksMonthly: stats.hatTricksMonthly,
+                  ton80: stats.ton80,
+                  lowTon: stats.lowTon,
+                  highTon: stats.highTon,
+                  threeInABed: stats.threeInABed,
+                  threeInABlack: stats.threeInABlack,
+                  whiteHorse: stats.whiteHorse,
                   prevRating: prevData?.rating ?? null,
                   prevStats01Avg: prevData?.stats01Avg ?? null,
                   prevStatsCriAvg: prevData?.statsCriAvg ?? null,
@@ -217,6 +117,17 @@ export async function GET(request: NextRequest) {
                 rating: stats.rating,
                 ppd: stats.stats01Avg,
                 mpr: stats.statsCriAvg,
+                awards: {
+                  dBull: stats.dBullTotal,
+                  sBull: stats.sBullTotal,
+                  hatTricks: stats.hatTricksTotal,
+                  ton80: stats.ton80,
+                  lowTon: stats.lowTon,
+                  highTon: stats.highTon,
+                  threeInABed: stats.threeInABed,
+                  threeInABlack: stats.threeInABlack,
+                  whiteHorse: stats.whiteHorse,
+                },
               });
               await sendLinePushMessage(lineUserId, [flexMsg]);
 
@@ -231,6 +142,13 @@ export async function GET(request: NextRequest) {
                   avg01: stats.stats01Avg,
                   dBullTotal: stats.dBullTotal,
                   sBullTotal: stats.sBullTotal,
+                  ton80: stats.ton80,
+                  lowTon: stats.lowTon,
+                  highTon: stats.highTon,
+                  threeInABed: stats.threeInABed,
+                  threeInABlack: stats.threeInABlack,
+                  whiteHorse: stats.whiteHorse,
+                  hatTricksTotal: stats.hatTricksTotal,
                 },
                 condition: null,
                 updatedAt: FieldValue.serverTimestamp(),
@@ -251,17 +169,21 @@ export async function GET(request: NextRequest) {
                 nineMark: prevData?.nineMark ?? 0,
                 lowTon: prevData?.lowTon ?? 0,
                 highTon: prevData?.highTon ?? 0,
+                threeInABed: prevData?.threeInABed ?? 0,
+                whiteHorse: prevData?.whiteHorse ?? 0,
               };
               const currentSnapshot: CronStatsSnapshot = {
-                totalGames: stats.dBullTotal > 0 ? (prevData?.totalGames ?? 0) : 0, // ゲーム数はキャッシュから
+                totalGames: stats.dBullTotal > 0 ? (prevData?.totalGames ?? 0) : 0,
                 streak: prevData?.streak ?? 0,
                 rating: stats.rating,
-                hatTricks: prevData?.hatTricks ?? 0,
-                ton80: prevData?.ton80 ?? 0,
-                threeInABlack: prevData?.threeInABlack ?? 0,
+                hatTricks: stats.hatTricksTotal,
+                ton80: stats.ton80,
+                threeInABlack: stats.threeInABlack,
                 nineMark: prevData?.nineMark ?? 0,
-                lowTon: prevData?.lowTon ?? 0,
-                highTon: prevData?.highTon ?? 0,
+                lowTon: stats.lowTon,
+                highTon: stats.highTon,
+                threeInABed: stats.threeInABed,
+                whiteHorse: stats.whiteHorse,
               };
 
               const xpActions = calculateCronXp(prevData ? prevSnapshot : null, currentSnapshot);

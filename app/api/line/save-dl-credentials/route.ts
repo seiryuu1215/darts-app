@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { encrypt } from '@/lib/crypto';
 import { z } from 'zod';
-import { withAuth, withErrorHandler } from '@/lib/api-middleware';
+import { withAdmin, withErrorHandler } from '@/lib/api-middleware';
 
 const credentialsSchema = z.object({
   email: z.string().email().max(256),
@@ -11,7 +11,7 @@ const credentialsSchema = z.object({
 });
 
 export const POST = withErrorHandler(
-  withAuth(async (request: NextRequest, { userId }) => {
+  withAdmin(async (request: NextRequest, { userId }) => {
     const body = await request.json();
     const parsed = credentialsSchema.safeParse(body);
     if (!parsed.success) {
@@ -36,7 +36,7 @@ export const POST = withErrorHandler(
 );
 
 export const DELETE = withErrorHandler(
-  withAuth(async (_req, { userId }) => {
+  withAdmin(async (_req, { userId }) => {
     await adminDb.doc(`users/${userId}`).update({
       dlCredentialsEncrypted: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),

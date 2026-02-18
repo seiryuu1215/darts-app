@@ -31,6 +31,7 @@ import UserAvatar from '@/components/UserAvatar';
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const isAdmin = session?.user?.role === 'admin';
 
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -272,6 +273,8 @@ export default function ProfileEditPage() {
           {saving ? '保存中...' : '保存'}
         </Button>
 
+        {isAdmin && (
+        <>
         {/* LINE連携セクション */}
         <Divider sx={{ my: 4 }} />
 
@@ -574,6 +577,8 @@ export default function ProfileEditPage() {
             </>
           )}
         </Paper>
+        </>
+        )}
       </Box>
     </Container>
   );
