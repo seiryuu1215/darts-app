@@ -9,7 +9,6 @@ import {
   buildStatsFlexMessage,
 } from '@/lib/line';
 import { decrypt } from '@/lib/crypto';
-import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
 
 export const maxDuration = 60;
 
@@ -268,10 +267,14 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
     return;
   }
 
-  let browser;
+  let browser: { close: () => Promise<void> } | undefined;
   try {
     const dlEmail = decrypt(dlCreds.email);
     const dlPassword = decrypt(dlCreds.password);
+
+    // 動的importでchromium/puppeteerバンドルをwebhook関数から分離
+    const scraperPath = '@/lib/dartslive-scraper';
+    const { launchBrowser, createPage, login, scrapeStats } = await import(/* webpackIgnore: true */ scraperPath);
 
     browser = await launchBrowser();
     const page = await createPage(browser);
