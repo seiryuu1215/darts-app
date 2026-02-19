@@ -8,6 +8,8 @@ import { auth, db } from '@/lib/firebase';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
+const isRegistrationDisabled = process.env.NEXT_PUBLIC_REGISTRATION_DISABLED === 'true';
+
 export default function RegisterForm() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,6 +52,23 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
+
+  if (isRegistrationDisabled) {
+    return (
+      <Box sx={{ maxWidth: 400, mx: 'auto', mt: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 } }}>
+        <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
+          新規登録
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          現在新規登録を停止しています。
+        </Alert>
+        <Typography variant="body2" textAlign="center">
+          アカウントをお持ちの方は
+          <Link href="/login">ログイン</Link>
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
