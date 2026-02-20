@@ -46,6 +46,10 @@ import RecentDaySummary from '@/components/stats/RecentDaySummary';
 import AwardsTable from '@/components/stats/AwardsTable';
 import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
+import AwardEfficiencyCard from '@/components/stats/AwardEfficiencyCard';
+import RatingMomentumCard from '@/components/stats/RatingMomentumCard';
+import ConsistencyCard from '@/components/stats/ConsistencyCard';
+import N01ImportCard from '@/components/stats/N01ImportCard';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -390,6 +394,14 @@ export default function StatsPage() {
               loading={periodLoading}
               summary={periodSummary}
               records={periodRecords}
+              prevPpd={prev?.stats01Avg ?? null}
+              prevMpr={prev?.statsCriAvg ?? null}
+            />
+
+            {/* 3b. Award Efficiency */}
+            <AwardEfficiencyCard
+              awards={c.awards}
+              totalGames={periodSummary?.totalGames ?? 0}
             />
 
             {/* 4. Game Stats Cards */}
@@ -417,6 +429,9 @@ export default function StatsPage() {
             {/* 6. COUNT-UP Delta */}
             <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
 
+            {/* 6b. Consistency */}
+            <ConsistencyCard games={dlData.recentGames.games} />
+
             {/* 7. Rating Target */}
             {c.stats01Avg != null && c.statsCriAvg != null && (
               <RatingTargetCard
@@ -425,6 +440,12 @@ export default function StatsPage() {
                 flightColor={flightColor}
               />
             )}
+
+            {/* 7b. Rating Momentum */}
+            <RatingMomentumCard
+              monthlyRatings={dlData.monthly?.rating ?? []}
+              currentRating={c.rating}
+            />
 
             {/* 8. Monthly Trend */}
             <MonthlyTrendChart
@@ -565,7 +586,10 @@ export default function StatsPage() {
           </CardContent>
         </Card>
 
-        {/* 15. PR Site Section */}
+        {/* 15. n01 Import */}
+        <N01ImportCard />
+
+        {/* 16. PR Site Section */}
         <PRSiteSection />
 
         {/* 16. Progression */}

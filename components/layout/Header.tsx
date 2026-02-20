@@ -84,6 +84,7 @@ export default function Header() {
             { label: 'シミュレーター', href: '/barrels/simulator' },
             { label: '診断クイズ', href: '/barrels/quiz' },
             { label: 'セッティング比較', href: '/darts/compare' },
+            { label: 'ツールハブ', href: '/tools' },
           ],
         },
         {
@@ -137,6 +138,7 @@ export default function Header() {
           items: [
             { label: 'シミュレーター', href: '/barrels/simulator' },
             { label: '診断クイズ', href: '/barrels/quiz' },
+            { label: 'ツールハブ', href: '/tools' },
           ],
         },
         {

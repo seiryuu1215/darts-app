@@ -45,6 +45,7 @@ export const GET = withErrorHandler(
     const achievementSnapshot = {
       totalGames: cacheData?.totalGames ?? 0,
       currentStreak: cacheData?.currentStreak ?? 0,
+      totalPlayDays: cacheData?.totalPlayDays ?? 0,
       highestRating: userData.highestRating ?? null,
       hatTricksTotal: cacheData?.hatTricks ?? 0,
       ton80: cacheData?.ton80 ?? 0,

@@ -73,6 +73,7 @@ export default function Footer() {
     { label: '診断クイズ', href: '/barrels/quiz' },
     { label: '記事', href: '/articles' },
     { label: 'ディスカッション', href: '/discussions' },
+    { label: 'ツールハブ', href: '/tools' },
   ];
 
   const shopLinks: FooterLink[] = [

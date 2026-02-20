@@ -15,7 +15,7 @@ import {
   type AchievementSnapshot,
 } from '@/lib/progression/xp-engine';
 import { ACHIEVEMENT_MAP } from '@/lib/progression/achievements';
-import { calculateGoalCurrent, getDailyRange, type StatsRecord } from '@/lib/goals';
+import { calculateGoalCurrent, calculateScaledGoalXp, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
 
@@ -143,6 +143,7 @@ export async function GET(request: NextRequest) {
                   threeInABlack: stats.threeInABlack,
                   whiteHorse: stats.whiteHorse,
                   totalGames,
+                  totalPlayDays: gamesSnap.size,
                   lastPlayDate: todayStr,
                   currentStreak,
                   prevRating: prevData?.rating ?? null,
@@ -222,9 +223,13 @@ export async function GET(request: NextRequest) {
 
             // XP自動付与: 前回/今回スタッツ差分からXPを算出
             try {
+              // 累計プレイ日数 = dartsLiveStats のドキュメント数
+              const totalPlayDays = gamesSnap.size;
+
               const prevSnapshot: CronStatsSnapshot = {
                 totalGames: prevData?.totalGames ?? 0,
                 streak: prevData?.streak ?? 0,
+                totalPlayDays: prevData?.totalPlayDays ?? Math.max(0, totalPlayDays - 1),
                 rating: prevData?.rating ?? null,
                 hatTricks: prevData?.hatTricks ?? 0,
                 ton80: prevData?.ton80 ?? 0,
@@ -238,6 +243,7 @@ export async function GET(request: NextRequest) {
               const currentSnapshot: CronStatsSnapshot = {
                 totalGames: stats.dBullTotal > 0 ? (prevData?.totalGames ?? 0) : 0,
                 streak: prevData?.streak ?? 0,
+                totalPlayDays,
                 rating: stats.rating,
                 hatTricks: stats.hatTricksTotal,
                 ton80: stats.ton80,
@@ -313,6 +319,7 @@ export async function GET(request: NextRequest) {
               const achievementSnapshot: AchievementSnapshot = {
                 totalGames,
                 currentStreak,
+                totalPlayDays: gamesSnap.size,
                 highestRating,
                 hatTricksTotal: stats.hatTricksTotal,
                 ton80: stats.ton80,
@@ -575,8 +582,8 @@ export async function GET(request: NextRequest) {
                   }
 
                   if (current >= goalTarget && goalTarget > 0) {
-                    // 自動達成: XP付与 + 削除
-                    const xpAmt = goalPeriod === 'daily' ? 10 : 50;
+                    // 自動達成: XP付与（スケーリング） + 削除
+                    const xpAmt = calculateScaledGoalXp(goalType, goalPeriod, goalTarget);
                     const xpAct = goalPeriod === 'daily' ? 'daily_goal_achieved' : 'goal_achieved';
                     const userRef = adminDb.doc(`users/${userId}`);
                     await userRef.set({ xp: FieldValue.increment(xpAmt) }, { merge: true });
@@ -602,6 +609,60 @@ export async function GET(request: NextRequest) {
               }
             } catch (goalErr) {
               console.error(`Goal auto-achieve error for user ${userId}:`, goalErr);
+            }
+
+            // 週間/月間アクティブボーナス
+            try {
+              const dayOfWeek = todayJST.getDay(); // 0=日曜
+              const dayOfMonth = todayJST.getDate();
+              const lastDay = new Date(todayJST.getFullYear(), todayJST.getMonth() + 1, 0).getDate();
+
+              // 日曜日: 週間アクティブチェック（週5日以上プレイ）
+              if (dayOfWeek === 0) {
+                const weekStart = new Date(todayJST);
+                weekStart.setDate(weekStart.getDate() - 6);
+                const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+
+                const weekStatsSnap = await adminDb
+                  .collection(`users/${userId}/dartsLiveStats`)
+                  .where('date', '>=', new Date(weekStartStr + 'T00:00:00+09:00'))
+                  .where('date', '<=', new Date(todayStr + 'T23:59:59+09:00'))
+                  .get();
+
+                if (weekStatsSnap.size >= 5) {
+                  const userRef = adminDb.doc(`users/${userId}`);
+                  await userRef.set({ xp: FieldValue.increment(25) }, { merge: true });
+                  await adminDb.collection(`users/${userId}/xpHistory`).add({
+                    action: 'weekly_active',
+                    xp: 25,
+                    detail: '週間アクティブボーナス',
+                    createdAt: FieldValue.serverTimestamp(),
+                  });
+                }
+              }
+
+              // 月末: 月間アクティブチェック（月20日以上プレイ）
+              if (dayOfMonth === lastDay) {
+                const monthStart = new Date(todayJST.getFullYear(), todayJST.getMonth(), 1);
+                const monthStatsSnap = await adminDb
+                  .collection(`users/${userId}/dartsLiveStats`)
+                  .where('date', '>=', monthStart)
+                  .where('date', '<=', new Date(todayStr + 'T23:59:59+09:00'))
+                  .get();
+
+                if (monthStatsSnap.size >= 20) {
+                  const userRef = adminDb.doc(`users/${userId}`);
+                  await userRef.set({ xp: FieldValue.increment(100) }, { merge: true });
+                  await adminDb.collection(`users/${userId}/xpHistory`).add({
+                    action: 'monthly_active',
+                    xp: 100,
+                    detail: '月間アクティブボーナス',
+                    createdAt: FieldValue.serverTimestamp(),
+                  });
+                }
+              }
+            } catch (activeErr) {
+              console.error(`Active bonus error for user ${userId}:`, activeErr);
             }
 
             if (!hasChange) {

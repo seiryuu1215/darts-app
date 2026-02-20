@@ -29,6 +29,8 @@ function getCategoryValue(category: AchievementCategory, snapshot: AchievementSn
       return snapshot.totalGames;
     case 'streak':
       return snapshot.currentStreak;
+    case 'play_days':
+      return snapshot.totalPlayDays;
     case 'rating':
       return snapshot.highestRating ?? 0;
     case 'hat_trick':

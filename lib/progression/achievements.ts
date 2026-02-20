@@ -1,6 +1,7 @@
 export type AchievementCategory =
   | 'games'
   | 'streak'
+  | 'play_days'
   | 'rating'
   | 'hat_trick'
   | 'ton80'
@@ -23,6 +24,7 @@ export interface AchievementDefinition {
 export const CATEGORY_META: Record<AchievementCategory, { label: string; icon: string }> = {
   games: { label: 'ゲーム数', icon: '🎯' },
   streak: { label: '連続プレイ', icon: '🔥' },
+  play_days: { label: '累計プレイ日数', icon: '📅' },
   rating: { label: 'Rating', icon: '⭐' },
   hat_trick: { label: 'HAT TRICK', icon: '🎩' },
   ton80: { label: 'TON 80', icon: '💯' },
@@ -56,10 +58,10 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // ゲーム数
   ...generateAchievements(
     'games',
-    [50, 100, 300, 500, 1000, 3000, 5000, 10000],
+    [50, 100, 300, 500, 1000, 3000, 5000, 10000, 15000, 20000, 30000, 50000],
     'games',
-    (n) => `${n}ゲーム達成`,
-    (n) => `累計${n}ゲームプレイ`,
+    (n) => `${n.toLocaleString()}ゲーム達成`,
+    (n) => `累計${n.toLocaleString()}ゲームプレイ`,
     '🎯',
   ),
   // 連続プレイ
@@ -70,6 +72,15 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     (n) => `${n}日連続プレイ`,
     (n) => `${n}日連続プレイ達成`,
     '🔥',
+  ),
+  // 累計プレイ日数
+  ...generateAchievements(
+    'play_days',
+    [60, 90, 180, 365, 500, 730],
+    'play_days',
+    (n) => `累計${n}日プレイ`,
+    (n) => `累計${n}日プレイ達成`,
+    '📅',
   ),
   // Rating (3〜18, 1刻み)
   ...generateAchievements(
@@ -83,25 +94,25 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // HAT TRICK
   ...generateAchievements(
     'hat_trick',
-    [10, 50, 100, 300, 500, 1000, 3000, 5000],
+    [10, 50, 100, 300, 500, 1000, 3000, 5000, 7000, 10000, 20000],
     'hat_trick',
-    (n) => `HAT TRICK ${n}回`,
-    (n) => `HAT TRICK累計${n}回達成`,
+    (n) => `HAT TRICK ${n.toLocaleString()}回`,
+    (n) => `HAT TRICK累計${n.toLocaleString()}回達成`,
     '🎩',
   ),
   // TON 80
   ...generateAchievements(
     'ton80',
-    [5, 10, 30, 50, 100, 300, 500],
+    [5, 10, 30, 50, 100, 300, 500, 1000, 2000, 5000],
     'ton80',
-    (n) => `TON 80 ${n}回`,
-    (n) => `TON 80累計${n}回達成`,
+    (n) => `TON 80 ${n.toLocaleString()}回`,
+    (n) => `TON 80累計${n.toLocaleString()}回達成`,
     '💯',
   ),
   // ブル (D+S)
   ...generateAchievements(
     'bulls',
-    [100, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000, 100000],
+    [100, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000, 100000, 150000, 200000, 500000],
     'bulls',
     (n) => `ブル ${n.toLocaleString()}回`,
     (n) => `ブル(D+S)累計${n.toLocaleString()}回達成`,
@@ -110,43 +121,43 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // LOW TON
   ...generateAchievements(
     'low_ton',
-    [50, 100, 500, 1000],
+    [50, 100, 500, 1000, 2000, 5000, 10000],
     'low_ton',
-    (n) => `LOW TON ${n}回`,
-    (n) => `LOW TON累計${n}回達成`,
+    (n) => `LOW TON ${n.toLocaleString()}回`,
+    (n) => `LOW TON累計${n.toLocaleString()}回達成`,
     '📊',
   ),
   // HIGH TON
   ...generateAchievements(
     'high_ton',
-    [10, 50, 100, 500],
+    [10, 50, 100, 500, 1000, 2000, 5000],
     'high_ton',
-    (n) => `HIGH TON ${n}回`,
-    (n) => `HIGH TON累計${n}回達成`,
+    (n) => `HIGH TON ${n.toLocaleString()}回`,
+    (n) => `HIGH TON累計${n.toLocaleString()}回達成`,
     '📈',
   ),
   // 3 IN A BED
   ...generateAchievements(
     'three_bed',
-    [10, 50, 100],
+    [10, 50, 100, 200, 500, 1000],
     'three_bed',
-    (n) => `3 IN A BED ${n}回`,
-    (n) => `3 IN A BED累計${n}回達成`,
+    (n) => `3 IN A BED ${n.toLocaleString()}回`,
+    (n) => `3 IN A BED累計${n.toLocaleString()}回達成`,
     '🛏️',
   ),
   // WHITE HORSE
   ...generateAchievements(
     'white_horse',
-    [5, 10, 50],
+    [5, 10, 50, 100, 200, 500],
     'white_horse',
-    (n) => `WHITE HORSE ${n}回`,
-    (n) => `WHITE HORSE累計${n}回達成`,
+    (n) => `WHITE HORSE ${n.toLocaleString()}回`,
+    (n) => `WHITE HORSE累計${n.toLocaleString()}回達成`,
     '🐴',
   ),
   // レベル
   ...generateAchievements(
     'level',
-    [5, 10, 15, 20],
+    [5, 10, 15, 20, 25, 30],
     'level',
     (n) => `レベル${n}`,
     (n) => `レベル${n}に到達`,

@@ -73,6 +73,32 @@ export function getGoalTypeDef(type: GoalType): GoalTypeDef | undefined {
 }
 
 /**
+ * 目標達成XPのスケーリング計算
+ * 目標値がデフォルトより高いほどXP倍率UP（sqrt スケール、上限あり）
+ */
+export function calculateScaledGoalXp(
+  goalType: GoalType,
+  goalPeriod: string,
+  goalTarget: number,
+): number {
+  const baseXp = goalPeriod === 'daily' ? 10 : 50;
+  const maxXp = goalPeriod === 'daily' ? 30 : 150;
+
+  const typeDef = getGoalTypeDef(goalType);
+  if (!typeDef) return baseXp;
+
+  const defaultTarget =
+    typeDef.defaultTargets[goalPeriod as keyof typeof typeDef.defaultTargets] ?? null;
+  if (defaultTarget == null || defaultTarget <= 0 || goalTarget <= defaultTarget) {
+    return baseXp;
+  }
+
+  const ratio = goalTarget / defaultTarget;
+  const scaled = Math.round(baseXp * Math.sqrt(ratio));
+  return Math.min(scaled, maxXp);
+}
+
+/**
  * 残り日数を計算
  */
 export function getRemainingDays(endDate: Date): number {

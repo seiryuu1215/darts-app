@@ -1,6 +1,7 @@
 import { RANKS } from './ranks';
 import { ACHIEVEMENTS } from './achievements';
 import type { AchievementCategory } from './achievements';
+import { XP_RULES, getEffectiveXp, STREAK_REWARDS, PLAY_DAYS_REWARDS } from './xp-rules';
 
 export interface LevelInfo {
   level: number;
@@ -38,6 +39,7 @@ export function getRankVisual(level: number): { icon: string; color: string } {
 export interface AchievementSnapshot {
   totalGames: number;
   currentStreak: number;
+  totalPlayDays: number;
   highestRating: number | null;
   hatTricksTotal: number;
   ton80: number;
@@ -56,6 +58,7 @@ export interface AchievementSnapshot {
 export interface CronStatsSnapshot {
   totalGames: number;
   streak: number;
+  totalPlayDays: number;
   rating: number | null;
   hatTricks: number;
   ton80: number;
@@ -82,6 +85,7 @@ export function calculateCronXp(
   const p = prev ?? {
     totalGames: 0,
     streak: 0,
+    totalPlayDays: 0,
     rating: null,
     hatTricks: 0,
     ton80: 0,
@@ -119,33 +123,62 @@ export function calculateCronXp(
     }
   }
 
-  // Award diffs
-  const awardDiffs: { key: keyof CronStatsSnapshot; action: string; xp: number; label: string }[] =
-    [
-      { key: 'hatTricks', action: 'award_hat_trick', xp: 5, label: 'HAT TRICK' },
-      { key: 'ton80', action: 'award_ton_80', xp: 10, label: 'TON 80' },
-      { key: 'threeInABlack', action: 'award_3_black', xp: 15, label: '3 IN A BLACK' },
-      { key: 'nineMark', action: 'award_9_mark', xp: 10, label: '9マーク' },
-      { key: 'lowTon', action: 'award_low_ton', xp: 3, label: 'LOW TON' },
-      { key: 'highTon', action: 'award_high_ton', xp: 5, label: 'HIGH TON' },
-      { key: 'threeInABed', action: 'award_3_bed', xp: 10, label: '3 IN A BED' },
-      { key: 'whiteHorse', action: 'award_white_horse', xp: 15, label: 'WHITE HORSE' },
-    ];
+  // Award diffs with diminishing returns
+  const awardDiffs: {
+    key: keyof CronStatsSnapshot;
+    ruleId: string;
+  }[] = [
+    { key: 'hatTricks', ruleId: 'award_hat_trick' },
+    { key: 'ton80', ruleId: 'award_ton_80' },
+    { key: 'threeInABlack', ruleId: 'award_3_black' },
+    { key: 'nineMark', ruleId: 'award_9_mark' },
+    { key: 'lowTon', ruleId: 'award_low_ton' },
+    { key: 'highTon', ruleId: 'award_high_ton' },
+    { key: 'threeInABed', ruleId: 'award_3_bed' },
+    { key: 'whiteHorse', ruleId: 'award_white_horse' },
+  ];
 
-  for (const { key, action, xp, label } of awardDiffs) {
+  for (const { key, ruleId } of awardDiffs) {
     const diff = (current[key] as number) - (p[key] as number);
     if (diff > 0) {
-      actions.push({ action, xp: xp * diff, label, count: diff });
+      const rule = XP_RULES[ruleId];
+      const cumulativeCount = current[key] as number;
+      const effectiveXp = getEffectiveXp(rule, cumulativeCount);
+      if (effectiveXp > 0) {
+        actions.push({
+          action: ruleId,
+          xp: effectiveXp * diff,
+          label: rule.label,
+          count: diff,
+        });
+      }
     }
   }
 
-  // Streak rewards
-  if (current.streak >= 30 && p.streak < 30) {
-    actions.push({ action: 'play_streak_30', xp: 200, label: '30日連続プレイ', count: 1 });
-  } else if (current.streak >= 7 && p.streak < 7) {
-    actions.push({ action: 'play_streak_7', xp: 50, label: '7日連続プレイ', count: 1 });
-  } else if (current.streak >= 3 && p.streak < 3) {
-    actions.push({ action: 'play_streak_3', xp: 15, label: '3日連続プレイ', count: 1 });
+  // Streak rewards (table-driven, consecutive days)
+  for (const reward of STREAK_REWARDS) {
+    if (current.streak >= reward.days && p.streak < reward.days) {
+      actions.push({
+        action: reward.action,
+        xp: reward.xp,
+        label: reward.label,
+        count: 1,
+      });
+      break; // 最高のストリーク報酬のみ
+    }
+  }
+
+  // Cumulative play days rewards
+  for (const reward of PLAY_DAYS_REWARDS) {
+    if (current.totalPlayDays >= reward.days && p.totalPlayDays < reward.days) {
+      actions.push({
+        action: reward.action,
+        xp: reward.xp,
+        label: reward.label,
+        count: 1,
+      });
+      break; // 最高の累計日数報酬のみ
+    }
   }
 
   return actions;
@@ -164,6 +197,9 @@ export function checkAchievements(snapshot: AchievementSnapshot, existingIds: st
         break;
       case 'streak':
         value = snapshot.currentStreak;
+        break;
+      case 'play_days':
+        value = snapshot.totalPlayDays;
         break;
       case 'rating':
         value = snapshot.highestRating;

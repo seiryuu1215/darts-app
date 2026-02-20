@@ -4,6 +4,7 @@ import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   calculateGoalCurrent,
+  calculateScaledGoalXp,
   getMonthlyRange,
   getDailyRange,
   type StatsRecord,
@@ -233,8 +234,8 @@ export const POST = withErrorHandler(
       return NextResponse.json({ error: 'まだ目標に到達していません' }, { status: 400 });
     }
 
-    // XP付与（daily: 10 XP, monthly/yearly: 50 XP）
-    const xpAmount = goal.period === 'daily' ? 10 : 50;
+    // XP付与（スケーリング: 目標値が高いほど多くのXP）
+    const xpAmount = calculateScaledGoalXp(goal.type, goal.period, goal.target);
     const xpAction = goal.period === 'daily' ? 'daily_goal_achieved' : 'goal_achieved';
     try {
       const userRef = adminDb.doc(`users/${userId}`);

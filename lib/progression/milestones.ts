@@ -52,4 +52,16 @@ export const MILESTONES: MilestoneDef[] = [
     label: '極み',
     badge: 'ultimate',
   },
+  {
+    id: 'transcendent',
+    xp: 200000,
+    label: '超越者',
+    badge: 'transcendent',
+  },
+  {
+    id: 'beyond',
+    xp: 500000,
+    label: '限界突破',
+    badge: 'beyond',
+  },
 ];

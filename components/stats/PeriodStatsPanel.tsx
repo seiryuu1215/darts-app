@@ -48,6 +48,26 @@ interface PeriodStatsPanelProps {
   loading: boolean;
   summary: StatsHistorySummary | null;
   records: StatsHistoryRecord[];
+  prevPpd?: number | null;
+  prevMpr?: number | null;
+}
+
+function DiffIndicator({ current, prev }: { current: number | null; prev: number | null | undefined }) {
+  if (current == null || prev == null || prev === undefined) return null;
+  const diff = current - prev;
+  if (Math.abs(diff) < 0.005) return null;
+  return (
+    <Typography
+      variant="caption"
+      sx={{
+        color: diff >= 0 ? '#4caf50' : '#f44336',
+        fontWeight: 'bold',
+      }}
+    >
+      {diff >= 0 ? '+' : ''}
+      {diff.toFixed(2)}
+    </Typography>
+  );
 }
 
 export default function PeriodStatsPanel({
@@ -56,6 +76,8 @@ export default function PeriodStatsPanel({
   loading,
   summary,
   records,
+  prevPpd,
+  prevMpr,
 }: PeriodStatsPanelProps) {
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
@@ -110,6 +132,7 @@ export default function PeriodStatsPanel({
               <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                 {summary.avgPpd?.toFixed(2) ?? '--'}
               </Typography>
+              <DiffIndicator current={summary.avgPpd} prev={prevPpd} />
             </Paper>
             <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
@@ -118,6 +141,7 @@ export default function PeriodStatsPanel({
               <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                 {summary.avgMpr?.toFixed(2) ?? '--'}
               </Typography>
+              <DiffIndicator current={summary.avgMpr} prev={prevMpr} />
             </Paper>
           </Box>
 
