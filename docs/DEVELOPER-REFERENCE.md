@@ -921,8 +921,6 @@ function ppdForRating(targetRt: number): number {
 | ルールID                 | XP        | トリガー             |
 | ------------------------ | --------- | -------------------- |
 | `stats_record`           | 10        | スタッツ手動記録     |
-| `games_10`               | 20        | 累計ゲーム数10の倍数 |
-| `play_streak_3/7/30`     | 15/50/200 | 連続プレイ日数       |
 | `rating_milestone`       | 30        | Rating整数到達       |
 | `award_hat_trick`        | 5         | HAT TRICK            |
 | `award_ton_80`           | 10        | TON 80               |
@@ -948,7 +946,7 @@ LINE連携ユーザーごとに DARTSLIVEスクレイピング
     ↓
 前回/今回のスタッツ比較 → calculateCronXp(prev, current)
     ↓
-差分からXPアクション算出（ゲーム数、アワード数、連続プレイ等）
+差分からXPアクション算出（Rating到達、アワード数等）
     ↓
 users/{userId} にXP加算 + xpHistory に記録
     ↓
@@ -994,8 +992,8 @@ GoalSection → GoalAchievedDialog（紙吹雪お祝い表示）
 {
   "type": "xp_gained",
   "title": "デイリーXP獲得!",
-  "details": [{ "action": "games_10", "xp": 20, "label": "累計ゲーム数10の倍数" }],
-  "totalXp": 20,
+  "details": [{ "action": "award_hat_trick", "xp": 5, "label": "HAT TRICK" }],
+  "totalXp": 5,
   "read": false,
   "createdAt": "Timestamp"
 }

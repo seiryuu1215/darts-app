@@ -260,9 +260,6 @@ export async function GET(request: NextRequest) {
               const totalPlayDays = gamesSnap.size;
 
               const prevSnapshot: CronStatsSnapshot = {
-                totalGames: prevData?.totalGames ?? 0,
-                streak: prevData?.streak ?? 0,
-                totalPlayDays: prevData?.totalPlayDays ?? Math.max(0, totalPlayDays - 1),
                 rating: prevData?.rating ?? null,
                 hatTricks: prevData?.hatTricks ?? 0,
                 ton80: prevData?.ton80 ?? 0,
@@ -274,9 +271,6 @@ export async function GET(request: NextRequest) {
                 whiteHorse: prevData?.whiteHorse ?? 0,
               };
               const currentSnapshot: CronStatsSnapshot = {
-                totalGames,
-                streak: prevData?.streak ?? 0,
-                totalPlayDays,
                 rating: stats.rating,
                 hatTricks: stats.hatTricksTotal,
                 ton80: stats.ton80,
@@ -350,9 +344,6 @@ export async function GET(request: NextRequest) {
 
               // AchievementSnapshot 構築
               const achievementSnapshot: AchievementSnapshot = {
-                totalGames,
-                currentStreak,
-                totalPlayDays: gamesSnap.size,
                 highestRating,
                 hatTricksTotal: stats.hatTricksTotal,
                 ton80: stats.ton80,
@@ -571,14 +562,6 @@ export async function GET(request: NextRequest) {
                         }
                       }
                       current = Math.max(0, ht - goalBaseline);
-                    } else if (goalType === 'games') {
-                      const { startDate: dStart, endDate: dEnd } = getDailyRange();
-                      const dRecords = goalRecords.filter((r) => {
-                        const t = new Date(r.date).getTime();
-                        return t >= dStart.getTime() && t <= dEnd.getTime();
-                      });
-                      const todayGames = dRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
-                      current = Math.max(0, todayGames - goalBaseline);
                     }
                   } else if (
                     goalPeriod === 'monthly' &&

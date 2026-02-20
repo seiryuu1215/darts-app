@@ -12,14 +12,6 @@ export interface XpRule {
 
 export const XP_RULES: Record<string, XpRule> = {
   stats_record: { id: 'stats_record', xp: 10, label: 'スタッツ記録' },
-  games_10: { id: 'games_10', xp: 20, label: '累計ゲーム数10の倍数' },
-  play_streak_3: { id: 'play_streak_3', xp: 15, label: '3日連続プレイ' },
-  play_streak_7: { id: 'play_streak_7', xp: 50, label: '7日連続プレイ' },
-  play_streak_30: { id: 'play_streak_30', xp: 200, label: '30日連続プレイ' },
-  play_days_60: { id: 'play_days_60', xp: 300, label: '累計60日プレイ' },
-  play_days_90: { id: 'play_days_90', xp: 400, label: '累計90日プレイ' },
-  play_days_180: { id: 'play_days_180', xp: 600, label: '累計180日プレイ' },
-  play_days_365: { id: 'play_days_365', xp: 1000, label: '累計365日プレイ' },
   rating_milestone: { id: 'rating_milestone', xp: 30, label: 'Rating整数到達' },
   award_hat_trick: {
     id: 'award_hat_trick',
@@ -125,21 +117,3 @@ export function getEffectiveXp(rule: XpRule, cumulativeCount: number): number {
   return Math.round(rule.xp * multiplier);
 }
 
-/**
- * 連続プレイ報酬テーブル（降順で判定）
- */
-export const STREAK_REWARDS = [
-  { days: 30, action: 'play_streak_30', xp: 200, label: '30日連続プレイ' },
-  { days: 7, action: 'play_streak_7', xp: 50, label: '7日連続プレイ' },
-  { days: 3, action: 'play_streak_3', xp: 15, label: '3日連続プレイ' },
-] as const;
-
-/**
- * 累計プレイ日数報酬テーブル（降順で判定）
- */
-export const PLAY_DAYS_REWARDS = [
-  { days: 365, action: 'play_days_365', xp: 1000, label: '累計365日プレイ' },
-  { days: 180, action: 'play_days_180', xp: 600, label: '累計180日プレイ' },
-  { days: 90, action: 'play_days_90', xp: 400, label: '累計90日プレイ' },
-  { days: 60, action: 'play_days_60', xp: 300, label: '累計60日プレイ' },
-] as const;

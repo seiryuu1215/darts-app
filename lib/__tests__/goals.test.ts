@@ -9,15 +9,15 @@ import {
 } from '../goals';
 
 describe('GOAL_TYPES', () => {
-  it('has 6 goal types', () => {
-    expect(GOAL_TYPES).toHaveLength(6);
+  it('has 5 goal types', () => {
+    expect(GOAL_TYPES).toHaveLength(5);
   });
 
-  it('includes bulls, games, rating types', () => {
+  it('includes bulls, rating types', () => {
     const types = GOAL_TYPES.map((g) => g.type);
     expect(types).toContain('bulls');
-    expect(types).toContain('games');
     expect(types).toContain('rating');
+    expect(types).not.toContain('games');
   });
 
   it('each type has valid periods', () => {
@@ -94,7 +94,7 @@ function makeRecord(overrides: Partial<StatsRecord> = {}): StatsRecord {
 
 describe('calculateGoalCurrent', () => {
   describe('returns 0 for empty records', () => {
-    it.each(['bulls', 'games', 'rating', 'cu_score', 'play_days', 'hat_tricks'] as const)(
+    it.each(['bulls', 'rating', 'cu_score', 'play_days', 'hat_tricks'] as const)(
       'type=%s',
       (type) => {
         expect(calculateGoalCurrent(type, [])).toBe(0);
@@ -137,22 +137,6 @@ describe('calculateGoalCurrent', () => {
         makeRecord({ dBull: 50, sBull: 100 }),
       ];
       expect(calculateGoalCurrent('bulls', records)).toBe(150);
-    });
-  });
-
-  describe('games', () => {
-    it('sums gamesPlayed across all records', () => {
-      const records = [
-        makeRecord({ gamesPlayed: 5 }),
-        makeRecord({ gamesPlayed: 10 }),
-        makeRecord({ gamesPlayed: 3 }),
-      ];
-      expect(calculateGoalCurrent('games', records)).toBe(18);
-    });
-
-    it('handles zero games', () => {
-      const records = [makeRecord({ gamesPlayed: 0 })];
-      expect(calculateGoalCurrent('games', records)).toBe(0);
     });
   });
 

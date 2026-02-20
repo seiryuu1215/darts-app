@@ -1,7 +1,4 @@
 export type AchievementCategory =
-  | 'games'
-  | 'streak'
-  | 'play_days'
   | 'rating'
   | 'hat_trick'
   | 'ton80'
@@ -22,9 +19,6 @@ export interface AchievementDefinition {
 }
 
 export const CATEGORY_META: Record<AchievementCategory, { label: string; icon: string }> = {
-  games: { label: 'ゲーム数', icon: '🎯' },
-  streak: { label: '連続プレイ', icon: '🔥' },
-  play_days: { label: '累計プレイ日数', icon: '📅' },
   rating: { label: 'Rating', icon: '⭐' },
   hat_trick: { label: 'HAT TRICK', icon: '🎩' },
   ton80: { label: 'TON 80', icon: '💯' },
@@ -55,33 +49,6 @@ function generateAchievements(
 }
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
-  // ゲーム数
-  ...generateAchievements(
-    'games',
-    [50, 100, 300, 500, 1000, 3000, 5000, 10000, 15000, 20000, 30000, 50000],
-    'games',
-    (n) => `${n.toLocaleString()}ゲーム達成`,
-    (n) => `累計${n.toLocaleString()}ゲームプレイ`,
-    '🎯',
-  ),
-  // 連続プレイ
-  ...generateAchievements(
-    'streak',
-    [3, 7, 14, 30, 60, 100],
-    'streak',
-    (n) => `${n}日連続プレイ`,
-    (n) => `${n}日連続プレイ達成`,
-    '🔥',
-  ),
-  // 累計プレイ日数
-  ...generateAchievements(
-    'play_days',
-    [60, 90, 180, 365, 500, 730],
-    'play_days',
-    (n) => `累計${n}日プレイ`,
-    (n) => `累計${n}日プレイ達成`,
-    '📅',
-  ),
   // Rating (3〜18, 1刻み)
   ...generateAchievements(
     'rating',

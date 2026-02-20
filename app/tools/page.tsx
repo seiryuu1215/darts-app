@@ -18,7 +18,7 @@ interface ToolInfo {
   description: string;
   url: string;
   tags: string[];
-  integration: string;
+  usage: string;
 }
 
 const TOOLS: ToolInfo[] = [
@@ -28,8 +28,8 @@ const TOOLS: ToolInfo[] = [
       'Windows/Mac対応の練習スコアラー。01/Cricket/Count-Up対応。CSV/テキスト形式でスコアデータを出力可能。DARTSLIVE連携なしでも使える。',
     url: 'https://www.nakka.com/n01/',
     tags: ['デスクトップ', 'CSV対応', '無料'],
-    integration:
-      'n01のCSVエクスポート機能でデータを書き出し、Darts Labの「n01取り込み」からインポートできます。練習記録をDarts Labに統合して分析しましょう。',
+    usage:
+      'n01で自宅練習のスコアを管理し、Darts LabではDARTSLIVEのスタッツや推移を確認。練習と実戦の両方を把握できます。',
   },
   {
     name: 'Pro Darter',
@@ -37,8 +37,8 @@ const TOOLS: ToolInfo[] = [
       'ブラウザベースのスコアラー。501/Cricket/Around The Clock等に対応。リアルタイムで統計情報を表示。アカウント不要で利用可能。',
     url: 'https://www.prodarter.com/',
     tags: ['ブラウザ', '登録不要', '無料'],
-    integration:
-      'Pro Darterでの練習後、Darts Labのスタッツ手動記録からスコアとメモを記録できます。特にCOUNT-UPの一貫性追跡に便利です。',
+    usage:
+      'Pro Darterで気軽にブラウザ練習し、Darts Labで公式スタッツの推移やレーティング分析を確認。併用で練習効率アップ。',
   },
   {
     name: 'Dartore',
@@ -46,8 +46,8 @@ const TOOLS: ToolInfo[] = [
       'PWA対応の無料スコアラーアプリ。スマホからもブラウザからも利用可能。シンプルなUIで素早くスコア入力できる。',
     url: 'https://dartore.com/',
     tags: ['PWA', 'スマホ対応', '無料'],
-    integration:
-      'Dartoreでのスコアを記録後、Darts Labの手動記録やLINE Bot経由でコンディションやメモと一緒に記録できます。',
+    usage:
+      'Dartoreでスマホから手軽にスコア管理。Darts LabではDARTSLIVEの公式データを元にした分析や目標管理に集中できます。',
   },
   {
     name: 'MyDartTraining',
@@ -55,8 +55,8 @@ const TOOLS: ToolInfo[] = [
       '音声入力にも対応したスコアラーアプリ。ハンズフリーでダーツを投げながらスコアを記録できる。iOS/Android対応。',
     url: 'https://mydarttraining.com/',
     tags: ['音声入力', 'iOS/Android', '無料'],
-    integration:
-      'MyDartTrainingで練習したらDarts Labで調子を記録。カレンダービューで練習頻度を可視化し、モチベーション維持に活用しましょう。',
+    usage:
+      'MyDartTrainingで音声入力しながら練習。Darts Labでは公式スタッツの推移確認やセッティング管理に活用できます。',
   },
 ];
 
@@ -64,14 +64,14 @@ export default function ToolsPage() {
   return (
     <Container maxWidth="md">
       <Box sx={{ mt: 3, p: { xs: 1, sm: 2 } }}>
-        <Breadcrumbs items={[{ label: 'ツールハブ' }]} />
+        <Breadcrumbs items={[{ label: 'おすすめ外部ツール' }]} />
 
         <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-          ダーツツールハブ
+          おすすめ外部ツール
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Darts Labと組み合わせて使える無料ダーツツールのコレクションです。
-          外部ツールのデータをDarts Labに取り込んで、練習の全体像を把握しましょう。
+          Darts Labと併用すると便利な無料ダーツツールをまとめました。
+          それぞれの得意分野を活かして、練習効率をアップしましょう。
         </Typography>
 
         <Grid container spacing={2}>
@@ -124,10 +124,10 @@ export default function ToolsPage() {
                     }}
                   >
                     <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                      Darts Labとの使い方
+                      Darts Labとの使い分け
                     </Typography>
                     <Typography variant="caption" color="text.secondary" component="p">
-                      {tool.integration}
+                      {tool.usage}
                     </Typography>
                   </Box>
                 </CardContent>

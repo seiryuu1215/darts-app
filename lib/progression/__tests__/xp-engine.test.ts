@@ -50,9 +50,6 @@ describe('calculateLevel', () => {
 
 describe('checkAchievements', () => {
   const baseSnapshot: AchievementSnapshot = {
-    totalGames: 0,
-    currentStreak: 0,
-    totalPlayDays: 0,
     highestRating: null,
     hatTricksTotal: 0,
     ton80: 0,
@@ -68,34 +65,6 @@ describe('checkAchievements', () => {
   it('returns empty array when no conditions met', () => {
     const result = checkAchievements(baseSnapshot, []);
     expect(result).toEqual([]);
-  });
-
-  it('detects games_100 achievement', () => {
-    const result = checkAchievements({ ...baseSnapshot, totalGames: 100 }, []);
-    expect(result).toContain('games_100');
-    expect(result).toContain('games_50');
-  });
-
-  it('does not duplicate existing achievements', () => {
-    const result = checkAchievements({ ...baseSnapshot, totalGames: 100 }, ['games_50']);
-    expect(result).not.toContain('games_50');
-    expect(result).toContain('games_100');
-  });
-
-  it('detects streak achievements', () => {
-    const result = checkAchievements({ ...baseSnapshot, currentStreak: 30 }, []);
-    expect(result).toContain('streak_3');
-    expect(result).toContain('streak_7');
-    expect(result).toContain('streak_14');
-    expect(result).toContain('streak_30');
-  });
-
-  it('detects play_days achievements', () => {
-    const result = checkAchievements({ ...baseSnapshot, totalPlayDays: 200 }, []);
-    expect(result).toContain('play_days_60');
-    expect(result).toContain('play_days_90');
-    expect(result).toContain('play_days_180');
-    expect(result).not.toContain('play_days_365');
   });
 
   it('detects rating achievement based on highestRating', () => {
@@ -207,11 +176,8 @@ describe('getEffectiveXp', () => {
   });
 });
 
-describe('calculateCronXp streaks', () => {
+describe('calculateCronXp awards', () => {
   const baseSnapshot: CronStatsSnapshot = {
-    totalGames: 0,
-    streak: 0,
-    totalPlayDays: 0,
     rating: null,
     hatTricks: 0,
     ton80: 0,
@@ -222,56 +188,6 @@ describe('calculateCronXp streaks', () => {
     threeInABed: 0,
     whiteHorse: 0,
   };
-
-  it('grants 30-day streak reward', () => {
-    const actions = calculateCronXp(
-      { ...baseSnapshot, streak: 29 },
-      { ...baseSnapshot, streak: 30 },
-    );
-    const streakAction = actions.find((a) => a.action === 'play_streak_30');
-    expect(streakAction).toBeDefined();
-    expect(streakAction!.xp).toBe(200);
-  });
-
-  it('grants cumulative 60 play days reward', () => {
-    const actions = calculateCronXp(
-      { ...baseSnapshot, totalPlayDays: 59 },
-      { ...baseSnapshot, totalPlayDays: 60 },
-    );
-    const daysAction = actions.find((a) => a.action === 'play_days_60');
-    expect(daysAction).toBeDefined();
-    expect(daysAction!.xp).toBe(300);
-  });
-
-  it('grants cumulative 90 play days reward', () => {
-    const actions = calculateCronXp(
-      { ...baseSnapshot, totalPlayDays: 89 },
-      { ...baseSnapshot, totalPlayDays: 90 },
-    );
-    const daysAction = actions.find((a) => a.action === 'play_days_90');
-    expect(daysAction).toBeDefined();
-    expect(daysAction!.xp).toBe(400);
-  });
-
-  it('grants cumulative 180 play days reward', () => {
-    const actions = calculateCronXp(
-      { ...baseSnapshot, totalPlayDays: 179 },
-      { ...baseSnapshot, totalPlayDays: 180 },
-    );
-    const daysAction = actions.find((a) => a.action === 'play_days_180');
-    expect(daysAction).toBeDefined();
-    expect(daysAction!.xp).toBe(600);
-  });
-
-  it('grants cumulative 365 play days reward', () => {
-    const actions = calculateCronXp(
-      { ...baseSnapshot, totalPlayDays: 364 },
-      { ...baseSnapshot, totalPlayDays: 365 },
-    );
-    const daysAction = actions.find((a) => a.action === 'play_days_365');
-    expect(daysAction).toBeDefined();
-    expect(daysAction!.xp).toBe(1000);
-  });
 
   it('applies diminishing returns to awards', () => {
     const prev = { ...baseSnapshot, hatTricks: 499 };

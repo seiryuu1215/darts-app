@@ -1,7 +1,7 @@
 import { RANKS } from './ranks';
 import { ACHIEVEMENTS } from './achievements';
 import type { AchievementCategory } from './achievements';
-import { XP_RULES, getEffectiveXp, STREAK_REWARDS, PLAY_DAYS_REWARDS } from './xp-rules';
+import { XP_RULES, getEffectiveXp } from './xp-rules';
 
 export interface LevelInfo {
   level: number;
@@ -37,9 +37,6 @@ export function getRankVisual(level: number): { icon: string; color: string } {
 }
 
 export interface AchievementSnapshot {
-  totalGames: number;
-  currentStreak: number;
-  totalPlayDays: number;
   highestRating: number | null;
   hatTricksTotal: number;
   ton80: number;
@@ -56,9 +53,6 @@ export interface AchievementSnapshot {
  * Cron用: 前回/今回のスタッツ差分からXPアクションを算出
  */
 export interface CronStatsSnapshot {
-  totalGames: number;
-  streak: number;
-  totalPlayDays: number;
   rating: number | null;
   hatTricks: number;
   ton80: number;
@@ -83,9 +77,6 @@ export function calculateCronXp(
 ): CronXpAction[] {
   const actions: CronXpAction[] = [];
   const p = prev ?? {
-    totalGames: 0,
-    streak: 0,
-    totalPlayDays: 0,
     rating: null,
     hatTricks: 0,
     ton80: 0,
@@ -96,17 +87,6 @@ export function calculateCronXp(
     threeInABed: 0,
     whiteHorse: 0,
   };
-
-  // games_10: 10ゲーム単位の差分
-  const gamesDiff = Math.floor(current.totalGames / 10) - Math.floor(p.totalGames / 10);
-  if (gamesDiff > 0) {
-    actions.push({
-      action: 'games_10',
-      xp: 20 * gamesDiff,
-      label: '累計ゲーム数10の倍数',
-      count: gamesDiff,
-    });
-  }
 
   // rating_milestone: Rating整数到達
   if (current.rating != null) {
@@ -155,32 +135,6 @@ export function calculateCronXp(
     }
   }
 
-  // Streak rewards (table-driven, consecutive days)
-  for (const reward of STREAK_REWARDS) {
-    if (current.streak >= reward.days && p.streak < reward.days) {
-      actions.push({
-        action: reward.action,
-        xp: reward.xp,
-        label: reward.label,
-        count: 1,
-      });
-      break; // 最高のストリーク報酬のみ
-    }
-  }
-
-  // Cumulative play days rewards
-  for (const reward of PLAY_DAYS_REWARDS) {
-    if (current.totalPlayDays >= reward.days && p.totalPlayDays < reward.days) {
-      actions.push({
-        action: reward.action,
-        xp: reward.xp,
-        label: reward.label,
-        count: 1,
-      });
-      break; // 最高の累計日数報酬のみ
-    }
-  }
-
   return actions;
 }
 
@@ -192,15 +146,6 @@ export function checkAchievements(snapshot: AchievementSnapshot, existingIds: st
 
     let value: number | null = null;
     switch (achievement.category as AchievementCategory) {
-      case 'games':
-        value = snapshot.totalGames;
-        break;
-      case 'streak':
-        value = snapshot.currentStreak;
-        break;
-      case 'play_days':
-        value = snapshot.totalPlayDays;
-        break;
       case 'rating':
         value = snapshot.highestRating;
         break;

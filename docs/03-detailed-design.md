@@ -110,6 +110,16 @@
 │  │ ±差分バー（緑=UP, 赤=DOWN）直近30回│  │
 │  └────────────────────────────────────┘  │
 │                                          │
+│  6b. ConsistencyCard                     │
+│  ┌────────────────────────────────────┐  │
+│  │ COUNT-UP一貫性スコア（100点満点）  │  │
+│  └────────────────────────────────────┘  │
+│                                          │
+│  6c. CountUpAnalysisCard                 │
+│  ┌────────────────────────────────────┐  │
+│  │ 平均/最高/最低/中央値 + 分布グラフ │  │
+│  └────────────────────────────────────┘  │
+│                                          │
 │  7. RatingTargetCard                     │
 │  8. MonthlyTrendChart (LineChart 12ヶ月) │
 │  9. RecentGamesChart (ComposedChart)     │
@@ -395,6 +405,8 @@ RootLayout (app/layout.tsx)
     │   │   ├── GameStatsCards (01/Cri/CU + PercentileChip)
     │   │   ├── BullStatsCard (D-BULL/S-BULL ドーナツ+バー)
     │   │   ├── CountUpDeltaChart (±差分バーチャート)
+    │   │   ├── ConsistencyCard (COUNT-UP一貫性スコア)
+    │   │   ├── CountUpAnalysisCard (統計分析+分布グラフ)
     │   │   ├── RatingTargetCard (Rt目標分析)
     │   │   ├── MonthlyTrendChart (Recharts LineChart)
     │   │   ├── RecentGamesChart (ComposedChart)
@@ -424,6 +436,8 @@ RootLayout (app/layout.tsx)
 | `GameStatsCards`    | 3カテゴリスタッツカード        | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile   |
 | `BullStatsCard`     | ブル統計+チャート              | `awards` (D-BULL/S-BULL)                                         |
 | `CountUpDeltaChart` | COUNT-UP±差分可視化            | `games` (recentGames.games)                                      |
+| `ConsistencyCard`   | COUNT-UP一貫性スコア           | `games` (recentGames.games)                                      |
+| `CountUpAnalysisCard` | COUNT-UP統計分析+分布グラフ  | `games` (recentGames.games)                                      |
 | `PercentileChip`    | 上位X%バッジ（再利用）         | `type: 'rating'\|'ppd'\|'mpr'\|'countup'`, `value`               |
 | `PRSiteSection`     | おすすめブランドPRカード       | なし（静的データ）                                               |
 | `CalendarGrid`      | カレンダー月表示・日選択       | `year`, `month`, `records`, `selectedDate`, `onSelectDate`       |

@@ -93,8 +93,8 @@ const featureCards: FeatureCard[] = [
     authOnly: true,
   },
   {
-    title: 'ツールハブ',
-    description: '便利ツールをまとめて表示',
+    title: 'おすすめツール',
+    description: '併用で便利な外部ツール紹介',
     href: '/tools',
     icon: <BuildIcon sx={{ fontSize: 40 }} />,
   },

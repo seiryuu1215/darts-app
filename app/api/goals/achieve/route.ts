@@ -5,8 +5,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import {
   calculateGoalCurrent,
   calculateScaledGoalXp,
-  getMonthlyRange,
-  getDailyRange,
   type StatsRecord,
 } from '@/lib/goals';
 import type { GoalType } from '@/types';
@@ -185,14 +183,6 @@ export const POST = withErrorHandler(
           }
         }
         current = Math.max(0, totalHatTricks - goal.baseline);
-      } else if (goal.type === 'games') {
-        const { startDate: dailyStart, endDate: dailyEnd } = getDailyRange();
-        const dailyRecords = allRecords.filter((r) => {
-          const t = new Date(r.date).getTime();
-          return t >= dailyStart.getTime() && t <= dailyEnd.getTime();
-        });
-        const todayGames = dailyRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
-        current = Math.max(0, todayGames - goal.baseline);
       }
     }
     // 月間ブル・ハットトリック目標

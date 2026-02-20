@@ -49,6 +49,7 @@ import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 import AwardEfficiencyCard from '@/components/stats/AwardEfficiencyCard';
 import ConsistencyCard from '@/components/stats/ConsistencyCard';
+import CountUpAnalysisCard from '@/components/stats/CountUpAnalysisCard';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -425,6 +426,9 @@ export default function StatsPage() {
 
             {/* 6b. Consistency */}
             <ConsistencyCard games={dlData.recentGames.games} />
+
+            {/* 6c. COUNT-UP Analysis */}
+            <CountUpAnalysisCard games={dlData.recentGames.games} />
 
             {/* 7. Rating Target */}
             {c.stats01Avg != null && c.statsCriAvg != null && (

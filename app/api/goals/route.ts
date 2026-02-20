@@ -5,7 +5,6 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import {
   calculateGoalCurrent,
   getMonthlyRange,
-  getDailyRange,
   type StatsRecord,
 } from '@/lib/goals';
 import type { GoalType } from '@/types';
@@ -297,15 +296,6 @@ export const GET = withErrorHandler(
             }
           }
           current = Math.max(0, totalHatTricks - goal.baseline);
-        } else if (goal.type === 'games') {
-          // 本日のgamesPlayed合計をdartsLiveStatsから取得
-          const { startDate: dailyStart, endDate: dailyEnd } = getDailyRange();
-          const dailyRecords = allRecords.filter((r) => {
-            const t = new Date(r.date).getTime();
-            return t >= dailyStart.getTime() && t <= dailyEnd.getTime();
-          });
-          const todayGames = dailyRecords.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
-          current = Math.max(0, todayGames - goal.baseline);
         }
       }
       // 月間ブル・ハットトリック目標: DARTSLIVEの「今月」値を直接使用
@@ -493,20 +483,6 @@ export const POST = withErrorHandler(
           }
           baseline = hatTricks ?? 0;
         }
-      } else if (type === 'games') {
-        // 本日のgamesPlayed合計をdartsLiveStatsから取得
-        const { startDate: dailyStart, endDate: dailyEnd } = getDailyRange();
-        const statsQuery = adminDb
-          .collection(`users/${userId}/dartsLiveStats`)
-          .where('date', '>=', dailyStart)
-          .where('date', '<=', dailyEnd)
-          .orderBy('date', 'asc');
-        const statsSnap = await statsQuery.get();
-        const todayGames = statsSnap.docs.reduce(
-          (sum, doc) => sum + (doc.data().gamesPlayed ?? 0),
-          0,
-        );
-        baseline = todayGames;
       }
     }
 

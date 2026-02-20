@@ -43,8 +43,6 @@ describe('getRankVisual', () => {
 
 describe('calculateCronXp', () => {
   const basePrev: CronStatsSnapshot = {
-    totalGames: 95,
-    streak: 2,
     rating: 4.5,
     hatTricks: 10,
     ton80: 3,
@@ -59,23 +57,6 @@ describe('calculateCronXp', () => {
   it('returns empty array when no changes', () => {
     const result = calculateCronXp(basePrev, { ...basePrev });
     expect(result).toEqual([]);
-  });
-
-  it('detects games_10 milestone', () => {
-    const current = { ...basePrev, totalGames: 105 };
-    const result = calculateCronXp(basePrev, current);
-    const games = result.find((r) => r.action === 'games_10');
-    expect(games).toBeDefined();
-    expect(games!.xp).toBe(20);
-    expect(games!.count).toBe(1);
-  });
-
-  it('detects multiple games_10 milestones', () => {
-    const current = { ...basePrev, totalGames: 125 };
-    const result = calculateCronXp(basePrev, current);
-    const games = result.find((r) => r.action === 'games_10');
-    expect(games!.count).toBe(3);
-    expect(games!.xp).toBe(60);
   });
 
   it('detects rating milestone', () => {
@@ -104,25 +85,8 @@ describe('calculateCronXp', () => {
     expect(nm!.xp).toBe(30);
   });
 
-  it('detects streak 3', () => {
-    const current = { ...basePrev, streak: 3 };
-    const result = calculateCronXp(basePrev, current);
-    const streak = result.find((r) => r.action === 'play_streak_3');
-    expect(streak).toBeDefined();
-    expect(streak!.xp).toBe(15);
-  });
-
-  it('detects streak 7 (skips streak 3)', () => {
-    const current = { ...basePrev, streak: 7 };
-    const result = calculateCronXp(basePrev, current);
-    expect(result.find((r) => r.action === 'play_streak_7')).toBeDefined();
-    expect(result.find((r) => r.action === 'play_streak_3')).toBeUndefined();
-  });
-
   it('handles null prev (first run)', () => {
     const current: CronStatsSnapshot = {
-      totalGames: 25,
-      streak: 5,
       rating: 3.5,
       hatTricks: 5,
       ton80: 1,
@@ -134,8 +98,7 @@ describe('calculateCronXp', () => {
       whiteHorse: 0,
     };
     const result = calculateCronXp(null, current);
-    expect(result.find((r) => r.action === 'games_10')).toBeDefined();
     expect(result.find((r) => r.action === 'award_hat_trick')).toBeDefined();
-    expect(result.find((r) => r.action === 'play_streak_3')).toBeDefined();
+    expect(result.find((r) => r.action === 'rating_milestone')).toBeDefined();
   });
 });

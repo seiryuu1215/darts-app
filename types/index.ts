@@ -292,7 +292,7 @@ export interface UserInventory {
 }
 
 // Goals
-export type GoalType = 'bulls' | 'games' | 'rating' | 'cu_score' | 'play_days' | 'hat_tricks';
+export type GoalType = 'bulls' | 'rating' | 'cu_score' | 'play_days' | 'hat_tricks';
 export type GoalPeriod = 'monthly' | 'yearly' | 'daily';
 
 export interface Goal {
@@ -310,7 +310,6 @@ export interface Goal {
 
 export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   bulls: 'ブル数',
-  games: 'ゲーム数',
   rating: 'Rating',
   cu_score: 'CU最高スコア',
   play_days: 'プレイ日数',

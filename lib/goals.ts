@@ -32,13 +32,6 @@ export const GOAL_TYPES: GoalTypeDef[] = [
     periods: ['monthly', 'daily'],
   },
   {
-    type: 'games',
-    label: 'ゲーム数',
-    unit: 'ゲーム',
-    defaultTargets: { monthly: 100, daily: 30 },
-    periods: ['monthly', 'daily'],
-  },
-  {
     type: 'rating',
     label: 'Rating',
     unit: '',
@@ -199,8 +192,6 @@ export function calculateGoalCurrent(
       const lastBulls = (last.dBull ?? 0) + (last.sBull ?? 0);
       return Math.max(0, lastBulls - firstBulls);
     }
-    case 'games':
-      return records.reduce((sum, r) => sum + (r.gamesPlayed || 0), 0);
     case 'rating': {
       const last = records[records.length - 1];
       return last.rating ?? 0;
