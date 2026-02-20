@@ -47,7 +47,7 @@ import RecentDaySummary from '@/components/stats/RecentDaySummary';
 import AwardsTable from '@/components/stats/AwardsTable';
 import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
-import AwardEfficiencyCard from '@/components/stats/AwardEfficiencyCard';
+
 import ConsistencyCard from '@/components/stats/ConsistencyCard';
 import CountUpAnalysisCard from '@/components/stats/CountUpAnalysisCard';
 
@@ -396,12 +396,6 @@ export default function StatsPage() {
               records={periodRecords}
               prevPpd={prev?.stats01Avg ?? null}
               prevMpr={prev?.statsCriAvg ?? null}
-            />
-
-            {/* 3b. Award Efficiency */}
-            <AwardEfficiencyCard
-              awards={c.awards}
-              totalGames={periodSummary?.totalGames ?? 0}
             />
 
             {/* 4. Game Stats Cards */}
