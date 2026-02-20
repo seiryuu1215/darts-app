@@ -17,6 +17,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DownloadIcon from '@mui/icons-material/Download';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
@@ -47,9 +48,7 @@ import AwardsTable from '@/components/stats/AwardsTable';
 import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 import AwardEfficiencyCard from '@/components/stats/AwardEfficiencyCard';
-import RatingMomentumCard from '@/components/stats/RatingMomentumCard';
 import ConsistencyCard from '@/components/stats/ConsistencyCard';
-import N01ImportCard from '@/components/stats/N01ImportCard';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -419,12 +418,7 @@ export default function StatsPage() {
             />
 
             {/* 5. Bull Stats */}
-            <BullStatsCard
-              awards={c.awards}
-              bullHistory={periodRecords
-                .filter((r) => r.dBull != null || r.sBull != null)
-                .map((r) => ({ date: r.date, dBull: r.dBull, sBull: r.sBull }))}
-            />
+            <BullStatsCard awards={c.awards} />
 
             {/* 6. COUNT-UP Delta */}
             <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
@@ -440,12 +434,6 @@ export default function StatsPage() {
                 flightColor={flightColor}
               />
             )}
-
-            {/* 7b. Rating Momentum */}
-            <RatingMomentumCard
-              monthlyRatings={dlData.monthly?.rating ?? []}
-              currentRating={c.rating}
-            />
 
             {/* 8. Monthly Trend */}
             <MonthlyTrendChart
@@ -586,8 +574,35 @@ export default function StatsPage() {
           </CardContent>
         </Card>
 
-        {/* 15. n01 Import */}
-        <N01ImportCard />
+        {/* 15. Calendar Link */}
+        <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
+          <CardContent
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              py: '12px !important',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CalendarMonthIcon sx={{ color: 'text.secondary' }} />
+              <Box>
+                <Typography variant="body2">カレンダー</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  プレイ日・調子を日別に確認
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              component={Link}
+              href="/stats/calendar"
+            >
+              開く
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* 16. PR Site Section */}
         <PRSiteSection />

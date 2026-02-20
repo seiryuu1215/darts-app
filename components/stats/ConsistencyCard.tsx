@@ -6,6 +6,8 @@ interface ConsistencyCardProps {
   games: { category: string; scores: number[] }[];
 }
 
+const MAX_GAMES = 30;
+
 function calculateConsistency(scores: number[]): {
   avg: number;
   stdDev: number;
@@ -37,7 +39,10 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
   const countUpGame = games?.find((g) => g.category === 'COUNT-UP');
   if (!countUpGame || countUpGame.scores.length < 3) return null;
 
-  const result = calculateConsistency(countUpGame.scores);
+  // 直近30ゲームに制限
+  const recentScores = countUpGame.scores.slice(0, MAX_GAMES);
+
+  const result = calculateConsistency(recentScores);
   if (!result) return null;
 
   const { avg, stdDev, score } = result;
@@ -78,7 +83,7 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
         <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             平均スコア
@@ -97,12 +102,19 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
         </Paper>
         <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
-            直近ゲーム数
+            対象ゲーム数
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-            {countUpGame.scores.length}
+            {recentScores.length}
           </Typography>
         </Paper>
+      </Box>
+
+      <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+        <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.6 }}>
+          スコアのばらつきが少ないほど高スコア。100に近いほど毎回安定したスコアが出せている状態です。
+          標準偏差は平均からのズレ幅で、小さいほど安定。直近{recentScores.length}ゲームが対象です。
+        </Typography>
       </Box>
     </Paper>
   );

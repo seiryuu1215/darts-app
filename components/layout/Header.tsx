@@ -92,7 +92,6 @@ export default function Header() {
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
-            { label: 'カレンダー', href: '/stats/calendar' },
             { label: '目標', href: '/#goals' },
           ],
         },
@@ -209,9 +208,6 @@ export default function Header() {
                 </Button>
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
-                </Button>
-                <Button color="inherit" component={Link} href="/stats/calendar" size="small">
-                  カレンダー
                 </Button>
                 {!userIsPro && (
                   <Button
