@@ -154,9 +154,10 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   ),
 ];
 
-export const ACHIEVEMENT_MAP = Object.fromEntries(
-  ACHIEVEMENTS.map((a) => [a.id, a]),
-) as Record<string, AchievementDefinition>;
+export const ACHIEVEMENT_MAP = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a])) as Record<
+  string,
+  AchievementDefinition
+>;
 
 export function getAchievementsByCategory(): Map<AchievementCategory, AchievementDefinition[]> {
   const map = new Map<AchievementCategory, AchievementDefinition[]>();

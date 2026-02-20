@@ -274,310 +274,332 @@ export default function ProfileEditPage() {
         </Button>
 
         {isAdmin && (
-        <>
-        {/* LINE連携セクション */}
-        <Divider sx={{ my: 4 }} />
+          <>
+            {/* LINE連携セクション */}
+            <Divider sx={{ my: 4 }} />
 
-        <Paper variant="outlined" sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2 }}>
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
-          >
-            <Typography variant="h6">LINE連携</Typography>
-            {lineUserId && (
-              <Chip icon={<CheckCircleIcon />} label="連携済み" color="success" size="small" />
-            )}
-          </Box>
-
-          {!lineUserId ? (
-            <>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                毎朝DARTSLIVEのスタッツを自動チェックして、プレイがあればLINEに通知します。
-              </Typography>
-
-              {/* Step 1 */}
-              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                <Chip
-                  label="1"
-                  size="small"
-                  sx={{ minWidth: 28, fontWeight: 'bold', bgcolor: 'primary.main', color: '#fff' }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    友だち追加
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    href="https://line.me/R/ti/p/@411qccwd"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                      bgcolor: '#06c755',
-                      '&:hover': { bgcolor: '#05b34c' },
-                      textTransform: 'none',
-                    }}
-                  >
-                    LINE で友だち追加
-                  </Button>
-                </Box>
+            <Paper variant="outlined" sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
+                <Typography variant="h6">LINE連携</Typography>
+                {lineUserId && (
+                  <Chip icon={<CheckCircleIcon />} label="連携済み" color="success" size="small" />
+                )}
               </Box>
 
-              {/* Step 2 */}
-              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                <Chip
-                  label="2"
-                  size="small"
-                  sx={{
-                    minWidth: 28,
-                    fontWeight: 'bold',
-                    bgcolor: linkCode ? 'primary.main' : 'action.disabledBackground',
-                    color: linkCode ? '#fff' : 'text.secondary',
-                  }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    連携コードを発行
+              {!lineUserId ? (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+                    毎朝DARTSLIVEのスタッツを自動チェックして、プレイがあればLINEに通知します。
                   </Typography>
-                  {linkCode ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontFamily: 'monospace',
-                          fontWeight: 'bold',
-                          letterSpacing: '0.15em',
-                          color: 'primary.main',
-                        }}
-                      >
-                        {linkCode}
+
+                  {/* Step 1 */}
+                  <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+                    <Chip
+                      label="1"
+                      size="small"
+                      sx={{
+                        minWidth: 28,
+                        fontWeight: 'bold',
+                        bgcolor: 'primary.main',
+                        color: '#fff',
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                        友だち追加
                       </Typography>
-                      <IconButton
+                      <Button
+                        variant="contained"
                         size="small"
-                        onClick={() => {
-                          navigator.clipboard.writeText(linkCode);
-                          setSuccess('コードをコピーしました');
+                        href="https://line.me/R/ti/p/@411qccwd"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          bgcolor: '#06c755',
+                          '&:hover': { bgcolor: '#05b34c' },
+                          textTransform: 'none',
                         }}
                       >
-                        <ContentCopyIcon fontSize="small" />
-                      </IconButton>
-                      <Typography variant="caption" color="text.secondary">
-                        10分間有効
-                      </Typography>
+                        LINE で友だち追加
+                      </Button>
                     </Box>
-                  ) : (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      disabled={linkLoading}
-                      startIcon={linkLoading ? <CircularProgress size={16} /> : undefined}
-                      onClick={async () => {
-                        setLinkLoading(true);
-                        try {
-                          const res = await fetch('/api/line/link', { method: 'POST' });
-                          const json = await res.json();
-                          if (res.ok) setLinkCode(json.code);
-                          else setError(json.error || 'コード発行に失敗しました');
-                        } catch {
-                          setError('通信エラー');
-                        } finally {
-                          setLinkLoading(false);
-                        }
-                      }}
-                    >
-                      コードを発行
-                    </Button>
-                  )}
-                </Box>
-              </Box>
-
-              {/* Step 3 */}
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <Chip
-                  label="3"
-                  size="small"
-                  sx={{
-                    minWidth: 28,
-                    fontWeight: 'bold',
-                    bgcolor: 'action.disabledBackground',
-                    color: 'text.secondary',
-                  }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    Botにコードを送信
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    発行した8桁のコードをLINE Botのトーク画面に送信すると連携完了です。
-                  </Typography>
-                </Box>
-              </Box>
-            </>
-          ) : (
-            <>
-              {/* 通知設定 */}
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={lineNotifyEnabled}
-                    onChange={async (e) => {
-                      const enabled = e.target.checked;
-                      setLineNotifyEnabled(enabled);
-                      if (session?.user?.id) {
-                        await updateDoc(doc(db, 'users', session.user.id), {
-                          lineNotifyEnabled: enabled,
-                          updatedAt: serverTimestamp(),
-                        });
-                      }
-                    }}
-                  />
-                }
-                label="LINE通知を有効にする"
-                sx={{ mb: 1.5, display: 'block' }}
-              />
-
-              {/* DARTSLIVE自動チェック */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  DARTSLIVE 自動チェック
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 1.5 }}
-                >
-                  毎朝10時にDARTSLIVEをチェックし、プレイがあればLINEに通知します。
-                </Typography>
-
-                {hasDlCredentials ? (
-                  <Box
-                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
-                      <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
-                        設定済み
-                      </Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      color="error"
-                      disabled={dlDeleting}
-                      onClick={async () => {
-                        if (!confirm('DARTSLIVE認証情報を削除しますか？')) return;
-                        setDlDeleting(true);
-                        try {
-                          const res = await fetch('/api/line/save-dl-credentials', {
-                            method: 'DELETE',
-                          });
-                          if (res.ok) {
-                            setHasDlCredentials(false);
-                            setSuccess('認証情報を削除しました');
-                          } else setError('削除に失敗しました');
-                        } catch {
-                          setError('通信エラー');
-                        } finally {
-                          setDlDeleting(false);
-                        }
-                      }}
-                    >
-                      {dlDeleting ? '削除中...' : '認証情報を削除'}
-                    </Button>
                   </Box>
-                ) : (
-                  <>
-                    <TextField
-                      label="DARTSLIVEメールアドレス"
-                      type="email"
-                      value={dlEmail}
-                      onChange={(e) => setDlEmail(e.target.value)}
-                      fullWidth
+
+                  {/* Step 2 */}
+                  <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+                    <Chip
+                      label="2"
                       size="small"
-                      sx={{ mb: 1.5 }}
+                      sx={{
+                        minWidth: 28,
+                        fontWeight: 'bold',
+                        bgcolor: linkCode ? 'primary.main' : 'action.disabledBackground',
+                        color: linkCode ? '#fff' : 'text.secondary',
+                      }}
                     />
-                    <TextField
-                      label="DARTSLIVEパスワード"
-                      type="password"
-                      value={dlPassword}
-                      onChange={(e) => setDlPassword(e.target.value)}
-                      fullWidth
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                        連携コードを発行
+                      </Typography>
+                      {linkCode ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant="h5"
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontWeight: 'bold',
+                              letterSpacing: '0.15em',
+                              color: 'primary.main',
+                            }}
+                          >
+                            {linkCode}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              navigator.clipboard.writeText(linkCode);
+                              setSuccess('コードをコピーしました');
+                            }}
+                          >
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                          <Typography variant="caption" color="text.secondary">
+                            10分間有効
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          disabled={linkLoading}
+                          startIcon={linkLoading ? <CircularProgress size={16} /> : undefined}
+                          onClick={async () => {
+                            setLinkLoading(true);
+                            try {
+                              const res = await fetch('/api/line/link', { method: 'POST' });
+                              const json = await res.json();
+                              if (res.ok) setLinkCode(json.code);
+                              else setError(json.error || 'コード発行に失敗しました');
+                            } catch {
+                              setError('通信エラー');
+                            } finally {
+                              setLinkLoading(false);
+                            }
+                          }}
+                        >
+                          コードを発行
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+
+                  {/* Step 3 */}
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Chip
+                      label="3"
                       size="small"
-                      sx={{ mb: 1 }}
+                      sx={{
+                        minWidth: 28,
+                        fontWeight: 'bold',
+                        bgcolor: 'action.disabledBackground',
+                        color: 'text.secondary',
+                      }}
                     />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                        Botにコードを送信
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        発行した8桁のコードをLINE Botのトーク画面に送信すると連携完了です。
+                      </Typography>
+                    </Box>
+                  </Box>
+                </>
+              ) : (
+                <>
+                  {/* 通知設定 */}
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={lineNotifyEnabled}
+                        onChange={async (e) => {
+                          const enabled = e.target.checked;
+                          setLineNotifyEnabled(enabled);
+                          if (session?.user?.id) {
+                            await updateDoc(doc(db, 'users', session.user.id), {
+                              lineNotifyEnabled: enabled,
+                              updatedAt: serverTimestamp(),
+                            });
+                          }
+                        }}
+                      />
+                    }
+                    label="LINE通知を有効にする"
+                    sx={{ mb: 1.5, display: 'block' }}
+                  />
+
+                  {/* DARTSLIVE自動チェック */}
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      DARTSLIVE 自動チェック
+                    </Typography>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{ display: 'block', mb: 1.5 }}
                     >
-                      認証情報は暗号化して保存されます。連携解除時に削除されます。
+                      毎朝10時にDARTSLIVEをチェックし、プレイがあればLINEに通知します。
                     </Typography>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      disabled={dlSaving || !dlEmail || !dlPassword}
-                      startIcon={dlSaving ? <CircularProgress size={16} /> : undefined}
-                      onClick={async () => {
-                        setDlSaving(true);
-                        try {
-                          const res = await fetch('/api/line/save-dl-credentials', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: dlEmail, password: dlPassword }),
-                          });
-                          if (res.ok) {
-                            setHasDlCredentials(true);
-                            setDlEmail('');
-                            setDlPassword('');
-                            setSuccess('DARTSLIVE認証情報を保存しました');
-                          } else {
-                            const json = await res.json();
-                            setError(json.error || '保存に失敗しました');
-                          }
-                        } catch {
-                          setError('通信エラー');
-                        } finally {
-                          setDlSaving(false);
-                        }
-                      }}
-                    >
-                      {dlSaving ? '保存中...' : '保存'}
-                    </Button>
-                  </>
-                )}
-              </Paper>
 
-              {/* 連携解除 — 控えめに */}
-              <Button
-                size="small"
-                color="inherit"
-                disabled={unlinkLoading}
-                onClick={async () => {
-                  if (!confirm('LINE連携を解除しますか？DARTSLIVE自動チェック設定も削除されます。'))
-                    return;
-                  setUnlinkLoading(true);
-                  try {
-                    const res = await fetch('/api/line/unlink', { method: 'POST' });
-                    if (res.ok) {
-                      setLineUserId(null);
-                      setLineNotifyEnabled(false);
-                      setHasDlCredentials(false);
-                      setSuccess('LINE連携を解除しました');
-                    } else {
-                      setError('連携解除に失敗しました');
-                    }
-                  } catch {
-                    setError('通信エラー');
-                  } finally {
-                    setUnlinkLoading(false);
-                  }
-                }}
-                sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
-              >
-                {unlinkLoading ? '解除中...' : '連携を解除する'}
-              </Button>
-            </>
-          )}
-        </Paper>
-        </>
+                    {hasDlCredentials ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                          <Typography
+                            variant="body2"
+                            color="success.main"
+                            sx={{ fontWeight: 'bold' }}
+                          >
+                            設定済み
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          color="error"
+                          disabled={dlDeleting}
+                          onClick={async () => {
+                            if (!confirm('DARTSLIVE認証情報を削除しますか？')) return;
+                            setDlDeleting(true);
+                            try {
+                              const res = await fetch('/api/line/save-dl-credentials', {
+                                method: 'DELETE',
+                              });
+                              if (res.ok) {
+                                setHasDlCredentials(false);
+                                setSuccess('認証情報を削除しました');
+                              } else setError('削除に失敗しました');
+                            } catch {
+                              setError('通信エラー');
+                            } finally {
+                              setDlDeleting(false);
+                            }
+                          }}
+                        >
+                          {dlDeleting ? '削除中...' : '認証情報を削除'}
+                        </Button>
+                      </Box>
+                    ) : (
+                      <>
+                        <TextField
+                          label="DARTSLIVEメールアドレス"
+                          type="email"
+                          value={dlEmail}
+                          onChange={(e) => setDlEmail(e.target.value)}
+                          fullWidth
+                          size="small"
+                          sx={{ mb: 1.5 }}
+                        />
+                        <TextField
+                          label="DARTSLIVEパスワード"
+                          type="password"
+                          value={dlPassword}
+                          onChange={(e) => setDlPassword(e.target.value)}
+                          fullWidth
+                          size="small"
+                          sx={{ mb: 1 }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 1.5 }}
+                        >
+                          認証情報は暗号化して保存されます。連携解除時に削除されます。
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={dlSaving || !dlEmail || !dlPassword}
+                          startIcon={dlSaving ? <CircularProgress size={16} /> : undefined}
+                          onClick={async () => {
+                            setDlSaving(true);
+                            try {
+                              const res = await fetch('/api/line/save-dl-credentials', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: dlEmail, password: dlPassword }),
+                              });
+                              if (res.ok) {
+                                setHasDlCredentials(true);
+                                setDlEmail('');
+                                setDlPassword('');
+                                setSuccess('DARTSLIVE認証情報を保存しました');
+                              } else {
+                                const json = await res.json();
+                                setError(json.error || '保存に失敗しました');
+                              }
+                            } catch {
+                              setError('通信エラー');
+                            } finally {
+                              setDlSaving(false);
+                            }
+                          }}
+                        >
+                          {dlSaving ? '保存中...' : '保存'}
+                        </Button>
+                      </>
+                    )}
+                  </Paper>
+
+                  {/* 連携解除 — 控えめに */}
+                  <Button
+                    size="small"
+                    color="inherit"
+                    disabled={unlinkLoading}
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          'LINE連携を解除しますか？DARTSLIVE自動チェック設定も削除されます。',
+                        )
+                      )
+                        return;
+                      setUnlinkLoading(true);
+                      try {
+                        const res = await fetch('/api/line/unlink', { method: 'POST' });
+                        if (res.ok) {
+                          setLineUserId(null);
+                          setLineNotifyEnabled(false);
+                          setHasDlCredentials(false);
+                          setSuccess('LINE連携を解除しました');
+                        } else {
+                          setError('連携解除に失敗しました');
+                        }
+                      } catch {
+                        setError('通信エラー');
+                      } finally {
+                        setUnlinkLoading(false);
+                      }
+                    }}
+                    sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                  >
+                    {unlinkLoading ? '解除中...' : '連携を解除する'}
+                  </Button>
+                </>
+              )}
+            </Paper>
+          </>
         )}
       </Box>
     </Container>

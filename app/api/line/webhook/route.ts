@@ -218,7 +218,9 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
 
     // Firestore に dartsLiveStats レコード作成
     await adminDb.collection(`users/${user.id}/dartsLiveStats`).add({
-      date: stats.date ? new Date(String(stats.date).replace(/\//g, '-') + 'T00:00:00+09:00') : FieldValue.serverTimestamp(),
+      date: stats.date
+        ? new Date(String(stats.date).replace(/\//g, '-') + 'T00:00:00+09:00')
+        : FieldValue.serverTimestamp(),
       rating: stats.rating ?? null,
       gamesPlayed: stats.gamesPlayed ?? 0,
       zeroOneStats: {
@@ -305,12 +307,15 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
     return;
   }
 
-  let browser: Awaited<ReturnType<typeof import('@/lib/dartslive-scraper').launchBrowser>> | undefined;
+  let browser:
+    | Awaited<ReturnType<typeof import('@/lib/dartslive-scraper').launchBrowser>>
+    | undefined;
   try {
     const dlEmail = decrypt(dlCreds.email);
     const dlPassword = decrypt(dlCreds.password);
 
-    const { launchBrowser, createPage, login, scrapeStats } = await import('@/lib/dartslive-scraper');
+    const { launchBrowser, createPage, login, scrapeStats } =
+      await import('@/lib/dartslive-scraper');
 
     browser = await launchBrowser();
     const page = await createPage(browser);

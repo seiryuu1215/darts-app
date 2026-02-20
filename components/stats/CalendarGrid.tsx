@@ -103,7 +103,7 @@ export default function CalendarGrid({
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const hasPlay = cell.inMonth && playDayMap.has(dateStr);
-          const condition = hasPlay ? playDayMap.get(dateStr) ?? null : null;
+          const condition = hasPlay ? (playDayMap.get(dateStr) ?? null) : null;
           const dow = idx % 7;
 
           return (
@@ -128,15 +128,18 @@ export default function CalendarGrid({
                     ? 'rgba(33, 150, 243, 0.2)'
                     : 'rgba(33, 150, 243, 0.1)'
                   : 'transparent',
-                border: isToday ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
-                '&:hover': cell.inMonth && hasPlay
-                  ? {
-                      bgcolor:
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255, 255, 255, 0.08)'
-                          : 'rgba(0, 0, 0, 0.04)',
-                    }
-                  : {},
+                border: isToday
+                  ? `2px solid ${theme.palette.primary.main}`
+                  : '2px solid transparent',
+                '&:hover':
+                  cell.inMonth && hasPlay
+                    ? {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }
+                    : {},
                 transition: 'background-color 0.15s',
               }}
             >

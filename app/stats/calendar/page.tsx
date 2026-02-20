@@ -168,7 +168,6 @@ export default function CalendarPage() {
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
           />
-
         </Box>
       )}
 
@@ -179,7 +178,9 @@ export default function CalendarPage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           {selectedDate && formatDateHeader(selectedDate)}
           <IconButton onClick={() => setSelectedDate(null)} aria-label="閉じる">
             <CloseIcon />

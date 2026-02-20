@@ -153,7 +153,8 @@ export default function AchievementList({ unlockedIds, snapshot }: AchievementLi
                               variant="determinate"
                               value={Math.min(
                                 100,
-                                (getCategoryValue(category, snapshot) / achievement.threshold) * 100,
+                                (getCategoryValue(category, snapshot) / achievement.threshold) *
+                                  100,
                               )}
                               sx={{ height: 6, borderRadius: 3, mt: 0.5 }}
                             />

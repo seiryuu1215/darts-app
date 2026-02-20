@@ -51,10 +51,7 @@ export default function DayDetailPanel({ records }: DayDetailPanelProps) {
 
           {/* スタッツ行 */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, mb: 1.5 }}>
-            <Paper
-              variant="outlined"
-              sx={{ p: 1, textAlign: 'center' }}
-            >
+            <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
                 Rating
               </Typography>
@@ -62,10 +59,7 @@ export default function DayDetailPanel({ records }: DayDetailPanelProps) {
                 {record.rating != null ? record.rating.toFixed(2) : '-'}
               </Typography>
             </Paper>
-            <Paper
-              variant="outlined"
-              sx={{ p: 1, textAlign: 'center' }}
-            >
+            <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
                 PPD
               </Typography>
@@ -73,10 +67,7 @@ export default function DayDetailPanel({ records }: DayDetailPanelProps) {
                 {record.ppd != null ? record.ppd.toFixed(2) : '-'}
               </Typography>
             </Paper>
-            <Paper
-              variant="outlined"
-              sx={{ p: 1, textAlign: 'center' }}
-            >
+            <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
                 MPR
               </Typography>

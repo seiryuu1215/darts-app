@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
-import { sendLinePushMessage, buildStatsFlexMessage, buildAchievementFlexMessage } from '@/lib/line';
+import {
+  sendLinePushMessage,
+  buildStatsFlexMessage,
+  buildAchievementFlexMessage,
+} from '@/lib/line';
 import {
   calculateCronXp,
   calculateLevel,
@@ -83,7 +87,10 @@ export async function GET(request: NextRequest) {
               .collection(`users/${userId}/dartsLiveStats`)
               .select('gamesPlayed')
               .get();
-            const totalGames = gamesSnap.docs.reduce((sum, d) => sum + (d.data().gamesPlayed ?? 0), 0);
+            const totalGames = gamesSnap.docs.reduce(
+              (sum, d) => sum + (d.data().gamesPlayed ?? 0),
+              0,
+            );
 
             // 連続プレイ日数（streak）計算
             const todayJST = new Date();
@@ -98,7 +105,7 @@ export async function GET(request: NextRequest) {
               if (prevLastPlayDate) {
                 const prevDate = new Date(prevLastPlayDate + 'T00:00:00+09:00');
                 const todayDate = new Date(todayStr + 'T00:00:00+09:00');
-                const diffDays = Math.round((todayDate.getTime() - prevDate.getTime()) / (86400000));
+                const diffDays = Math.round((todayDate.getTime() - prevDate.getTime()) / 86400000);
                 if (diffDays === 1) {
                   currentStreak = prevStreak + 1;
                 } else if (diffDays === 0) {
@@ -318,7 +325,10 @@ export async function GET(request: NextRequest) {
                 level: userLevel,
               };
 
-              const newAchievementIds = checkAchievements(achievementSnapshot, existingAchievements);
+              const newAchievementIds = checkAchievements(
+                achievementSnapshot,
+                existingAchievements,
+              );
 
               if (newAchievementIds.length > 0) {
                 const userRef = adminDb.doc(`users/${userId}`);

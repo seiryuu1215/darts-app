@@ -105,15 +105,36 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
     let whiteHorse = 0;
 
     const awardMap: Record<string, (monthly: number, total: number) => void> = {
-      'D-BULL': (m, t) => { dBullMonthly = m; dBullTotal = t; },
-      'S-BULL': (m, t) => { sBullMonthly = m; sBullTotal = t; },
-      'HAT TRICK': (m, t) => { hatTricksMonthly = m; hatTricksTotal = t; },
-      'TON 80': (_m, t) => { ton80 = t; },
-      'LOW TON': (_m, t) => { lowTon = t; },
-      'HIGH TON': (_m, t) => { highTon = t; },
-      '3 IN A BED': (_m, t) => { threeInABed = t; },
-      '3 - BLACK': (_m, t) => { threeInABlack = t; },
-      'WHITE HRS': (_m, t) => { whiteHorse = t; },
+      'D-BULL': (m, t) => {
+        dBullMonthly = m;
+        dBullTotal = t;
+      },
+      'S-BULL': (m, t) => {
+        sBullMonthly = m;
+        sBullTotal = t;
+      },
+      'HAT TRICK': (m, t) => {
+        hatTricksMonthly = m;
+        hatTricksTotal = t;
+      },
+      'TON 80': (_m, t) => {
+        ton80 = t;
+      },
+      'LOW TON': (_m, t) => {
+        lowTon = t;
+      },
+      'HIGH TON': (_m, t) => {
+        highTon = t;
+      },
+      '3 IN A BED': (_m, t) => {
+        threeInABed = t;
+      },
+      '3 - BLACK': (_m, t) => {
+        threeInABlack = t;
+      },
+      'WHITE HRS': (_m, t) => {
+        whiteHorse = t;
+      },
     };
 
     document.querySelectorAll('table tr').forEach((row) => {

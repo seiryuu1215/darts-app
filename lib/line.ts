@@ -132,7 +132,16 @@ export function buildStatsFlexMessage(stats: {
     const a = stats.awards;
     const pa = stats.prevAwards ?? {};
 
-    type AwardKey = 'hatTricks' | 'ton80' | 'lowTon' | 'highTon' | 'threeInABed' | 'threeInABlack' | 'whiteHorse' | 'dBull' | 'sBull';
+    type AwardKey =
+      | 'hatTricks'
+      | 'ton80'
+      | 'lowTon'
+      | 'highTon'
+      | 'threeInABed'
+      | 'threeInABlack'
+      | 'whiteHorse'
+      | 'dBull'
+      | 'sBull';
     const awardDefs: { label: string; key: AwardKey }[] = [
       { label: 'HAT TRICK', key: 'hatTricks' },
       { label: 'TON 80', key: 'ton80' },
