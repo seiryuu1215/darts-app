@@ -105,7 +105,6 @@ export default function Footer() {
         mt: 6,
         pt: 4,
         pb: 'calc(12px + env(safe-area-inset-bottom, 0px))',
-        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="lg">
