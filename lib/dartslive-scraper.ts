@@ -171,3 +171,26 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
     };
   });
 }
+
+/** playdata.jsp から当日のゲーム数を取得 */
+export async function scrapeGameCount(page: Page): Promise<number> {
+  await page.goto('https://card.dartslive.com/t/playdata.jsp', {
+    waitUntil: 'domcontentloaded',
+    timeout: 15000,
+  });
+
+  return page.evaluate(() => {
+    let count = 0;
+    const resultTitles = document.querySelectorAll('h3.resultTitle');
+    resultTitles.forEach((h3) => {
+      let el = h3.nextElementSibling;
+      while (el && !el.matches('h3')) {
+        if (el.querySelector('.name') && el.querySelector('.point')) {
+          count++;
+        }
+        el = el.nextElementSibling;
+      }
+    });
+    return count;
+  });
+}

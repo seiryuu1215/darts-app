@@ -17,7 +17,7 @@ import {
 import { ACHIEVEMENT_MAP } from '@/lib/progression/achievements';
 import { calculateGoalCurrent, calculateScaledGoalXp, getDailyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
-import { launchBrowser, createPage, login, scrapeStats } from '@/lib/dartslive-scraper';
+import { launchBrowser, createPage, login, scrapeStats, scrapeGameCount } from '@/lib/dartslive-scraper';
 
 export const maxDuration = 300;
 
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
               throw new Error('LOGIN_FAILED');
             }
             const stats = await scrapeStats(page);
+            const gamesPlayed = await scrapeGameCount(page);
 
             // 前回キャッシュと比較
             const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
@@ -128,7 +129,7 @@ export async function GET(request: NextRequest) {
                 await statsDocRef.set({
                   date: new Date(todayStr + 'T00:00:00+09:00'),
                   rating: stats.rating,
-                  gamesPlayed: 0,
+                  gamesPlayed,
                   bullStats: {
                     dBull: stats.dBullTotal,
                     sBull: stats.sBullTotal,
