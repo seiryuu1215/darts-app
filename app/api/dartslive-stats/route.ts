@@ -328,7 +328,19 @@ export const GET = withErrorHandler(
 
     // フルデータがあればパースして返す
     if (data?.fullData) {
-      return NextResponse.json({ data: JSON.parse(data.fullData), cached: true, updatedAt });
+      const parsed = JSON.parse(data.fullData);
+      // COUNT-UPデータがなければ累積スコアを注入
+      const hasCountUp = parsed.recentGames?.games?.some(
+        (g: { category: string }) => g.category === 'COUNT-UP',
+      );
+      if (!hasCountUp && data.countUpScores?.length > 0) {
+        parsed.recentGames = parsed.recentGames || { dayStats: {}, games: [], shops: [] };
+        parsed.recentGames.games.push({
+          category: 'COUNT-UP',
+          scores: data.countUpScores,
+        });
+      }
+      return NextResponse.json({ data: parsed, cached: true, updatedAt });
     }
 
     // フルデータがない場合はサマリーのみ返す
@@ -501,6 +513,25 @@ export const POST = withErrorHandler(
             : null,
         };
 
+        // COUNT-UPスコアを累積保存（時系列順、直近50件）
+        const newCountUpScores = recentGames.games
+          .filter((g: { category: string }) => g.category === 'COUNT-UP')
+          .flatMap((g: { scores: number[] }) => g.scores);
+        const prevCountUpScores: number[] = prevData?.countUpScores ?? [];
+        // 時系列順: [...古いスコア, ...新しいスコア] → 末尾50件を保持
+        const mergedCountUpScores = [...prevCountUpScores, ...newCountUpScores].slice(-50);
+
+        // recentGamesにCOUNT-UPがなければ累積データを注入
+        const hasCountUp = recentGames.games.some(
+          (g: { category: string }) => g.category === 'COUNT-UP',
+        );
+        if (!hasCountUp && mergedCountUpScores.length > 0) {
+          responseData.recentGames.games.push({
+            category: 'COUNT-UP',
+            scores: mergedCountUpScores,
+          });
+        }
+
         // フルデータ + サマリーを保存
         const awards = currentStats.awards || {};
         const cacheData = {
@@ -529,6 +560,8 @@ export const POST = withErrorHandler(
           prevStats01Avg: responseData.prev?.stats01Avg ?? null,
           prevStatsCriAvg: responseData.prev?.statsCriAvg ?? null,
           prevStatsPraAvg: responseData.prev?.statsPraAvg ?? null,
+          // COUNT-UPスコア累積
+          countUpScores: mergedCountUpScores,
           // フルデータ（スタッツページ用）
           fullData: JSON.stringify(responseData),
           updatedAt: FieldValue.serverTimestamp(),

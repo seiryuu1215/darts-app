@@ -39,8 +39,8 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
   const countUpGame = games?.find((g) => g.category === 'COUNT-UP');
   if (!countUpGame || countUpGame.scores.length < 3) return null;
 
-  // 直近30ゲームに制限
-  const recentScores = countUpGame.scores.slice(0, MAX_GAMES);
+  // 直近30ゲームに制限（時系列順: 末尾が最新）
+  const recentScores = countUpGame.scores.slice(-MAX_GAMES);
 
   const result = calculateConsistency(recentScores);
   if (!result) return null;
