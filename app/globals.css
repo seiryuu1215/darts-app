@@ -44,16 +44,35 @@ html[data-theme='dark'] .MuiCardActionArea-root {
   color: #fff;
 }
 
-/* ── ダークモード: フッター等テキスト・リンク (hydration前のみ) ── */
-html[data-theme='dark']:not([data-hydrated]) .MuiTypography-root {
-  color: #fff !important;
+/* ── ダークモード: テキスト・リンク・各種コンポーネント ── */
+/* MUI hydration 完了後は MUI テーマが specificity でオーバーライド */
+html[data-theme='dark'] .MuiTypography-root {
+  color: #fff;
 }
-html[data-theme='dark']:not([data-hydrated]) .MuiLink-root {
-  color: rgba(255, 255, 255, 0.7) !important;
+html[data-theme='dark'] .MuiLink-root {
+  color: rgba(255, 255, 255, 0.7);
 }
-html[data-theme='dark']:not([data-hydrated]) .MuiChip-root {
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.23) !important;
+html[data-theme='dark'] .MuiChip-root {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.23);
+}
+html[data-theme='dark'] .MuiButton-root {
+  color: #fff;
+}
+html[data-theme='dark'] .MuiListItemText-root {
+  color: #fff;
+}
+html[data-theme='dark'] .MuiAccordionSummary-root {
+  color: #fff;
+}
+html[data-theme='dark'] .MuiTab-root {
+  color: rgba(255, 255, 255, 0.7);
+}
+html[data-theme='dark'] .MuiInputBase-root {
+  color: #fff;
+}
+html[data-theme='dark'] .MuiTableCell-root {
+  color: #fff;
 }
 
 /* ── hydration前はトランジション無効 ── */

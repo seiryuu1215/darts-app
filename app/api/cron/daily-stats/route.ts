@@ -121,6 +121,38 @@ export async function GET(request: NextRequest) {
             }
 
             if (hasChange) {
+              // dartsLiveStats ドキュメント自動作成（既存なら上書きしない）
+              const statsDocRef = adminDb.doc(`users/${userId}/dartsLiveStats/${todayStr}`);
+              const existingStatsDoc = await statsDocRef.get();
+              if (!existingStatsDoc.exists) {
+                await statsDocRef.set({
+                  date: new Date(todayStr + 'T00:00:00+09:00'),
+                  rating: stats.rating,
+                  gamesPlayed: 0,
+                  bullStats: {
+                    dBull: stats.dBullTotal,
+                    sBull: stats.sBullTotal,
+                    dBullMonthly: stats.dBullMonthly,
+                    sBullMonthly: stats.sBullMonthly,
+                  },
+                  hatTricks: stats.hatTricksTotal,
+                  hatTricksMonthly: stats.hatTricksMonthly,
+                  source: 'cron',
+                  createdAt: FieldValue.serverTimestamp(),
+                });
+              }
+
+              // ドキュメント追加後に再集計して正確な値を取得
+              const freshGamesSnap = await adminDb
+                .collection(`users/${userId}/dartsLiveStats`)
+                .select('gamesPlayed')
+                .get();
+              const freshTotalGames = freshGamesSnap.docs.reduce(
+                (sum, d) => sum + (d.data().gamesPlayed ?? 0),
+                0,
+              );
+              const freshTotalPlayDays = freshGamesSnap.size;
+
               // キャッシュ更新
               await cacheRef.set(
                 {
@@ -142,8 +174,8 @@ export async function GET(request: NextRequest) {
                   threeInABed: stats.threeInABed,
                   threeInABlack: stats.threeInABlack,
                   whiteHorse: stats.whiteHorse,
-                  totalGames,
-                  totalPlayDays: gamesSnap.size,
+                  totalGames: freshTotalGames,
+                  totalPlayDays: freshTotalPlayDays,
                   lastPlayDate: todayStr,
                   currentStreak,
                   prevRating: prevData?.rating ?? null,
@@ -241,7 +273,7 @@ export async function GET(request: NextRequest) {
                 whiteHorse: prevData?.whiteHorse ?? 0,
               };
               const currentSnapshot: CronStatsSnapshot = {
-                totalGames: stats.dBullTotal > 0 ? (prevData?.totalGames ?? 0) : 0,
+                totalGames,
                 streak: prevData?.streak ?? 0,
                 totalPlayDays,
                 rating: stats.rating,

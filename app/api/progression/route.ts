@@ -42,22 +42,16 @@ export const GET = withErrorHandler(
     const cacheDoc = await adminDb.doc(`users/${userId}/dartsliveCache/latest`).get();
     const cacheData = cacheDoc.exists ? cacheDoc.data() : null;
 
-    // totalGames / totalPlayDays はキャッシュが未反映の場合があるため直接集計
-    let totalGames = cacheData?.totalGames ?? 0;
-    let totalPlayDays = cacheData?.totalPlayDays ?? 0;
-    if (totalGames === 0 || totalPlayDays === 0) {
-      const statsSnap = await adminDb
-        .collection(`users/${userId}/dartsLiveStats`)
-        .select('gamesPlayed')
-        .get();
-      if (!statsSnap.empty) {
-        totalPlayDays = statsSnap.size;
-        totalGames = statsSnap.docs.reduce(
-          (sum, d) => sum + (d.data().gamesPlayed ?? 0),
-          0,
-        );
-      }
-    }
+    // totalGames / totalPlayDays は常に dartsLiveStats コレクションから直接集計
+    const statsSnap = await adminDb
+      .collection(`users/${userId}/dartsLiveStats`)
+      .select('gamesPlayed')
+      .get();
+    const totalPlayDays = statsSnap.size;
+    const totalGames = statsSnap.docs.reduce(
+      (sum, d) => sum + (d.data().gamesPlayed ?? 0),
+      0,
+    );
 
     const achievementSnapshot = {
       totalGames,

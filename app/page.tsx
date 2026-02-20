@@ -23,6 +23,7 @@ import StraightenIcon from '@mui/icons-material/Straighten';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import QuizIcon from '@mui/icons-material/Quiz';
+import BuildIcon from '@mui/icons-material/Build';
 import { collection, getDocs, orderBy, query, doc, getDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -83,6 +84,19 @@ const featureCards: FeatureCard[] = [
     description: '質問に答えておすすめを探す',
     href: '/barrels/quiz',
     icon: <QuizIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'スタッツ',
+    description: 'レーティング推移・実績を確認',
+    href: '/stats',
+    icon: <BarChartIcon sx={{ fontSize: 40 }} />,
+    authOnly: true,
+  },
+  {
+    title: 'ツールハブ',
+    description: '便利ツールをまとめて表示',
+    href: '/tools',
+    icon: <BuildIcon sx={{ fontSize: 40 }} />,
   },
   {
     title: 'セッティング比較',
@@ -248,10 +262,102 @@ export default function HomePage() {
         ダッシュボード
       </Typography>
 
+      {/* 1. 目標 */}
       {session && <GoalSection />}
 
-      {session && <XpBar />}
+      {/* 2. レーティング — DARTSLIVE Stats Summary */}
+      {session &&
+        dlCache &&
+        (() => {
+          const fc = getFlightColor(dlCache.flight);
+          return (
+            <Box sx={{ mb: 4 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BarChartIcon color="primary" />
+                  <Typography variant="h5">DARTSLIVE Stats</Typography>
+                </Box>
+                <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">
+                  詳細
+                </Button>
+              </Box>
+              <Card
+                component={Link}
+                href="/stats"
+                sx={{ textDecoration: 'none', borderRadius: 2, overflow: 'hidden' }}
+              >
+                <Box sx={{ display: 'flex' }}>
+                  {[
+                    {
+                      label: `Rt`,
+                      sub: dlCache.flight,
+                      value: dlCache.rating?.toFixed(2) ?? '--',
+                      color: fc,
+                    },
+                    { label: '01', value: dlCache.stats01Avg?.toFixed(2) ?? '--', color: COLOR_01 },
+                    {
+                      label: 'Cricket',
+                      value: dlCache.statsCriAvg?.toFixed(2) ?? '--',
+                      color: COLOR_CRICKET,
+                    },
+                    {
+                      label: 'CU',
+                      value: dlCache.statsPraAvg?.toFixed(0) ?? '--',
+                      color: COLOR_COUNTUP,
+                    },
+                  ].map((item) => (
+                    <Box
+                      key={item.label}
+                      sx={{
+                        flex: 1,
+                        textAlign: 'center',
+                        py: 1.5,
+                        minHeight: 64,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        borderTop: `3px solid ${item.color}`,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: item.color,
+                          fontWeight: 'bold',
+                          display: 'block',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {item.label}
+                        {item.sub && (
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ ml: 0.5, opacity: 0.7 }}
+                          >
+                            {item.sub}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.3 }}>
+                        {item.value}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Card>
+            </Box>
+          );
+        })()}
 
+      {/* 3. 使用中セッティング */}
       {session && (
         <Box sx={{ mb: 4 }}>
           <Box
@@ -374,98 +480,7 @@ export default function HomePage() {
         </Box>
       )}
 
-      {/* DARTSLIVE Stats Summary */}
-      {session &&
-        dlCache &&
-        (() => {
-          const fc = getFlightColor(dlCache.flight);
-          return (
-            <Box sx={{ mb: 4 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 1.5,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <BarChartIcon color="primary" />
-                  <Typography variant="h5">DARTSLIVE Stats</Typography>
-                </Box>
-                <Button component={Link} href="/stats" endIcon={<ArrowForwardIcon />} size="small">
-                  詳細
-                </Button>
-              </Box>
-              <Card
-                component={Link}
-                href="/stats"
-                sx={{ textDecoration: 'none', borderRadius: 2, overflow: 'hidden' }}
-              >
-                <Box sx={{ display: 'flex' }}>
-                  {[
-                    {
-                      label: `Rt`,
-                      sub: dlCache.flight,
-                      value: dlCache.rating?.toFixed(2) ?? '--',
-                      color: fc,
-                    },
-                    { label: '01', value: dlCache.stats01Avg?.toFixed(2) ?? '--', color: COLOR_01 },
-                    {
-                      label: 'Cricket',
-                      value: dlCache.statsCriAvg?.toFixed(2) ?? '--',
-                      color: COLOR_CRICKET,
-                    },
-                    {
-                      label: 'CU',
-                      value: dlCache.statsPraAvg?.toFixed(0) ?? '--',
-                      color: COLOR_COUNTUP,
-                    },
-                  ].map((item) => (
-                    <Box
-                      key={item.label}
-                      sx={{
-                        flex: 1,
-                        textAlign: 'center',
-                        py: 1.5,
-                        minHeight: 64,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        borderTop: `3px solid ${item.color}`,
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: item.color,
-                          fontWeight: 'bold',
-                          display: 'block',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {item.label}
-                        {item.sub && (
-                          <Typography
-                            component="span"
-                            variant="caption"
-                            sx={{ ml: 0.5, opacity: 0.7 }}
-                          >
-                            {item.sub}
-                          </Typography>
-                        )}
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.3 }}>
-                        {item.value}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Card>
-            </Box>
-          );
-        })()}
-
+      {/* 4. ウィジェット */}
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
           <Grid size={{ xs: 6, sm: 6, md: 3 }} key={card.href}>
@@ -499,6 +514,7 @@ export default function HomePage() {
         ))}
       </Grid>
 
+      {/* 5. マイセッティング */}
       {session && myDarts.length > 0 && (
         <Box sx={{ mb: 5 }}>
           <Box
@@ -521,6 +537,9 @@ export default function HomePage() {
           </Grid>
         </Box>
       )}
+
+      {/* 6. 経験値 */}
+      {session && <XpBar />}
 
       <XpNotificationDialog
         open={showXpNotification}
