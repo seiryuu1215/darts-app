@@ -245,8 +245,8 @@ async function main() {
   if (shouldCapture('recommend')) {
     console.log('Taking screenshot: recommend');
     await page.goto(`${BASE_URL}/barrels/recommend`, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
     });
     await waitForContent(page);
     await dismissAllDialogs(page);
