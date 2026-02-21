@@ -324,6 +324,7 @@ export interface ShopBookmark {
   nearestStation: string;
   imageUrl: string | null;
   machineCount: { dl2: number; dl3: number } | null;
+  tags: string[];
   note: string;
   rating: number | null;
   visitCount: number;

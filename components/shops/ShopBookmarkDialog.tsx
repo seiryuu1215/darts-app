@@ -36,6 +36,7 @@ interface ShopBookmarkDialogProps {
     nearestStation: string;
     imageUrl: string | null;
     machineCount: { dl2: number; dl3: number } | null;
+    tags: string[];
     note: string;
     rating: number | null;
     isFavorite: boolean;
@@ -65,6 +66,7 @@ export default function ShopBookmarkDialog({
   const [nearestStation, setNearestStation] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [machineCount, setMachineCount] = useState<{ dl2: number; dl3: number } | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -82,6 +84,7 @@ export default function ShopBookmarkDialog({
     setNearestStation(initial?.nearestStation || '');
     setImageUrl(initial?.imageUrl ?? null);
     setMachineCount(initial?.machineCount ?? null);
+    setTags(initial?.tags ?? []);
     setNote(initial?.note || '');
     setRating(initial?.rating ?? null);
     setIsFavorite(initial?.isFavorite ?? false);
@@ -110,6 +113,7 @@ export default function ShopBookmarkDialog({
       if (data.nearestStation) setNearestStation(data.nearestStation);
       if (data.imageUrl) setImageUrl(data.imageUrl);
       if (data.machineCount) setMachineCount(data.machineCount);
+      if (data.tags?.length) setTags(data.tags);
     } catch {
       // Silently fail — user can manually input
     } finally {
@@ -144,6 +148,7 @@ export default function ShopBookmarkDialog({
       nearestStation: nearestStation.trim(),
       imageUrl,
       machineCount,
+      tags,
       note: note.trim(),
       rating,
       isFavorite,
@@ -268,6 +273,25 @@ export default function ShopBookmarkDialog({
           fullWidth
           sx={{ mb: 2 }}
         />
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              タグ
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              {tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  onDelete={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>

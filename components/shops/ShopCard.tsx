@@ -78,14 +78,6 @@ export default function ShopCard({
                   {bookmark.address}
                 </Typography>
               )}
-              {bookmark.machineCount && (bookmark.machineCount.dl2 > 0 || bookmark.machineCount.dl3 > 0) && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  {[
-                    bookmark.machineCount.dl3 > 0 && `DL3: ${bookmark.machineCount.dl3}台`,
-                    bookmark.machineCount.dl2 > 0 && `DL2: ${bookmark.machineCount.dl2}台`,
-                  ].filter(Boolean).join(' / ')}
-                </Typography>
-              )}
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
@@ -133,6 +125,21 @@ export default function ShopCard({
                   +{assignedLists.length - 3}
                 </Typography>
               )}
+            </Box>
+          )}
+
+          {/* Tags */}
+          {bookmark.tags?.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+              {bookmark.tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                  sx={{ height: 20, fontSize: '0.65rem' }}
+                />
+              ))}
             </Box>
           )}
 

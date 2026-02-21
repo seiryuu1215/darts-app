@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (!htmlRes.ok) {
-        return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null });
+        return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] });
       }
 
       const html = await htmlRes.text();
@@ -94,6 +94,27 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Extract tags from HTML spans
+      // Known tags: 分煙, 禁煙, 喫煙可, 投げ放題, インストラクター在籍, etc.
+      const knownTags = [
+        '分煙', '禁煙', '喫煙可',
+        '投げ放題', 'インストラクター在籍', 'グッズ販売あり',
+        'スポーツ観戦あり', 'パーティグッズあり',
+        'フードが充実', 'お酒が充実', '予約可', '貸切可',
+        'Wi-Fi完備', '朝まで営業',
+      ];
+      const tags: string[] = [];
+      for (const tag of knownTags) {
+        if (html.includes(`<span>${tag}</span>`)) {
+          tags.push(tag);
+        }
+      }
+      // Add machine type tags
+      if (machineCount) {
+        if (machineCount.dl3 > 0) tags.unshift(`DL3 ${machineCount.dl3}台`);
+        if (machineCount.dl2 > 0) tags.unshift(`DL2 ${machineCount.dl2}台`);
+      }
+
       // Proxy external images through our API to avoid CORS/content-type issues
       const imageUrl = ogImage ? `/api/proxy-image?url=${encodeURIComponent(ogImage)}` : null;
 
@@ -103,6 +124,7 @@ export async function POST(req: NextRequest) {
         nearestStation: nearestStation || apiStationName,
         imageUrl,
         machineCount,
+        tags,
       });
     }
 
@@ -113,7 +135,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null });
+      return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] });
     }
 
     const html = await res.text();
@@ -133,10 +155,11 @@ export async function POST(req: NextRequest) {
       nearestStation: '',
       imageUrl: ogImage || null,
       machineCount: null,
+      tags: [],
     });
   } catch {
     return NextResponse.json(
-      { name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null },
+      { name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] },
     );
   }
 }
