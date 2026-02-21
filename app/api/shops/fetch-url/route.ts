@@ -94,22 +94,43 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Extract tags from HTML spans
-      // Known tags: 分煙, 禁煙, 喫煙可, 投げ放題, インストラクター在籍, etc.
-      const knownTags = [
-        '分煙', '禁煙', '喫煙可',
-        '投げ放題', 'インストラクター在籍', 'グッズ販売あり',
-        'スポーツ観戦あり', 'パーティグッズあり',
-        'フードが充実', 'お酒が充実', '予約可', '貸切可',
-        'Wi-Fi完備', '朝まで営業',
-      ];
+      // Extract tags from embedded `const options = "..."` JSON in HTML
+      // This is more reliable than matching <span> tags which may differ by region
       const tags: string[] = [];
-      for (const tag of knownTags) {
-        if (html.includes(`<span>${tag}</span>`)) {
-          tags.push(tag);
+      try {
+        const optionsMatch = html.match(/const\s+options\s*=\s*"(\{[\s\S]*?\})"/);
+        if (optionsMatch) {
+          // Decode unicode escapes and convert Python-style to JSON
+          const raw = optionsMatch[1]
+            .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/'/g, '"')
+            .replace(/True/g, 'true')
+            .replace(/False/g, 'false')
+            .replace(/None/g, 'null');
+          const options = JSON.parse(raw);
+          const groups = options?.optionGroup?.optionGroupList;
+          if (Array.isArray(groups)) {
+            for (const group of groups) {
+              if (Array.isArray(group?.optionList)) {
+                for (const opt of group.optionList) {
+                  if (opt?.comment) tags.push(opt.comment);
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Fallback: try matching <span> tags directly
+        const knownTags = [
+          '分煙', '禁煙', '喫煙可', '投げ放題', 'インストラクター在籍',
+          'グッズ販売あり', 'スポーツ観戦あり', 'パーティグッズあり',
+          'フードが充実', 'お酒が充実', '予約可', '貸切可', 'Wi-Fi完備', '朝まで営業',
+        ];
+        for (const tag of knownTags) {
+          if (html.includes(`<span>${tag}</span>`)) tags.push(tag);
         }
       }
-      // Add machine type tags
+      // Add machine type tags at the beginning
       if (machineCount) {
         if (machineCount.dl3 > 0) tags.unshift(`DL3 ${machineCount.dl3}台`);
         if (machineCount.dl2 > 0) tags.unshift(`DL2 ${machineCount.dl2}台`);
