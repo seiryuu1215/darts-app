@@ -5,6 +5,7 @@ const ALLOWED_HOSTS = [
   'www.dartshive.jp',
   'image.dartshive.jp',
   'firebasestorage.googleapis.com',
+  'dl.cdn.dartslive.com',
 ];
 
 export async function GET(req: NextRequest) {
@@ -42,7 +43,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '画像の取得に失敗しました' }, { status: 502 });
     }
 
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    let contentType = res.headers.get('content-type') || 'image/jpeg';
+    // Some CDNs return application/octet-stream — infer from URL extension
+    if (contentType === 'application/octet-stream') {
+      const ext = parsed.pathname.split('.').pop()?.toLowerCase();
+      const extMap: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+      contentType = extMap[ext || ''] || 'image/jpeg';
+    }
     if (!VALID_IMAGE_TYPES.some((t) => contentType.includes(t))) {
       return NextResponse.json({ error: '画像形式が不正です' }, { status: 400 });
     }

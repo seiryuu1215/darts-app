@@ -94,11 +94,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Proxy external images through our API to avoid CORS/content-type issues
+      const imageUrl = ogImage ? `/api/proxy-image?url=${encodeURIComponent(ogImage)}` : null;
+
       return NextResponse.json({
         name,
         address,
         nearestStation: nearestStation || apiStationName,
-        imageUrl: ogImage || null,
+        imageUrl,
         machineCount,
       });
     }
