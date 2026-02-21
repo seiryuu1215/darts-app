@@ -421,3 +421,220 @@ export function buildCompletionMessage(stats: {
     text: `記録しました！\nRt.${ratingStr} / PPD ${ppdStr} / ★${stats.condition} ${condLabel}\nメモ: ${memoStr}\n課題: ${challengeStr}`,
   };
 }
+
+// ──────────────────────────────
+// Weekly / Monthly Report Flex Messages
+// ──────────────────────────────
+
+interface ReportFlexInput {
+  periodLabel: string;
+  playDays: number;
+  totalGames: number;
+  ratingStart: number | null;
+  ratingEnd: number | null;
+  ratingChange: number | null;
+  avgPpd: number | null;
+  avgMpr: number | null;
+  bestDay: { date: string; rating: number } | null;
+  worstDay: { date: string; rating: number } | null;
+  awardsHighlights: { label: string; count: number }[];
+  goalsAchieved: number;
+  goalsActive: number;
+  xpGained: number;
+  prevPlayDays?: number;
+  prevTotalGames?: number;
+}
+
+function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): object[] {
+  const contents: object[] = [
+    { type: 'text', text: report.periodLabel, size: 'sm', color: '#888888' },
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'md',
+      margin: 'md',
+      contents: [
+        {
+          type: 'box', layout: 'vertical', flex: 1,
+          contents: [
+            { type: 'text', text: 'プレイ日数', size: 'xs', color: '#888888' },
+            { type: 'text', text: `${report.playDays}日`, size: 'lg', weight: 'bold' },
+          ],
+        },
+        {
+          type: 'box', layout: 'vertical', flex: 1,
+          contents: [
+            { type: 'text', text: 'ゲーム数', size: 'xs', color: '#888888' },
+            { type: 'text', text: `${report.totalGames}`, size: 'lg', weight: 'bold' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  // Rating 変動
+  if (report.ratingChange != null) {
+    const sign = report.ratingChange > 0 ? '+' : '';
+    const rColor = report.ratingChange > 0 ? '#4CAF50' : report.ratingChange < 0 ? '#E53935' : '#888888';
+    contents.push({
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'md',
+      contents: [
+        { type: 'text', text: 'Rating変動', size: 'xs', color: '#888888', flex: 2 },
+        { type: 'text', text: `${sign}${report.ratingChange.toFixed(2)}`, size: 'sm', weight: 'bold', color: rColor, flex: 1, align: 'end' },
+      ],
+    });
+  }
+
+  // PPD / MPR (月次のみ)
+  if (showDetail && (report.avgPpd != null || report.avgMpr != null)) {
+    const ppdMprContents: object[] = [];
+    if (report.avgPpd != null) {
+      ppdMprContents.push({
+        type: 'box', layout: 'vertical', flex: 1,
+        contents: [
+          { type: 'text', text: 'PPD', size: 'xs', color: '#888888' },
+          { type: 'text', text: report.avgPpd.toFixed(2), size: 'sm', weight: 'bold' },
+        ],
+      });
+    }
+    if (report.avgMpr != null) {
+      ppdMprContents.push({
+        type: 'box', layout: 'vertical', flex: 1,
+        contents: [
+          { type: 'text', text: 'MPR', size: 'xs', color: '#888888' },
+          { type: 'text', text: report.avgMpr.toFixed(2), size: 'sm', weight: 'bold' },
+        ],
+      });
+    }
+    contents.push({
+      type: 'box', layout: 'horizontal', spacing: 'md', margin: 'md',
+      contents: ppdMprContents,
+    });
+  }
+
+  // Best day
+  if (report.bestDay) {
+    contents.push({
+      type: 'box', layout: 'horizontal', margin: 'md',
+      contents: [
+        { type: 'text', text: 'ベストデイ', size: 'xs', color: '#888888', flex: 2 },
+        { type: 'text', text: `${report.bestDay.date} (Rt.${report.bestDay.rating.toFixed(2)})`, size: 'xs', color: '#333333', flex: 3, align: 'end' },
+      ],
+    });
+  }
+
+  // Worst day (月次のみ)
+  if (showDetail && report.worstDay) {
+    contents.push({
+      type: 'box', layout: 'horizontal', margin: 'sm',
+      contents: [
+        { type: 'text', text: 'ワーストデイ', size: 'xs', color: '#888888', flex: 2 },
+        { type: 'text', text: `${report.worstDay.date} (Rt.${report.worstDay.rating.toFixed(2)})`, size: 'xs', color: '#333333', flex: 3, align: 'end' },
+      ],
+    });
+  }
+
+  // Awards highlights (上位5件)
+  if (report.awardsHighlights.length > 0) {
+    contents.push({ type: 'separator', margin: 'md' });
+    contents.push({ type: 'text', text: 'AWARDS', size: 'sm', weight: 'bold', margin: 'md', color: '#555555' });
+    for (const award of report.awardsHighlights) {
+      contents.push({
+        type: 'box', layout: 'horizontal', margin: 'sm',
+        contents: [
+          { type: 'text', text: award.label, size: 'xxs', color: '#888888', flex: 3 },
+          { type: 'text', text: `+${award.count}`, size: 'xxs', color: '#333333', flex: 1, align: 'end' },
+        ],
+      });
+    }
+  }
+
+  // Goals
+  if (report.goalsAchieved > 0 || report.goalsActive > 0) {
+    contents.push({ type: 'separator', margin: 'md' });
+    contents.push({
+      type: 'text', text: `目標: ${report.goalsAchieved}達成 / ${report.goalsActive}進行中`,
+      size: 'xs', color: '#555555', margin: 'md',
+    });
+  }
+
+  // XP
+  if (report.xpGained > 0) {
+    contents.push({
+      type: 'text', text: `XP獲得: +${report.xpGained}`,
+      size: 'xs', color: '#4CAF50', margin: 'sm',
+    });
+  }
+
+  // 前期比較
+  if (report.prevPlayDays != null) {
+    const daysDiff = report.playDays - report.prevPlayDays;
+    const daysSign = daysDiff > 0 ? '+' : '';
+    contents.push({ type: 'separator', margin: 'md' });
+    contents.push({
+      type: 'text',
+      text: `前期比: プレイ日数 ${daysSign}${daysDiff}日`,
+      size: 'xxs', color: '#888888', margin: 'md',
+    });
+  }
+
+  return contents;
+}
+
+/** 週次レポート Flex Message */
+export function buildWeeklyReportFlexMessage(report: ReportFlexInput): object {
+  return {
+    type: 'flex',
+    altText: `Weekly Report: ${report.periodLabel}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#1976d2',
+        paddingAll: '16px',
+        contents: [
+          { type: 'text', text: 'Darts Lab', color: '#ffffff', size: 'sm', weight: 'bold' },
+          { type: 'text', text: 'Weekly Report', color: '#ffffffcc', size: 'xs' },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: '16px',
+        spacing: 'sm',
+        contents: buildReportBodyContents(report, false),
+      },
+    },
+  };
+}
+
+/** 月次レポート Flex Message */
+export function buildMonthlyReportFlexMessage(report: ReportFlexInput): object {
+  return {
+    type: 'flex',
+    altText: `Monthly Report: ${report.periodLabel}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#E65100',
+        paddingAll: '16px',
+        contents: [
+          { type: 'text', text: 'Darts Lab', color: '#ffffff', size: 'sm', weight: 'bold' },
+          { type: 'text', text: 'Monthly Report', color: '#ffffffcc', size: 'xs' },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: '16px',
+        spacing: 'sm',
+        contents: buildReportBodyContents(report, true),
+      },
+    },
+  };
+}

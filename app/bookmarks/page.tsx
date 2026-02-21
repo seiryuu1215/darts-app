@@ -10,7 +10,11 @@ import {
   Tabs,
   Tab,
   Alert,
+  Paper,
+  Button,
 } from '@mui/material';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
@@ -18,6 +22,7 @@ import { useRouter } from 'next/navigation';
 import BarrelCard from '@/components/barrels/BarrelCard';
 import DartCard from '@/components/darts/DartCard';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import Link from 'next/link';
 import type { BarrelProduct, Dart } from '@/types';
 
 export default function BookmarksPage() {
@@ -84,6 +89,32 @@ export default function BookmarksPage() {
       <Typography variant="h4" sx={{ mb: 3 }}>
         ブックマーク
       </Typography>
+
+      {/* ショップブックマークバナー */}
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <StorefrontIcon color="action" />
+          <Typography variant="body2">ショップブックマークはこちら</Typography>
+        </Box>
+        <Button
+          component={Link}
+          href="/shops"
+          size="small"
+          endIcon={<ArrowForwardIcon />}
+        >
+          開く
+        </Button>
+      </Paper>
 
       {fetchError && (
         <Alert severity="error" sx={{ mb: 2 }}>

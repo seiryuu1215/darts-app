@@ -1,20 +1,27 @@
 'use client';
 
 import { Paper, Box, Typography, LinearProgress } from '@mui/material';
+import { COLOR_01 } from '@/lib/dartslive-colors';
 import { calculateConsistency, getConsistencyLabel } from '@/lib/stats-math';
 
-interface ConsistencyCardProps {
+interface ZeroOneConsistencyCardProps {
   games: { category: string; scores: number[] }[];
 }
 
 const MAX_GAMES = 30;
 
-export default function ConsistencyCard({ games }: ConsistencyCardProps) {
-  const countUpGame = games?.find((g) => g.category === 'COUNT-UP');
-  if (!countUpGame || countUpGame.scores.length < 3) return null;
+function is01Category(cat: string): boolean {
+  return /^\d{3}$/.test(cat) && cat.endsWith('01');
+}
 
-  // 直近30ゲームに制限（時系列順: 末尾が最新）
-  const recentScores = countUpGame.scores.slice(-MAX_GAMES);
+export default function ZeroOneConsistencyCard({ games }: ZeroOneConsistencyCardProps) {
+  const zeroOneGames = games?.filter((g) => is01Category(g.category)) ?? [];
+  if (zeroOneGames.length === 0) return null;
+
+  const allScores = zeroOneGames.flatMap((g) => g.scores);
+  if (allScores.length < 3) return null;
+
+  const recentScores = allScores.slice(-MAX_GAMES);
 
   const result = calculateConsistency(recentScores);
   if (!result) return null;
@@ -24,9 +31,12 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1.5 }}>
-        COUNT-UP 一貫性
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          01 一貫性
+        </Typography>
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: COLOR_01 }} />
+      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
         <Box sx={{ flex: 1 }}>
@@ -86,8 +96,8 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
 
       <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
         <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.6 }}>
-          スコアのばらつきが少ないほど高スコア。100に近いほど毎回安定したスコアが出せている状態です。
-          標準偏差は平均からのズレ幅で、小さいほど安定。直近{recentScores.length}ゲームが対象です。
+          01ゲームのスコアばらつきが少ないほど高スコア。100に近いほど安定したパフォーマンス。
+          直近{recentScores.length}ゲームが対象です。
         </Typography>
       </Box>
     </Paper>

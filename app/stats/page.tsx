@@ -50,6 +50,8 @@ import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 
 import ConsistencyCard from '@/components/stats/ConsistencyCard';
 import CountUpAnalysisCard from '@/components/stats/CountUpAnalysisCard';
+import ZeroOneAnalysisCard from '@/components/stats/ZeroOneAnalysisCard';
+import ZeroOneConsistencyCard from '@/components/stats/ZeroOneConsistencyCard';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -423,6 +425,12 @@ export default function StatsPage() {
 
             {/* 6c. COUNT-UP Analysis */}
             <CountUpAnalysisCard games={dlData.recentGames.games} />
+
+            {/* 6d. 01 Analysis */}
+            <ZeroOneAnalysisCard games={dlData.recentGames.games} />
+
+            {/* 6e. 01 Consistency */}
+            <ZeroOneConsistencyCard games={dlData.recentGames.games} />
 
             {/* 7. Rating Target */}
             {c.stats01Avg != null && c.statsCriAvg != null && (

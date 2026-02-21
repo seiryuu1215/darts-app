@@ -6,7 +6,10 @@ import {
   sendLinePushMessage,
   buildStatsFlexMessage,
   buildAchievementFlexMessage,
+  buildWeeklyReportFlexMessage,
+  buildMonthlyReportFlexMessage,
 } from '@/lib/line';
+import { gatherPeriodReport } from '@/lib/report-data';
 import {
   calculateCronXp,
   calculateLevel,
@@ -679,6 +682,83 @@ export async function GET(request: NextRequest) {
               }
             } catch (activeErr) {
               console.error(`Active bonus error for user ${userId}:`, activeErr);
+            }
+
+            // 週次/月次レポート送信
+            try {
+              const dayOfWeekForReport = todayJST.getDay();
+              const dayOfMonthForReport = todayJST.getDate();
+
+              // 日曜日: 週次レポート送信
+              if (dayOfWeekForReport === 0) {
+                const weekEnd = new Date(todayJST);
+                weekEnd.setDate(weekEnd.getDate() - 1); // 昨日=土曜
+                const weekStart = new Date(weekEnd);
+                weekStart.setDate(weekStart.getDate() - 6); // 先週日曜
+
+                const report = await gatherPeriodReport(
+                  userId,
+                  new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()),
+                  new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59),
+                );
+
+                if (report.playDays > 0) {
+                  // 前週レポートも取得して比較
+                  const prevWeekEnd = new Date(weekStart);
+                  prevWeekEnd.setDate(prevWeekEnd.getDate() - 1);
+                  const prevWeekStart = new Date(prevWeekEnd);
+                  prevWeekStart.setDate(prevWeekStart.getDate() - 6);
+                  const prevReport = await gatherPeriodReport(
+                    userId,
+                    new Date(prevWeekStart.getFullYear(), prevWeekStart.getMonth(), prevWeekStart.getDate()),
+                    new Date(prevWeekEnd.getFullYear(), prevWeekEnd.getMonth(), prevWeekEnd.getDate(), 23, 59, 59),
+                  );
+
+                  const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+                  const flexMsg = buildWeeklyReportFlexMessage({
+                    periodLabel: weekLabel,
+                    ...report,
+                    prevPlayDays: prevReport.playDays,
+                    prevTotalGames: prevReport.totalGames,
+                  });
+                  await sendLinePushMessage(lineUserId, [flexMsg]);
+                }
+              }
+
+              // 月初: 前月レポート送信
+              if (dayOfMonthForReport === 1) {
+                const prevMonthEnd = new Date(todayJST.getFullYear(), todayJST.getMonth(), 0); // 前月末日
+                const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
+
+                const report = await gatherPeriodReport(
+                  userId,
+                  prevMonthStart,
+                  new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), prevMonthEnd.getDate(), 23, 59, 59),
+                );
+
+                if (report.playDays > 0) {
+                  // 前々月レポートも取得
+                  const prevPrevEnd = new Date(prevMonthStart);
+                  prevPrevEnd.setDate(prevPrevEnd.getDate() - 1);
+                  const prevPrevStart = new Date(prevPrevEnd.getFullYear(), prevPrevEnd.getMonth(), 1);
+                  const prevReport = await gatherPeriodReport(
+                    userId,
+                    prevPrevStart,
+                    new Date(prevPrevEnd.getFullYear(), prevPrevEnd.getMonth(), prevPrevEnd.getDate(), 23, 59, 59),
+                  );
+
+                  const monthLabel = `${prevMonthStart.getFullYear()}年${prevMonthStart.getMonth() + 1}月`;
+                  const flexMsg = buildMonthlyReportFlexMessage({
+                    periodLabel: monthLabel,
+                    ...report,
+                    prevPlayDays: prevReport.playDays,
+                    prevTotalGames: prevReport.totalGames,
+                  });
+                  await sendLinePushMessage(lineUserId, [flexMsg]);
+                }
+              }
+            } catch (reportErr) {
+              console.error(`Report send error for user ${userId}:`, reportErr);
             }
 
             if (!hasChange) {

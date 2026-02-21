@@ -75,6 +75,7 @@ export default function Header() {
             { label: 'セッティング履歴', href: '/darts/history' },
             { label: 'バレル検索', href: '/barrels' },
             { label: 'おすすめバレル', href: '/barrels/recommend' },
+            { label: 'ショップ', href: '/shops' },
           ],
         },
         {
@@ -92,6 +93,7 @@ export default function Header() {
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
+            { label: 'レポート', href: '/reports' },
             { label: '目標', href: '/#goals' },
           ],
         },
@@ -208,6 +210,9 @@ export default function Header() {
                 </Button>
                 <Button color="inherit" component={Link} href="/stats" size="small">
                   スタッツ
+                </Button>
+                <Button color="inherit" component={Link} href="/shops" size="small">
+                  ショップ
                 </Button>
                 {!userIsPro && (
                   <Button

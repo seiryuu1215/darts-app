@@ -74,6 +74,8 @@ export default function Footer() {
     { label: '記事', href: '/articles' },
     { label: 'ディスカッション', href: '/discussions' },
     { label: 'おすすめツール', href: '/tools' },
+    { label: 'レポート', href: '/reports' },
+    { label: 'ショップ', href: '/shops' },
   ];
 
   const shopLinks: FooterLink[] = [

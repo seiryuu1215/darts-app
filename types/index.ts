@@ -316,6 +316,29 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   hat_tricks: 'HAT TRICK',
 };
 
+// Shop (ダーツライブサーチからスクレイプ)
+export interface Shop {
+  id?: string;
+  name: string;
+  address: string;
+  nearestStation?: string;
+  area?: string;
+}
+
+export interface ShopBookmark {
+  id?: string;
+  shopId?: string | null;
+  name: string;
+  address: string;
+  note: string;
+  rating: number | null;
+  visitCount: number;
+  lastVisitedAt: Timestamp | null;
+  isFavorite: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 // Affiliate
 export type ShopType = 'dartshive' | 'sdarts' | 'maxim' | 'tito' | 'rakuten' | 'amazon';
 
