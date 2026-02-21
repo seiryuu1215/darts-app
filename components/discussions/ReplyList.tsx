@@ -4,7 +4,15 @@ import { useState } from 'react';
 import { Box, Typography, IconButton, Divider, Chip, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FlagIcon from '@mui/icons-material/Flag';
-import { doc, deleteDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  deleteDoc,
+  updateDoc,
+  increment,
+  collection,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import UserAvatar from '@/components/UserAvatar';

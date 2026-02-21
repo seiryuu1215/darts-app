@@ -263,7 +263,6 @@ export default function StatsPage() {
   }
 
   const c = dlData?.current;
-  const prev = dlData?.prev;
   const flightColor = c?.flight ? getFlightColor(c.flight) : '#808080';
 
   // カウントアップ期待値

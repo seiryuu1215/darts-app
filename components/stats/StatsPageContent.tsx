@@ -223,10 +223,7 @@ export default function StatsPageContent({
       />
 
       {/* 10. Recent Day Summary */}
-      <RecentDaySummary
-        dayStats={dlData.recentGames.dayStats}
-        shops={dlData.recentGames.shops}
-      />
+      <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
 
       {/* 11. Awards Table */}
       <AwardsTable awards={c.awards} />

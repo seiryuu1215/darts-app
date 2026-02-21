@@ -93,9 +93,7 @@ export default function TermsPage() {
           </li>
           <li>掲載されている製品画像・製品情報の著作権は各権利者に帰属します。</li>
           <li>データの更新頻度には制限があり、実際の在庫状況や価格と異なる場合があります。</li>
-          <li>
-            権利者からの要請があった場合、速やかに該当データを削除します。
-          </li>
+          <li>権利者からの要請があった場合、速やかに該当データを削除します。</li>
         </Typography>
 
         <Typography variant="h6" gutterBottom>

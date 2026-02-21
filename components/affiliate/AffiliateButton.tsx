@@ -33,7 +33,12 @@ export default function AffiliateButton({
         sx={{ whiteSpace: 'nowrap' }}
       >
         購入する
-        <Chip label="PR" size="small" variant="outlined" sx={{ fontSize: 10, height: 18, ml: 0.5 }} />
+        <Chip
+          label="PR"
+          size="small"
+          variant="outlined"
+          sx={{ fontSize: 10, height: 18, ml: 0.5 }}
+        />
       </Button>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <Typography

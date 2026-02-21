@@ -73,27 +73,21 @@ export interface StatsHistoryRecord {
 
 // --- COUNT-UP scores (30+ games, Rt.8 level: ~500-560 range) ---
 const countUpScores = [
-  501, 482, 537, 519, 545, 498, 521, 560, 478, 534,
-  512, 489, 553, 507, 541, 468, 525, 548, 493, 531,
-  516, 504, 562, 488, 539, 510, 527, 495, 543, 518,
-  502, 556, 483, 529,
+  501, 482, 537, 519, 545, 498, 521, 560, 478, 534, 512, 489, 553, 507, 541, 468, 525, 548, 493,
+  531, 516, 504, 562, 488, 539, 510, 527, 495, 543, 518, 502, 556, 483, 529,
 ];
 
 // --- 01 scores (PPD range for Rt.8: ~60-72) ---
 const zeroOne501Scores = [
-  63.21, 67.45, 61.38, 69.72, 64.89, 66.13, 62.57, 70.34,
-  65.82, 68.91, 63.75, 67.28, 61.94, 69.15, 64.47, 66.83,
-  63.09, 68.26, 65.51, 67.93,
+  63.21, 67.45, 61.38, 69.72, 64.89, 66.13, 62.57, 70.34, 65.82, 68.91, 63.75, 67.28, 61.94, 69.15,
+  64.47, 66.83, 63.09, 68.26, 65.51, 67.93,
 ];
 
-const zeroOne701Scores = [
-  64.78, 66.32, 62.41, 68.55, 65.17, 67.89,
-];
+const zeroOne701Scores = [64.78, 66.32, 62.41, 68.55, 65.17, 67.89];
 
 // --- Cricket scores (MPR range for Rt.8: ~2.0-2.7) ---
 const cricketScores = [
-  2.15, 2.43, 2.08, 2.61, 2.31, 2.48, 2.19, 2.55,
-  2.37, 2.22, 2.51, 2.09, 2.44, 2.33, 2.58,
+  2.15, 2.43, 2.08, 2.61, 2.31, 2.48, 2.19, 2.55, 2.37, 2.22, 2.51, 2.09, 2.44, 2.33, 2.58,
 ];
 
 // --- Monthly data (12 months) ---
@@ -107,7 +101,7 @@ function generateMonthlyData(
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const month = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const value = +(baseValue + growth * (11 - i) + (Math.sin(i * 1.3) * variance)).toFixed(2);
+    const value = +(baseValue + growth * (11 - i) + Math.sin(i * 1.3) * variance).toFixed(2);
     months.push({ month, value });
   }
   return months;
@@ -276,9 +270,8 @@ export const MOCK_HIGH_CONSISTENCY_GAMES = [
   {
     category: 'COUNT-UP',
     scores: [
-      518, 522, 515, 525, 520, 517, 523, 519, 521, 516,
-      524, 518, 522, 520, 517, 523, 519, 521, 516, 524,
-      518, 522, 515, 525, 520, 517, 523, 519, 521, 516,
+      518, 522, 515, 525, 520, 517, 523, 519, 521, 516, 524, 518, 522, 520, 517, 523, 519, 521, 516,
+      524, 518, 522, 515, 525, 520, 517, 523, 519, 521, 516,
     ],
   },
 ];
@@ -287,25 +280,21 @@ export const MOCK_LOW_CONSISTENCY_GAMES = [
   {
     category: 'COUNT-UP',
     scores: [
-      612, 321, 545, 278, 489, 601, 356, 534, 267, 578,
-      412, 621, 345, 289, 501, 632, 312, 567, 245, 598,
-      389, 612, 301, 545, 278, 489, 601, 356, 534, 267,
+      612, 321, 545, 278, 489, 601, 356, 534, 267, 578, 412, 621, 345, 289, 501, 632, 312, 567, 245,
+      598, 389, 612, 301, 545, 278, 489, 601, 356, 534, 267,
     ],
   },
 ];
 
-export const MOCK_FEW_GAMES = [
-  { category: 'COUNT-UP', scores: [512, 498, 534] },
-];
+export const MOCK_FEW_GAMES = [{ category: 'COUNT-UP', scores: [512, 498, 534] }];
 
 // --- Trending up / down COUNT-UP data ---
 export const MOCK_TRENDING_UP_GAMES = [
   {
     category: 'COUNT-UP',
     scores: [
-      480, 485, 492, 498, 505, 510, 515, 520, 528, 535,
-      540, 545, 548, 555, 558, 562, 568, 572, 578, 582,
-      585, 588, 592, 595, 598, 601, 605, 608, 612, 618,
+      480, 485, 492, 498, 505, 510, 515, 520, 528, 535, 540, 545, 548, 555, 558, 562, 568, 572, 578,
+      582, 585, 588, 592, 595, 598, 601, 605, 608, 612, 618,
     ],
   },
 ];
@@ -314,9 +303,8 @@ export const MOCK_TRENDING_DOWN_GAMES = [
   {
     category: 'COUNT-UP',
     scores: [
-      618, 612, 608, 601, 595, 588, 582, 578, 572, 565,
-      558, 552, 545, 540, 535, 528, 522, 515, 510, 505,
-      498, 492, 488, 482, 478, 472, 468, 462, 458, 452,
+      618, 612, 608, 601, 595, 588, 582, 578, 572, 565, 558, 552, 545, 540, 535, 528, 522, 515, 510,
+      505, 498, 492, 488, 482, 478, 472, 468, 462, 458, 452,
     ],
   },
 ];
@@ -336,21 +324,72 @@ export const MOCK_ACHIEVEMENT_SNAPSHOT = {
 };
 
 export const MOCK_UNLOCKED_ACHIEVEMENTS = [
-  'rating_3', 'rating_4', 'rating_5', 'rating_6', 'rating_7', 'rating_8',
-  'hat_trick_10', 'hat_trick_50', 'hat_trick_100',
-  'ton80_5', 'ton80_10',
-  'bulls_100', 'bulls_500', 'bulls_1000', 'bulls_2000', 'bulls_3000',
-  'low_ton_50', 'low_ton_100',
-  'high_ton_10', 'high_ton_50',
+  'rating_3',
+  'rating_4',
+  'rating_5',
+  'rating_6',
+  'rating_7',
+  'rating_8',
+  'hat_trick_10',
+  'hat_trick_50',
+  'hat_trick_100',
+  'ton80_5',
+  'ton80_10',
+  'bulls_100',
+  'bulls_500',
+  'bulls_1000',
+  'bulls_2000',
+  'bulls_3000',
+  'low_ton_50',
+  'low_ton_100',
+  'high_ton_10',
+  'high_ton_50',
   'three_bed_10',
-  'level_5', 'level_10',
+  'level_5',
+  'level_10',
 ];
 
 export const MOCK_XP_HISTORY = [
-  { id: 'xp_1', action: 'daily_play', xp: 50, detail: 'デイリープレイボーナス', createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-  { id: 'xp_2', action: 'hat_trick', xp: 30, detail: 'HAT TRICK達成', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-  { id: 'xp_3', action: 'rating_up', xp: 100, detail: 'レーティングUP (+0.17)', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-  { id: 'xp_4', action: 'daily_play', xp: 50, detail: 'デイリープレイボーナス', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-  { id: 'xp_5', action: 'streak', xp: 75, detail: '5日連続プレイ', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
-  { id: 'xp_6', action: 'ton80', xp: 80, detail: 'TON 80達成', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString() },
+  {
+    id: 'xp_1',
+    action: 'daily_play',
+    xp: 50,
+    detail: 'デイリープレイボーナス',
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: 'xp_2',
+    action: 'hat_trick',
+    xp: 30,
+    detail: 'HAT TRICK達成',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: 'xp_3',
+    action: 'rating_up',
+    xp: 100,
+    detail: 'レーティングUP (+0.17)',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+  },
+  {
+    id: 'xp_4',
+    action: 'daily_play',
+    xp: 50,
+    detail: 'デイリープレイボーナス',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+  },
+  {
+    id: 'xp_5',
+    action: 'streak',
+    xp: 75,
+    detail: '5日連続プレイ',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+  },
+  {
+    id: 'xp_6',
+    action: 'ton80',
+    xp: 80,
+    detail: 'TON 80達成',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
+  },
 ];

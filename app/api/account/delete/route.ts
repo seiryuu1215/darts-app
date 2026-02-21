@@ -43,15 +43,10 @@ export const DELETE = withErrorHandler(
       'shopBookmarks',
       'shopLists',
     ];
-    await Promise.all(
-      userSubcollections.map((sub) => deleteSubcollection(`users/${userId}`, sub)),
-    );
+    await Promise.all(userSubcollections.map((sub) => deleteSubcollection(`users/${userId}`, sub)));
 
     // 4. darts コレクション（コメント・メモサブコレクション含む）
-    const dartsSnap = await adminDb
-      .collection('darts')
-      .where('userId', '==', userId)
-      .get();
+    const dartsSnap = await adminDb.collection('darts').where('userId', '==', userId).get();
     for (const dartDoc of dartsSnap.docs) {
       await deleteSubcollection(`darts/${dartDoc.id}`, 'comments');
       await deleteSubcollection(`darts/${dartDoc.id}`, 'memos');

@@ -41,8 +41,7 @@ export default function PrivacyPage() {
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           当サイトは、Amazon.co.jp アソシエイト、楽天アフィリエイト、A8.net
-          等のアフィリエイトプログラムに参加しています。
-          サイト内のアフィリエイトリンクには [PR]
+          等のアフィリエイトプログラムに参加しています。 サイト内のアフィリエイトリンクには [PR]
           表記を付与しています。これらのリンクを経由して商品が購入された場合、当サイトに紹介料が支払われることがあります。
         </Typography>
 

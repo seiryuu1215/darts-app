@@ -1,14 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Paper,
-} from '@mui/material';
+import { Container, Box, Typography, Button, Card, CardContent, Paper } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -63,9 +55,7 @@ function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
         <Breadcrumbs items={[{ label: 'Stats' }]} />
 
         {/* Header */}
-        <Box
-          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
-        >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
               DARTSLIVE Stats
