@@ -19,10 +19,10 @@ describe('calculateLevel', () => {
     expect(result.rank).toBe('B Player');
   });
 
-  it('returns THE GOD for max XP', () => {
-    const result = calculateLevel(65000);
-    expect(result.level).toBe(20);
-    expect(result.rank).toBe('THE GOD');
+  it('returns BEYOND GOD for max XP', () => {
+    const result = calculateLevel(500000);
+    expect(result.level).toBe(30);
+    expect(result.rank).toBe('BEYOND GOD');
     expect(result.nextLevelXp).toBeNull();
   });
 });
