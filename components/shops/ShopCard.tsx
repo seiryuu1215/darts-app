@@ -65,6 +65,7 @@ export default function ShopCard({
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bookmark.address || bookmark.name)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(bookmark.address || bookmark.name)}`;
+  const dartsliveSearchUrl = `https://search.dartslive.com/jp/?searchWord=${encodeURIComponent(bookmark.name)}`;
 
   const assignedLists = lists?.filter((l) => l.id && bookmark.listIds?.includes(l.id)) ?? [];
 
@@ -86,7 +87,18 @@ export default function ShopCard({
   }, [bookmark.tags]);
 
   return (
-    <Paper sx={{ p: 2, mb: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+    <Paper
+      sx={{
+        p: 2,
+        mb: 1.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        cursor: 'pointer',
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+      onClick={() => window.open(dartsliveSearchUrl, '_blank', 'noopener,noreferrer')}
+    >
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         {/* Thumbnail */}
         <Avatar
@@ -104,7 +116,10 @@ export default function ShopCard({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <IconButton
                   size="small"
-                  onClick={onToggleFavorite}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite?.();
+                  }}
                   aria-label={bookmark.isFavorite ? 'お気に入り解除' : 'お気に入り'}
                   sx={{ p: 0.25, ml: -0.5 }}
                 >
@@ -141,7 +156,10 @@ export default function ShopCard({
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <IconButton
                 size="small"
                 component="a"
@@ -172,7 +190,7 @@ export default function ShopCard({
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {bookmark.machineCount?.dl3 != null && bookmark.machineCount.dl3 > 0 && (
               <Chip
-                label={`DL3 ${bookmark.machineCount.dl3}台`}
+                label={`DL3：${bookmark.machineCount.dl3}`}
                 size="small"
                 color="success"
                 sx={{ height: 26, fontSize: '0.8rem', fontWeight: 'bold' }}
@@ -180,7 +198,7 @@ export default function ShopCard({
             )}
             {bookmark.machineCount?.dl2 != null && bookmark.machineCount.dl2 > 0 && (
               <Chip
-                label={`DL2 ${bookmark.machineCount.dl2}台`}
+                label={`DL2：${bookmark.machineCount.dl2}`}
                 size="small"
                 sx={{
                   height: 26,

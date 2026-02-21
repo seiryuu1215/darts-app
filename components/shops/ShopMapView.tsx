@@ -62,7 +62,7 @@ export default function ShopMapView({ bookmarks }: ShopMapViewProps) {
               </Typography>
               {bookmark.machineCount && (
                 <Typography variant="caption" sx={{ display: 'block' }}>
-                  DL3: {bookmark.machineCount.dl3}台 / DL2: {bookmark.machineCount.dl2}台
+                  DL3：{bookmark.machineCount.dl3} / DL2：{bookmark.machineCount.dl2}
                 </Typography>
               )}
               <MuiLink
