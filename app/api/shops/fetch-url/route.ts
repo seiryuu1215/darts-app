@@ -32,19 +32,28 @@ export async function POST(req: NextRequest) {
       });
 
       if (!htmlRes.ok) {
-        return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] });
+        return NextResponse.json({
+          name: '',
+          address: '',
+          nearestStation: '',
+          imageUrl: null,
+          machineCount: null,
+          tags: [],
+        });
       }
 
       const html = await htmlRes.text();
 
       // OGP: allow whitespace/newlines between attribute and content
-      const ogTitle = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1]
-        ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1]
-        ?? '';
+      const ogTitle =
+        html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1] ??
+        html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1] ??
+        '';
 
-      const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1]
-        ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1]
-        ?? '';
+      const ogImage =
+        html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1] ??
+        html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1] ??
+        '';
 
       // Parse shop name from og:title: "店名 | 県名 市名 | ダーツバー検索..."
       const titleParts = ogTitle.split('|').map((s: string) => s.trim());
@@ -57,7 +66,10 @@ export async function POST(req: NextRequest) {
       let addrMatch;
       while ((addrMatch = addressRegex.exec(html)) !== null) {
         const val = addrMatch[1].trim();
-        if (val) { address = val; break; }
+        if (val) {
+          address = val;
+          break;
+        }
       }
 
       // Nearest station: <label>最寄り駅</label> ... </td>\n<td ...>\n<p ...>東京メトロ東西線 行徳駅 249m</p>
@@ -122,19 +134,26 @@ export async function POST(req: NextRequest) {
       } catch {
         // Fallback: try matching <span> tags directly
         const knownTags = [
-          '分煙', '禁煙', '喫煙可', '投げ放題', 'インストラクター在籍',
-          'グッズ販売あり', 'スポーツ観戦あり', 'パーティグッズあり',
-          'フードが充実', 'お酒が充実', '予約可', '貸切可', 'Wi-Fi完備', '朝まで営業',
+          '分煙',
+          '禁煙',
+          '喫煙可',
+          '投げ放題',
+          'インストラクター在籍',
+          'グッズ販売あり',
+          'スポーツ観戦あり',
+          'パーティグッズあり',
+          'フードが充実',
+          'お酒が充実',
+          '予約可',
+          '貸切可',
+          'Wi-Fi完備',
+          '朝まで営業',
         ];
         for (const tag of knownTags) {
           if (html.includes(`<span>${tag}</span>`)) tags.push(tag);
         }
       }
-      // Add machine type tags at the beginning
-      if (machineCount) {
-        if (machineCount.dl3 > 0) tags.unshift(`DL3 ${machineCount.dl3}台`);
-        if (machineCount.dl2 > 0) tags.unshift(`DL2 ${machineCount.dl2}台`);
-      }
+      // Machine count is in the machineCount field — not duplicated in tags
 
       // Proxy external images through our API to avoid CORS/content-type issues
       const imageUrl = ogImage ? `/api/proxy-image?url=${encodeURIComponent(ogImage)}` : null;
@@ -156,19 +175,28 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] });
+      return NextResponse.json({
+        name: '',
+        address: '',
+        nearestStation: '',
+        imageUrl: null,
+        machineCount: null,
+        tags: [],
+      });
     }
 
     const html = await res.text();
 
-    const ogTitle = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1]
-      ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1]
-      ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
-      ?? '';
+    const ogTitle =
+      html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1] ??
+      html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1] ??
+      html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ??
+      '';
 
-    const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1]
-      ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1]
-      ?? '';
+    const ogImage =
+      html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1] ??
+      html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1] ??
+      '';
 
     return NextResponse.json({
       name: ogTitle.trim(),
@@ -179,8 +207,13 @@ export async function POST(req: NextRequest) {
       tags: [],
     });
   } catch {
-    return NextResponse.json(
-      { name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null, tags: [] },
-    );
+    return NextResponse.json({
+      name: '',
+      address: '',
+      nearestStation: '',
+      imageUrl: null,
+      machineCount: null,
+      tags: [],
+    });
   }
 }

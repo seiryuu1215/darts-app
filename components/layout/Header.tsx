@@ -42,7 +42,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { ColorModeContext } from '@/components/Providers';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
-interface DrawerGroup {
+interface NavGroup {
   label: string;
   icon: React.ReactNode;
   items: { label: string; href: string }[];
@@ -52,7 +52,8 @@ export default function Header() {
   const { data: session } = useSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [barrelMenuEl, setBarrelMenuEl] = useState<null | HTMLElement>(null);
+  const [navMenuEl, setNavMenuEl] = useState<null | HTMLElement>(null);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
@@ -64,15 +65,24 @@ export default function Header() {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  // グループ化されたドロワーメニュー
-  const drawerGroups: DrawerGroup[] = session
+  const openNavMenu = (label: string, el: HTMLElement) => {
+    setActiveMenu(label);
+    setNavMenuEl(el);
+  };
+
+  const closeNavMenu = () => {
+    setActiveMenu(null);
+    setNavMenuEl(null);
+  };
+
+  // PC用ナビグループ
+  const pcNavGroups: NavGroup[] = session
     ? [
         {
           label: 'ダーツ',
           icon: <SportsBarIcon />,
           items: [
             { label: 'セッティング', href: '/darts' },
-            { label: 'セッティング履歴', href: '/darts/history' },
             { label: 'バレル検索', href: '/barrels' },
             { label: 'おすすめバレル', href: '/barrels/recommend' },
             { label: 'ショップ', href: '/shops' },
@@ -89,12 +99,11 @@ export default function Header() {
           ],
         },
         {
-          label: 'スタッツ・記録',
+          label: 'スタッツ',
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
             { label: 'レポート', href: '/reports' },
-            { label: '目標', href: '/#goals' },
           ],
         },
         {
@@ -103,23 +112,6 @@ export default function Header() {
           items: [
             { label: '記事', href: '/articles' },
             { label: 'ディスカッション', href: '/discussions' },
-          ],
-        },
-        {
-          label: 'マイページ',
-          icon: <PersonIcon />,
-          items: [
-            { label: 'プロフィール', href: '/profile/edit' },
-            { label: 'ブックマーク', href: '/bookmarks' },
-            ...(userIsPro
-              ? [{ label: 'サブスクリプション', href: '/profile/subscription' }]
-              : [{ label: 'PROプラン', href: '/pricing' }]),
-            ...(isAdmin
-              ? [
-                  { label: 'ユーザ管理', href: '/admin/users' },
-                  { label: '料金設定', href: '/admin/pricing' },
-                ]
-              : []),
           ],
         },
       ]
@@ -152,6 +144,30 @@ export default function Header() {
         },
       ];
 
+  // モバイル用ドロワーグループ（PC と同じ＋マイページ）
+  const drawerGroups: NavGroup[] = session
+    ? [
+        ...pcNavGroups,
+        {
+          label: 'マイページ',
+          icon: <PersonIcon />,
+          items: [
+            { label: 'プロフィール', href: '/profile/edit' },
+            { label: 'ブックマーク', href: '/bookmarks' },
+            ...(userIsPro
+              ? [{ label: 'サブスクリプション', href: '/profile/subscription' }]
+              : [{ label: 'PROプラン', href: '/pricing' }]),
+            ...(isAdmin
+              ? [
+                  { label: 'ユーザ管理', href: '/admin/users' },
+                  { label: '料金設定', href: '/admin/pricing' },
+                ]
+              : []),
+          ],
+        },
+      ]
+    : pcNavGroups;
+
   return (
     <>
       <AppBar position="static" sx={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -167,71 +183,51 @@ export default function Header() {
 
           {/* PC表示 */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5, alignItems: 'center' }}>
-            <Button color="inherit" component={Link} href="/darts" size="small">
-              セッティング
-            </Button>
-            <Button
-              color="inherit"
-              size="small"
-              endIcon={<ArrowDropDownIcon />}
-              onClick={(e) => setBarrelMenuEl(e.currentTarget)}
-            >
-              バレル
-            </Button>
+            {pcNavGroups.map((group) => (
+              <Button
+                key={group.label}
+                color="inherit"
+                size="small"
+                endIcon={<ArrowDropDownIcon />}
+                onClick={(e) => openNavMenu(group.label, e.currentTarget)}
+              >
+                {group.label}
+              </Button>
+            ))}
+
+            {/* ドロップダウンメニュー（共通） */}
             <Menu
-              anchorEl={barrelMenuEl}
-              open={Boolean(barrelMenuEl)}
-              onClose={() => setBarrelMenuEl(null)}
-              onClick={() => setBarrelMenuEl(null)}
+              anchorEl={navMenuEl}
+              open={Boolean(navMenuEl)}
+              onClose={closeNavMenu}
+              onClick={closeNavMenu}
             >
-              <MenuItem component={Link} href="/barrels">
-                バレル検索
-              </MenuItem>
-              <MenuItem component={Link} href="/barrels/recommend">
-                おすすめ
-              </MenuItem>
-              <MenuItem component={Link} href="/barrels/simulator">
-                シミュレーター
-              </MenuItem>
-              <MenuItem component={Link} href="/barrels/quiz">
-                診断クイズ
-              </MenuItem>
+              {activeMenu &&
+                pcNavGroups
+                  .find((g) => g.label === activeMenu)
+                  ?.items.map((item) => (
+                    <MenuItem key={item.href} component={Link} href={item.href}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
             </Menu>
-            <Button color="inherit" component={Link} href="/articles" size="small">
-              記事
-            </Button>
-            <Button color="inherit" component={Link} href="/discussions" size="small">
-              ディスカッション
-            </Button>
-            {session && (
-              <>
-                <Button color="inherit" component={Link} href="/darts/compare" size="small">
-                  比較
-                </Button>
-                <Button color="inherit" component={Link} href="/stats" size="small">
-                  スタッツ
-                </Button>
-                <Button color="inherit" component={Link} href="/shops" size="small">
-                  ショップ
-                </Button>
-                {!userIsPro && (
-                  <Button
-                    component={Link}
-                    href="/pricing"
-                    size="small"
-                    variant="outlined"
-                    sx={{
-                      color: '#ffc107',
-                      borderColor: '#ffc107',
-                      '&:hover': { borderColor: '#ffb300', bgcolor: '#ffc10711' },
-                      ml: 0.5,
-                    }}
-                    startIcon={<StarIcon sx={{ fontSize: 16 }} />}
-                  >
-                    PRO
-                  </Button>
-                )}
-              </>
+
+            {session && !userIsPro && (
+              <Button
+                component={Link}
+                href="/pricing"
+                size="small"
+                variant="outlined"
+                sx={{
+                  color: '#ffc107',
+                  borderColor: '#ffc107',
+                  '&:hover': { borderColor: '#ffb300', bgcolor: '#ffc10711' },
+                  ml: 0.5,
+                }}
+                startIcon={<StarIcon sx={{ fontSize: 16 }} />}
+              >
+                PRO
+              </Button>
             )}
 
             <IconButton

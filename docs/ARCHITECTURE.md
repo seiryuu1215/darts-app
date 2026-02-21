@@ -19,6 +19,7 @@ graph TB
         API_LINE["/api/line/webhook<br/>/api/line/link"]
         API_OG["/api/og (Edge Runtime)"]
         API_Proxy["/api/proxy-image"]
+        API_Shop["/api/shops/fetch-url"]
         API_Admin["/api/admin/update-role"]
     end
 
@@ -262,6 +263,30 @@ erDiagram
         object pricingPlans
     }
 
+    shopBookmarks {
+        string name
+        string address
+        string nearestStation
+        string imageUrl
+        object machineCount
+        array tags
+        string note
+        number rating
+        number visitCount
+        boolean isFavorite
+        array listIds
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    shopLists {
+        string name
+        string color
+        number sortOrder
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
     darts ||--o{ comments : has
     darts ||--o{ memos : has
     discussions ||--o{ replies : has
@@ -271,6 +296,8 @@ erDiagram
     users ||--o{ settingHistory : has
     users ||--o{ dartsliveCache : "Admin SDK only"
     users ||--o{ dartsLiveStats : has
+    users ||--o{ shopBookmarks : has
+    users ||--o{ shopLists : has
 ```
 
 ## コンポーネント構成
@@ -283,6 +310,11 @@ components/
 │   ├── TwoColumnLayout.tsx    # PC: メイン+サイドバー / モバイル: 1カラム
 │   ├── Sidebar.tsx            # 人気バレル・新着記事・最新ディスカッション・ショップバナー
 │   └── Breadcrumbs.tsx        # パンくずナビ
+├── shops/                     # マイショップ
+│   ├── ShopCard.tsx           # ショップカード（台数・タグ・お気に入り・メモ表示）
+│   ├── ShopBookmarkDialog.tsx # ショップ追加/編集ダイアログ（URL自動取得対応）
+│   ├── ShopListDialog.tsx     # リスト作成/編集ダイアログ
+│   └── ShopListChips.tsx      # リストフィルターChipバー
 ├── affiliate/                 # アフィリエイト
 │   ├── AffiliateButton.tsx    # 複数ショップドロップダウン購入ボタン
 │   └── AffiliateBanner.tsx    # ショップバナー

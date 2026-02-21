@@ -3,16 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import {
-  Container,
-  Box,
-  Typography,
-  CircularProgress,
-  Button,
-  Fab,
-} from '@mui/material';
+import { Container, Box, Typography, CircularProgress, Button, Fab, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
 import {
   collection,
   getDocs,
@@ -46,6 +40,8 @@ export default function ShopsPage() {
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [listDialogOpen, setListDialogOpen] = useState(false);
   const [editingList, setEditingList] = useState<ShopList | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [noSmokingFilter, setNoSmokingFilter] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -80,10 +76,7 @@ export default function ShopsPage() {
     if (!session?.user?.id) return;
     try {
       const snap = await getDocs(
-        query(
-          collection(db, 'users', session.user.id, 'shopLists'),
-          orderBy('sortOrder', 'asc'),
-        ),
+        query(collection(db, 'users', session.user.id, 'shopLists'), orderBy('sortOrder', 'asc')),
       );
       const items: ShopList[] = snap.docs.map((d) => ({
         id: d.id,
@@ -105,17 +98,23 @@ export default function ShopsPage() {
     if (!session?.user?.id) return;
     const fetchHomeShop = async () => {
       try {
-        const cacheDoc = await getDoc(doc(db, 'users', session.user.id, 'dartsliveCache', 'latest'));
+        const cacheDoc = await getDoc(
+          doc(db, 'users', session.user.id, 'dartsliveCache', 'latest'),
+        );
         if (cacheDoc.exists()) {
           const fullDataStr = cacheDoc.data()?.fullData;
           if (fullDataStr) {
             try {
               const full = JSON.parse(fullDataStr);
               if (full?.current?.homeShop) setHomeShop(full.current.homeShop);
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     fetchHomeShop();
   }, [session]);
@@ -178,6 +177,16 @@ export default function ShopsPage() {
     }
   };
 
+  // Toggle favorite
+  const handleToggleFavorite = async (bm: ShopBookmark) => {
+    if (!session?.user?.id) return;
+    await updateDoc(doc(db, 'users', session.user.id, 'shopBookmarks', bm.id!), {
+      isFavorite: !bm.isFavorite,
+      updatedAt: Timestamp.now(),
+    });
+    await loadBookmarks();
+  };
+
   // Visit
   const handleVisit = async (bm: ShopBookmark) => {
     if (!session?.user?.id) return;
@@ -226,10 +235,21 @@ export default function ShopsPage() {
     }
   };
 
-  // Filter bookmarks by selected list
-  const filteredBookmarks = selectedListId
-    ? bookmarks.filter((bm) => bm.listIds?.includes(selectedListId))
-    : bookmarks;
+  // Curated filter tags (only show these in the filter bar)
+  const FILTER_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
+  const FILTER_PARTIAL = ['チャージ', '持ち込み'];
+  const allRawTags = [...new Set(bookmarks.flatMap((bm) => bm.tags ?? []))];
+  const filterTags = allRawTags
+    .filter((t) => FILTER_TAGS.includes(t) || FILTER_PARTIAL.some((p) => t.includes(p)))
+    .sort();
+
+  // Filter bookmarks by selected list, tags, and smoking
+  const filteredBookmarks = bookmarks.filter((bm) => {
+    if (selectedListId && !bm.listIds?.includes(selectedListId)) return false;
+    if (selectedTags.length > 0 && !selectedTags.every((t) => bm.tags?.includes(t))) return false;
+    if (noSmokingFilter && bm.tags?.includes('喫煙可')) return false;
+    return true;
+  });
 
   if (status === 'loading') {
     return (
@@ -274,6 +294,55 @@ export default function ShopsPage() {
           }}
         />
 
+        {/* Tag filter */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0.5,
+            flexWrap: 'wrap',
+            mb: 1.5,
+          }}
+        >
+          {/* Smoking filter */}
+          <Chip
+            icon={<SmokeFreeIcon sx={{ fontSize: '14px !important' }} />}
+            label="禁煙・分煙のみ"
+            size="small"
+            color={noSmokingFilter ? 'info' : 'default'}
+            variant={noSmokingFilter ? 'filled' : 'outlined'}
+            onClick={() => setNoSmokingFilter((prev) => !prev)}
+            sx={{ height: 24, fontSize: '0.7rem' }}
+          />
+          {filterTags.map((tag) => (
+            <Chip
+              key={tag}
+              label={tag}
+              size="small"
+              color={selectedTags.includes(tag) ? 'primary' : 'default'}
+              variant={selectedTags.includes(tag) ? 'filled' : 'outlined'}
+              onClick={() =>
+                setSelectedTags((prev) =>
+                  prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+                )
+              }
+              sx={{ height: 24, fontSize: '0.7rem' }}
+            />
+          ))}
+          {(selectedTags.length > 0 || noSmokingFilter) && (
+            <Chip
+              label="クリア"
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                setSelectedTags([]);
+                setNoSmokingFilter(false);
+              }}
+              sx={{ height: 24, fontSize: '0.7rem' }}
+            />
+          )}
+        </Box>
+
         {/* Bookmarks */}
         {bookmarksLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -281,9 +350,7 @@ export default function ShopsPage() {
           </Box>
         ) : filteredBookmarks.length === 0 ? (
           <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
-            {selectedListId
-              ? 'このリストにショップはありません'
-              : 'ショップを追加してみましょう'}
+            {selectedListId ? 'このリストにショップはありません' : 'ショップを追加してみましょう'}
           </Typography>
         ) : (
           filteredBookmarks.map((bm) => (
@@ -297,6 +364,7 @@ export default function ShopsPage() {
               }}
               onDelete={() => handleDelete(bm)}
               onVisit={() => handleVisit(bm)}
+              onToggleFavorite={() => handleToggleFavorite(bm)}
             />
           ))
         )}
