@@ -10,12 +10,10 @@ import {
   Button,
   Card,
   CardContent,
-  CardMedia,
   CircularProgress,
   Paper,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -23,7 +21,7 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Dart } from '@/types';
-import { getFlightColor, COLOR_COUNTUP } from '@/lib/dartslive-colors';
+import { getFlightColor } from '@/lib/dartslive-colors';
 import { calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
 import { canUseDartslive, canExportCsv } from '@/lib/permissions';
 import ProPaywall from '@/components/ProPaywall';
@@ -34,24 +32,9 @@ import XpHistoryList from '@/components/progression/XpHistoryList';
 import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 
 // Stats components
-import PlayerProfileCard from '@/components/stats/PlayerProfileCard';
-import RatingHeroCard from '@/components/stats/RatingHeroCard';
-import PeriodStatsPanel from '@/components/stats/PeriodStatsPanel';
-import GameStatsCards from '@/components/stats/GameStatsCards';
-import BullStatsCard from '@/components/stats/BullStatsCard';
-import CountUpDeltaChart from '@/components/stats/CountUpDeltaChart';
-import RatingTargetCard from '@/components/stats/RatingTargetCard';
-import MonthlyTrendChart from '@/components/stats/MonthlyTrendChart';
-import RecentGamesChart from '@/components/stats/RecentGamesChart';
-import RecentDaySummary from '@/components/stats/RecentDaySummary';
-import AwardsTable from '@/components/stats/AwardsTable';
 import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
-
-import ConsistencyCard from '@/components/stats/ConsistencyCard';
-import CountUpAnalysisCard from '@/components/stats/CountUpAnalysisCard';
-import ZeroOneAnalysisCard from '@/components/stats/ZeroOneAnalysisCard';
-import ZeroOneConsistencyCard from '@/components/stats/ZeroOneConsistencyCard';
+import StatsPageContent from '@/components/stats/StatsPageContent';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -367,166 +350,23 @@ export default function StatsPage() {
         )}
 
         {canDartslive && dlData && c && (
-          <>
-            {/* 1. Player Profile */}
-            <PlayerProfileCard
-              cardName={c.cardName}
-              cardImageUrl={c.cardImageUrl}
-              toorina={c.toorina}
-              homeShop={c.homeShop}
-              myAward={c.myAward}
-              status={c.status}
-              flightColor={flightColor}
-            />
-
-            {/* 2. Rating Hero */}
-            <RatingHeroCard
-              rating={c.rating}
-              ratingPrev={prev?.rating ?? null}
-              flight={c.flight}
-              flightColor={flightColor}
-              streak={periodSummary?.streak ?? 0}
-              showStreak={periodTab === 'all'}
-            />
-
-            {/* 3. Period Stats */}
-            <PeriodStatsPanel
-              periodTab={periodTab}
-              onPeriodChange={setPeriodTab}
-              loading={periodLoading}
-              summary={periodSummary}
-              records={periodRecords}
-              prevPpd={prev?.stats01Avg ?? null}
-              prevMpr={prev?.statsCriAvg ?? null}
-            />
-
-            {/* 4. Game Stats Cards */}
-            <GameStatsCards
-              stats01Avg={c.stats01Avg}
-              stats01Best={c.stats01Best}
-              statsCriAvg={c.statsCriAvg}
-              statsCriBest={c.statsCriBest}
-              statsPraAvg={c.statsPraAvg}
-              statsPraBest={c.statsPraBest}
-              prev01Avg={prev?.stats01Avg ?? null}
-              prevCriAvg={prev?.statsCriAvg ?? null}
-              prevPraAvg={prev?.statsPraAvg ?? null}
-              expectedCountUp={expectedCountUp}
-            />
-
-            {/* 5. Bull Stats */}
-            <BullStatsCard awards={c.awards} />
-
-            {/* 6. COUNT-UP Delta */}
-            <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
-
-            {/* 6b. Consistency */}
-            <ConsistencyCard games={dlData.recentGames.games} />
-
-            {/* 6c. COUNT-UP Analysis */}
-            <CountUpAnalysisCard games={dlData.recentGames.games} />
-
-            {/* 6d. 01 Analysis */}
-            <ZeroOneAnalysisCard games={dlData.recentGames.games} />
-
-            {/* 6e. 01 Consistency */}
-            <ZeroOneConsistencyCard games={dlData.recentGames.games} />
-
-            {/* 7. Rating Target */}
-            {c.stats01Avg != null && c.statsCriAvg != null && (
-              <RatingTargetCard
-                stats01Avg={c.stats01Avg}
-                statsCriAvg={c.statsCriAvg}
-                flightColor={flightColor}
-              />
-            )}
-
-            {/* 8. Monthly Trend */}
-            <MonthlyTrendChart
-              monthly={dlData.monthly}
-              monthlyTab={monthlyTab}
-              onTabChange={setMonthlyTab}
-              flightColor={flightColor}
-            />
-
-            {/* 9. Recent Games */}
-            <RecentGamesChart
-              games={dlData.recentGames.games}
-              gameChartCategory={gameChartCategory}
-              onCategoryChange={setGameChartCategory}
-              expectedCountUp={expectedCountUp}
-              dangerCountUp={dangerCountUp}
-              excellentCountUp={excellentCountUp}
-            />
-
-            {/* 10. Recent Day Summary */}
-            <RecentDaySummary
-              dayStats={dlData.recentGames.dayStats}
-              shops={dlData.recentGames.shops}
-            />
-
-            {/* 11. Awards Table */}
-            <AwardsTable awards={c.awards} />
-
-            {/* 12. Active Dart */}
-            {activeSoftDart && (
-              <Card
-                component={Link}
-                href={`/darts/${activeSoftDart.id}`}
-                sx={{
-                  textDecoration: 'none',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  mb: 2,
-                  height: 72,
-                  borderRadius: 2,
-                  borderLeft: `3px solid ${flightColor}`,
-                }}
-              >
-                {activeSoftDart.imageUrls.length > 0 ? (
-                  <CardMedia
-                    component="img"
-                    image={activeSoftDart.imageUrls[0]}
-                    alt={activeSoftDart.title}
-                    sx={{ width: 72, objectFit: 'cover', flexShrink: 0 }}
-                  />
-                ) : (
-                  <Box
-                    component="img"
-                    src="/dart-placeholder.svg"
-                    alt=""
-                    sx={{ width: 72, flexShrink: 0, objectFit: 'cover' }}
-                  />
-                )}
-                <CardContent
-                  sx={{
-                    py: 1,
-                    px: 1.5,
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    '&:last-child': { pb: 1 },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CheckCircleIcon sx={{ fontSize: 14, color: COLOR_COUNTUP }} />
-                    <Typography variant="caption" color="text.secondary">
-                      使用中セッティング
-                    </Typography>
-                  </Box>
-                  <Typography variant="subtitle2" noWrap>
-                    {activeSoftDart.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" noWrap>
-                    {activeSoftDart.barrel.brand} {activeSoftDart.barrel.name} (
-                    {activeSoftDart.barrel.weight}g)
-                  </Typography>
-                </CardContent>
-              </Card>
-            )}
-          </>
+          <StatsPageContent
+            dlData={dlData}
+            periodTab={periodTab}
+            periodSummary={periodSummary}
+            periodRecords={periodRecords}
+            periodLoading={periodLoading}
+            flightColor={flightColor}
+            expectedCountUp={expectedCountUp}
+            dangerCountUp={dangerCountUp}
+            excellentCountUp={excellentCountUp}
+            activeSoftDart={activeSoftDart}
+            monthlyTab={monthlyTab}
+            gameChartCategory={gameChartCategory}
+            onPeriodChange={setPeriodTab}
+            onMonthlyTabChange={setMonthlyTab}
+            onGameChartCategoryChange={setGameChartCategory}
+          />
         )}
 
         {/* 13. CSV Export */}
