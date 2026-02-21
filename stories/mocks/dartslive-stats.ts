@@ -320,3 +320,37 @@ export const MOCK_TRENDING_DOWN_GAMES = [
     ],
   },
 ];
+
+// --- Progression Mock Data ---
+export const MOCK_ACHIEVEMENT_SNAPSHOT = {
+  highestRating: 8.52,
+  hatTricksTotal: 215,
+  ton80: 12,
+  dBullTotal: 2341,
+  sBullTotal: 1456,
+  lowTon: 389,
+  highTon: 78,
+  threeInABed: 45,
+  whiteHorse: 1,
+  level: 12,
+};
+
+export const MOCK_UNLOCKED_ACHIEVEMENTS = [
+  'rating_3', 'rating_4', 'rating_5', 'rating_6', 'rating_7', 'rating_8',
+  'hat_trick_10', 'hat_trick_50', 'hat_trick_100',
+  'ton80_5', 'ton80_10',
+  'bulls_100', 'bulls_500', 'bulls_1000', 'bulls_2000', 'bulls_3000',
+  'low_ton_50', 'low_ton_100',
+  'high_ton_10', 'high_ton_50',
+  'three_bed_10',
+  'level_5', 'level_10',
+];
+
+export const MOCK_XP_HISTORY = [
+  { id: 'xp_1', action: 'daily_play', xp: 50, detail: 'デイリープレイボーナス', createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+  { id: 'xp_2', action: 'hat_trick', xp: 30, detail: 'HAT TRICK達成', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
+  { id: 'xp_3', action: 'rating_up', xp: 100, detail: 'レーティングUP (+0.17)', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+  { id: 'xp_4', action: 'daily_play', xp: 50, detail: 'デイリープレイボーナス', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+  { id: 'xp_5', action: 'streak', xp: 75, detail: '5日連続プレイ', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
+  { id: 'xp_6', action: 'ton80', xp: 80, detail: 'TON 80達成', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString() },
+];
