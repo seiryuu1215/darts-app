@@ -23,18 +23,26 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import TrainIcon from '@mui/icons-material/Train';
 import NoteIcon from '@mui/icons-material/StickyNote2';
 import { useState, useMemo } from 'react';
 import type { ShopBookmark, ShopList } from '@/types';
-import { LINE_COLORS } from '@/lib/line-stations';
 
 const SMOKING_TAGS = ['分煙', '禁煙', '喫煙可'];
 const MACHINE_TAG_RE = /^DL[23]\s+\d+台$/;
 const ALLOWED_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
 const ALLOWED_PARTIAL = ['チャージ', '持ち込み'];
+
+// MUIカラー名 → CSS色の簡易マップ
+const LIST_COLOR_MAP: Record<string, string> = {
+  primary: '#90caf9',
+  secondary: '#ce93d8',
+  success: '#66bb6a',
+  warning: '#ffa726',
+  error: '#f44336',
+  default: '#9e9e9e',
+};
 
 interface ShopCardProps {
   bookmark: ShopBookmark;
@@ -60,19 +68,21 @@ export default function ShopCard({
 
   const assignedLists = lists?.filter((l) => l.id && bookmark.listIds?.includes(l.id)) ?? [];
 
-  const { smokingTag, displayTags, hasNagehoudai } = useMemo(() => {
+  const { smokingTag, attributeText } = useMemo(() => {
     const tags = bookmark.tags ?? [];
     const smoking = tags.find((t) => SMOKING_TAGS.includes(t)) ?? null;
-    const nagehoudai = tags.includes('投げ放題');
-    const filtered = tags.filter((t) => {
+    // 属性テキスト行用: 喫煙タグ以外の表示可能タグを「·」区切りで結合
+    const attrs = tags.filter((t) => {
       if (SMOKING_TAGS.includes(t)) return false;
       if (MACHINE_TAG_RE.test(t)) return false;
-      if (t === '投げ放題') return false;
       if (ALLOWED_TAGS.includes(t)) return true;
       if (ALLOWED_PARTIAL.some((p) => t.includes(p))) return true;
       return false;
     });
-    return { smokingTag: smoking, displayTags: filtered, hasNagehoudai: nagehoudai };
+    const parts: string[] = [];
+    if (smoking) parts.push(smoking);
+    parts.push(...attrs);
+    return { smokingTag: smoking, attributeText: parts.join(' · ') };
   }, [bookmark.tags]);
 
   return (
@@ -158,54 +168,47 @@ export default function ShopCard({
             </Box>
           </Box>
 
-          {/* Machine count + 投げ放題 + Smoking — prominent row */}
+          {/* ダーツ台数 — 最も目立たせる */}
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {bookmark.machineCount?.dl3 != null && bookmark.machineCount.dl3 > 0 && (
               <Chip
                 label={`DL3 ${bookmark.machineCount.dl3}台`}
                 size="small"
                 color="success"
-                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 'bold' }}
+                sx={{ height: 26, fontSize: '0.8rem', fontWeight: 'bold' }}
               />
             )}
             {bookmark.machineCount?.dl2 != null && bookmark.machineCount.dl2 > 0 && (
               <Chip
                 label={`DL2 ${bookmark.machineCount.dl2}台`}
                 size="small"
-                variant="outlined"
-                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 'bold' }}
-              />
-            )}
-            {hasNagehoudai && (
-              <Chip
-                label="投げ放題"
-                size="small"
-                color="warning"
-                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 'bold' }}
-              />
-            )}
-            {smokingTag && (
-              <Chip
-                icon={
-                  smokingTag === '喫煙可' ? (
-                    <SmokingRoomsIcon sx={{ fontSize: '14px !important' }} />
-                  ) : (
-                    <SmokeFreeIcon sx={{ fontSize: '14px !important' }} />
-                  )
-                }
-                label={smokingTag}
-                size="small"
-                variant="outlined"
-                color={smokingTag === '喫煙可' ? 'default' : 'info'}
-                sx={{ height: 22, fontSize: '0.65rem' }}
+                sx={{
+                  height: 26,
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  bgcolor: 'grey.700',
+                  color: 'grey.100',
+                }}
               />
             )}
           </Box>
 
-          {/* 路線チップ */}
+          {/* 属性テキスト行（喫煙・投げ放題・Wi-Fi等を「·」区切り） */}
+          {attributeText && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              {smokingTag === '喫煙可' && (
+                <SmokingRoomsIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+              )}
+              <Typography variant="caption" color="text.secondary">
+                {attributeText}
+              </Typography>
+            </Box>
+          )}
+
+          {/* 路線チップ（統一色・最大2つ） */}
           {bookmark.lines && bookmark.lines.length > 0 && (
             <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-              {bookmark.lines.slice(0, 4).map((line) => (
+              {bookmark.lines.slice(0, 2).map((line) => (
                 <Chip
                   key={line}
                   label={line}
@@ -213,60 +216,43 @@ export default function ShopCard({
                   sx={{
                     height: 18,
                     fontSize: '0.6rem',
-                    bgcolor: LINE_COLORS[line] ?? 'action.hover',
-                    color: '#fff',
+                    bgcolor: 'action.hover',
+                    color: 'text.secondary',
                   }}
                 />
               ))}
-              {bookmark.lines.length > 4 && (
+              {bookmark.lines.length > 2 && (
                 <Typography variant="caption" color="text.secondary">
-                  +{bookmark.lines.length - 4}
+                  +{bookmark.lines.length - 2}
                 </Typography>
               )}
             </Box>
           )}
 
-          {/* List Chips */}
+          {/* リスト（カラードット + テキスト・最大2つ） */}
           {assignedLists.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-              {assignedLists.slice(0, 3).map((list) => (
-                <Chip
-                  key={list.id}
-                  label={list.name}
-                  size="small"
-                  color={
-                    list.color as
-                      | 'default'
-                      | 'primary'
-                      | 'secondary'
-                      | 'success'
-                      | 'warning'
-                      | 'error'
-                  }
-                  variant="outlined"
-                  sx={{ height: 20, fontSize: '0.65rem' }}
-                />
+            <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+              {assignedLists.slice(0, 2).map((list) => (
+                <Box key={list.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: LIST_COLOR_MAP[list.color] ?? LIST_COLOR_MAP.default,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                    {list.name}
+                  </Typography>
+                </Box>
               ))}
-              {assignedLists.length > 3 && (
-                <Typography variant="caption" color="text.secondary">
-                  +{assignedLists.length - 3}
+              {assignedLists.length > 2 && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  +{assignedLists.length - 2}
                 </Typography>
               )}
-            </Box>
-          )}
-
-          {/* Other tags */}
-          {displayTags.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-              {displayTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  size="small"
-                  variant="outlined"
-                  sx={{ height: 20, fontSize: '0.65rem' }}
-                />
-              ))}
             </Box>
           )}
 

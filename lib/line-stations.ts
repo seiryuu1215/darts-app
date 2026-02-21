@@ -435,6 +435,13 @@ export const LINE_COLORS: Record<string, string> = {
   都営大江戸線: '#B6007A',
 };
 
+// 路線カテゴリ定義
+export const LINE_CATEGORIES: Record<string, string[]> = {
+  JR: ['山手線', '中央線', 'JR総武線', 'JR武蔵野線', 'JR京葉線'],
+  東京メトロ: ['東西線', '丸ノ内線', '千代田線', '半蔵門線', '日比谷線', '銀座線'],
+  都営: ['都営浅草線', '都営新宿線', '都営三田線', '都営大江戸線'],
+};
+
 // 路線名一覧（UI表示順）
 export const LINE_NAMES: string[] = Object.keys(LINE_STATIONS);
 

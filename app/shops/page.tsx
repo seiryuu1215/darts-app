@@ -3,12 +3,27 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Container, Box, Typography, CircularProgress, Button, Fab, Chip } from '@mui/material';
+import {
+  Container,
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  Fab,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import StarIcon from '@mui/icons-material/Star';
 import TrainIcon from '@mui/icons-material/Train';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import {
   collection,
   getDocs,
@@ -21,6 +36,7 @@ import {
   getDoc,
   Timestamp,
   increment,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -29,7 +45,9 @@ import ShopBookmarkDialog from '@/components/shops/ShopBookmarkDialog';
 import ShopListDialog from '@/components/shops/ShopListDialog';
 import ShopListChips from '@/components/shops/ShopListChips';
 import type { ShopBookmark, ShopList } from '@/types';
-import { LINE_NAMES, LINE_COLORS } from '@/lib/line-stations';
+import { LINE_CATEGORIES } from '@/lib/line-stations';
+
+const CATEGORY_NAMES = Object.keys(LINE_CATEGORIES);
 
 export default function ShopsPage() {
   const { data: session, status } = useSession();
@@ -46,7 +64,11 @@ export default function ShopsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [noSmokingFilter, setNoSmokingFilter] = useState(false);
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [visitFilter, setVisitFilter] = useState<'all' | 'visited' | 'unvisited'>('all');
+  const [favoriteFilter, setFavoriteFilter] = useState(false);
+  const [deleteConfirmBookmark, setDeleteConfirmBookmark] = useState<ShopBookmark | null>(null);
+  const [deleteConfirmList, setDeleteConfirmList] = useState<ShopList | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -206,10 +228,11 @@ export default function ShopsPage() {
     await loadBookmarks();
   };
 
-  // Delete
-  const handleDelete = async (bm: ShopBookmark) => {
-    if (!session?.user?.id) return;
-    await deleteDoc(doc(db, 'users', session.user.id, 'shopBookmarks', bm.id!));
+  // Delete bookmark (確認ダイアログ経由)
+  const handleDeleteConfirmed = async () => {
+    if (!session?.user?.id || !deleteConfirmBookmark) return;
+    await deleteDoc(doc(db, 'users', session.user.id, 'shopBookmarks', deleteConfirmBookmark.id!));
+    setDeleteConfirmBookmark(null);
     await loadBookmarks();
   };
 
@@ -243,6 +266,36 @@ export default function ShopsPage() {
     }
   };
 
+  // Delete list（確認ダイアログ経由）
+  const handleDeleteListConfirmed = async () => {
+    if (!session?.user?.id || !deleteConfirmList?.id) return;
+    const userId = session.user.id;
+    const listId = deleteConfirmList.id;
+
+    try {
+      // 関連ブックマークの listIds から該当IDを除去
+      const batch = writeBatch(db);
+      const affected = bookmarks.filter((bm) => bm.listIds?.includes(listId));
+      for (const bm of affected) {
+        batch.update(doc(db, 'users', userId, 'shopBookmarks', bm.id!), {
+          listIds: bm.listIds.filter((id) => id !== listId),
+          updatedAt: Timestamp.now(),
+        });
+      }
+      // リスト自体を削除
+      batch.delete(doc(db, 'users', userId, 'shopLists', listId));
+      await batch.commit();
+
+      // 選択中のリストが削除対象ならリセット
+      if (selectedListId === listId) setSelectedListId(null);
+      setDeleteConfirmList(null);
+      await loadLists();
+      await loadBookmarks();
+    } catch {
+      // ignore
+    }
+  };
+
   // Curated filter tags (only show these in the filter bar)
   const FILTER_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
   const FILTER_PARTIAL = ['チャージ', '持ち込み'];
@@ -252,16 +305,40 @@ export default function ShopsPage() {
     .sort();
 
   // 路線フィルターで使う路線名（データに存在するもののみ表示）
-  const availableLines = LINE_NAMES.filter((line) =>
-    bookmarks.some((bm) => bm.lines?.includes(line)),
-  );
+  const availableLineSet = new Set(bookmarks.flatMap((bm) => bm.lines ?? []));
 
-  // Filter bookmarks by selected list, tags, smoking, and line
+  // カテゴリ選択時に表示する路線（データに存在するもののみ）
+  const categoryLines = selectedCategory
+    ? (LINE_CATEGORIES[selectedCategory] ?? []).filter((l) => availableLineSet.has(l))
+    : [];
+
+  // カテゴリ内全路線のセット（フィルター用）
+  const categoryLineSet = selectedCategory
+    ? new Set(LINE_CATEGORIES[selectedCategory] ?? [])
+    : null;
+
+  // フィルター判定: 路線
+  const isAnyFilterActive =
+    selectedListId ||
+    selectedTags.length > 0 ||
+    noSmokingFilter ||
+    selectedLine ||
+    selectedCategory ||
+    visitFilter !== 'all' ||
+    favoriteFilter;
+
+  // Filter bookmarks
   const filteredBookmarks = bookmarks.filter((bm) => {
     if (selectedListId && !bm.listIds?.includes(selectedListId)) return false;
     if (selectedTags.length > 0 && !selectedTags.every((t) => bm.tags?.includes(t))) return false;
     if (noSmokingFilter && bm.tags?.includes('喫煙可')) return false;
-    if (selectedLine && !bm.lines?.includes(selectedLine)) return false;
+    if (favoriteFilter && !bm.isFavorite) return false;
+    // 路線: 個別路線 > カテゴリ
+    if (selectedLine) {
+      if (!bm.lines?.includes(selectedLine)) return false;
+    } else if (categoryLineSet) {
+      if (!bm.lines?.some((l) => categoryLineSet.has(l))) return false;
+    }
     if (visitFilter === 'visited' && !(bm.visitCount > 0)) return false;
     if (visitFilter === 'unvisited' && bm.visitCount > 0) return false;
     return true;
@@ -308,58 +385,90 @@ export default function ShopsPage() {
             setEditingList(null);
             setListDialogOpen(true);
           }}
+          onEditList={(list) => {
+            setEditingList(list);
+            setListDialogOpen(true);
+          }}
+          onDeleteList={(list) => setDeleteConfirmList(list)}
         />
 
-        {/* 路線フィルター */}
-        {availableLines.length > 0 && (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 0.5,
-              overflowX: 'auto',
-              pb: 1,
-              mb: 1,
-              '&::-webkit-scrollbar': { height: 4 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: 'action.hover', borderRadius: 2 },
-            }}
-          >
-            <Chip
-              label="全路線"
-              size="small"
-              color={selectedLine === null ? 'primary' : 'default'}
-              variant={selectedLine === null ? 'filled' : 'outlined'}
-              onClick={() => setSelectedLine(null)}
-              sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
-            />
-            {availableLines.map((line) => (
+        {/* 路線フィルター — 2段構成 */}
+        {availableLineSet.size > 0 && (
+          <Box sx={{ mb: 1 }}>
+            {/* 1段目: カテゴリチップ */}
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 0.5,
+                overflowX: 'auto',
+                pb: 0.5,
+                '&::-webkit-scrollbar': { height: 4 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: 'action.hover', borderRadius: 2 },
+              }}
+            >
               <Chip
-                key={line}
-                icon={<TrainIcon sx={{ fontSize: '14px !important' }} />}
-                label={line}
+                label="全路線"
                 size="small"
-                variant={selectedLine === line ? 'filled' : 'outlined'}
-                onClick={() => setSelectedLine((prev) => (prev === line ? null : line))}
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  flexShrink: 0,
-                  ...(selectedLine === line && {
-                    bgcolor: LINE_COLORS[line],
-                    color: '#fff',
-                    '& .MuiChip-icon': { color: '#fff' },
-                  }),
+                color={!selectedCategory && !selectedLine ? 'primary' : 'default'}
+                variant={!selectedCategory && !selectedLine ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSelectedLine(null);
                 }}
+                sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
               />
-            ))}
+              {CATEGORY_NAMES.map((cat) => (
+                <Chip
+                  key={cat}
+                  icon={<TrainIcon sx={{ fontSize: '14px !important' }} />}
+                  label={cat}
+                  size="small"
+                  color={selectedCategory === cat ? 'primary' : 'default'}
+                  variant={selectedCategory === cat ? 'filled' : 'outlined'}
+                  onClick={() => {
+                    setSelectedCategory((prev) => (prev === cat ? null : cat));
+                    setSelectedLine(null);
+                  }}
+                  sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
+                />
+              ))}
+            </Box>
+
+            {/* 2段目: カテゴリ内路線チップ（カテゴリ選択時のみ） */}
+            {selectedCategory && categoryLines.length > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 0.5,
+                  overflowX: 'auto',
+                  pt: 0.5,
+                  pb: 0.5,
+                  '&::-webkit-scrollbar': { height: 4 },
+                  '&::-webkit-scrollbar-thumb': { bgcolor: 'action.hover', borderRadius: 2 },
+                }}
+              >
+                {categoryLines.map((line) => (
+                  <Chip
+                    key={line}
+                    label={line}
+                    size="small"
+                    color={selectedLine === line ? 'secondary' : 'default'}
+                    variant={selectedLine === line ? 'filled' : 'outlined'}
+                    onClick={() => setSelectedLine((prev) => (prev === line ? null : line))}
+                    sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
+                  />
+                ))}
+              </Box>
+            )}
           </Box>
         )}
 
         {/* 件数表示 */}
-        {selectedLine && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-            {selectedLine}: {filteredBookmarks.length}件 / 全{bookmarks.length}件
-          </Typography>
-        )}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          {isAnyFilterActive
+            ? `${filteredBookmarks.length}件 / 全${bookmarks.length}件`
+            : `${bookmarks.length}件`}
+        </Typography>
 
         {/* Tag filter */}
         <Box
@@ -370,6 +479,16 @@ export default function ShopsPage() {
             mb: 1.5,
           }}
         >
+          {/* お気に入りフィルター */}
+          <Chip
+            icon={<StarIcon sx={{ fontSize: '14px !important' }} />}
+            label="お気に入り"
+            size="small"
+            color={favoriteFilter ? 'warning' : 'default'}
+            variant={favoriteFilter ? 'filled' : 'outlined'}
+            onClick={() => setFavoriteFilter((prev) => !prev)}
+            sx={{ height: 24, fontSize: '0.7rem' }}
+          />
           {/* Smoking filter */}
           <Chip
             icon={<SmokeFreeIcon sx={{ fontSize: '14px !important' }} />}
@@ -413,7 +532,10 @@ export default function ShopsPage() {
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
           ))}
-          {(selectedTags.length > 0 || noSmokingFilter || visitFilter !== 'all') && (
+          {(selectedTags.length > 0 ||
+            noSmokingFilter ||
+            visitFilter !== 'all' ||
+            favoriteFilter) && (
             <Chip
               label="クリア"
               size="small"
@@ -423,6 +545,7 @@ export default function ShopsPage() {
                 setSelectedTags([]);
                 setNoSmokingFilter(false);
                 setVisitFilter('all');
+                setFavoriteFilter(false);
               }}
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
@@ -435,9 +558,38 @@ export default function ShopsPage() {
             <CircularProgress size={24} />
           </Box>
         ) : filteredBookmarks.length === 0 ? (
-          <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
-            {selectedListId ? 'このリストにショップはありません' : 'ショップを追加してみましょう'}
-          </Typography>
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            {isAnyFilterActive ? (
+              <>
+                <Typography color="text.secondary" sx={{ mb: 1 }}>
+                  条件に一致するショップがありません
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    setSelectedListId(null);
+                    setSelectedTags([]);
+                    setNoSmokingFilter(false);
+                    setSelectedLine(null);
+                    setSelectedCategory(null);
+                    setVisitFilter('all');
+                    setFavoriteFilter(false);
+                  }}
+                >
+                  フィルターをクリア
+                </Button>
+              </>
+            ) : (
+              <>
+                <StorefrontIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                <Typography color="text.secondary">
+                  お気に入りのダーツショップを追加してみましょう
+                </Typography>
+              </>
+            )}
+          </Box>
         ) : (
           filteredBookmarks.map((bm) => (
             <ShopCard
@@ -448,7 +600,7 @@ export default function ShopsPage() {
                 setEditingBookmark(bm);
                 setDialogOpen(true);
               }}
-              onDelete={() => handleDelete(bm)}
+              onDelete={() => setDeleteConfirmBookmark(bm)}
               onVisit={() => handleVisit(bm)}
               onToggleFavorite={() => handleToggleFavorite(bm)}
             />
@@ -513,6 +665,39 @@ export default function ShopsPage() {
         onSave={handleSaveList}
         initial={editingList}
       />
+
+      {/* ショップ削除確認ダイアログ */}
+      <Dialog open={Boolean(deleteConfirmBookmark)} onClose={() => setDeleteConfirmBookmark(null)}>
+        <DialogTitle>ショップを削除</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            「{deleteConfirmBookmark?.name}」を削除しますか？この操作は取り消せません。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmBookmark(null)}>キャンセル</Button>
+          <Button onClick={handleDeleteConfirmed} color="error" variant="contained">
+            削除
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* リスト削除確認ダイアログ */}
+      <Dialog open={Boolean(deleteConfirmList)} onClose={() => setDeleteConfirmList(null)}>
+        <DialogTitle>リストを削除</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            「{deleteConfirmList?.name}
+            」を削除しますか？リスト内のショップは削除されませんが、リストへの紐付けは解除されます。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmList(null)}>キャンセル</Button>
+          <Button onClick={handleDeleteListConfirmed} color="error" variant="contained">
+            削除
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
