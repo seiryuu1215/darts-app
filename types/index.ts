@@ -332,6 +332,8 @@ export interface ShopBookmark {
   lastVisitedAt: Timestamp | null;
   isFavorite: boolean;
   listIds: string[];
+  lat?: number | null;
+  lng?: number | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

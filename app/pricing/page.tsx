@@ -37,7 +37,10 @@ interface PricingInfo {
 
 const FEATURES = [
   { label: 'セッティング登録', free: '1件', pro: '無制限' },
+  { label: 'マイショップ', free: '5件まで', pro: '無制限' },
   { label: 'DARTSLIVE連携', free: false, pro: true },
+  { label: 'Push通知', free: false, pro: true },
+  { label: 'ディスカッション投稿', free: false, pro: true },
   { label: '記事投稿', free: false, pro: true },
   { label: 'バレル診断 詳細レポート', free: 'マッチ度のみ', pro: '詳細分析' },
   { label: 'スタッツ履歴', free: '30日間', pro: '無制限' },

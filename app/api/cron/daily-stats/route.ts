@@ -31,7 +31,9 @@ import {
   login,
   scrapeStats,
   scrapeGameCount,
+  withRetry,
 } from '@/lib/dartslive-scraper';
+import { sendPushToUser } from '@/lib/push-notifications';
 
 export const maxDuration = 300;
 
@@ -79,12 +81,12 @@ export async function GET(request: NextRequest) {
           const page = await createPage(browser);
 
           try {
-            const loginSuccess = await login(page, dlEmail, dlPassword);
+            const loginSuccess = await withRetry(() => login(page, dlEmail, dlPassword));
             if (!loginSuccess) {
               throw new Error('LOGIN_FAILED');
             }
-            const stats = await scrapeStats(page);
-            const gamesPlayed = await scrapeGameCount(page);
+            const stats = await withRetry(() => scrapeStats(page));
+            const gamesPlayed = await withRetry(() => scrapeGameCount(page));
 
             // 前回キャッシュと比較
             const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
@@ -240,6 +242,13 @@ export async function GET(request: NextRequest) {
                   : undefined,
               });
               await sendLinePushMessage(lineUserId, [flexMsg]);
+
+              // Push通知も送信
+              await sendPushToUser(userId, {
+                title: 'スタッツ更新',
+                body: `Rating: ${stats.rating ?? '-'} / 01: ${stats.stats01Avg ?? '-'} / Cri: ${stats.statsCriAvg ?? '-'}`,
+                url: '/stats',
+              }).catch(() => {});
 
               // 会話状態を waiting_condition にセット
               await adminDb.doc(`lineConversations/${lineUserId}`).set({
@@ -634,6 +643,13 @@ export async function GET(request: NextRequest) {
                       read: false,
                       createdAt: FieldValue.serverTimestamp(),
                     });
+
+                    // Push通知
+                    await sendPushToUser(userId, {
+                      title: '目標達成!',
+                      body: `${goalType} の目標を達成しました (+${xpAmt}XP)`,
+                      url: '/',
+                    }).catch(() => {});
                   }
                 }
               }

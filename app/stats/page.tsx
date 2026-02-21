@@ -16,6 +16,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import Chip from '@mui/material/Chip';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
@@ -369,33 +370,37 @@ export default function StatsPage() {
         )}
 
         {/* 13. CSV Export */}
-        {canExportCsv(session?.user?.role) && (
-          <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
-            <CardContent
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                py: '12px !important',
-              }}
-            >
-              <Box>
+        <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
+          <CardContent
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              py: '12px !important',
+            }}
+          >
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2">スタッツをエクスポート</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  全履歴をCSVファイルでダウンロード
-                </Typography>
+                {!canExportCsv(session?.user?.role) && (
+                  <Chip label="PRO" color="primary" size="small" />
+                )}
               </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<DownloadIcon />}
-                href="/api/stats-history/export"
-              >
-                CSV出力
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              <Typography variant="caption" color="text.secondary">
+                全履歴をCSVファイルでダウンロード
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DownloadIcon />}
+              href="/api/stats-history/export"
+              disabled={!canExportCsv(session?.user?.role)}
+            >
+              CSV出力
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* 14. Manual Record */}
         <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>

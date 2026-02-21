@@ -6,9 +6,12 @@ import {
   canUseDartslive,
   canWriteArticles,
   canViewDetailedAnalysis,
+  canUsePushNotifications,
   getSettingsLimit,
+  getShopBookmarkLimit,
   getStatsRetentionDays,
   SETTINGS_LIMIT_GENERAL,
+  SHOP_BOOKMARK_LIMIT_GENERAL,
 } from '@/lib/permissions';
 
 describe('isPro', () => {
@@ -101,5 +104,35 @@ describe('getStatsRetentionDays', () => {
   });
   it('returns 30 for general', () => {
     expect(getStatsRetentionDays('general')).toBe(30);
+  });
+});
+
+describe('getShopBookmarkLimit', () => {
+  it('returns null for pro (unlimited)', () => {
+    expect(getShopBookmarkLimit('pro')).toBeNull();
+  });
+  it('returns null for admin (unlimited)', () => {
+    expect(getShopBookmarkLimit('admin')).toBeNull();
+  });
+  it('returns SHOP_BOOKMARK_LIMIT_GENERAL for general', () => {
+    expect(getShopBookmarkLimit('general')).toBe(SHOP_BOOKMARK_LIMIT_GENERAL);
+  });
+  it('returns SHOP_BOOKMARK_LIMIT_GENERAL for undefined', () => {
+    expect(getShopBookmarkLimit(undefined)).toBe(SHOP_BOOKMARK_LIMIT_GENERAL);
+  });
+});
+
+describe('canUsePushNotifications', () => {
+  it('returns true for pro', () => {
+    expect(canUsePushNotifications('pro')).toBe(true);
+  });
+  it('returns true for admin', () => {
+    expect(canUsePushNotifications('admin')).toBe(true);
+  });
+  it('returns false for general', () => {
+    expect(canUsePushNotifications('general')).toBe(false);
+  });
+  it('returns false for undefined', () => {
+    expect(canUsePushNotifications(undefined)).toBe(false);
   });
 });

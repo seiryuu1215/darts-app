@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { adminDb } from '@/lib/firebase-admin';
 import * as Sentry from '@sentry/nextjs';
 import type { UserRole } from '@/types';
+import { checkRedisRateLimit } from '@/lib/rate-limit';
 
 export interface AuthContext {
   userId: string;
@@ -15,7 +16,7 @@ type HandlerWithAuth = (req: NextRequest, ctx: AuthContext) => Promise<NextRespo
 type Handler = (req: NextRequest) => Promise<NextResponse>;
 
 // ──────────────────────────────
-// Rate Limiter (in-memory, per-IP)
+// Rate Limiter (in-memory fallback + Upstash Redis)
 // ──────────────────────────────
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -26,8 +27,7 @@ function getRateLimitKey(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 }
 
-export function checkRateLimit(req: NextRequest): NextResponse | null {
-  const key = getRateLimitKey(req);
+function checkInMemoryRateLimit(key: string): NextResponse | null {
   const now = Date.now();
   const entry = rateLimitStore.get(key);
 
@@ -46,7 +46,26 @@ export function checkRateLimit(req: NextRequest): NextResponse | null {
   return null;
 }
 
-// Cleanup stale entries every 5 minutes
+export async function checkRateLimit(req: NextRequest): Promise<NextResponse | null> {
+  const key = getRateLimitKey(req);
+
+  // Upstash Redis を優先、未設定時はin-memoryフォールバック
+  const redisResult = await checkRedisRateLimit(key);
+  if (redisResult) {
+    if (!redisResult.success) {
+      const retryAfter = Math.ceil((redisResult.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: { 'Retry-After': String(Math.max(retryAfter, 1)) } },
+      );
+    }
+    return null;
+  }
+
+  return checkInMemoryRateLimit(key);
+}
+
+// Cleanup stale entries every 5 minutes (in-memory fallback用)
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
@@ -61,7 +80,7 @@ if (typeof setInterval !== 'undefined') {
  */
 export function withErrorHandler(handler: Handler, label: string): Handler {
   return async (req: NextRequest) => {
-    const rateLimited = checkRateLimit(req);
+    const rateLimited = await checkRateLimit(req);
     if (rateLimited) return rateLimited;
     try {
       return await handler(req);

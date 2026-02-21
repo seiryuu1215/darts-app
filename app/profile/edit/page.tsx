@@ -27,6 +27,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import UserAvatar from '@/components/UserAvatar';
+import PushOptIn from '@/components/notifications/PushOptIn';
 
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
@@ -273,6 +274,10 @@ export default function ProfileEditPage() {
         <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">
           {saving ? '保存中...' : '保存'}
         </Button>
+
+        {/* Push通知セクション */}
+        <Divider sx={{ my: 4 }} />
+        <PushOptIn />
 
         {isAdmin && (
           <>

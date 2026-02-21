@@ -16,6 +16,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Collapse,
+  Pagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -24,6 +26,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
 import TrainIcon from '@mui/icons-material/Train';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import {
   collection,
   getDocs,
@@ -39,19 +43,29 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import dynamic from 'next/dynamic';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import ShopCard from '@/components/shops/ShopCard';
 import ShopBookmarkDialog from '@/components/shops/ShopBookmarkDialog';
 import ShopListDialog from '@/components/shops/ShopListDialog';
 import ShopListChips from '@/components/shops/ShopListChips';
+import ShopViewToggle from '@/components/shops/ShopViewToggle';
+import ProPaywall from '@/components/ProPaywall';
+import { usePermission } from '@/lib/hooks/usePermission';
+import { SHOP_BOOKMARK_LIMIT_GENERAL } from '@/lib/permissions';
+import { geocodeAddress } from '@/lib/geocode';
 import type { ShopBookmark, ShopList } from '@/types';
 import { LINE_CATEGORIES } from '@/lib/line-stations';
 
+const ShopMapView = dynamic(() => import('@/components/shops/ShopMapView'), { ssr: false });
+
 const CATEGORY_NAMES = Object.keys(LINE_CATEGORIES);
+const ITEMS_PER_PAGE = 30;
 
 export default function ShopsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isPro, shopBookmarkLimit } = usePermission();
   const [bookmarks, setBookmarks] = useState<ShopBookmark[]>([]);
   const [lists, setLists] = useState<ShopList[]>([]);
   const [bookmarksLoading, setBookmarksLoading] = useState(true);
@@ -69,6 +83,9 @@ export default function ShopsPage() {
   const [favoriteFilter, setFavoriteFilter] = useState(false);
   const [deleteConfirmBookmark, setDeleteConfirmBookmark] = useState<ShopBookmark | null>(null);
   const [deleteConfirmList, setDeleteConfirmList] = useState<ShopList | null>(null);
+  const [showTagFilter, setShowTagFilter] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -146,7 +163,10 @@ export default function ShopsPage() {
     fetchHomeShop();
   }, [session]);
 
-  // Save bookmark (create / update)
+  // PRO制限判定
+  const atBookmarkLimit = shopBookmarkLimit !== null && bookmarks.length >= shopBookmarkLimit;
+
+  // Save bookmark (create / update) + ジオコーディング
   const handleSaveBookmark = async (data: {
     name: string;
     address: string;
@@ -164,6 +184,12 @@ export default function ShopsPage() {
     const userId = session.user.id;
     const now = Timestamp.now();
 
+    // ジオコーディング
+    let coords: { lat: number; lng: number } | null = null;
+    if (data.address) {
+      coords = await geocodeAddress(data.address);
+    }
+
     try {
       if (editingBookmark) {
         await updateDoc(doc(db, 'users', userId, 'shopBookmarks', editingBookmark.id!), {
@@ -178,6 +204,7 @@ export default function ShopsPage() {
           rating: data.rating,
           isFavorite: data.isFavorite,
           listIds: data.listIds,
+          ...(coords && { lat: coords.lat, lng: coords.lng }),
           updatedAt: now,
         });
       } else {
@@ -195,6 +222,7 @@ export default function ShopsPage() {
           lastVisitedAt: null,
           isFavorite: data.isFavorite,
           listIds: data.listIds,
+          ...(coords && { lat: coords.lat, lng: coords.lng }),
           createdAt: now,
           updatedAt: now,
         });
@@ -273,7 +301,6 @@ export default function ShopsPage() {
     const listId = deleteConfirmList.id;
 
     try {
-      // 関連ブックマークの listIds から該当IDを除去
       const batch = writeBatch(db);
       const affected = bookmarks.filter((bm) => bm.listIds?.includes(listId));
       for (const bm of affected) {
@@ -282,11 +309,9 @@ export default function ShopsPage() {
           updatedAt: Timestamp.now(),
         });
       }
-      // リスト自体を削除
       batch.delete(doc(db, 'users', userId, 'shopLists', listId));
       await batch.commit();
 
-      // 選択中のリストが削除対象ならリセット
       if (selectedListId === listId) setSelectedListId(null);
       setDeleteConfirmList(null);
       await loadLists();
@@ -296,7 +321,10 @@ export default function ShopsPage() {
     }
   };
 
-  // Curated filter tags (only show these in the filter bar)
+  // フィルター変更時にページリセット
+  const resetPage = () => setCurrentPage(1);
+
+  // Curated filter tags
   const FILTER_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
   const FILTER_PARTIAL = ['チャージ', '持ち込み'];
   const allRawTags = [...new Set(bookmarks.flatMap((bm) => bm.tags ?? []))];
@@ -304,20 +332,15 @@ export default function ShopsPage() {
     .filter((t) => FILTER_TAGS.includes(t) || FILTER_PARTIAL.some((p) => t.includes(p)))
     .sort();
 
-  // 路線フィルターで使う路線名（データに存在するもののみ表示）
+  // 路線フィルター
   const availableLineSet = new Set(bookmarks.flatMap((bm) => bm.lines ?? []));
-
-  // カテゴリ選択時に表示する路線（データに存在するもののみ）
   const categoryLines = selectedCategory
     ? (LINE_CATEGORIES[selectedCategory] ?? []).filter((l) => availableLineSet.has(l))
     : [];
-
-  // カテゴリ内全路線のセット（フィルター用）
   const categoryLineSet = selectedCategory
     ? new Set(LINE_CATEGORIES[selectedCategory] ?? [])
     : null;
 
-  // フィルター判定: 路線
   const isAnyFilterActive =
     selectedListId ||
     selectedTags.length > 0 ||
@@ -333,7 +356,6 @@ export default function ShopsPage() {
     if (selectedTags.length > 0 && !selectedTags.every((t) => bm.tags?.includes(t))) return false;
     if (noSmokingFilter && bm.tags?.includes('喫煙可')) return false;
     if (favoriteFilter && !bm.isFavorite) return false;
-    // 路線: 個別路線 > カテゴリ
     if (selectedLine) {
       if (!bm.lines?.includes(selectedLine)) return false;
     } else if (categoryLineSet) {
@@ -343,6 +365,15 @@ export default function ShopsPage() {
     if (visitFilter === 'unvisited' && bm.visitCount > 0) return false;
     return true;
   });
+
+  // ページネーション
+  const totalPages = Math.ceil(filteredBookmarks.length / ITEMS_PER_PAGE);
+  const paginatedBookmarks = filteredBookmarks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+  const showFrom = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const showTo = Math.min(currentPage * ITEMS_PER_PAGE, filteredBookmarks.length);
 
   if (status === 'loading') {
     return (
@@ -359,9 +390,19 @@ export default function ShopsPage() {
       <Box sx={{ mt: 3, p: { xs: 1, sm: 2 } }}>
         <Breadcrumbs items={[{ label: 'マイショップ' }]} />
 
-        <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-          マイショップ
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            マイショップ
+          </Typography>
+          <ShopViewToggle viewMode={viewMode} onChange={setViewMode} />
+        </Box>
 
         {/* DARTSLIVE SEARCH link */}
         <Button
@@ -376,11 +417,28 @@ export default function ShopsPage() {
           ダーツライブサーチで探す
         </Button>
 
+        {/* PRO制限バナー */}
+        {atBookmarkLimit && !isPro && (
+          <ProPaywall
+            title="ショップ登録は5件まで（無料プラン）"
+            description="PROプランにアップグレードすると無制限にショップを登録できます"
+            variant="compact"
+            currentUsage={{
+              current: bookmarks.length,
+              limit: SHOP_BOOKMARK_LIMIT_GENERAL,
+              label: 'マイショップ',
+            }}
+          />
+        )}
+
         {/* List chip bar */}
         <ShopListChips
           lists={lists}
           selectedListId={selectedListId}
-          onSelect={setSelectedListId}
+          onSelect={(id) => {
+            setSelectedListId(id);
+            resetPage();
+          }}
           onCreateList={() => {
             setEditingList(null);
             setListDialogOpen(true);
@@ -395,7 +453,6 @@ export default function ShopsPage() {
         {/* 路線フィルター — 2段構成 */}
         {availableLineSet.size > 0 && (
           <Box sx={{ mb: 1 }}>
-            {/* 1段目: カテゴリチップ */}
             <Box
               sx={{
                 display: 'flex',
@@ -414,6 +471,7 @@ export default function ShopsPage() {
                 onClick={() => {
                   setSelectedCategory(null);
                   setSelectedLine(null);
+                  resetPage();
                 }}
                 sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
               />
@@ -428,13 +486,13 @@ export default function ShopsPage() {
                   onClick={() => {
                     setSelectedCategory((prev) => (prev === cat ? null : cat));
                     setSelectedLine(null);
+                    resetPage();
                   }}
                   sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
                 />
               ))}
             </Box>
 
-            {/* 2段目: カテゴリ内路線チップ（カテゴリ選択時のみ） */}
             {selectedCategory && categoryLines.length > 0 && (
               <Box
                 sx={{
@@ -454,7 +512,10 @@ export default function ShopsPage() {
                     size="small"
                     color={selectedLine === line ? 'secondary' : 'default'}
                     variant={selectedLine === line ? 'filled' : 'outlined'}
-                    onClick={() => setSelectedLine((prev) => (prev === line ? null : line))}
+                    onClick={() => {
+                      setSelectedLine((prev) => (prev === line ? null : line));
+                      resetPage();
+                    }}
                     sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
                   />
                 ))}
@@ -463,50 +524,49 @@ export default function ShopsPage() {
           </Box>
         )}
 
-        {/* 件数表示 */}
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          {isAnyFilterActive
-            ? `${filteredBookmarks.length}件 / 全${bookmarks.length}件`
-            : `${bookmarks.length}件`}
-        </Typography>
-
-        {/* Tag filter */}
+        {/* 1行目: メインフィルター */}
         <Box
           sx={{
             display: 'flex',
             gap: 0.5,
             flexWrap: 'wrap',
-            mb: 1.5,
+            mb: 0.5,
           }}
         >
-          {/* お気に入りフィルター */}
           <Chip
             icon={<StarIcon sx={{ fontSize: '14px !important' }} />}
             label="お気に入り"
             size="small"
             color={favoriteFilter ? 'warning' : 'default'}
             variant={favoriteFilter ? 'filled' : 'outlined'}
-            onClick={() => setFavoriteFilter((prev) => !prev)}
+            onClick={() => {
+              setFavoriteFilter((prev) => !prev);
+              resetPage();
+            }}
             sx={{ height: 24, fontSize: '0.7rem' }}
           />
-          {/* Smoking filter */}
           <Chip
             icon={<SmokeFreeIcon sx={{ fontSize: '14px !important' }} />}
             label="禁煙・分煙のみ"
             size="small"
             color={noSmokingFilter ? 'info' : 'default'}
             variant={noSmokingFilter ? 'filled' : 'outlined'}
-            onClick={() => setNoSmokingFilter((prev) => !prev)}
+            onClick={() => {
+              setNoSmokingFilter((prev) => !prev);
+              resetPage();
+            }}
             sx={{ height: 24, fontSize: '0.7rem' }}
           />
-          {/* Visit filter */}
           <Chip
             icon={<CheckCircleIcon sx={{ fontSize: '14px !important' }} />}
             label="訪問済み"
             size="small"
             color={visitFilter === 'visited' ? 'success' : 'default'}
             variant={visitFilter === 'visited' ? 'filled' : 'outlined'}
-            onClick={() => setVisitFilter((prev) => (prev === 'visited' ? 'all' : 'visited'))}
+            onClick={() => {
+              setVisitFilter((prev) => (prev === 'visited' ? 'all' : 'visited'));
+              resetPage();
+            }}
             sx={{ height: 24, fontSize: '0.7rem' }}
           />
           <Chip
@@ -514,24 +574,12 @@ export default function ShopsPage() {
             size="small"
             color={visitFilter === 'unvisited' ? 'warning' : 'default'}
             variant={visitFilter === 'unvisited' ? 'filled' : 'outlined'}
-            onClick={() => setVisitFilter((prev) => (prev === 'unvisited' ? 'all' : 'unvisited'))}
+            onClick={() => {
+              setVisitFilter((prev) => (prev === 'unvisited' ? 'all' : 'unvisited'));
+              resetPage();
+            }}
             sx={{ height: 24, fontSize: '0.7rem' }}
           />
-          {filterTags.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              size="small"
-              color={selectedTags.includes(tag) ? 'primary' : 'default'}
-              variant={selectedTags.includes(tag) ? 'filled' : 'outlined'}
-              onClick={() =>
-                setSelectedTags((prev) =>
-                  prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-                )
-              }
-              sx={{ height: 24, fontSize: '0.7rem' }}
-            />
-          ))}
           {(selectedTags.length > 0 ||
             noSmokingFilter ||
             visitFilter !== 'all' ||
@@ -546,65 +594,140 @@ export default function ShopsPage() {
                 setNoSmokingFilter(false);
                 setVisitFilter('all');
                 setFavoriteFilter(false);
+                resetPage();
               }}
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
           )}
         </Box>
 
-        {/* Bookmarks */}
-        {bookmarksLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={24} />
+        {/* 2行目: タグフィルター（折りたたみ） */}
+        {filterTags.length > 0 && (
+          <Box sx={{ mb: 1 }}>
+            <Chip
+              label={showTagFilter ? 'タグで絞る ▲' : 'タグで絞る ▼'}
+              size="small"
+              variant="outlined"
+              icon={
+                showTagFilter ? (
+                  <ExpandLessIcon sx={{ fontSize: '14px !important' }} />
+                ) : (
+                  <ExpandMoreIcon sx={{ fontSize: '14px !important' }} />
+                )
+              }
+              onClick={() => setShowTagFilter((prev) => !prev)}
+              sx={{ height: 24, fontSize: '0.7rem', mb: 0.5 }}
+            />
+            <Collapse in={showTagFilter}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {filterTags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    label={tag}
+                    size="small"
+                    color={selectedTags.includes(tag) ? 'primary' : 'default'}
+                    variant={selectedTags.includes(tag) ? 'filled' : 'outlined'}
+                    onClick={() => {
+                      setSelectedTags((prev) =>
+                        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+                      );
+                      resetPage();
+                    }}
+                    sx={{ height: 24, fontSize: '0.7rem' }}
+                  />
+                ))}
+              </Box>
+            </Collapse>
           </Box>
-        ) : filteredBookmarks.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            {isAnyFilterActive ? (
-              <>
-                <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  条件に一致するショップがありません
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={() => {
-                    setSelectedListId(null);
-                    setSelectedTags([]);
-                    setNoSmokingFilter(false);
-                    setSelectedLine(null);
-                    setSelectedCategory(null);
-                    setVisitFilter('all');
-                    setFavoriteFilter(false);
-                  }}
-                >
-                  フィルターをクリア
-                </Button>
-              </>
+        )}
+
+        {/* 件数表示 */}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          {!isPro && shopBookmarkLimit !== null
+            ? `${bookmarks.length}/${shopBookmarkLimit}件`
+            : isAnyFilterActive
+              ? filteredBookmarks.length > ITEMS_PER_PAGE
+                ? `${showFrom}-${showTo} / 全${filteredBookmarks.length}件（絞り込み中: 全${bookmarks.length}件）`
+                : `${filteredBookmarks.length}件 / 全${bookmarks.length}件`
+              : filteredBookmarks.length > ITEMS_PER_PAGE
+                ? `${showFrom}-${showTo} / 全${bookmarks.length}件`
+                : `${bookmarks.length}件`}
+        </Typography>
+
+        {/* 地図/リスト表示 */}
+        {viewMode === 'map' ? (
+          <ShopMapView bookmarks={filteredBookmarks} />
+        ) : (
+          <>
+            {/* Bookmarks */}
+            {bookmarksLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : filteredBookmarks.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 6 }}>
+                {isAnyFilterActive ? (
+                  <>
+                    <Typography color="text.secondary" sx={{ mb: 1 }}>
+                      条件に一致するショップがありません
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => {
+                        setSelectedListId(null);
+                        setSelectedTags([]);
+                        setNoSmokingFilter(false);
+                        setSelectedLine(null);
+                        setSelectedCategory(null);
+                        setVisitFilter('all');
+                        setFavoriteFilter(false);
+                        resetPage();
+                      }}
+                    >
+                      フィルターをクリア
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <StorefrontIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                    <Typography color="text.secondary">
+                      お気に入りのダーツショップを追加してみましょう
+                    </Typography>
+                  </>
+                )}
+              </Box>
             ) : (
               <>
-                <StorefrontIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                <Typography color="text.secondary">
-                  お気に入りのダーツショップを追加してみましょう
-                </Typography>
+                {paginatedBookmarks.map((bm) => (
+                  <ShopCard
+                    key={bm.id}
+                    bookmark={bm}
+                    lists={lists}
+                    onEdit={() => {
+                      setEditingBookmark(bm);
+                      setDialogOpen(true);
+                    }}
+                    onDelete={() => setDeleteConfirmBookmark(bm)}
+                    onVisit={() => handleVisit(bm)}
+                    onToggleFavorite={() => handleToggleFavorite(bm)}
+                  />
+                ))}
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 2 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={currentPage}
+                      onChange={(_, page) => setCurrentPage(page)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Box>
+                )}
               </>
             )}
-          </Box>
-        ) : (
-          filteredBookmarks.map((bm) => (
-            <ShopCard
-              key={bm.id}
-              bookmark={bm}
-              lists={lists}
-              onEdit={() => {
-                setEditingBookmark(bm);
-                setDialogOpen(true);
-              }}
-              onDelete={() => setDeleteConfirmBookmark(bm)}
-              onVisit={() => handleVisit(bm)}
-              onToggleFavorite={() => handleToggleFavorite(bm)}
-            />
-          ))
+          </>
         )}
       </Box>
 
@@ -617,6 +740,7 @@ export default function ShopsPage() {
           setEditingBookmark(null);
           setDialogOpen(true);
         }}
+        disabled={atBookmarkLimit && !isPro}
       >
         <AddIcon />
       </Fab>

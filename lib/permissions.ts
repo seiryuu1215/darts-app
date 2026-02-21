@@ -1,6 +1,7 @@
 import type { UserRole } from '@/types';
 
 export const SETTINGS_LIMIT_GENERAL = 1;
+export const SHOP_BOOKMARK_LIMIT_GENERAL = 5;
 
 export function isPro(role: UserRole | undefined): boolean {
   return role === 'pro' || role === 'admin';
@@ -68,4 +69,13 @@ export function canPinDiscussion(role: UserRole | undefined): boolean {
 
 export function canLockDiscussion(role: UserRole | undefined): boolean {
   return role === 'admin';
+}
+
+export function getShopBookmarkLimit(role: UserRole | undefined): number | null {
+  if (role === 'pro' || role === 'admin') return null;
+  return SHOP_BOOKMARK_LIMIT_GENERAL;
+}
+
+export function canUsePushNotifications(role: UserRole | undefined): boolean {
+  return role === 'pro' || role === 'admin';
 }

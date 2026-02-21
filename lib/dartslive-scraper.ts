@@ -1,6 +1,26 @@
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
+/** リトライヘルパー — 指数バックオフ (1s, 3s) */
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries: number = 2): Promise<T> {
+  const delays = [1000, 3000];
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        const delay = delays[attempt] ?? 3000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 export interface ScrapedStats {
   rating: number | null;
   ratingInt: number | null;

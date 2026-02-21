@@ -19,6 +19,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import MarkdownContent from '@/components/articles/MarkdownContent';
+import ProPaywall from '@/components/ProPaywall';
 import { canCreateDiscussion } from '@/lib/permissions';
 import { DISCUSSION_CATEGORIES, CATEGORY_LABELS } from '@/types';
 import type { DiscussionCategory } from '@/types';
@@ -67,8 +68,17 @@ function NewDiscussionContent() {
 
   if (status === 'loading') return null;
   if (!canCreateDiscussion(session?.user?.role)) {
-    router.replace('/discussions');
-    return null;
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Breadcrumbs
+          items={[{ label: 'ディスカッション', href: '/discussions' }, { label: '新規スレッド' }]}
+        />
+        <ProPaywall
+          title="ディスカッション投稿はPRO限定"
+          description="PROプランに加入すると、ディスカッションに新規スレッドを投稿できます"
+        />
+      </Container>
+    );
   }
 
   const handleSubmit = async () => {
