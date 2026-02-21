@@ -179,6 +179,84 @@ async function main() {
     console.log('  -> quiz.png saved');
   }
 
+  // --- マイショップ ---
+  if (shouldCapture('shops')) {
+    console.log('Taking screenshot: shops');
+    await page.goto(`${BASE_URL}/shops`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'shops.png'), fullPage: false });
+    console.log('  -> shops.png saved');
+  }
+
+  // --- ディスカッション ---
+  if (shouldCapture('discussions')) {
+    console.log('Taking screenshot: discussions');
+    await page.goto(`${BASE_URL}/discussions`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, 'discussions.png'),
+      fullPage: false,
+    });
+    console.log('  -> discussions.png saved');
+  }
+
+  // --- 週次/月次レポート ---
+  if (shouldCapture('reports')) {
+    console.log('Taking screenshot: reports');
+    await page.goto(`${BASE_URL}/reports`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'reports.png'), fullPage: false });
+    console.log('  -> reports.png saved');
+  }
+
+  // --- カレンダービュー ---
+  if (shouldCapture('calendar')) {
+    console.log('Taking screenshot: calendar');
+    await page.goto(`${BASE_URL}/stats/calendar`, {
+      waitUntil: 'networkidle2',
+      timeout: 30000,
+    });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, 'calendar.png'),
+      fullPage: false,
+    });
+    console.log('  -> calendar.png saved');
+  }
+
+  // --- セッティング比較 ---
+  if (shouldCapture('compare')) {
+    console.log('Taking screenshot: compare');
+    await page.goto(`${BASE_URL}/darts/compare`, {
+      waitUntil: 'networkidle2',
+      timeout: 30000,
+    });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'compare.png'), fullPage: false });
+    console.log('  -> compare.png saved');
+  }
+
+  // --- おすすめバレル ---
+  if (shouldCapture('recommend')) {
+    console.log('Taking screenshot: recommend');
+    await page.goto(`${BASE_URL}/barrels/recommend`, {
+      waitUntil: 'networkidle2',
+      timeout: 30000,
+    });
+    await waitForContent(page);
+    await dismissAllDialogs(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, 'recommend.png'),
+      fullPage: false,
+    });
+    console.log('  -> recommend.png saved');
+  }
+
   await browser.close();
   console.log('\nDone!');
 }
