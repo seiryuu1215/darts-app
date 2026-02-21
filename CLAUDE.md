@@ -68,8 +68,10 @@ GitHub Actions (`.github/workflows/ci.yml`) で以下を実行:
 
 ## デプロイ
 
-- `main` ブランチへのpushで Vercel が自動デプロイ
+- `main` ブランチへのpushで Vercel が自動デプロイ（GitHub連携済み）
+- `vercel --prod` による手動デプロイも可能
 - push後にCIがパスするか確認すること
+- 本番URL: https://darts-app-lime.vercel.app
 
 ## ディレクトリ構成
 
