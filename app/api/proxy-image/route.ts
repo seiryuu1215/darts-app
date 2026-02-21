@@ -47,7 +47,13 @@ export async function GET(req: NextRequest) {
     // Some CDNs return application/octet-stream — infer from URL extension
     if (contentType === 'application/octet-stream') {
       const ext = parsed.pathname.split('.').pop()?.toLowerCase();
-      const extMap: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+      const extMap: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+      };
       contentType = extMap[ext || ''] || 'image/jpeg';
     }
     if (!VALID_IMAGE_TYPES.some((t) => contentType.includes(t))) {

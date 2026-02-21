@@ -116,4 +116,3 @@ export function getEffectiveXp(rule: XpRule, cumulativeCount: number): number {
 
   return Math.round(rule.xp * multiplier);
 }
-

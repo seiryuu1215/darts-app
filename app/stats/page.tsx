@@ -599,12 +599,7 @@ export default function StatsPage() {
                 </Typography>
               </Box>
             </Box>
-            <Button
-              variant="outlined"
-              size="small"
-              component={Link}
-              href="/stats/calendar"
-            >
+            <Button variant="outlined" size="small" component={Link} href="/stats/calendar">
               開く
             </Button>
           </CardContent>

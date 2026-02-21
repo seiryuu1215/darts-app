@@ -38,16 +38,26 @@ export default function WeeklyReportCard({
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
         <Paper variant="outlined" sx={{ flex: 1, minWidth: 70, p: 1, textAlign: 'center' }}>
-          <Typography variant="caption" color="text.secondary">プレイ日数</Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{playDays}日</Typography>
+          <Typography variant="caption" color="text.secondary">
+            プレイ日数
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            {playDays}日
+          </Typography>
         </Paper>
         <Paper variant="outlined" sx={{ flex: 1, minWidth: 70, p: 1, textAlign: 'center' }}>
-          <Typography variant="caption" color="text.secondary">ゲーム数</Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{totalGames}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            ゲーム数
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            {totalGames}
+          </Typography>
         </Paper>
         {ratingChange != null && (
           <Paper variant="outlined" sx={{ flex: 1, minWidth: 70, p: 1, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">Rating変動</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Rating変動
+            </Typography>
             <Typography
               variant="body1"
               sx={{
@@ -55,7 +65,8 @@ export default function WeeklyReportCard({
                 color: ratingChange > 0 ? '#4caf50' : ratingChange < 0 ? '#e53935' : 'text.primary',
               }}
             >
-              {ratingChange > 0 ? '+' : ''}{ratingChange.toFixed(2)}
+              {ratingChange > 0 ? '+' : ''}
+              {ratingChange.toFixed(2)}
             </Typography>
           </Paper>
         )}

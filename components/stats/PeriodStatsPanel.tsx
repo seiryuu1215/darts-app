@@ -52,7 +52,13 @@ interface PeriodStatsPanelProps {
   prevMpr?: number | null;
 }
 
-function DiffIndicator({ current, prev }: { current: number | null; prev: number | null | undefined }) {
+function DiffIndicator({
+  current,
+  prev,
+}: {
+  current: number | null;
+  prev: number | null | undefined;
+}) {
   if (current == null || prev == null || prev === undefined) return null;
   const diff = current - prev;
   if (Math.abs(diff) < 0.005) return null;

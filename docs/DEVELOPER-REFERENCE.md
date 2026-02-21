@@ -918,18 +918,18 @@ function ppdForRating(targetRt: number): number {
 
 **XP獲得ルール:**
 
-| ルールID                 | XP        | トリガー             |
-| ------------------------ | --------- | -------------------- |
-| `stats_record`           | 10        | スタッツ手動記録     |
-| `rating_milestone`       | 30        | Rating整数到達       |
-| `award_hat_trick`        | 5         | HAT TRICK            |
-| `award_ton_80`           | 10        | TON 80               |
-| `award_3_black`          | 15        | 3 IN A BLACK         |
-| `award_9_mark`           | 10        | 9マーク              |
-| `award_low_ton/high_ton` | 3/5       | LOW TON / HIGH TON   |
-| `discussion_post`        | 5         | ディスカッション投稿 |
-| `condition_record`       | 3         | コンディション記録   |
-| `goal_achieved`          | 50        | 目標達成             |
+| ルールID                 | XP  | トリガー             |
+| ------------------------ | --- | -------------------- |
+| `stats_record`           | 10  | スタッツ手動記録     |
+| `rating_milestone`       | 30  | Rating整数到達       |
+| `award_hat_trick`        | 5   | HAT TRICK            |
+| `award_ton_80`           | 10  | TON 80               |
+| `award_3_black`          | 15  | 3 IN A BLACK         |
+| `award_9_mark`           | 10  | 9マーク              |
+| `award_low_ton/high_ton` | 3/5 | LOW TON / HIGH TON   |
+| `discussion_post`        | 5   | ディスカッション投稿 |
+| `condition_record`       | 3   | コンディション記録   |
+| `goal_achieved`          | 50  | 目標達成             |
 
 **ランク体系（20段階）:**
 

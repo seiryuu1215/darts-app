@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import {
-  calculateGoalCurrent,
-  getMonthlyRange,
-  type StatsRecord,
-} from '@/lib/goals';
+import { calculateGoalCurrent, getMonthlyRange, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 
 const DAILY_LIMIT = 3;

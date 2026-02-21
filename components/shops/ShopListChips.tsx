@@ -44,7 +44,13 @@ export default function ShopListChips({
           size="small"
           color={
             selectedListId === list.id
-              ? (list.color as 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error')
+              ? (list.color as
+                  | 'default'
+                  | 'primary'
+                  | 'secondary'
+                  | 'success'
+                  | 'warning'
+                  | 'error')
               : 'default'
           }
           variant={selectedListId === list.id ? 'filled' : 'outlined'}

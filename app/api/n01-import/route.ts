@@ -19,7 +19,10 @@ export const POST = withErrorHandler(
     }
 
     if (csvText.length > 1_000_000) {
-      return NextResponse.json({ error: 'ファイルサイズが大きすぎます（1MB上限）' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ファイルサイズが大きすぎます（1MB上限）' },
+        { status: 400 },
+      );
     }
 
     const result = parseN01Csv(csvText);

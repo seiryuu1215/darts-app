@@ -3,14 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import {
-  Container,
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  CircularProgress,
-} from '@mui/material';
+import { Container, Box, Typography, Tabs, Tab, CircularProgress } from '@mui/material';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -98,9 +91,7 @@ function getMonthRanges(count: number): { label: string; start: Date; end: Date 
   return ranges;
 }
 
-function computeAwardsDiff(
-  records: StatsRecord[],
-): { label: string; count: number }[] {
+function computeAwardsDiff(records: StatsRecord[]): { label: string; count: number }[] {
   if (records.length < 2) return [];
   const first = records[0];
   const last = records[records.length - 1];
@@ -223,7 +214,10 @@ export default function ReportsPage() {
         .reduce((sum, x) => sum + x.xp, 0);
 
       const goalsAchieved = goalRecords.filter(
-        (g) => g.achievedAt && g.achievedAt.slice(0, 10) >= startStr && g.achievedAt.slice(0, 10) <= endStr,
+        (g) =>
+          g.achievedAt &&
+          g.achievedAt.slice(0, 10) >= startStr &&
+          g.achievedAt.slice(0, 10) <= endStr,
       ).length;
 
       return {
@@ -257,14 +251,18 @@ export default function ReportsPage() {
 
       const ratingStart = ratings.length > 0 ? ratings[0].rating : null;
       const ratingEnd = ratings.length > 0 ? ratings[ratings.length - 1].rating : null;
-      const ratingChange = ratingStart != null && ratingEnd != null ? ratingEnd - ratingStart : null;
+      const ratingChange =
+        ratingStart != null && ratingEnd != null ? ratingEnd - ratingStart : null;
 
       const xpGained = xpRecords
         .filter((x) => x.createdAt.slice(0, 10) >= startStr && x.createdAt.slice(0, 10) <= endStr)
         .reduce((sum, x) => sum + x.xp, 0);
 
       const goalsAchieved = goalRecords.filter(
-        (g) => g.achievedAt && g.achievedAt.slice(0, 10) >= startStr && g.achievedAt.slice(0, 10) <= endStr,
+        (g) =>
+          g.achievedAt &&
+          g.achievedAt.slice(0, 10) >= startStr &&
+          g.achievedAt.slice(0, 10) <= endStr,
       ).length;
       const goalsActive = goalRecords.filter((g) => !g.achievedAt).length;
 

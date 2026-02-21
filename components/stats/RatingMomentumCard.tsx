@@ -100,7 +100,7 @@ export default function RatingMomentumCard({
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
             {recent.length > 1
-              ? `${(recent[recent.length - 1].value - recent[0].value) >= 0 ? '+' : ''}${(recent[recent.length - 1].value - recent[0].value).toFixed(2)}`
+              ? `${recent[recent.length - 1].value - recent[0].value >= 0 ? '+' : ''}${(recent[recent.length - 1].value - recent[0].value).toFixed(2)}`
               : '--'}
           </Typography>
         </Paper>

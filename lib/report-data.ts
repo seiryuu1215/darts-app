@@ -51,7 +51,8 @@ export async function gatherPeriodReport(
   // Rating
   const ratingsWithDate = records.filter((r) => r.rating != null);
   const ratingStart = ratingsWithDate.length > 0 ? ratingsWithDate[0].rating : null;
-  const ratingEnd = ratingsWithDate.length > 0 ? ratingsWithDate[ratingsWithDate.length - 1].rating : null;
+  const ratingEnd =
+    ratingsWithDate.length > 0 ? ratingsWithDate[ratingsWithDate.length - 1].rating : null;
   const ratingChange = ratingStart != null && ratingEnd != null ? ratingEnd - ratingStart : null;
 
   const ratings = records.map((r) => r.rating).filter((r): r is number => r != null);

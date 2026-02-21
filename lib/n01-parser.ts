@@ -77,10 +77,8 @@ export function parseN01Csv(csvText: string): N01ParseResult {
       }
 
       const gameType = gameIdx >= 0 && cols[gameIdx] ? cols[gameIdx] : 'Unknown';
-      const rounds =
-        roundIdx >= 0 && cols[roundIdx] ? parseInt(cols[roundIdx], 10) || 0 : 0;
-      const totalScore =
-        scoreIdx >= 0 && cols[scoreIdx] ? parseFloat(cols[scoreIdx]) || 0 : 0;
+      const rounds = roundIdx >= 0 && cols[roundIdx] ? parseInt(cols[roundIdx], 10) || 0 : 0;
+      const totalScore = scoreIdx >= 0 && cols[scoreIdx] ? parseFloat(cols[scoreIdx]) || 0 : 0;
       const avgPerRound = rounds > 0 ? totalScore / rounds : 0;
 
       sessions.push({

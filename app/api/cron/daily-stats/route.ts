@@ -18,9 +18,20 @@ import {
   type AchievementSnapshot,
 } from '@/lib/progression/xp-engine';
 import { ACHIEVEMENT_MAP } from '@/lib/progression/achievements';
-import { calculateGoalCurrent, calculateScaledGoalXp, getDailyRange, type StatsRecord } from '@/lib/goals';
+import {
+  calculateGoalCurrent,
+  calculateScaledGoalXp,
+  getDailyRange,
+  type StatsRecord,
+} from '@/lib/goals';
 import type { GoalType } from '@/types';
-import { launchBrowser, createPage, login, scrapeStats, scrapeGameCount } from '@/lib/dartslive-scraper';
+import {
+  launchBrowser,
+  createPage,
+  login,
+  scrapeStats,
+  scrapeGameCount,
+} from '@/lib/dartslive-scraper';
 
 export const maxDuration = 300;
 
@@ -634,7 +645,11 @@ export async function GET(request: NextRequest) {
             try {
               const dayOfWeek = todayJST.getDay(); // 0=日曜
               const dayOfMonth = todayJST.getDate();
-              const lastDay = new Date(todayJST.getFullYear(), todayJST.getMonth() + 1, 0).getDate();
+              const lastDay = new Date(
+                todayJST.getFullYear(),
+                todayJST.getMonth() + 1,
+                0,
+              ).getDate();
 
               // 日曜日: 週間アクティブチェック（週5日以上プレイ）
               if (dayOfWeek === 0) {
@@ -699,7 +714,14 @@ export async function GET(request: NextRequest) {
                 const report = await gatherPeriodReport(
                   userId,
                   new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()),
-                  new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59),
+                  new Date(
+                    weekEnd.getFullYear(),
+                    weekEnd.getMonth(),
+                    weekEnd.getDate(),
+                    23,
+                    59,
+                    59,
+                  ),
                 );
 
                 if (report.playDays > 0) {
@@ -710,8 +732,19 @@ export async function GET(request: NextRequest) {
                   prevWeekStart.setDate(prevWeekStart.getDate() - 6);
                   const prevReport = await gatherPeriodReport(
                     userId,
-                    new Date(prevWeekStart.getFullYear(), prevWeekStart.getMonth(), prevWeekStart.getDate()),
-                    new Date(prevWeekEnd.getFullYear(), prevWeekEnd.getMonth(), prevWeekEnd.getDate(), 23, 59, 59),
+                    new Date(
+                      prevWeekStart.getFullYear(),
+                      prevWeekStart.getMonth(),
+                      prevWeekStart.getDate(),
+                    ),
+                    new Date(
+                      prevWeekEnd.getFullYear(),
+                      prevWeekEnd.getMonth(),
+                      prevWeekEnd.getDate(),
+                      23,
+                      59,
+                      59,
+                    ),
                   );
 
                   const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
@@ -728,23 +761,45 @@ export async function GET(request: NextRequest) {
               // 月初: 前月レポート送信
               if (dayOfMonthForReport === 1) {
                 const prevMonthEnd = new Date(todayJST.getFullYear(), todayJST.getMonth(), 0); // 前月末日
-                const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
+                const prevMonthStart = new Date(
+                  prevMonthEnd.getFullYear(),
+                  prevMonthEnd.getMonth(),
+                  1,
+                );
 
                 const report = await gatherPeriodReport(
                   userId,
                   prevMonthStart,
-                  new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), prevMonthEnd.getDate(), 23, 59, 59),
+                  new Date(
+                    prevMonthEnd.getFullYear(),
+                    prevMonthEnd.getMonth(),
+                    prevMonthEnd.getDate(),
+                    23,
+                    59,
+                    59,
+                  ),
                 );
 
                 if (report.playDays > 0) {
                   // 前々月レポートも取得
                   const prevPrevEnd = new Date(prevMonthStart);
                   prevPrevEnd.setDate(prevPrevEnd.getDate() - 1);
-                  const prevPrevStart = new Date(prevPrevEnd.getFullYear(), prevPrevEnd.getMonth(), 1);
+                  const prevPrevStart = new Date(
+                    prevPrevEnd.getFullYear(),
+                    prevPrevEnd.getMonth(),
+                    1,
+                  );
                   const prevReport = await gatherPeriodReport(
                     userId,
                     prevPrevStart,
-                    new Date(prevPrevEnd.getFullYear(), prevPrevEnd.getMonth(), prevPrevEnd.getDate(), 23, 59, 59),
+                    new Date(
+                      prevPrevEnd.getFullYear(),
+                      prevPrevEnd.getMonth(),
+                      prevPrevEnd.getDate(),
+                      23,
+                      59,
+                      59,
+                    ),
                   );
 
                   const monthLabel = `${prevMonthStart.getFullYear()}年${prevMonthStart.getMonth() + 1}月`;

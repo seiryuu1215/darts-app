@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  Chip,
-  Button,
-} from '@mui/material';
+import { Container, Typography, Box, Card, CardContent, Grid, Chip, Button } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 

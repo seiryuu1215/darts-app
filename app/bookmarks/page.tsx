@@ -106,12 +106,7 @@ export default function BookmarksPage() {
           <StorefrontIcon color="action" />
           <Typography variant="body2">ショップブックマークはこちら</Typography>
         </Box>
-        <Button
-          component={Link}
-          href="/shops"
-          size="small"
-          endIcon={<ArrowForwardIcon />}
-        >
+        <Button component={Link} href="/shops" size="small" endIcon={<ArrowForwardIcon />}>
           開く
         </Button>
       </Paper>

@@ -1,14 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import {
-  Paper,
-  Box,
-  Typography,
-  Button,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
+import { Paper, Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -80,13 +73,7 @@ export default function N01ImportCard() {
         <Button
           variant="outlined"
           size="small"
-          startIcon={
-            loading ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <UploadFileIcon />
-            )
-          }
+          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
           disabled={loading}
           onClick={() => fileRef.current?.click()}
         >
@@ -108,11 +95,7 @@ export default function N01ImportCard() {
       )}
 
       {result && (
-        <Alert
-          severity="success"
-          icon={<CheckCircleIcon />}
-          sx={{ mt: 1 }}
-        >
+        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mt: 1 }}>
           {result.imported}セッションをインポートしました (+5 XP)
           {result.errors.length > 0 && (
             <Typography variant="caption" component="p" sx={{ mt: 0.5 }}>

@@ -62,7 +62,10 @@ export default function ZeroOneConsistencyCard({ games }: ZeroOneConsistencyCard
             }}
           />
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color, minWidth: 60, textAlign: 'right' }}>
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 'bold', color, minWidth: 60, textAlign: 'right' }}
+        >
           {score}
         </Typography>
       </Box>
@@ -95,9 +98,14 @@ export default function ZeroOneConsistencyCard({ games }: ZeroOneConsistencyCard
       </Box>
 
       <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-        <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.6 }}>
-          01ゲームのスコアばらつきが少ないほど高スコア。100に近いほど安定したパフォーマンス。
-          直近{recentScores.length}ゲームが対象です。
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          component="div"
+          sx={{ lineHeight: 1.6 }}
+        >
+          01ゲームのスコアばらつきが少ないほど高スコア。100に近いほど安定したパフォーマンス。 直近
+          {recentScores.length}ゲームが対象です。
         </Typography>
       </Box>
     </Paper>

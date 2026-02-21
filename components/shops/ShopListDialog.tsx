@@ -32,12 +32,7 @@ interface ShopListDialogProps {
   initial?: Partial<ShopList> | null;
 }
 
-export default function ShopListDialog({
-  open,
-  onClose,
-  onSave,
-  initial,
-}: ShopListDialogProps) {
+export default function ShopListDialog({ open, onClose, onSave, initial }: ShopListDialogProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('default');
   const [lastOpen, setLastOpen] = useState(false);

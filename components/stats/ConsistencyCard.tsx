@@ -52,7 +52,10 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
             }}
           />
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color, minWidth: 60, textAlign: 'right' }}>
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 'bold', color, minWidth: 60, textAlign: 'right' }}
+        >
           {score}
         </Typography>
       </Box>
@@ -85,7 +88,12 @@ export default function ConsistencyCard({ games }: ConsistencyCardProps) {
       </Box>
 
       <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-        <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.6 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          component="div"
+          sx={{ lineHeight: 1.6 }}
+        >
           スコアのばらつきが少ないほど高スコア。100に近いほど毎回安定したスコアが出せている状態です。
           標準偏差は平均からのズレ幅で、小さいほど安定。直近{recentScores.length}ゲームが対象です。
         </Typography>

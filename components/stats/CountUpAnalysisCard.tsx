@@ -34,7 +34,11 @@ export default function CountUpAnalysisCard({ games }: CountUpAnalysisCardProps)
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
         {summaryItems.map((item) => (
-          <Paper key={item.label} variant="outlined" sx={{ flex: 1, minWidth: 70, p: 1, textAlign: 'center' }}>
+          <Paper
+            key={item.label}
+            variant="outlined"
+            sx={{ flex: 1, minWidth: 70, p: 1, textAlign: 'center' }}
+          >
             <Typography variant="caption" color="text.secondary">
               {item.label}
             </Typography>

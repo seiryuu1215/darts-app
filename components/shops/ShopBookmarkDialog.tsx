@@ -204,7 +204,9 @@ export default function ShopBookmarkDialog({
                 fullWidth
                 slotProps={{
                   input: {
-                    startAdornment: <LinkIcon sx={{ mr: 0.5, color: 'text.secondary', fontSize: 18 }} />,
+                    startAdornment: (
+                      <LinkIcon sx={{ mr: 0.5, color: 'text.secondary', fontSize: 18 }} />
+                    ),
                   },
                 }}
               />
@@ -325,7 +327,13 @@ export default function ShopBookmarkDialog({
                   size="small"
                   color={
                     list.id && selectedListIds.includes(list.id)
-                      ? (list.color as 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error')
+                      ? (list.color as
+                          | 'default'
+                          | 'primary'
+                          | 'secondary'
+                          | 'success'
+                          | 'warning'
+                          | 'error')
                       : 'default'
                   }
                   variant={list.id && selectedListIds.includes(list.id) ? 'filled' : 'outlined'}

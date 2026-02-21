@@ -455,14 +455,18 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
       margin: 'md',
       contents: [
         {
-          type: 'box', layout: 'vertical', flex: 1,
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
           contents: [
             { type: 'text', text: 'プレイ日数', size: 'xs', color: '#888888' },
             { type: 'text', text: `${report.playDays}日`, size: 'lg', weight: 'bold' },
           ],
         },
         {
-          type: 'box', layout: 'vertical', flex: 1,
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
           contents: [
             { type: 'text', text: 'ゲーム数', size: 'xs', color: '#888888' },
             { type: 'text', text: `${report.totalGames}`, size: 'lg', weight: 'bold' },
@@ -475,14 +479,23 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
   // Rating 変動
   if (report.ratingChange != null) {
     const sign = report.ratingChange > 0 ? '+' : '';
-    const rColor = report.ratingChange > 0 ? '#4CAF50' : report.ratingChange < 0 ? '#E53935' : '#888888';
+    const rColor =
+      report.ratingChange > 0 ? '#4CAF50' : report.ratingChange < 0 ? '#E53935' : '#888888';
     contents.push({
       type: 'box',
       layout: 'horizontal',
       margin: 'md',
       contents: [
         { type: 'text', text: 'Rating変動', size: 'xs', color: '#888888', flex: 2 },
-        { type: 'text', text: `${sign}${report.ratingChange.toFixed(2)}`, size: 'sm', weight: 'bold', color: rColor, flex: 1, align: 'end' },
+        {
+          type: 'text',
+          text: `${sign}${report.ratingChange.toFixed(2)}`,
+          size: 'sm',
+          weight: 'bold',
+          color: rColor,
+          flex: 1,
+          align: 'end',
+        },
       ],
     });
   }
@@ -492,7 +505,9 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
     const ppdMprContents: object[] = [];
     if (report.avgPpd != null) {
       ppdMprContents.push({
-        type: 'box', layout: 'vertical', flex: 1,
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
         contents: [
           { type: 'text', text: 'PPD', size: 'xs', color: '#888888' },
           { type: 'text', text: report.avgPpd.toFixed(2), size: 'sm', weight: 'bold' },
@@ -501,7 +516,9 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
     }
     if (report.avgMpr != null) {
       ppdMprContents.push({
-        type: 'box', layout: 'vertical', flex: 1,
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
         contents: [
           { type: 'text', text: 'MPR', size: 'xs', color: '#888888' },
           { type: 'text', text: report.avgMpr.toFixed(2), size: 'sm', weight: 'bold' },
@@ -509,7 +526,10 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
       });
     }
     contents.push({
-      type: 'box', layout: 'horizontal', spacing: 'md', margin: 'md',
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'md',
+      margin: 'md',
       contents: ppdMprContents,
     });
   }
@@ -517,10 +537,19 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
   // Best day
   if (report.bestDay) {
     contents.push({
-      type: 'box', layout: 'horizontal', margin: 'md',
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'md',
       contents: [
         { type: 'text', text: 'ベストデイ', size: 'xs', color: '#888888', flex: 2 },
-        { type: 'text', text: `${report.bestDay.date} (Rt.${report.bestDay.rating.toFixed(2)})`, size: 'xs', color: '#333333', flex: 3, align: 'end' },
+        {
+          type: 'text',
+          text: `${report.bestDay.date} (Rt.${report.bestDay.rating.toFixed(2)})`,
+          size: 'xs',
+          color: '#333333',
+          flex: 3,
+          align: 'end',
+        },
       ],
     });
   }
@@ -528,10 +557,19 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
   // Worst day (月次のみ)
   if (showDetail && report.worstDay) {
     contents.push({
-      type: 'box', layout: 'horizontal', margin: 'sm',
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'sm',
       contents: [
         { type: 'text', text: 'ワーストデイ', size: 'xs', color: '#888888', flex: 2 },
-        { type: 'text', text: `${report.worstDay.date} (Rt.${report.worstDay.rating.toFixed(2)})`, size: 'xs', color: '#333333', flex: 3, align: 'end' },
+        {
+          type: 'text',
+          text: `${report.worstDay.date} (Rt.${report.worstDay.rating.toFixed(2)})`,
+          size: 'xs',
+          color: '#333333',
+          flex: 3,
+          align: 'end',
+        },
       ],
     });
   }
@@ -539,13 +577,29 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
   // Awards highlights (上位5件)
   if (report.awardsHighlights.length > 0) {
     contents.push({ type: 'separator', margin: 'md' });
-    contents.push({ type: 'text', text: 'AWARDS', size: 'sm', weight: 'bold', margin: 'md', color: '#555555' });
+    contents.push({
+      type: 'text',
+      text: 'AWARDS',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
     for (const award of report.awardsHighlights) {
       contents.push({
-        type: 'box', layout: 'horizontal', margin: 'sm',
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
         contents: [
           { type: 'text', text: award.label, size: 'xxs', color: '#888888', flex: 3 },
-          { type: 'text', text: `+${award.count}`, size: 'xxs', color: '#333333', flex: 1, align: 'end' },
+          {
+            type: 'text',
+            text: `+${award.count}`,
+            size: 'xxs',
+            color: '#333333',
+            flex: 1,
+            align: 'end',
+          },
         ],
       });
     }
@@ -555,16 +609,22 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
   if (report.goalsAchieved > 0 || report.goalsActive > 0) {
     contents.push({ type: 'separator', margin: 'md' });
     contents.push({
-      type: 'text', text: `目標: ${report.goalsAchieved}達成 / ${report.goalsActive}進行中`,
-      size: 'xs', color: '#555555', margin: 'md',
+      type: 'text',
+      text: `目標: ${report.goalsAchieved}達成 / ${report.goalsActive}進行中`,
+      size: 'xs',
+      color: '#555555',
+      margin: 'md',
     });
   }
 
   // XP
   if (report.xpGained > 0) {
     contents.push({
-      type: 'text', text: `XP獲得: +${report.xpGained}`,
-      size: 'xs', color: '#4CAF50', margin: 'sm',
+      type: 'text',
+      text: `XP獲得: +${report.xpGained}`,
+      size: 'xs',
+      color: '#4CAF50',
+      margin: 'sm',
     });
   }
 
@@ -576,7 +636,9 @@ function buildReportBodyContents(report: ReportFlexInput, showDetail: boolean): 
     contents.push({
       type: 'text',
       text: `前期比: プレイ日数 ${daysSign}${daysDiff}日`,
-      size: 'xxs', color: '#888888', margin: 'md',
+      size: 'xxs',
+      color: '#888888',
+      margin: 'md',
     });
   }
 
