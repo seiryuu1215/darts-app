@@ -50,10 +50,15 @@ export async function POST(req: NextRequest) {
       const titleParts = ogTitle.split('|').map((s: string) => s.trim());
       const name = titleParts[0] || '';
 
-      // Address: <label>住所</label> ... <p\n  class="address ..."\n>千葉県...</p>
-      // The <p> tag has class="address" but may span multiple lines
-      const addressMatch = html.match(/<label>住所<\/label>[\s\S]*?<p[\s\S]*?class="[^"]*address[^"]*"[\s\S]*?>([^<]+)/i);
-      const address = addressMatch?.[1]?.trim() ?? '';
+      // Address: find <p> with class containing "address" that has non-empty content
+      // HTML has two: one with address text, one empty. Match the non-empty one.
+      let address = '';
+      const addressRegex = /<p[\s\S]*?class="[^"]*address[^"]*"[\s\S]*?>([^<]+)<\/p>/gi;
+      let addrMatch;
+      while ((addrMatch = addressRegex.exec(html)) !== null) {
+        const val = addrMatch[1].trim();
+        if (val) { address = val; break; }
+      }
 
       // Nearest station: <label>最寄り駅</label> ... </td>\n<td ...>\n<p ...>東京メトロ東西線 行徳駅 249m</p>
       const stationMatch = html.match(/<label>最寄り駅<\/label>[\s\S]*?<p[^>]*>([^<]+)/i);
