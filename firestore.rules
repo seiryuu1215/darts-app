@@ -100,6 +100,14 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // shopLists
+      match /shopLists/{listId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
     }
 
     // ──────────────────────────────
@@ -182,14 +190,6 @@ service cloud.firestore {
                       && (resource.data.userId == request.auth.uid || isAdmin());
         allow update: if false;
       }
-    }
-
-    // ──────────────────────────────
-    // shops (read-only, populated by scripts via Admin SDK)
-    // ──────────────────────────────
-    match /shops/{shopId} {
-      allow read: if true;
-      allow write: if false;
     }
 
     // ──────────────────────────────

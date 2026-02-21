@@ -316,25 +316,28 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   hat_tricks: 'HAT TRICK',
 };
 
-// Shop (ダーツライブサーチからスクレイプ)
-export interface Shop {
-  id?: string;
-  name: string;
-  address: string;
-  nearestStation?: string;
-  area?: string;
-}
-
+// Shop Bookmark (マイショップ)
 export interface ShopBookmark {
   id?: string;
-  shopId?: string | null;
   name: string;
   address: string;
+  nearestStation: string;
+  imageUrl: string | null;
   note: string;
   rating: number | null;
   visitCount: number;
   lastVisitedAt: Timestamp | null;
   isFavorite: boolean;
+  listIds: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface ShopList {
+  id?: string;
+  name: string;
+  color: string;
+  sortOrder: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

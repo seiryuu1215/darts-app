@@ -27,6 +27,12 @@ service firebase.storage {
       allow write: if isOwner(userId) && isValidImage();
     }
 
+    // ショップ画像
+    match /shops/{userId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidImage();
+    }
+
     // 記事画像（admin のみ）
     match /articles/{allPaths=**} {
       allow read: if true;
