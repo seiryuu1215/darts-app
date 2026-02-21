@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "shopBookmarks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isFavorite", "order": "DESCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "discussions",
       "queryScope": "COLLECTION",
       "fields": [

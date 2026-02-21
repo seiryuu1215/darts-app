@@ -323,6 +323,7 @@ export interface ShopBookmark {
   address: string;
   nearestStation: string;
   imageUrl: string | null;
+  machineCount: { dl2: number; dl3: number } | null;
   note: string;
   rating: number | null;
   visitCount: number;

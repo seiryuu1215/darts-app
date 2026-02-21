@@ -35,6 +35,7 @@ interface ShopBookmarkDialogProps {
     address: string;
     nearestStation: string;
     imageUrl: string | null;
+    machineCount: { dl2: number; dl3: number } | null;
     note: string;
     rating: number | null;
     isFavorite: boolean;
@@ -63,6 +64,7 @@ export default function ShopBookmarkDialog({
   const [address, setAddress] = useState('');
   const [nearestStation, setNearestStation] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [machineCount, setMachineCount] = useState<{ dl2: number; dl3: number } | null>(null);
   const [note, setNote] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -79,6 +81,7 @@ export default function ShopBookmarkDialog({
     setAddress(initial?.address || '');
     setNearestStation(initial?.nearestStation || '');
     setImageUrl(initial?.imageUrl ?? null);
+    setMachineCount(initial?.machineCount ?? null);
     setNote(initial?.note || '');
     setRating(initial?.rating ?? null);
     setIsFavorite(initial?.isFavorite ?? false);
@@ -106,6 +109,7 @@ export default function ShopBookmarkDialog({
       if (data.address) setAddress(data.address);
       if (data.nearestStation) setNearestStation(data.nearestStation);
       if (data.imageUrl) setImageUrl(data.imageUrl);
+      if (data.machineCount) setMachineCount(data.machineCount);
     } catch {
       // Silently fail — user can manually input
     } finally {
@@ -139,6 +143,7 @@ export default function ShopBookmarkDialog({
       address: address.trim(),
       nearestStation: nearestStation.trim(),
       imageUrl,
+      machineCount,
       note: note.trim(),
       rating,
       isFavorite,

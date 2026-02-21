@@ -126,6 +126,7 @@ export default function ShopsPage() {
     address: string;
     nearestStation: string;
     imageUrl: string | null;
+    machineCount: { dl2: number; dl3: number } | null;
     note: string;
     rating: number | null;
     isFavorite: boolean;
@@ -142,6 +143,7 @@ export default function ShopsPage() {
           address: data.address,
           nearestStation: data.nearestStation,
           imageUrl: data.imageUrl,
+          machineCount: data.machineCount,
           note: data.note,
           rating: data.rating,
           isFavorite: data.isFavorite,
@@ -154,6 +156,7 @@ export default function ShopsPage() {
           address: data.address,
           nearestStation: data.nearestStation,
           imageUrl: data.imageUrl,
+          machineCount: data.machineCount,
           note: data.note,
           rating: data.rating,
           visitCount: 0,
@@ -324,6 +327,7 @@ export default function ShopsPage() {
                 address: editingBookmark.address,
                 nearestStation: editingBookmark.nearestStation,
                 imageUrl: editingBookmark.imageUrl,
+                machineCount: editingBookmark.machineCount,
                 note: editingBookmark.note,
                 rating: editingBookmark.rating,
                 isFavorite: editingBookmark.isFavorite,

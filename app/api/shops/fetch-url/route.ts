@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
-    // Validate URL
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
@@ -16,83 +15,115 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
     }
 
+    const isDartsLiveSearch = parsedUrl.hostname.includes('dartslive.com');
+
+    // DARTSLIVE SEARCH: HTML + internal API
+    if (isDartsLiveSearch) {
+      // Extract shop_enc_id and country_code from URL
+      // e.g. /jp/shop/1a964311b027e7e70d9b047a20a7ba1e
+      const pathMatch = parsedUrl.pathname.match(/\/(\w{2})\/shop\/([a-f0-9]+)/);
+      const countryCode = pathMatch?.[1] ?? 'jp';
+      const shopEncId = pathMatch?.[2] ?? '';
+
+      // Fetch HTML for OGP + address + station
+      const htmlRes = await fetch(parsedUrl.toString(), {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DartsApp/1.0)', Accept: 'text/html' },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!htmlRes.ok) {
+        return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null });
+      }
+
+      const html = await htmlRes.text();
+
+      // OGP: allow whitespace/newlines between attribute and content
+      const ogTitle = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1]
+        ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1]
+        ?? '';
+
+      const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1]
+        ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1]
+        ?? '';
+
+      // Parse shop name from og:title: "店名 | 県名 市名 | ダーツバー検索..."
+      const titleParts = ogTitle.split('|').map((s: string) => s.trim());
+      const name = titleParts[0] || '';
+
+      // Address: <label>住所</label> ... <p class="address ...">千葉県...</p>
+      const addressMatch = html.match(/<label>住所<\/label>[\s\S]*?class="[^"]*address[^"]*"[^>]*>([^<]+)/i);
+      const address = addressMatch?.[1]?.trim() ?? '';
+
+      // Nearest station: <label>最寄り駅</label> ... <p ...>東京メトロ東西線 行徳駅 249m</p>
+      const stationMatch = html.match(/<label>最寄り駅<\/label>\s*<p[^>]*>([^<]+)/i);
+      const nearestStation = stationMatch?.[1]?.trim() ?? '';
+
+      // Machine count from internal API
+      let machineCount: { dl2: number; dl3: number } | null = null;
+      if (shopEncId) {
+        try {
+          const summaryRes = await fetch(
+            `https://search.dartslive.com/shop/shop-summery/?country_code=${countryCode}&shop_enc_id=${shopEncId}`,
+            {
+              headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DartsApp/1.0)' },
+              signal: AbortSignal.timeout(5000),
+            },
+          );
+          if (summaryRes.ok) {
+            const summary = await summaryRes.json();
+            const machine = summary?.shop?.busyMachine?.machine;
+            if (machine) {
+              machineCount = {
+                dl2: machine.dl2num ?? 0,
+                dl3: machine.dl3num ?? 0,
+              };
+            }
+          }
+        } catch {
+          // ignore — machine count is optional
+        }
+      }
+
+      return NextResponse.json({
+        name,
+        address,
+        nearestStation,
+        imageUrl: ogImage || null,
+        machineCount,
+      });
+    }
+
+    // Non-DARTSLIVE URLs: extract OGP only
     const res = await fetch(parsedUrl.toString(), {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; DartsApp/1.0)',
-        'Accept': 'text/html',
-      },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DartsApp/1.0)', Accept: 'text/html' },
       signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to fetch URL' }, { status: 502 });
+      return NextResponse.json({ name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null });
     }
 
     const html = await res.text();
 
-    // Extract OGP tags via regex
-    const ogTitle = html.match(/<meta\s+(?:property|name)="og:title"\s+content="([^"]*?)"\s*\/?>/i)?.[1]
-      ?? html.match(/<meta\s+content="([^"]*?)"\s+(?:property|name)="og:title"\s*\/?>/i)?.[1]
+    const ogTitle = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"/i)?.[1]
+      ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:title"/i)?.[1]
+      ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
       ?? '';
 
-    const ogImage = html.match(/<meta\s+(?:property|name)="og:image"\s+content="([^"]*?)"\s*\/?>/i)?.[1]
-      ?? html.match(/<meta\s+content="([^"]*?)"\s+(?:property|name)="og:image"\s*\/?>/i)?.[1]
+    const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"/i)?.[1]
+      ?? html.match(/<meta\s+content="([^"]*)"\s+property="og:image"/i)?.[1]
       ?? '';
-
-    const isDartsLiveSearch = parsedUrl.hostname.includes('dartslive.com');
-
-    let name = ogTitle;
-    let address = '';
-    let nearestStation = '';
-
-    if (isDartsLiveSearch) {
-      // Parse og:title: "店名 | 県名 市名 | ダーツバー検索 DARTSLIVE SEARCH"
-      const titleParts = ogTitle.split('|').map((s: string) => s.trim());
-      if (titleParts.length >= 1) {
-        name = titleParts[0];
-      }
-
-      // Extract address from HTML body
-      // Look for address pattern in the page content
-      const addressMatch = html.match(/〒[\d\-]+\s*<br\s*\/?>\s*([^<]+)/i)
-        ?? html.match(/<p[^>]*class="[^"]*address[^"]*"[^>]*>([^<]+)/i)
-        ?? html.match(/住所[：:]\s*([^<\n]+)/i);
-
-      if (addressMatch) {
-        address = addressMatch[1].trim().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-      } else {
-        // Try to find address by looking for Japanese prefecture patterns
-        const prefectureMatch = html.match(/((?:北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|東京都|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|京都府|大阪府|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県)[^\s<]{2,30})/);
-        if (prefectureMatch) {
-          address = prefectureMatch[1].trim();
-        }
-      }
-
-      // Extract nearest station
-      const stationMatch = html.match(/((?:JR|東京メトロ|都営|京急|京王|小田急|東急|西武|東武|相鉄|名鉄|近鉄|阪急|阪神|南海|京阪|地下鉄|モノレール|ゆりかもめ|りんかい線|つくばエクスプレス|東京臨海高速鉄道|新交通|市営|北総|千葉都市|埼玉高速|東葉高速)[^\s<]*?(?:線|ライン)\s*[^\s<]*?駅)/i)
-        ?? html.match(/最寄[り駅：:]+\s*([^<\n]+)/i)
-        ?? html.match(/([\u4e00-\u9fff]{2,10}駅)/);
-
-      if (stationMatch) {
-        nearestStation = stationMatch[1].trim();
-      }
-    } else {
-      // Non-DARTSLIVE URLs: just extract og:title
-      const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-      if (!name && titleTag) {
-        name = titleTag[1].trim();
-      }
-    }
 
     return NextResponse.json({
-      name: name || '',
-      address: address || '',
-      nearestStation: nearestStation || '',
+      name: ogTitle.trim(),
+      address: '',
+      nearestStation: '',
       imageUrl: ogImage || null,
+      machineCount: null,
     });
   } catch {
     return NextResponse.json(
-      { name: '', address: '', nearestStation: '', imageUrl: null },
+      { name: '', address: '', nearestStation: '', imageUrl: null, machineCount: null },
     );
   }
 }

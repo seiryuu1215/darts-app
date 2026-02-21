@@ -78,6 +78,14 @@ export default function ShopCard({
                   {bookmark.address}
                 </Typography>
               )}
+              {bookmark.machineCount && (bookmark.machineCount.dl2 > 0 || bookmark.machineCount.dl3 > 0) && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  {[
+                    bookmark.machineCount.dl3 > 0 && `DL3: ${bookmark.machineCount.dl3}台`,
+                    bookmark.machineCount.dl2 > 0 && `DL2: ${bookmark.machineCount.dl2}台`,
+                  ].filter(Boolean).join(' / ')}
+                </Typography>
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
