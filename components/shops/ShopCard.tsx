@@ -22,12 +22,14 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import TrainIcon from '@mui/icons-material/Train';
 import NoteIcon from '@mui/icons-material/StickyNote2';
 import { useState, useMemo } from 'react';
 import type { ShopBookmark, ShopList } from '@/types';
+import { LINE_COLORS } from '@/lib/line-stations';
 
 const SMOKING_TAGS = ['分煙', '禁煙', '喫煙可'];
 const MACHINE_TAG_RE = /^DL[23]\s+\d+台$/;
@@ -105,6 +107,9 @@ export default function ShopCard({
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }} noWrap>
                   {bookmark.name}
                 </Typography>
+                {bookmark.visitCount > 0 && (
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main', flexShrink: 0 }} />
+                )}
               </Box>
               {bookmark.nearestStation && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -196,6 +201,30 @@ export default function ShopCard({
               />
             )}
           </Box>
+
+          {/* 路線チップ */}
+          {bookmark.lines && bookmark.lines.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+              {bookmark.lines.slice(0, 4).map((line) => (
+                <Chip
+                  key={line}
+                  label={line}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.6rem',
+                    bgcolor: LINE_COLORS[line] ?? 'action.hover',
+                    color: '#fff',
+                  }}
+                />
+              ))}
+              {bookmark.lines.length > 4 && (
+                <Typography variant="caption" color="text.secondary">
+                  +{bookmark.lines.length - 4}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           {/* List Chips */}
           {assignedLists.length > 0 && (

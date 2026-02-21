@@ -37,6 +37,7 @@ interface ShopBookmarkDialogProps {
     imageUrl: string | null;
     machineCount: { dl2: number; dl3: number } | null;
     tags: string[];
+    lines?: string[];
     note: string;
     rating: number | null;
     isFavorite: boolean;
@@ -67,6 +68,7 @@ export default function ShopBookmarkDialog({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [machineCount, setMachineCount] = useState<{ dl2: number; dl3: number } | null>(null);
   const [tags, setTags] = useState<string[]>([]);
+  const [lines, setLines] = useState<string[] | undefined>(undefined);
   const [note, setNote] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -85,6 +87,7 @@ export default function ShopBookmarkDialog({
     setImageUrl(initial?.imageUrl ?? null);
     setMachineCount(initial?.machineCount ?? null);
     setTags(initial?.tags ?? []);
+    setLines(initial?.lines);
     setNote(initial?.note || '');
     setRating(initial?.rating ?? null);
     setIsFavorite(initial?.isFavorite ?? false);
@@ -149,6 +152,7 @@ export default function ShopBookmarkDialog({
       imageUrl,
       machineCount,
       tags,
+      lines,
       note: note.trim(),
       rating,
       isFavorite,

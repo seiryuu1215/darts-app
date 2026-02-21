@@ -7,6 +7,8 @@ import { Container, Box, Typography, CircularProgress, Button, Fab, Chip } from 
 import AddIcon from '@mui/icons-material/Add';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import TrainIcon from '@mui/icons-material/Train';
 import {
   collection,
   getDocs,
@@ -27,6 +29,7 @@ import ShopBookmarkDialog from '@/components/shops/ShopBookmarkDialog';
 import ShopListDialog from '@/components/shops/ShopListDialog';
 import ShopListChips from '@/components/shops/ShopListChips';
 import type { ShopBookmark, ShopList } from '@/types';
+import { LINE_NAMES, LINE_COLORS } from '@/lib/line-stations';
 
 export default function ShopsPage() {
   const { data: session, status } = useSession();
@@ -42,6 +45,8 @@ export default function ShopsPage() {
   const [editingList, setEditingList] = useState<ShopList | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [noSmokingFilter, setNoSmokingFilter] = useState(false);
+  const [selectedLine, setSelectedLine] = useState<string | null>(null);
+  const [visitFilter, setVisitFilter] = useState<'all' | 'visited' | 'unvisited'>('all');
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -127,6 +132,7 @@ export default function ShopsPage() {
     imageUrl: string | null;
     machineCount: { dl2: number; dl3: number } | null;
     tags: string[];
+    lines?: string[];
     note: string;
     rating: number | null;
     isFavorite: boolean;
@@ -145,6 +151,7 @@ export default function ShopsPage() {
           imageUrl: data.imageUrl,
           machineCount: data.machineCount,
           tags: data.tags,
+          ...(data.lines !== undefined && { lines: data.lines }),
           note: data.note,
           rating: data.rating,
           isFavorite: data.isFavorite,
@@ -159,6 +166,7 @@ export default function ShopsPage() {
           imageUrl: data.imageUrl,
           machineCount: data.machineCount,
           tags: data.tags,
+          ...(data.lines !== undefined && { lines: data.lines }),
           note: data.note,
           rating: data.rating,
           visitCount: 0,
@@ -243,11 +251,19 @@ export default function ShopsPage() {
     .filter((t) => FILTER_TAGS.includes(t) || FILTER_PARTIAL.some((p) => t.includes(p)))
     .sort();
 
-  // Filter bookmarks by selected list, tags, and smoking
+  // 路線フィルターで使う路線名（データに存在するもののみ表示）
+  const availableLines = LINE_NAMES.filter((line) =>
+    bookmarks.some((bm) => bm.lines?.includes(line)),
+  );
+
+  // Filter bookmarks by selected list, tags, smoking, and line
   const filteredBookmarks = bookmarks.filter((bm) => {
     if (selectedListId && !bm.listIds?.includes(selectedListId)) return false;
     if (selectedTags.length > 0 && !selectedTags.every((t) => bm.tags?.includes(t))) return false;
     if (noSmokingFilter && bm.tags?.includes('喫煙可')) return false;
+    if (selectedLine && !bm.lines?.includes(selectedLine)) return false;
+    if (visitFilter === 'visited' && !(bm.visitCount > 0)) return false;
+    if (visitFilter === 'unvisited' && bm.visitCount > 0) return false;
     return true;
   });
 
@@ -294,6 +310,57 @@ export default function ShopsPage() {
           }}
         />
 
+        {/* 路線フィルター */}
+        {availableLines.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 0.5,
+              overflowX: 'auto',
+              pb: 1,
+              mb: 1,
+              '&::-webkit-scrollbar': { height: 4 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'action.hover', borderRadius: 2 },
+            }}
+          >
+            <Chip
+              label="全路線"
+              size="small"
+              color={selectedLine === null ? 'primary' : 'default'}
+              variant={selectedLine === null ? 'filled' : 'outlined'}
+              onClick={() => setSelectedLine(null)}
+              sx={{ height: 24, fontSize: '0.7rem', flexShrink: 0 }}
+            />
+            {availableLines.map((line) => (
+              <Chip
+                key={line}
+                icon={<TrainIcon sx={{ fontSize: '14px !important' }} />}
+                label={line}
+                size="small"
+                variant={selectedLine === line ? 'filled' : 'outlined'}
+                onClick={() => setSelectedLine((prev) => (prev === line ? null : line))}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  flexShrink: 0,
+                  ...(selectedLine === line && {
+                    bgcolor: LINE_COLORS[line],
+                    color: '#fff',
+                    '& .MuiChip-icon': { color: '#fff' },
+                  }),
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
+        {/* 件数表示 */}
+        {selectedLine && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            {selectedLine}: {filteredBookmarks.length}件 / 全{bookmarks.length}件
+          </Typography>
+        )}
+
         {/* Tag filter */}
         <Box
           sx={{
@@ -313,6 +380,24 @@ export default function ShopsPage() {
             onClick={() => setNoSmokingFilter((prev) => !prev)}
             sx={{ height: 24, fontSize: '0.7rem' }}
           />
+          {/* Visit filter */}
+          <Chip
+            icon={<CheckCircleIcon sx={{ fontSize: '14px !important' }} />}
+            label="訪問済み"
+            size="small"
+            color={visitFilter === 'visited' ? 'success' : 'default'}
+            variant={visitFilter === 'visited' ? 'filled' : 'outlined'}
+            onClick={() => setVisitFilter((prev) => (prev === 'visited' ? 'all' : 'visited'))}
+            sx={{ height: 24, fontSize: '0.7rem' }}
+          />
+          <Chip
+            label="未訪問"
+            size="small"
+            color={visitFilter === 'unvisited' ? 'warning' : 'default'}
+            variant={visitFilter === 'unvisited' ? 'filled' : 'outlined'}
+            onClick={() => setVisitFilter((prev) => (prev === 'unvisited' ? 'all' : 'unvisited'))}
+            sx={{ height: 24, fontSize: '0.7rem' }}
+          />
           {filterTags.map((tag) => (
             <Chip
               key={tag}
@@ -328,7 +413,7 @@ export default function ShopsPage() {
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
           ))}
-          {(selectedTags.length > 0 || noSmokingFilter) && (
+          {(selectedTags.length > 0 || noSmokingFilter || visitFilter !== 'all') && (
             <Chip
               label="クリア"
               size="small"
@@ -337,6 +422,7 @@ export default function ShopsPage() {
               onClick={() => {
                 setSelectedTags([]);
                 setNoSmokingFilter(false);
+                setVisitFilter('all');
               }}
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
@@ -400,6 +486,7 @@ export default function ShopsPage() {
                 imageUrl: editingBookmark.imageUrl,
                 machineCount: editingBookmark.machineCount,
                 tags: editingBookmark.tags,
+                lines: editingBookmark.lines,
                 note: editingBookmark.note,
                 rating: editingBookmark.rating,
                 isFavorite: editingBookmark.isFavorite,

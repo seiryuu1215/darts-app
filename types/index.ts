@@ -325,6 +325,7 @@ export interface ShopBookmark {
   imageUrl: string | null;
   machineCount: { dl2: number; dl3: number } | null;
   tags: string[];
+  lines?: string[];
   note: string;
   rating: number | null;
   visitCount: number;
