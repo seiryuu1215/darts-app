@@ -50,16 +50,18 @@ export async function POST(req: NextRequest) {
       const titleParts = ogTitle.split('|').map((s: string) => s.trim());
       const name = titleParts[0] || '';
 
-      // Address: <label>住所</label> ... <p class="address ...">千葉県...</p>
-      const addressMatch = html.match(/<label>住所<\/label>[\s\S]*?class="[^"]*address[^"]*"[^>]*>([^<]+)/i);
+      // Address: <label>住所</label> ... <p\n  class="address ..."\n>千葉県...</p>
+      // The <p> tag has class="address" but may span multiple lines
+      const addressMatch = html.match(/<label>住所<\/label>[\s\S]*?<p[\s\S]*?class="[^"]*address[^"]*"[\s\S]*?>([^<]+)/i);
       const address = addressMatch?.[1]?.trim() ?? '';
 
-      // Nearest station: <label>最寄り駅</label> ... <p ...>東京メトロ東西線 行徳駅 249m</p>
-      const stationMatch = html.match(/<label>最寄り駅<\/label>\s*<p[^>]*>([^<]+)/i);
+      // Nearest station: <label>最寄り駅</label> ... </td>\n<td ...>\n<p ...>東京メトロ東西線 行徳駅 249m</p>
+      const stationMatch = html.match(/<label>最寄り駅<\/label>[\s\S]*?<p[^>]*>([^<]+)/i);
       const nearestStation = stationMatch?.[1]?.trim() ?? '';
 
-      // Machine count from internal API
+      // Machine count + station name from internal API
       let machineCount: { dl2: number; dl3: number } | null = null;
+      let apiStationName = '';
       if (shopEncId) {
         try {
           const summaryRes = await fetch(
@@ -78,6 +80,9 @@ export async function POST(req: NextRequest) {
                 dl3: machine.dl3num ?? 0,
               };
             }
+            if (summary?.shop?.nearestStation?.nearestStationName) {
+              apiStationName = summary.shop.nearestStation.nearestStationName;
+            }
           }
         } catch {
           // ignore — machine count is optional
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         name,
         address,
-        nearestStation,
+        nearestStation: nearestStation || apiStationName,
         imageUrl: ogImage || null,
         machineCount,
       });
