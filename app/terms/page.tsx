@@ -93,6 +93,9 @@ export default function TermsPage() {
           </li>
           <li>掲載されている製品画像・製品情報の著作権は各権利者に帰属します。</li>
           <li>データの更新頻度には制限があり、実際の在庫状況や価格と異なる場合があります。</li>
+          <li>
+            権利者からの要請があった場合、速やかに該当データを削除します。
+          </li>
         </Typography>
 
         <Typography variant="h6" gutterBottom>
@@ -114,7 +117,16 @@ export default function TermsPage() {
         </Typography>
 
         <Typography variant="h6" gutterBottom>
-          9. 規約の変更
+          9. アカウント削除
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          ユーザーはいつでもプロフィール編集画面からアカウントを削除できます。
+          アカウント削除により、投稿データ・スタッツ履歴・サブスクリプション情報等の全データが不可逆的に消去されます。
+          アクティブなサブスクリプションがある場合は、削除時に自動的にキャンセルされます。
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          10. 規約の変更
         </Typography>
         <Typography variant="body1">
           本規約は予告なく変更される場合があります。変更後の規約は、本ページに掲載した時点で効力を生じます。

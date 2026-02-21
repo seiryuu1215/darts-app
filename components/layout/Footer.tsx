@@ -144,6 +144,14 @@ export default function Footer() {
                 </MuiLink>
               ))}
             </Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 1.5, fontSize: 10, lineHeight: 1.5 }}
+            >
+              ※
+              一部リンクにはアフィリエイトが含まれ、購入時に当サイトに紹介料が支払われる場合があります
+            </Typography>
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
             <FooterSection title="About" links={aboutLinks} />

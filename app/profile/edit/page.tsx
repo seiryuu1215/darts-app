@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -52,6 +52,7 @@ export default function ProfileEditPage() {
   const [dlPassword, setDlPassword] = useState('');
   const [dlSaving, setDlSaving] = useState(false);
   const [dlDeleting, setDlDeleting] = useState(false);
+  const [accountDeleting, setAccountDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -601,6 +602,51 @@ export default function ProfileEditPage() {
             </Paper>
           </>
         )}
+        {/* アカウント削除セクション */}
+        <Divider sx={{ my: 4 }} />
+
+        <Paper
+          variant="outlined"
+          sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2, borderColor: 'error.main' }}
+        >
+          <Typography variant="h6" color="error" sx={{ mb: 1 }}>
+            アカウント削除
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            アカウントを削除すると、全てのデータ（セッティング・スタッツ履歴・投稿・サブスクリプション等）が完全に削除され、復元できません。
+          </Typography>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={accountDeleting}
+            startIcon={accountDeleting ? <CircularProgress size={16} color="inherit" /> : undefined}
+            onClick={async () => {
+              if (
+                !confirm(
+                  'アカウントを削除しますか？\n\n全てのデータが完全に削除されます。この操作は取り消せません。',
+                )
+              )
+                return;
+              setAccountDeleting(true);
+              try {
+                const res = await fetch('/api/account/delete', { method: 'DELETE' });
+                if (res.ok) {
+                  await signOut({ redirect: false });
+                  router.push('/login');
+                } else {
+                  const json = await res.json();
+                  setError(json.error || 'アカウント削除に失敗しました');
+                }
+              } catch {
+                setError('通信エラー');
+              } finally {
+                setAccountDeleting(false);
+              }
+            }}
+          >
+            {accountDeleting ? '削除中...' : 'アカウントを削除する'}
+          </Button>
+        </Paper>
       </Box>
     </Container>
   );

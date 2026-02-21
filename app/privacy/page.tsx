@@ -42,7 +42,8 @@ export default function PrivacyPage() {
         <Typography variant="body1" sx={{ mb: 2 }}>
           当サイトは、Amazon.co.jp アソシエイト、楽天アフィリエイト、A8.net
           等のアフィリエイトプログラムに参加しています。
-          商品リンクを経由して購入された場合、当サイトに紹介料が支払われることがあります。
+          サイト内のアフィリエイトリンクには [PR]
+          表記を付与しています。これらのリンクを経由して商品が購入された場合、当サイトに紹介料が支払われることがあります。
         </Typography>
 
         <Typography variant="h6" gutterBottom>
@@ -62,7 +63,24 @@ export default function PrivacyPage() {
         </Typography>
 
         <Typography variant="h6" gutterBottom>
-          7. お問い合わせ
+          7. 個人情報の開示・訂正・削除
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          ユーザーは、プロフィール編集画面からいつでもご自身の個人情報を確認・訂正できます。
+          アカウントの削除もプロフィール編集画面から可能です。アカウントを削除すると、関連する全てのデータが不可逆的に消去されます。
+          その他のお問い合わせは、X（Twitter）@seiryuu_darts までご連絡ください。
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          8. データの保持期間
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          スタッツ履歴・セッティング情報等のユーザーデータは、アカウント存続中は保持されます。
+          アカウント削除時に全てのデータが完全に消去され、復元はできません。
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          9. お問い合わせ
         </Typography>
         <Typography variant="body1">
           プライバシーポリシーに関するお問い合わせは、X（Twitter）@seiryuu_darts

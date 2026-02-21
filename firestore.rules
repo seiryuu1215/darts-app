@@ -231,5 +231,14 @@ service cloud.firestore {
     match /lineLinkCodes/{code} {
       allow read, write: if false;
     }
+
+    // ──────────────────────────────
+    // reports (通報: 認証ユーザーのみ作成可)
+    // ──────────────────────────────
+    match /reports/{reportId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
   }
 }

@@ -15,6 +15,7 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FlagIcon from '@mui/icons-material/Flag';
 import {
   doc,
   getDoc,
@@ -22,6 +23,8 @@ import {
   deleteDoc,
   collection,
   getDocs,
+  addDoc,
+  serverTimestamp,
   query,
   orderBy,
 } from 'firebase/firestore';
@@ -54,6 +57,7 @@ export default function DiscussionDetailPage() {
   const [replies, setReplies] = useState<DiscussionReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reported, setReported] = useState(false);
 
   const role = session?.user?.role;
   const userId = session?.user?.id;
@@ -133,6 +137,24 @@ export default function DiscussionDetailPage() {
   const handleReplyChange = () => {
     fetchReplies();
     fetchDiscussion();
+  };
+
+  const handleReport = async () => {
+    if (!userId || !discussionId) return;
+    if (!confirm('このスレッドを通報しますか？')) return;
+    try {
+      await addDoc(collection(db, 'reports'), {
+        userId,
+        targetId: discussionId,
+        targetType: 'discussion',
+        discussionId,
+        reason: '',
+        createdAt: serverTimestamp(),
+      });
+      setReported(true);
+    } catch (err) {
+      console.error('通報エラー:', err);
+    }
   };
 
   if (loading) {
@@ -251,9 +273,25 @@ export default function DiscussionDetailPage() {
       )}
 
       {/* Content */}
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+      <Paper variant="outlined" sx={{ p: 3, mb: 1 }}>
         <MarkdownContent content={discussion.content} />
       </Paper>
+      {userId && userId !== discussion.userId && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <Tooltip title={reported ? '通報済み' : '通報する'}>
+            <span>
+              <IconButton
+                size="small"
+                onClick={handleReport}
+                disabled={reported}
+                aria-label="通報する"
+              >
+                <FlagIcon fontSize="small" color={reported ? 'disabled' : 'action'} />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      )}
 
       {/* Replies */}
       <Typography variant="h6" sx={{ mb: 1 }}>
