@@ -65,7 +65,7 @@ export default function ShopCard({
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bookmark.address || bookmark.name)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(bookmark.address || bookmark.name)}`;
-  const dartsliveSearchUrl = `https://search.dartslive.com/jp/?searchWord=${encodeURIComponent(bookmark.name)}`;
+  const dartsliveSearchUrl = `https://search.dartslive.com/jp/shops/?freeword=${encodeURIComponent(bookmark.name)}`;
 
   const assignedLists = lists?.filter((l) => l.id && bookmark.listIds?.includes(l.id)) ?? [];
 
