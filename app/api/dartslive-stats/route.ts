@@ -358,8 +358,10 @@ export const GET = withErrorHandler(
           statsPraAvg: data?.statsPraAvg ?? null,
           stats01Best: null,
           statsCriBest: null,
-          statsPraBest: null,
+          statsPraBest: data?.statsPraBest ?? null,
           awards: {},
+          bullStats: data?.bullStats ?? null,
+          hatTricksMonthly: data?.hatTricksMonthly ?? 0,
         },
         monthly: {},
         recentGames: { dayStats: {}, games: [], shops: [] },
@@ -370,6 +372,9 @@ export const GET = withErrorHandler(
                 stats01Avg: data.prevStats01Avg,
                 statsCriAvg: data.prevStatsCriAvg,
                 statsPraAvg: data.prevStatsPraAvg,
+                dBullMonthly: data.prevBullDMonthly ?? null,
+                hatTricksMonthly: data.prevHatTricksMonthly ?? null,
+                statsPraBest: data.prevStatsPraBest ?? null,
               }
             : null,
       },
@@ -509,6 +514,9 @@ export const POST = withErrorHandler(
                 stats01Avg: prevData.stats01Avg ?? prevData.current?.stats01Avg ?? null,
                 statsCriAvg: prevData.statsCriAvg ?? prevData.current?.statsCriAvg ?? null,
                 statsPraAvg: prevData.statsPraAvg ?? prevData.current?.statsPraAvg ?? null,
+                dBullMonthly: prevData.bullStats?.dBullMonthly ?? null,
+                hatTricksMonthly: prevData.hatTricksMonthly ?? null,
+                statsPraBest: prevData.statsPraBest ?? null,
               }
             : null,
         };
@@ -555,11 +563,15 @@ export const POST = withErrorHandler(
           },
           hatTricks: awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0,
           hatTricksMonthly: awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? 0,
+          statsPraBest: currentStats.statsPraBest ?? null,
           // 前回との差分
           prevRating: responseData.prev?.rating ?? null,
           prevStats01Avg: responseData.prev?.stats01Avg ?? null,
           prevStatsCriAvg: responseData.prev?.statsCriAvg ?? null,
           prevStatsPraAvg: responseData.prev?.statsPraAvg ?? null,
+          prevBullDMonthly: prevData?.bullStats?.dBullMonthly ?? null,
+          prevHatTricksMonthly: prevData?.hatTricksMonthly ?? null,
+          prevStatsPraBest: prevData?.statsPraBest ?? null,
           // COUNT-UPスコア累積
           countUpScores: mergedCountUpScores,
           // フルデータ（スタッツページ用）

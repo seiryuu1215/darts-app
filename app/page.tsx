@@ -31,6 +31,7 @@ import XpNotificationDialog from '@/components/notifications/XpNotificationDialo
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import CompactStatsCard from '@/components/home/CompactStatsCard';
+import FlightProgressCard from '@/components/home/FlightProgressCard';
 import ActiveSettings from '@/components/home/ActiveSettings';
 import GuestHero from '@/components/home/GuestHero';
 import { useToast } from '@/components/ToastProvider';
@@ -43,10 +44,16 @@ interface DartsliveCache {
   stats01Avg: number | null;
   statsCriAvg: number | null;
   statsPraAvg: number | null;
+  statsPraBest: number | null;
+  dBullMonthly: number;
+  hatTricksMonthly: number;
   prevRating: number | null;
   prevStats01Avg: number | null;
   prevStatsCriAvg: number | null;
   prevStatsPraAvg: number | null;
+  prevDBullMonthly: number | null;
+  prevHatTricksMonthly: number | null;
+  prevStatsPraBest: number | null;
 }
 
 interface FeatureCard {
@@ -55,7 +62,7 @@ interface FeatureCard {
   href: string;
   icon: React.ReactNode;
   authOnly?: boolean;
-  gradient: string;
+  accent: string;
 }
 
 const featureCards: FeatureCard[] = [
@@ -63,59 +70,59 @@ const featureCards: FeatureCard[] = [
     title: 'バレル検索',
     description: 'ブランド・スペックで絞り込み',
     href: '/barrels',
-    icon: <SearchIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(109,40,217,0.25) 100%)',
+    icon: <SearchIcon sx={{ fontSize: 36 }} />,
+    accent: '#818cf8',
   },
   {
     title: 'シャフト早見表',
     description: 'シャフト重量を一覧で比較',
     href: '/reference',
-    icon: <StraightenIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(236,72,153,0.25) 0%, rgba(190,24,93,0.25) 100%)',
+    icon: <StraightenIcon sx={{ fontSize: 36 }} />,
+    accent: '#f472b6',
   },
   {
     title: 'シミュレーター',
     description: 'バレル形状を可視化・比較',
     href: '/barrels/simulator',
-    icon: <ViewInArIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(56,189,248,0.25) 0%, rgba(14,165,233,0.25) 100%)',
+    icon: <ViewInArIcon sx={{ fontSize: 36 }} />,
+    accent: '#38bdf8',
   },
   {
     title: 'バレル診断',
     description: '質問に答えておすすめを探す',
     href: '/barrels/quiz',
-    icon: <QuizIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(52,211,153,0.25) 0%, rgba(16,185,129,0.25) 100%)',
+    icon: <QuizIcon sx={{ fontSize: 36 }} />,
+    accent: '#34d399',
   },
   {
     title: 'おすすめツール',
     description: '併用で便利な外部ツール紹介',
     href: '/tools',
-    icon: <BuildIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(192,132,252,0.25) 100%)',
+    icon: <BuildIcon sx={{ fontSize: 36 }} />,
+    accent: '#a78bfa',
   },
   {
     title: 'ショップ',
     description: '近くのダーツショップを探す',
     href: '/shops',
-    icon: <StorefrontIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, rgba(234,179,8,0.25) 0%, rgba(202,138,4,0.25) 100%)',
+    icon: <StorefrontIcon sx={{ fontSize: 36 }} />,
+    accent: '#fbbf24',
   },
   {
     title: 'セッティング比較',
     description: '自分のセッティングを並べて比較',
     href: '/darts/compare',
-    icon: <CompareArrowsIcon sx={{ fontSize: 40 }} />,
+    icon: <CompareArrowsIcon sx={{ fontSize: 36 }} />,
     authOnly: true,
-    gradient: 'linear-gradient(135deg, rgba(251,191,36,0.25) 0%, rgba(245,158,11,0.25) 100%)',
+    accent: '#fb923c',
   },
   {
     title: 'ブックマーク',
     description: '保存したバレル・セッティング',
     href: '/bookmarks',
-    icon: <BookmarkIcon sx={{ fontSize: 40 }} />,
+    icon: <BookmarkIcon sx={{ fontSize: 36 }} />,
     authOnly: true,
-    gradient: 'linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(99,102,241,0.2) 100%)',
+    accent: '#60a5fa',
   },
 ];
 
@@ -229,6 +236,7 @@ export default function HomePage() {
         if (json.data?.current) {
           const c = json.data.current;
           const prev = json.data.prev;
+          const awards = c.awards || {};
           setDlCache({
             rating: c.rating,
             flight: c.flight,
@@ -236,10 +244,20 @@ export default function HomePage() {
             stats01Avg: c.stats01Avg,
             statsCriAvg: c.statsCriAvg,
             statsPraAvg: c.statsPraAvg,
+            statsPraBest: c.statsPraBest ?? null,
+            dBullMonthly: awards['D-BULL']?.monthly ?? c.bullStats?.dBullMonthly ?? 0,
+            hatTricksMonthly:
+              awards['HAT TRICK']?.monthly ??
+              awards['Hat Trick']?.monthly ??
+              c.hatTricksMonthly ??
+              0,
             prevRating: prev?.rating ?? null,
             prevStats01Avg: prev?.stats01Avg ?? null,
             prevStatsCriAvg: prev?.statsCriAvg ?? null,
             prevStatsPraAvg: prev?.statsPraAvg ?? null,
+            prevDBullMonthly: prev?.dBullMonthly ?? null,
+            prevHatTricksMonthly: prev?.hatTricksMonthly ?? null,
+            prevStatsPraBest: prev?.statsPraBest ?? null,
           });
         }
       } catch {
@@ -271,28 +289,46 @@ export default function HomePage() {
         <GuestHero />
       )}
 
-      {/* 1. DARTSLIVEスタッツ */}
+      {/* 1. 目標 */}
+      {session && <GoalSection />}
+
+      {/* 2. DARTSLIVEスタッツ */}
       {session && dlCache && <CompactStatsCard dlCache={dlCache} />}
 
-      {/* 3. 使用中セッティング */}
+      {/* 3. フライト進捗 */}
+      {session &&
+        dlCache &&
+        dlCache.rating != null &&
+        dlCache.stats01Avg != null &&
+        dlCache.statsCriAvg != null && (
+          <FlightProgressCard
+            rating={dlCache.rating}
+            flight={dlCache.flight}
+            stats01Avg={dlCache.stats01Avg}
+            statsCriAvg={dlCache.statsCriAvg}
+            statsPraBest={dlCache.statsPraBest}
+            dBullMonthly={dlCache.dBullMonthly}
+            hatTricksMonthly={dlCache.hatTricksMonthly}
+            prevDBullMonthly={dlCache.prevDBullMonthly}
+            prevHatTricksMonthly={dlCache.prevHatTricksMonthly}
+            prevStatsPraBest={dlCache.prevStatsPraBest}
+          />
+        )}
+
+      {/* 4. 使用中セッティング */}
       {session && (
         <ActiveSettings activeSoftDart={activeSoftDart} activeSteelDart={activeSteelDart} />
       )}
 
-      {/* 4. 目標 */}
-      {session && <GoalSection />}
-
       {/* 5. 機能カード */}
-      <Grid container spacing={3} sx={{ mb: 5 }}>
+      <Grid container spacing={2} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
           <Grid size={{ xs: 6, sm: 6, md: 3 }} key={card.href}>
             <Card
               sx={{
                 height: '100%',
-                background: card.gradient,
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 3,
-                '&:hover': { boxShadow: 8, transform: 'translateY(-4px)' },
+                borderLeft: `3px solid ${card.accent}`,
+                '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
                 transition: 'all 0.2s ease-in-out',
               }}
             >
@@ -308,12 +344,12 @@ export default function HomePage() {
                   justifyContent: 'center',
                 }}
               >
-                <Box sx={{ color: 'rgba(255,255,255,0.9)', mb: 1 }}>{card.icon}</Box>
+                <Box sx={{ color: card.accent, mb: 1 }}>{card.icon}</Box>
                 <CardContent sx={{ textAlign: 'center', p: 0, '&:last-child': { pb: 0 } }}>
-                  <Typography variant="subtitle1" fontWeight="bold">
+                  <Typography variant="subtitle2" fontWeight="bold">
                     {card.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary">
                     {card.description}
                   </Typography>
                 </CardContent>
