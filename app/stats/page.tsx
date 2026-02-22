@@ -24,7 +24,7 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Dart } from '@/types';
 import { getFlightColor } from '@/lib/dartslive-colors';
 import { calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
-import { canUseDartslive, canExportCsv } from '@/lib/permissions';
+import { canUseDartslive, canUseDartsliveApi, canExportCsv } from '@/lib/permissions';
 import ProPaywall from '@/components/ProPaywall';
 
 // Progression components
@@ -36,6 +36,7 @@ import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 import StatsPageContent from '@/components/stats/StatsPageContent';
+import AdminApiStatsSection from '@/components/stats/AdminApiStatsSection';
 
 // === Types ===
 interface StatsHistorySummary {
@@ -111,6 +112,7 @@ export default function StatsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const canDartslive = canUseDartslive(session?.user?.role);
+  const isAdminApi = canUseDartsliveApi(session?.user?.role);
 
   const [dlData, setDlData] = useState<DartsliveData | null>(null);
   const [dlOpen, setDlOpen] = useState(false);
@@ -132,6 +134,24 @@ export default function StatsPage() {
   const [xpHistory, setXpHistory] = useState<
     { id: string; action: string; xp: number; detail: string; createdAt: string }[]
   >([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiEnrichedData, setApiEnrichedData] = useState<any>(null);
+  const [apiDailyHistory, setApiDailyHistory] = useState<
+    {
+      date: string;
+      rating: number | null;
+      stats01Avg: number | null;
+      statsCriAvg: number | null;
+      stats01Avg100?: number | null;
+      statsCriAvg100?: number | null;
+    }[]
+  >([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiDartoutList, setApiDartoutList] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiAwardList, setApiAwardList] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiRecentPlays, setApiRecentPlays] = useState<any>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -201,6 +221,26 @@ export default function StatsPage() {
     };
     fetchProgression();
   }, [session, canDartslive]);
+
+  const fetchAdminApiData = async () => {
+    try {
+      const res = await fetch('/api/admin/dartslive-history');
+      if (!res.ok) return;
+      const json = await res.json();
+      setApiDailyHistory(json.records ?? []);
+      setApiEnrichedData(json.enriched ?? null);
+      setApiDartoutList(json.dartoutList ?? null);
+      setApiAwardList(json.awardList ?? null);
+      setApiRecentPlays(json.recentPlays ?? null);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    if (!session?.user?.id || !isAdminApi) return;
+    fetchAdminApiData();
+  }, [session, isAdminApi]);
 
   useEffect(() => {
     if (!session?.user?.id || !canDartslive) return;
@@ -366,6 +406,19 @@ export default function StatsPage() {
             onPeriodChange={setPeriodTab}
             onMonthlyTabChange={setMonthlyTab}
             onGameChartCategoryChange={setGameChartCategory}
+          />
+        )}
+
+        {/* Admin API Stats */}
+        {isAdminApi && (
+          <AdminApiStatsSection
+            dailyHistory={apiDailyHistory}
+            enrichedData={apiEnrichedData}
+            flightColor={flightColor}
+            onSyncComplete={fetchAdminApiData}
+            dartoutList={apiDartoutList}
+            awardList={apiAwardList}
+            recentPlays={apiRecentPlays}
           />
         )}
 

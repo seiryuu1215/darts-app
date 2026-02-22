@@ -6,6 +6,7 @@ import {
   isPro,
   isAdmin,
   canUseDartslive,
+  canUseDartsliveApi,
   canExportCsv,
   canCreateDiscussion,
   canViewDetailedAnalysis,
@@ -22,6 +23,7 @@ export interface PermissionState {
   isPro: boolean;
   isAdmin: boolean;
   canUseDartslive: boolean;
+  canUseDartsliveApi: boolean;
   canExportCsv: boolean;
   canCreateDiscussion: boolean;
   canViewDetailedAnalysis: boolean;
@@ -42,6 +44,7 @@ export function usePermission(): PermissionState {
     isPro: isPro(role),
     isAdmin: isAdmin(role),
     canUseDartslive: canUseDartslive(role),
+    canUseDartsliveApi: canUseDartsliveApi(role),
     canExportCsv: canExportCsv(role),
     canCreateDiscussion: canCreateDiscussion(role),
     canViewDetailedAnalysis: canViewDetailedAnalysis(role),

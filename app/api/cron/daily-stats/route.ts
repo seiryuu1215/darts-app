@@ -32,7 +32,9 @@ import {
   scrapeStats,
   scrapeGameCount,
   withRetry,
+  type ScrapedStats,
 } from '@/lib/dartslive-scraper';
+import { dlApiFullSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
 import { sendPushToUser } from '@/lib/push-notifications';
 
 export const maxDuration = 300;
@@ -77,17 +79,49 @@ export async function GET(request: NextRequest) {
           const dlEmail = decrypt(userData.dlCredentialsEncrypted.email);
           const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
-          // 新しいページでスタッツ取得
-          const page = await createPage(browser);
+          // admin → API同期、非admin → Puppeteerスクレイピング
+          let stats: ScrapedStats;
+          let gamesPlayed: number;
+          let apiSyncResult: Awaited<ReturnType<typeof dlApiFullSync>> | null = null;
 
-          try {
-            const loginSuccess = await withRetry(() => login(page, dlEmail, dlPassword));
-            if (!loginSuccess) {
-              throw new Error('LOGIN_FAILED');
+          if (userData.role === 'admin') {
+            // 管理者: DARTSLIVE API を優先使用
+            try {
+              apiSyncResult = await dlApiFullSync(dlEmail, dlPassword);
+              stats = mapApiToScrapedStats(apiSyncResult);
+              gamesPlayed =
+                apiSyncResult.recentPlays.length > 0 ? apiSyncResult.recentPlays.length : 0;
+            } catch (apiErr) {
+              console.error(
+                `API sync failed for admin ${userId}, falling back to scraper:`,
+                apiErr,
+              );
+              apiSyncResult = null;
+              // Puppeteerにフォールバック
+              const fallbackPage = await createPage(browser);
+              try {
+                const loginOk = await withRetry(() => login(fallbackPage, dlEmail, dlPassword));
+                if (!loginOk) throw new Error('LOGIN_FAILED');
+                stats = await withRetry(() => scrapeStats(fallbackPage));
+                gamesPlayed = await withRetry(() => scrapeGameCount(fallbackPage));
+              } finally {
+                await fallbackPage.close();
+              }
             }
-            const stats = await withRetry(() => scrapeStats(page));
-            const gamesPlayed = await withRetry(() => scrapeGameCount(page));
+          } else {
+            // 非admin: 従来通りPuppeteer使用
+            const scraperPage = await createPage(browser);
+            try {
+              const loginOk = await withRetry(() => login(scraperPage, dlEmail, dlPassword));
+              if (!loginOk) throw new Error('LOGIN_FAILED');
+              stats = await withRetry(() => scrapeStats(scraperPage));
+              gamesPlayed = await withRetry(() => scrapeGameCount(scraperPage));
+            } finally {
+              await scraperPage.close();
+            }
+          }
 
+          {
             // 前回キャッシュと比較
             const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
             const prevDoc = await cacheRef.get();
@@ -154,6 +188,7 @@ export async function GET(request: NextRequest) {
                   },
                   hatTricks: stats.hatTricksTotal,
                   hatTricksMonthly: stats.hatTricksMonthly,
+                  lowTonMonthly: stats.lowTonMonthly,
                   source: 'cron',
                   createdAt: FieldValue.serverTimestamp(),
                 });
@@ -170,6 +205,47 @@ export async function GET(request: NextRequest) {
               );
               const freshTotalPlayDays = freshGamesSnap.size;
 
+              // 当月プレイ日数を算出
+              const currentMonth = `${todayJST.getFullYear()}-${String(todayJST.getMonth() + 1).padStart(2, '0')}`;
+              const monthStart = new Date(todayJST.getFullYear(), todayJST.getMonth(), 1);
+              const monthStatsSnap = await adminDb
+                .collection(`users/${userId}/dartsLiveStats`)
+                .where('date', '>=', monthStart)
+                .where('date', '<=', new Date(todayStr + 'T23:59:59+09:00'))
+                .get();
+              const currentMonthPlayDays = monthStatsSnap.size;
+
+              // 前月プレイ日数を算出
+              const prevMonthDate = new Date(todayJST.getFullYear(), todayJST.getMonth() - 1, 1);
+              const prevMonthEnd = new Date(
+                todayJST.getFullYear(),
+                todayJST.getMonth(),
+                0,
+                23,
+                59,
+                59,
+              );
+              const prevMonthStatsSnap = await adminDb
+                .collection(`users/${userId}/dartsLiveStats`)
+                .where('date', '>=', prevMonthDate)
+                .where('date', '<=', prevMonthEnd)
+                .get();
+              const prevMonthPlayDays = prevMonthStatsSnap.size;
+
+              // 月変更検出: 前回キャッシュの月と今月が違えば prevMonthStats を更新
+              const prevCachedMonth = prevData?.cachedMonth ?? null;
+              let prevMonthStats = prevData?.prevMonthStats ?? null;
+              if (prevCachedMonth && prevCachedMonth !== currentMonth) {
+                // 月が変わった → 前回キャッシュの月間値を prevMonthStats にコピー
+                prevMonthStats = {
+                  dBullMonthly: prevData?.bullStats?.dBullMonthly ?? 0,
+                  sBullMonthly: prevData?.bullStats?.sBullMonthly ?? 0,
+                  hatTricksMonthly: prevData?.hatTricksMonthly ?? 0,
+                  lowTonMonthly: prevData?.lowTonMonthly ?? 0,
+                  playDays: prevMonthPlayDays,
+                };
+              }
+
               // キャッシュ更新
               await cacheRef.set(
                 {
@@ -185,6 +261,7 @@ export async function GET(request: NextRequest) {
                   },
                   hatTricks: stats.hatTricksTotal,
                   hatTricksMonthly: stats.hatTricksMonthly,
+                  lowTonMonthly: stats.lowTonMonthly,
                   ton80: stats.ton80,
                   lowTon: stats.lowTon,
                   highTon: stats.highTon,
@@ -198,6 +275,10 @@ export async function GET(request: NextRequest) {
                   prevRating: prevData?.rating ?? null,
                   prevStats01Avg: prevData?.stats01Avg ?? null,
                   prevStatsCriAvg: prevData?.statsCriAvg ?? null,
+                  cachedMonth: currentMonth,
+                  currentMonthPlayDays,
+                  prevMonthPlayDays,
+                  prevMonthStats,
                   updatedAt: FieldValue.serverTimestamp(),
                 },
                 { merge: true },
@@ -835,8 +916,84 @@ export async function GET(request: NextRequest) {
             if (!hasChange) {
               results.push({ userId, status: 'no_change' });
             }
-          } finally {
-            await page.close();
+
+            // admin + API同期成功時: enriched データも保存
+            if (apiSyncResult) {
+              try {
+                const {
+                  userData: apiUser,
+                  bestRecords,
+                  gameAverages,
+                  myDartsInfo,
+                  totalAward: apiAward,
+                } = apiSyncResult.bundle;
+                await adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
+                  bundle: JSON.stringify(apiSyncResult.bundle),
+                  dailyHistoryCount: apiSyncResult.dailyHistory.length,
+                  monthlyHistory: JSON.stringify(apiSyncResult.monthlyHistory),
+                  recentPlays: JSON.stringify(apiSyncResult.recentPlays.slice(0, 100)),
+                  lastSyncAt: FieldValue.serverTimestamp(),
+                });
+                await cacheRef.set(
+                  {
+                    maxRating: apiUser.maxRating,
+                    maxRatingDate: apiUser.maxRatingDate,
+                    stats01Detailed: {
+                      avg: apiUser.stats01Avg,
+                      best: apiUser.stats01Best,
+                      winRate: apiUser.stats01WinRate,
+                      bullRate: apiUser.stats01BullRate,
+                      arrangeRate: apiUser.stats01ArrangeRate,
+                      avgBust: apiUser.stats01AvgBust,
+                      avg100: apiUser.stats01Avg100,
+                    },
+                    statsCricketDetailed: {
+                      avg: apiUser.statsCriAvg,
+                      best: apiUser.statsCriBest,
+                      winRate: apiUser.statsCriWinRate,
+                      tripleRate: apiUser.statsCriTripleRate,
+                      openCloseRate: apiUser.statsCriOpenCloseRate,
+                      avg100: apiUser.statsCriAvg100,
+                    },
+                    bestRecords: JSON.stringify(bestRecords),
+                    gameAverages: JSON.stringify(gameAverages),
+                    myDartsInfo: myDartsInfo ? JSON.stringify(myDartsInfo) : null,
+                    totalAward: JSON.stringify(apiAward),
+                    apiSyncAt: FieldValue.serverTimestamp(),
+                  },
+                  { merge: true },
+                );
+
+                // 日別スタッツをバッチ書き込み
+                const chunkSize = 500;
+                for (let i = 0; i < apiSyncResult.dailyHistory.length; i += chunkSize) {
+                  const chunk = apiSyncResult.dailyHistory.slice(i, i + chunkSize);
+                  const batch = adminDb.batch();
+                  for (const day of chunk) {
+                    if (!day.date) continue;
+                    const dayStr = day.date.replace(/\//g, '-');
+                    const docRef = adminDb.doc(`users/${userId}/dartsLiveStats/${dayStr}`);
+                    batch.set(
+                      docRef,
+                      {
+                        date: new Date(dayStr + 'T00:00:00+09:00'),
+                        rating: day.rating,
+                        stats01Avg: day.stats01Avg,
+                        statsCriAvg: day.statsCriAvg,
+                        stats01Avg100: day.stats01Avg100,
+                        statsCriAvg100: day.statsCriAvg100,
+                        source: 'api',
+                        updatedAt: FieldValue.serverTimestamp(),
+                      },
+                      { merge: true },
+                    );
+                  }
+                  await batch.commit();
+                }
+              } catch (apiSaveErr) {
+                console.error(`API enriched save error for user ${userId}:`, apiSaveErr);
+              }
+            }
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);

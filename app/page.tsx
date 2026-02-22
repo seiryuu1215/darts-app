@@ -30,12 +30,19 @@ import GoalSection from '@/components/goals/GoalSection';
 import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import CompactStatsCard from '@/components/home/CompactStatsCard';
-import FlightProgressCard from '@/components/home/FlightProgressCard';
+import StatsOverviewCard from '@/components/home/StatsOverviewCard';
 import ActiveSettings from '@/components/home/ActiveSettings';
 import GuestHero from '@/components/home/GuestHero';
 import { useToast } from '@/components/ToastProvider';
 import type { Dart } from '@/types';
+
+interface PrevMonthStats {
+  dBullMonthly: number;
+  sBullMonthly: number;
+  lowTonMonthly: number;
+  hatTricksMonthly: number;
+  playDays: number;
+}
 
 interface DartsliveCache {
   rating: number | null;
@@ -44,16 +51,16 @@ interface DartsliveCache {
   stats01Avg: number | null;
   statsCriAvg: number | null;
   statsPraAvg: number | null;
-  statsPraBest: number | null;
   dBullMonthly: number;
+  sBullMonthly: number;
+  lowTonMonthly: number;
   hatTricksMonthly: number;
+  currentMonthPlayDays: number;
+  prevMonthStats: PrevMonthStats | null;
   prevRating: number | null;
   prevStats01Avg: number | null;
   prevStatsCriAvg: number | null;
   prevStatsPraAvg: number | null;
-  prevDBullMonthly: number | null;
-  prevHatTricksMonthly: number | null;
-  prevStatsPraBest: number | null;
 }
 
 interface FeatureCard {
@@ -244,20 +251,21 @@ export default function HomePage() {
             stats01Avg: c.stats01Avg,
             statsCriAvg: c.statsCriAvg,
             statsPraAvg: c.statsPraAvg,
-            statsPraBest: c.statsPraBest ?? null,
             dBullMonthly: awards['D-BULL']?.monthly ?? c.bullStats?.dBullMonthly ?? 0,
+            sBullMonthly:
+              awards['S-BULL']?.monthly ?? c.sBullMonthly ?? c.bullStats?.sBullMonthly ?? 0,
+            lowTonMonthly: awards['LOW TON']?.monthly ?? c.lowTonMonthly ?? 0,
             hatTricksMonthly:
               awards['HAT TRICK']?.monthly ??
               awards['Hat Trick']?.monthly ??
               c.hatTricksMonthly ??
               0,
+            currentMonthPlayDays: json.data.currentMonthPlayDays ?? 0,
+            prevMonthStats: json.data.prevMonthStats ?? null,
             prevRating: prev?.rating ?? null,
             prevStats01Avg: prev?.stats01Avg ?? null,
             prevStatsCriAvg: prev?.statsCriAvg ?? null,
             prevStatsPraAvg: prev?.statsPraAvg ?? null,
-            prevDBullMonthly: prev?.dBullMonthly ?? null,
-            prevHatTricksMonthly: prev?.hatTricksMonthly ?? null,
-            prevStatsPraBest: prev?.statsPraBest ?? null,
           });
         }
       } catch {
@@ -293,25 +301,27 @@ export default function HomePage() {
       {session && <GoalSection />}
 
       {/* 2. DARTSLIVEスタッツ */}
-      {session && dlCache && <CompactStatsCard dlCache={dlCache} />}
-
-      {/* 3. フライト進捗 */}
       {session &&
         dlCache &&
         dlCache.rating != null &&
         dlCache.stats01Avg != null &&
         dlCache.statsCriAvg != null && (
-          <FlightProgressCard
+          <StatsOverviewCard
             rating={dlCache.rating}
             flight={dlCache.flight}
             stats01Avg={dlCache.stats01Avg}
             statsCriAvg={dlCache.statsCriAvg}
-            statsPraBest={dlCache.statsPraBest}
+            statsPraAvg={dlCache.statsPraAvg}
+            prevRating={dlCache.prevRating}
+            prevStats01Avg={dlCache.prevStats01Avg}
+            prevStatsCriAvg={dlCache.prevStatsCriAvg}
+            prevStatsPraAvg={dlCache.prevStatsPraAvg}
             dBullMonthly={dlCache.dBullMonthly}
+            sBullMonthly={dlCache.sBullMonthly}
+            lowTonMonthly={dlCache.lowTonMonthly}
             hatTricksMonthly={dlCache.hatTricksMonthly}
-            prevDBullMonthly={dlCache.prevDBullMonthly}
-            prevHatTricksMonthly={dlCache.prevHatTricksMonthly}
-            prevStatsPraBest={dlCache.prevStatsPraBest}
+            currentMonthPlayDays={dlCache.currentMonthPlayDays}
+            prevMonthStats={dlCache.prevMonthStats}
           />
         )}
 

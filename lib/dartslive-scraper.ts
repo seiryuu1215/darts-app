@@ -34,6 +34,7 @@ export interface ScrapedStats {
   hatTricksMonthly: number;
   ton80: number;
   lowTon: number;
+  lowTonMonthly: number;
   highTon: number;
   threeInABed: number;
   threeInABlack: number;
@@ -119,6 +120,7 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
     let hatTricksMonthly = 0;
     let ton80 = 0;
     let lowTon = 0;
+    let lowTonMonthly = 0;
     let highTon = 0;
     let threeInABed = 0;
     let threeInABlack = 0;
@@ -140,7 +142,8 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
       'TON 80': (_m, t) => {
         ton80 = t;
       },
-      'LOW TON': (_m, t) => {
+      'LOW TON': (m, t) => {
+        lowTonMonthly = m;
         lowTon = t;
       },
       'HIGH TON': (_m, t) => {
@@ -184,6 +187,7 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
       hatTricksMonthly,
       ton80,
       lowTon,
+      lowTonMonthly,
       highTon,
       threeInABed,
       threeInABlack,

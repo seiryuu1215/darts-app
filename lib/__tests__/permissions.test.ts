@@ -4,6 +4,7 @@ import {
   isAdmin,
   canExportCsv,
   canUseDartslive,
+  canUseDartsliveApi,
   canWriteArticles,
   canViewDetailedAnalysis,
   canUsePushNotifications,
@@ -119,6 +120,21 @@ describe('getShopBookmarkLimit', () => {
   });
   it('returns SHOP_BOOKMARK_LIMIT_GENERAL for undefined', () => {
     expect(getShopBookmarkLimit(undefined)).toBe(SHOP_BOOKMARK_LIMIT_GENERAL);
+  });
+});
+
+describe('canUseDartsliveApi', () => {
+  it('returns true for admin', () => {
+    expect(canUseDartsliveApi('admin')).toBe(true);
+  });
+  it('returns false for pro', () => {
+    expect(canUseDartsliveApi('pro')).toBe(false);
+  });
+  it('returns false for general', () => {
+    expect(canUseDartsliveApi('general')).toBe(false);
+  });
+  it('returns false for undefined', () => {
+    expect(canUseDartsliveApi(undefined)).toBe(false);
   });
 });
 

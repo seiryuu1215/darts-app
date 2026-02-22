@@ -362,9 +362,14 @@ export const GET = withErrorHandler(
           awards: {},
           bullStats: data?.bullStats ?? null,
           hatTricksMonthly: data?.hatTricksMonthly ?? 0,
+          lowTonMonthly: data?.lowTonMonthly ?? 0,
+          sBullMonthly: data?.bullStats?.sBullMonthly ?? 0,
         },
         monthly: {},
         recentGames: { dayStats: {}, games: [], shops: [] },
+        prevMonthStats: data?.prevMonthStats ?? null,
+        currentMonthPlayDays: data?.currentMonthPlayDays ?? 0,
+        prevMonthPlayDays: data?.prevMonthPlayDays ?? 0,
         prev:
           data?.prevRating != null
             ? {
@@ -496,6 +501,8 @@ export const POST = withErrorHandler(
         const prevDoc = await cacheRef.get();
         const prevData = prevDoc.exists ? prevDoc.data() : null;
 
+        const awards = currentStats.awards || {};
+
         const responseData = {
           current: {
             ...currentStats,
@@ -505,6 +512,8 @@ export const POST = withErrorHandler(
             homeShop: profile.homeShop,
             status: profile.status,
             myAward: profile.myAward,
+            lowTonMonthly: awards['LOW TON']?.monthly ?? 0,
+            sBullMonthly: awards['S-BULL']?.monthly ?? 0,
           },
           monthly,
           recentGames,
@@ -541,7 +550,6 @@ export const POST = withErrorHandler(
         }
 
         // フルデータ + サマリーを保存
-        const awards = currentStats.awards || {};
         const cacheData = {
           // サマリー（トップページ表示用）
           rating: currentStats.rating,
@@ -563,6 +571,7 @@ export const POST = withErrorHandler(
           },
           hatTricks: awards['HAT TRICK']?.total ?? awards['Hat Trick']?.total ?? 0,
           hatTricksMonthly: awards['HAT TRICK']?.monthly ?? awards['Hat Trick']?.monthly ?? 0,
+          lowTonMonthly: awards['LOW TON']?.monthly ?? 0,
           statsPraBest: currentStats.statsPraBest ?? null,
           // 前回との差分
           prevRating: responseData.prev?.rating ?? null,
@@ -578,6 +587,55 @@ export const POST = withErrorHandler(
           fullData: JSON.stringify(responseData),
           updatedAt: FieldValue.serverTimestamp(),
         };
+
+        // 月変更検出 + プレイ日数計算
+        const now = new Date();
+        now.setHours(now.getHours() + 9); // JST
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const prevCachedMonth = prevData?.cachedMonth ?? null;
+        let prevMonthStats = prevData?.prevMonthStats ?? null;
+        if (prevCachedMonth && prevCachedMonth !== currentMonth) {
+          const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+          const prevMonthStatsSnap = await adminDb
+            .collection(`users/${userId}/dartsLiveStats`)
+            .where('date', '>=', prevMonthDate)
+            .where('date', '<=', prevMonthEnd)
+            .get();
+          prevMonthStats = {
+            dBullMonthly: prevData?.bullStats?.dBullMonthly ?? 0,
+            sBullMonthly: prevData?.bullStats?.sBullMonthly ?? 0,
+            hatTricksMonthly: prevData?.hatTricksMonthly ?? 0,
+            lowTonMonthly: prevData?.lowTonMonthly ?? 0,
+            playDays: prevMonthStatsSnap.size,
+          };
+        }
+
+        // 当月プレイ日数
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const monthStatsSnap = await adminDb
+          .collection(`users/${userId}/dartsLiveStats`)
+          .where('date', '>=', monthStart)
+          .where('date', '<=', new Date(todayStr + 'T23:59:59+09:00'))
+          .get();
+
+        // 前月プレイ日数
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        const prevMonthPlayDaysSnap = await adminDb
+          .collection(`users/${userId}/dartsLiveStats`)
+          .where('date', '>=', prevMonthDate)
+          .where('date', '<=', prevMonthEnd)
+          .get();
+
+        Object.assign(cacheData, {
+          cachedMonth: currentMonth,
+          currentMonthPlayDays: monthStatsSnap.size,
+          prevMonthPlayDays: prevMonthPlayDaysSnap.size,
+          prevMonthStats,
+        });
+
         await cacheRef.set(cacheData);
 
         return NextResponse.json({ success: true, data: responseData });

@@ -83,3 +83,7 @@ export function canUsePushNotifications(role: UserRole | undefined): boolean {
 export function canAutoImportShops(role: UserRole | undefined): boolean {
   return role === 'pro' || role === 'admin';
 }
+
+export function canUseDartsliveApi(role: UserRole | undefined): boolean {
+  return role === 'admin';
+}
