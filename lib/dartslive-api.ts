@@ -138,7 +138,11 @@ async function dlApiPost(params: DlApiParams): Promise<Record<string, unknown>> 
   });
 
   if (!res.ok) {
-    throw new Error(`DARTSLIVE API error: ${res.status} ${res.statusText}`);
+    const actionType = params.ACTION_TYPE ?? 'unknown';
+    const bodyText = await res.text().catch(() => '');
+    throw new Error(
+      `DARTSLIVE API error: ${actionType} ${res.status} ${res.statusText} — ${bodyText.slice(0, 200)}`,
+    );
   }
 
   return res.json() as Promise<Record<string, unknown>>;
@@ -409,12 +413,17 @@ export async function dlApiFullSync(email: string, password: string): Promise<Dl
   }
   const toId = mainCard.toId;
 
-  // 並列取得
+  // 並列取得（個別ステップ名付きエラーハンドリング）
+  const wrap = <T>(label: string, fn: Promise<T>): Promise<T> =>
+    fn.catch((err) => {
+      throw new Error(`${label}: ${err instanceof Error ? err.message : String(err)}`);
+    });
+
   const [bundle, dailyHistory, monthlyHistory, recentPlays] = await Promise.all([
-    dlApiFetchBundle(authKey, toId),
-    dlApiFetchDailyHistory(authKey, toId),
-    dlApiFetchMonthlyHistory(authKey, toId),
-    dlApiFetchPlayHistory(authKey, toId),
+    wrap('bundle', dlApiFetchBundle(authKey, toId)),
+    wrap('dailyHistory', dlApiFetchDailyHistory(authKey, toId)),
+    wrap('monthlyHistory', dlApiFetchMonthlyHistory(authKey, toId)),
+    wrap('playHistory', dlApiFetchPlayHistory(authKey, toId)),
   ]);
 
   return { bundle, dailyHistory, monthlyHistory, recentPlays };
