@@ -4,14 +4,14 @@ import { Box, ButtonBase, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import SearchIcon from '@mui/icons-material/Search';
+import ArticleIcon from '@mui/icons-material/Article';
 import Link from 'next/link';
 
 const actions = [
   { label: 'スタッツ', href: '/stats', icon: <BarChartIcon /> },
   { label: 'セッティング追加', href: '/darts/new', icon: <AddCircleOutlineIcon /> },
   { label: 'ショップ', href: '/shops', icon: <StorefrontIcon /> },
-  { label: 'バレル検索', href: '/barrels', icon: <SearchIcon /> },
+  { label: '記事', href: '/articles', icon: <ArticleIcon /> },
 ];
 
 export default function QuickActions() {

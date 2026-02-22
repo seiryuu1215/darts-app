@@ -16,7 +16,6 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import QuizIcon from '@mui/icons-material/Quiz';
 import BuildIcon from '@mui/icons-material/Build';
@@ -33,6 +32,7 @@ import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import QuickActions from '@/components/home/QuickActions';
 import CompactStatsCard from '@/components/home/CompactStatsCard';
 import ActiveSettings from '@/components/home/ActiveSettings';
+import GuestHero from '@/components/home/GuestHero';
 import { useToast } from '@/components/ToastProvider';
 import type { Dart } from '@/types';
 
@@ -55,6 +55,7 @@ interface FeatureCard {
   href: string;
   icon: React.ReactNode;
   authOnly?: boolean;
+  gradient: string;
 }
 
 const featureCards: FeatureCard[] = [
@@ -63,37 +64,35 @@ const featureCards: FeatureCard[] = [
     description: 'ブランド・スペックで絞り込み',
     href: '/barrels',
     icon: <SearchIcon sx={{ fontSize: 40 }} />,
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
   {
     title: 'シャフト早見表',
     description: 'シャフト重量を一覧で比較',
     href: '/reference',
     icon: <StraightenIcon sx={{ fontSize: 40 }} />,
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
   {
     title: 'シミュレーター',
     description: 'バレル形状を可視化・比較',
     href: '/barrels/simulator',
     icon: <ViewInArIcon sx={{ fontSize: 40 }} />,
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
   },
   {
     title: 'バレル診断',
     description: '質問に答えておすすめを探す',
     href: '/barrels/quiz',
     icon: <QuizIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    title: 'スタッツ',
-    description: 'レーティング推移・実績を確認',
-    href: '/stats',
-    icon: <BarChartIcon sx={{ fontSize: 40 }} />,
-    authOnly: true,
+    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
   },
   {
     title: 'おすすめツール',
     description: '併用で便利な外部ツール紹介',
     href: '/tools',
     icon: <BuildIcon sx={{ fontSize: 40 }} />,
+    gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
   },
   {
     title: 'セッティング比較',
@@ -101,6 +100,7 @@ const featureCards: FeatureCard[] = [
     href: '/darts/compare',
     icon: <CompareArrowsIcon sx={{ fontSize: 40 }} />,
     authOnly: true,
+    gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
   },
   {
     title: 'ブックマーク',
@@ -108,6 +108,7 @@ const featureCards: FeatureCard[] = [
     href: '/bookmarks',
     icon: <BookmarkIcon sx={{ fontSize: 40 }} />,
     authOnly: true,
+    gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
   },
 ];
 
@@ -255,30 +256,40 @@ export default function HomePage() {
         />
       )}
 
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        ダッシュボード
-      </Typography>
+      {session ? (
+        <Typography variant="h4" sx={{ mb: 3 }}>
+          ダッシュボード
+        </Typography>
+      ) : (
+        <GuestHero />
+      )}
 
-      {/* 1. 目標 */}
-      {session && <GoalSection />}
-
-      {/* 2. クイックアクション */}
+      {/* 1. クイックアクション */}
       {session && <QuickActions />}
 
-      {/* 3. DARTSLIVE Stats — 前期比矢印付き */}
+      {/* 2. DARTSLIVEスタッツ */}
       {session && dlCache && <CompactStatsCard dlCache={dlCache} />}
 
-      {/* 4. 使用中セッティング */}
+      {/* 3. 使用中セッティング */}
       {session && (
         <ActiveSettings activeSoftDart={activeSoftDart} activeSteelDart={activeSteelDart} />
       )}
 
-      {/* 5. ウィジェット */}
+      {/* 4. 目標 */}
+      {session && <GoalSection />}
+
+      {/* 5. 機能カード */}
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {visibleCards.map((card) => (
           <Grid size={{ xs: 6, sm: 6, md: 3 }} key={card.href}>
             <Card
-              sx={{ height: '100%', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
+              sx={{
+                height: '100%',
+                background: card.gradient,
+                borderRadius: 3,
+                '&:hover': { boxShadow: 8, transform: 'translateY(-4px)' },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
               <CardActionArea
                 component={Link}
@@ -292,12 +303,12 @@ export default function HomePage() {
                   justifyContent: 'center',
                 }}
               >
-                <Box sx={{ color: 'primary.main', mb: 1 }}>{card.icon}</Box>
+                <Box sx={{ color: '#fff', mb: 1 }}>{card.icon}</Box>
                 <CardContent sx={{ textAlign: 'center', p: 0, '&:last-child': { pb: 0 } }}>
-                  <Typography variant="subtitle1" fontWeight="bold">
+                  <Typography variant="subtitle1" fontWeight="bold" color="#fff">
                     {card.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     {card.description}
                   </Typography>
                 </CardContent>
