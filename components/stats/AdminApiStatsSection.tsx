@@ -11,6 +11,7 @@ import DailyHistoryChart from './DailyHistoryChart';
 import AwardTrendChart from './AwardTrendChart';
 import ScoreDistributionCard from './ScoreDistributionCard';
 import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
+import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 import BestRecordsCard from './BestRecordsCard';
 import GameAveragesCard from './GameAveragesCard';
 
@@ -76,6 +77,7 @@ interface AdminApiStatsSectionProps {
   dartoutList?: DartoutItem[] | null;
   awardList?: AwardEntry[] | null;
   recentPlays?: RecentPlay[] | null;
+  countupPlays?: CountUpPlay[] | null;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -102,6 +104,7 @@ export default function AdminApiStatsSection({
   dartoutList,
   awardList,
   recentPlays,
+  countupPlays,
 }: AdminApiStatsSectionProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -202,15 +205,19 @@ export default function AdminApiStatsSection({
       {awardList && awardList.length > 0 && <AwardTrendChart awardList={awardList} />}
 
       {/* ゲーム分析 */}
-      {recentPlays && recentPlays.length > 0 && (
+      {(recentPlays?.length || countupPlays?.length) && (
         <>
           <SectionLabel>ゲーム分析</SectionLabel>
-          <ScoreDistributionCard recentPlays={recentPlays} />
-          <CountUpDeepAnalysisCard
-            recentPlays={recentPlays}
-            stats01Detailed={enrichedData?.stats01Detailed}
-            bestRecords={enrichedData?.bestRecords}
-          />
+          {recentPlays && recentPlays.length > 0 && (
+            <ScoreDistributionCard recentPlays={recentPlays} />
+          )}
+          {countupPlays && countupPlays.length > 0 && (
+            <CountUpDeepAnalysisCard
+              countupPlays={countupPlays}
+              stats01Detailed={enrichedData?.stats01Detailed}
+              bestRecords={enrichedData?.bestRecords}
+            />
+          )}
         </>
       )}
 

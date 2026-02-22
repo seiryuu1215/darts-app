@@ -55,6 +55,15 @@ export const POST = withErrorHandler(
       lastSyncAt: FieldValue.serverTimestamp(),
     });
 
+    // 1b. COUNT-UPプレイデータ（PLAY_LOG付き）を別ドキュメントに保存
+    if (result.countupPlays.length > 0) {
+      await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
+        plays: JSON.stringify(result.countupPlays),
+        count: result.countupPlays.length,
+        lastSyncAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     // 2. dartsLiveStats/{YYYY-MM-DD} にバッチ書き込み (500件チャンク)
     const chunkSize = 500;
     for (let i = 0; i < result.dailyHistory.length; i += chunkSize) {
@@ -127,6 +136,7 @@ export const POST = withErrorHandler(
       success: true,
       dailyHistoryImported: result.dailyHistory.length,
       recentPlaysCount: result.recentPlays.length,
+      countupPlaysCount: result.countupPlays.length,
     });
   }),
   'DARTSLIVE API同期エラー',

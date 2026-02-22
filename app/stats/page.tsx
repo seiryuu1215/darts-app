@@ -152,6 +152,8 @@ export default function StatsPage() {
   const [apiAwardList, setApiAwardList] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [apiRecentPlays, setApiRecentPlays] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiCountupPlays, setApiCountupPlays] = useState<any>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -232,6 +234,7 @@ export default function StatsPage() {
       setApiDartoutList(json.dartoutList ?? null);
       setApiAwardList(json.awardList ?? null);
       setApiRecentPlays(json.recentPlays ?? null);
+      setApiCountupPlays(json.countupPlays ?? null);
     } catch {
       /* ignore */
     }
@@ -419,6 +422,7 @@ export default function StatsPage() {
             dartoutList={apiDartoutList}
             awardList={apiAwardList}
             recentPlays={apiRecentPlays}
+            countupPlays={apiCountupPlays}
           />
         )}
 

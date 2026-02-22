@@ -61,12 +61,12 @@ export const GET = withErrorHandler(
       recentPlays = JSON.parse(apiCacheData.recentPlays);
     }
 
-    // playLog/sensorData 付きのサンプルデータ（COUNT-UP分析用）
-    let playLogSample = null;
-    if (recentPlays) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const withLog = recentPlays.filter((p: any) => p.playLog || p.sensorData);
-      playLogSample = withLog.slice(0, 3);
+    // COUNT-UPプレイデータ（PLAY_LOG付き）
+    const countupDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get();
+    const countupData = countupDoc.exists ? countupDoc.data() : null;
+    let countupPlays = null;
+    if (countupData?.plays) {
+      countupPlays = JSON.parse(countupData.plays);
     }
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export const GET = withErrorHandler(
       dartoutList,
       awardList,
       recentPlays,
-      playLogSample,
+      countupPlays,
     });
   }),
   'DARTSLIVE API履歴取得エラー',

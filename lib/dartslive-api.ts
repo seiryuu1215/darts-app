@@ -11,6 +11,11 @@ import type { ScrapedStats } from './dartslive-scraper';
 const DL_API_BASE = 'https://dlapp.dartslive.com/dataapi/action.jsp';
 const DL_USER_AGENT = 'Umineko';
 const DL_BASIC_AUTH = 'Basic ZGFydHMtZGV2LWZ0cDpXTHNrNHF6NFh1eXo=';
+const DL_DEVICE_ID = 'darts-app-server';
+const DL_APP_VERSION = '3.5.2';
+
+// COUNT-UP GAME_ID
+const GAME_ID_COUNTUP = 3001;
 
 // ─── 型定義 ──────────────────────────────────
 
@@ -100,12 +105,28 @@ export interface DlApiMonthlyStats {
 
 export interface DlApiPlayEntry {
   date: string;
-  gameId: string;
+  gameId: number;
   gameName: string;
   score: number | null;
-  playLog: unknown[] | null;
-  sensorData: unknown | null;
+  playLog: string | null;
+  dl3Info: {
+    vectorX: number;
+    vectorY: number;
+    radius: number;
+    speed: number;
+  } | null;
   awards: string[];
+}
+
+/** COUNT-UP専用の軽量プレイデータ（Firestoreに保存用） */
+export interface CountUpPlayData {
+  time: string;
+  score: number;
+  playLog: string;
+  dl3VectorX: number;
+  dl3VectorY: number;
+  dl3Radius: number;
+  dl3Speed: number;
 }
 
 export interface DlApiFullSyncResult {
@@ -113,21 +134,37 @@ export interface DlApiFullSyncResult {
   dailyHistory: DlApiDailyStats[];
   monthlyHistory: DlApiMonthlyStats[];
   recentPlays: DlApiPlayEntry[];
+  countupPlays: CountUpPlayData[];
 }
 
 // ─── 内部ヘルパー ────────────────────────────
 
-interface DlApiParams {
-  [key: string]: string | number | undefined;
+interface DlApiRequestConfig {
+  actionId: string;
+  queryParams?: Record<string, string>;
+  bodyParams?: Record<string, string>;
 }
 
-async function dlApiPost(params: DlApiParams): Promise<Record<string, unknown>> {
-  const body = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined) body.append(k, String(v));
+async function dlApiRequest(config: DlApiRequestConfig): Promise<Record<string, unknown>> {
+  const url = new URL(DL_API_BASE);
+  url.searchParams.set('actionid', config.actionId);
+  url.searchParams.set('phonekind', '2');
+  url.searchParams.set('appversion', DL_APP_VERSION);
+  url.searchParams.set('phoneid', DL_DEVICE_ID);
+  if (config.queryParams) {
+    for (const [k, v] of Object.entries(config.queryParams)) {
+      url.searchParams.set(k, v);
+    }
   }
 
-  const res = await fetch(DL_API_BASE, {
+  const body = new URLSearchParams();
+  if (config.bodyParams) {
+    for (const [k, v] of Object.entries(config.bodyParams)) {
+      body.append(k, v);
+    }
+  }
+
+  const res = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -138,14 +175,42 @@ async function dlApiPost(params: DlApiParams): Promise<Record<string, unknown>> 
   });
 
   if (!res.ok) {
-    const actionType = params.ACTION_TYPE ?? 'unknown';
     const bodyText = await res.text().catch(() => '');
     throw new Error(
-      `DARTSLIVE API error: ${actionType} ${res.status} ${res.statusText} — ${bodyText.slice(0, 200)}`,
+      `DARTSLIVE API error: ${config.actionId} ${res.status} ${res.statusText} — ${bodyText.slice(0, 200)}`,
     );
   }
 
   return res.json() as Promise<Record<string, unknown>>;
+}
+
+// ─── ゲーム名マッピング ──────────────────────
+
+const GAME_NAME_MAP: Record<number, string> = {
+  1001: '301',
+  1002: '501',
+  1003: '701',
+  1004: '901',
+  1005: '1001',
+  1006: '1101',
+  2001: 'CRICKET',
+  2003: 'CUT THROAT',
+  3001: 'COUNT-UP',
+  3002: 'SHOOT OUT',
+  3007: 'SKILL CHECK',
+  3012: "EAGLE'S EYE",
+  3036: 'BULL SHOOTER',
+  4010: 'BIG BULL',
+  4022: 'HALF-IT',
+  4033: 'SHANGHAI',
+  4042: 'LUCKY BALLOON',
+  4131: 'OISHII',
+  7001: 'MEDLEY',
+  7002: 'GLOBAL MATCH',
+};
+
+function getGameName(gameId: number): string {
+  return GAME_NAME_MAP[gameId] ?? `GAME-${gameId}`;
 }
 
 // ─── API関数 ─────────────────────────────────
@@ -156,24 +221,26 @@ async function dlApiPost(params: DlApiParams): Promise<Record<string, unknown>> 
  */
 export async function dlApiLogin(email: string, password: string): Promise<DlApiLoginResult> {
   // Step 1: WAPI-0016 (メール認証)
-  const authRes = await dlApiPost({
-    ACTION_TYPE: 'WAPI-0016',
-    MAIL: email,
-    PASS: password,
+  const authRes = await dlApiRequest({
+    actionId: 'WAPI-0016',
+    queryParams: { authkey: '', locale: 'JP' },
+    bodyParams: { loginid: email, pa: password, encryptpassword: '' },
   });
 
-  const authKey = (authRes.AUTH_KEY ?? authRes.authKey ?? '') as string;
+  const authKey = (authRes.AUTH_KEY ?? '') as string;
   if (!authKey) {
     throw new Error('LOGIN_FAILED: 認証キーが取得できません');
   }
 
   // Step 2: WAPI-0017 (カード一覧取得)
-  const cardRes = await dlApiPost({
-    ACTION_TYPE: 'WAPI-0017',
-    AUTH_KEY: authKey,
+  const cardRes = await dlApiRequest({
+    actionId: 'WAPI-0017',
+    queryParams: { authkey: authKey },
   });
 
-  const rawCards = (cardRes.CARD_LIST ?? cardRes.cardList ?? []) as Array<Record<string, unknown>>;
+  const rawCards = (cardRes.CARD_DATA_LIST ?? cardRes.CARD_LIST ?? []) as Array<
+    Record<string, unknown>
+  >;
   const cards: DlApiCard[] = rawCards.map((c) => ({
     toId: String(c.TO_ID ?? c.toId ?? ''),
     cardId: String(c.CARD_ID ?? c.cardId ?? ''),
@@ -188,41 +255,44 @@ export async function dlApiLogin(email: string, password: string): Promise<DlApi
  * バンドルデータ取得 (WAPI-0003)
  */
 export async function dlApiFetchBundle(authKey: string, toId: string): Promise<DlApiBundleData> {
-  const res = await dlApiPost({
-    ACTION_TYPE: 'WAPI-0003',
-    AUTH_KEY: authKey,
-    TO_ID: toId,
-    KIND: 'totalAward,awardList,userData,bestRecordList,dartoutList,gameList,myDartsInfo',
+  const res = await dlApiRequest({
+    actionId: 'WAPI-0003',
+    queryParams: {
+      apikey: '',
+      kind: 'totalAward,awardList,userData,bestRecordList,dartoutList,gameList,myDartsInfo',
+      targetcardid: toId,
+      authkey: authKey,
+      ti: toId,
+    },
   });
 
   // userData パース
-  const rawUser = (res.USER_DATA ?? res.userData ?? {}) as Record<string, unknown>;
+  const rawUser = (res.USER_DATA ?? {}) as Record<string, unknown>;
+  // ZERO_ONE / CRICKET オブジェクトも展開
+  const zeroOne = (rawUser.ZERO_ONE ?? {}) as Record<string, unknown>;
+  const cricket = (rawUser.CRICKET ?? {}) as Record<string, unknown>;
+
   const userData: DlApiUserData = {
-    rating: parseNum(rawUser.RATING ?? rawUser.rating),
-    maxRating: parseNum(rawUser.MAX_RATING ?? rawUser.maxRating),
-    maxRatingDate: parseStr(rawUser.MAX_RATING_DATE ?? rawUser.maxRatingDate),
-    stats01Avg: parseNum(rawUser.STATS_01_AVG ?? rawUser.stats01Avg),
-    stats01Best: parseNum(rawUser.STATS_01_BEST ?? rawUser.stats01Best),
-    stats01WinRate: parseNum(rawUser.STATS_01_WIN_RATE ?? rawUser.stats01WinRate),
-    stats01BullRate: parseNum(rawUser.STATS_01_BULL_RATE ?? rawUser.stats01BullRate),
-    stats01ArrangeRate: parseNum(rawUser.STATS_01_ARRANGE_RATE ?? rawUser.stats01ArrangeRate),
-    stats01AvgBust: parseNum(rawUser.STATS_01_AVG_BUST ?? rawUser.stats01AvgBust),
-    statsCriAvg: parseNum(rawUser.STATS_CRI_AVG ?? rawUser.statsCriAvg),
-    statsCriBest: parseNum(rawUser.STATS_CRI_BEST ?? rawUser.statsCriBest),
-    statsCriWinRate: parseNum(rawUser.STATS_CRI_WIN_RATE ?? rawUser.statsCriWinRate),
-    statsCriTripleRate: parseNum(rawUser.STATS_CRI_TRIPLE_RATE ?? rawUser.statsCriTripleRate),
-    statsCriOpenCloseRate: parseNum(
-      rawUser.STATS_CRI_OPEN_CLOSE_RATE ?? rawUser.statsCriOpenCloseRate,
-    ),
-    stats01Avg100: parseNum(rawUser.STATS_01_AVG_100 ?? rawUser.stats01Avg100),
-    statsCriAvg100: parseNum(rawUser.STATS_CRI_AVG_100 ?? rawUser.statsCriAvg100),
+    rating: parseNum(rawUser.RATING),
+    maxRating: parseNum(rawUser.MAX_RATING),
+    maxRatingDate: parseStr(rawUser.MAX_RATING_DATE),
+    stats01Avg: parseNum(rawUser.STATS_01 ?? rawUser.BASE_STATS_01),
+    stats01Best: parseNum(rawUser.STATS_01_BEST),
+    stats01WinRate: parseNum(zeroOne.WIN_RATE_01),
+    stats01BullRate: parseNum(zeroOne.BULL_RATE_01),
+    stats01ArrangeRate: parseNum(zeroOne.ARRANGE_SKILL),
+    stats01AvgBust: parseNum(zeroOne.BUST_AVG),
+    statsCriAvg: parseNum(rawUser.STATS_CRICKET ?? rawUser.BASE_STATS_CRICKET),
+    statsCriBest: parseNum(rawUser.STATS_CRI_BEST),
+    statsCriWinRate: parseNum(cricket.WIN_RATE_CRICKET),
+    statsCriTripleRate: parseNum(cricket.TRIPLE_RATE_CRICKET),
+    statsCriOpenCloseRate: parseNum(cricket.OPEN_RATE),
+    stats01Avg100: parseNum(rawUser.STATS_100P_01),
+    statsCriAvg100: parseNum(rawUser.STATS_100P_CRICKET),
   };
 
   // totalAward パース
-  const rawAwards = (res.TOTAL_AWARD ?? res.totalAward ?? {}) as Record<
-    string,
-    Record<string, unknown>
-  >;
+  const rawAwards = (res.TOTAL_AWARD ?? {}) as Record<string, Record<string, unknown>>;
   const totalAward: Record<string, { monthly: number; total: number }> = {};
   for (const [name, val] of Object.entries(rawAwards)) {
     totalAward[name] = {
@@ -232,56 +302,53 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
   }
 
   // awardList パース
-  const rawAwardList = (res.AWARD_LIST ?? res.awardList ?? []) as Array<Record<string, unknown>>;
+  const rawAwardList = (res.AWARD_LIST ?? []) as Array<Record<string, unknown>>;
   const awardList: DlApiMonthlyAward[] = rawAwardList.map((a) => ({
-    date: String(a.DATE ?? a.date ?? ''),
+    date: String(a.DATE ?? ''),
     awards: Object.fromEntries(
       Object.entries(a)
-        .filter(([k]) => k !== 'DATE' && k !== 'date')
+        .filter(([k]) => k !== 'DATE')
         .map(([k, v]) => [k, Number(v ?? 0)]),
     ),
   }));
 
   // bestRecords パース
-  const rawBest = (res.BEST_RECORD_LIST ?? res.bestRecordList ?? []) as Array<
-    Record<string, unknown>
-  >;
+  const rawBest = (res.BEST_RECORD_LIST ?? []) as Array<Record<string, unknown>>;
   const bestRecords: DlApiBestRecord[] = rawBest.map((b) => ({
-    gameId: String(b.GAME_ID ?? b.gameId ?? ''),
-    gameName: String(b.GAME_NAME ?? b.gameName ?? ''),
-    bestScore: Number(b.BEST_SCORE ?? b.bestScore ?? 0),
-    bestDate: parseStr(b.BEST_DATE ?? b.bestDate),
+    gameId: String(b.GAME_ID ?? ''),
+    gameName: String(b.GAME_NAME ?? getGameName(Number(b.GAME_ID ?? 0))),
+    bestScore: Number(b.BEST_SCORE ?? 0),
+    bestDate: parseStr(b.BEST_DATE),
   }));
 
   // dartoutList パース
-  const rawDartout = (res.DARTOUT_LIST ?? res.dartoutList ?? []) as Array<Record<string, unknown>>;
+  const rawDartout = (res.DART_OUT_LIST ?? res.DARTOUT_LIST ?? []) as Array<
+    Record<string, unknown>
+  >;
   const dartoutList = rawDartout.map((d) => ({
-    score: Number(d.SCORE ?? d.score ?? 0),
-    count: Number(d.COUNT ?? d.count ?? 0),
+    score: Number(d.SCORE ?? 0),
+    count: Number(d.COUNT ?? 0),
   }));
 
   // gameList パース
-  const rawGames = (res.GAME_LIST ?? res.gameList ?? []) as Array<Record<string, unknown>>;
+  const rawGames = (res.GAME_LIST ?? []) as Array<Record<string, unknown>>;
   const gameList = rawGames.map((g) => ({
-    gameId: String(g.GAME_ID ?? g.gameId ?? ''),
-    gameName: String(g.GAME_NAME ?? g.gameName ?? ''),
+    gameId: String(g.GAME_ID ?? ''),
+    gameName: String(g.GAME_NAME ?? getGameName(Number(g.GAME_ID ?? 0))),
   }));
 
-  // gameAverages パース（gameList内に平均が含まれる場合）
+  // gameAverages パース
   const gameAverages: DlApiGameAverage[] = rawGames
-    .filter((g) => g.AVERAGE != null || g.average != null)
+    .filter((g) => g.AVERAGE != null)
     .map((g) => ({
-      gameId: String(g.GAME_ID ?? g.gameId ?? ''),
-      gameName: String(g.GAME_NAME ?? g.gameName ?? ''),
-      average: Number(g.AVERAGE ?? g.average ?? 0),
-      playCount: Number(g.PLAY_COUNT ?? g.playCount ?? 0),
+      gameId: String(g.GAME_ID ?? ''),
+      gameName: String(g.GAME_NAME ?? getGameName(Number(g.GAME_ID ?? 0))),
+      average: Number(g.AVERAGE ?? 0),
+      playCount: Number(g.PLAY_COUNT ?? 0),
     }));
 
   // myDartsInfo パース
-  const myDartsInfo = (res.MY_DARTS_INFO ?? res.myDartsInfo ?? null) as Record<
-    string,
-    unknown
-  > | null;
+  const myDartsInfo = (res.MY_DARTS_INFO ?? null) as Record<string, unknown> | null;
 
   return {
     userData,
@@ -296,41 +363,45 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
 }
 
 /**
- * 日別スタッツ履歴取得 (WAPI-0006)、自動ページネーション
+ * 日別スタッツ履歴取得 (WAPI-0006)、ldt ページネーション
  */
 export async function dlApiFetchDailyHistory(
   authKey: string,
   toId: string,
 ): Promise<DlApiDailyStats[]> {
   const all: DlApiDailyStats[] = [];
-  let page = 1;
-  const pageSize = 300;
+  let ldt = '2020-01-01_00:00:00';
 
   while (true) {
-    const res = await dlApiPost({
-      ACTION_TYPE: 'WAPI-0006',
-      AUTH_KEY: authKey,
-      TO_ID: toId,
-      PAGE: page,
-      PAGE_SIZE: pageSize,
+    const res = await dlApiRequest({
+      actionId: 'WAPI-0006',
+      queryParams: {
+        apikey: '',
+        ldt,
+        targetcardid: toId,
+        authkey: authKey,
+        ti: toId,
+      },
     });
 
-    const rawList = (res.STATS_LIST ?? res.statsList ?? []) as Array<Record<string, unknown>>;
+    const rawList = (res.STATS_LIST ?? []) as Array<Record<string, unknown>>;
     if (rawList.length === 0) break;
 
     for (const r of rawList) {
       all.push({
-        date: String(r.DATE ?? r.date ?? ''),
-        rating: parseNum(r.RATING ?? r.rating),
-        stats01Avg: parseNum(r.STATS_01_AVG ?? r.stats01Avg),
-        statsCriAvg: parseNum(r.STATS_CRI_AVG ?? r.statsCriAvg),
-        stats01Avg100: parseNum(r.STATS_01_AVG_100 ?? r.stats01Avg100),
-        statsCriAvg100: parseNum(r.STATS_CRI_AVG_100 ?? r.statsCriAvg100),
+        date: String(r.DATE ?? ''),
+        rating: parseNum(r.RATING),
+        stats01Avg: parseNum(r.STATS_01 ?? r.STATS_01_AVG),
+        statsCriAvg: parseNum(r.STATS_CRICKET ?? r.STATS_CRI_AVG),
+        stats01Avg100: parseNum(r.STATS_01_100 ?? r.STATS_100P_01),
+        statsCriAvg100: parseNum(r.STATS_CRICKET_100 ?? r.STATS_100P_CRICKET),
       });
     }
 
-    if (rawList.length < pageSize) break;
-    page++;
+    // ldt ページネーション: 最後の DATE を次のリクエストに
+    const lastDate = String(rawList[rawList.length - 1].DATE ?? '');
+    if (!lastDate || rawList.length < 300) break;
+    ldt = lastDate.replace(' ', '_');
   }
 
   return all;
@@ -343,58 +414,81 @@ export async function dlApiFetchMonthlyHistory(
   authKey: string,
   toId: string,
 ): Promise<DlApiMonthlyStats[]> {
-  const res = await dlApiPost({
-    ACTION_TYPE: 'WAPI-0007',
-    AUTH_KEY: authKey,
-    TO_ID: toId,
+  const res = await dlApiRequest({
+    actionId: 'WAPI-0007',
+    queryParams: {
+      apikey: '',
+      ldt: '2020-01-01_00:00:00',
+      targetcardid: toId,
+      authkey: authKey,
+      ti: toId,
+    },
   });
 
-  const rawList = (res.STATS_LIST ?? res.statsList ?? []) as Array<Record<string, unknown>>;
+  const rawList = (res.STATS_LIST ?? []) as Array<Record<string, unknown>>;
   return rawList.map((r) => ({
-    month: String(r.MONTH ?? r.month ?? ''),
-    rating: parseNum(r.RATING ?? r.rating),
-    stats01Avg: parseNum(r.STATS_01_AVG ?? r.stats01Avg),
-    statsCriAvg: parseNum(r.STATS_CRI_AVG ?? r.statsCriAvg),
+    month: String(r.MONTH ?? r.DATE ?? ''),
+    rating: parseNum(r.RATING),
+    stats01Avg: parseNum(r.STATS_01 ?? r.STATS_01_AVG),
+    statsCriAvg: parseNum(r.STATS_CRICKET ?? r.STATS_CRI_AVG),
   }));
 }
 
 /**
- * プレイ履歴取得 (WAPI-0005)、ページネーション
+ * プレイ履歴取得 (WAPI-0005)、ldt ページネーション（全件取得）
  */
 export async function dlApiFetchPlayHistory(
   authKey: string,
   toId: string,
-  maxPages: number = 3,
+  maxPages: number = 50,
 ): Promise<DlApiPlayEntry[]> {
   const all: DlApiPlayEntry[] = [];
-  const pageSize = 200;
+  let ldt = '2020-01-01_00:00:00';
 
-  for (let page = 1; page <= maxPages; page++) {
-    const res = await dlApiPost({
-      ACTION_TYPE: 'WAPI-0005',
-      AUTH_KEY: authKey,
-      TO_ID: toId,
-      PAGE: page,
-      PAGE_SIZE: pageSize,
+  for (let page = 0; page < maxPages; page++) {
+    const res = await dlApiRequest({
+      actionId: 'WAPI-0005',
+      queryParams: {
+        apikey: '',
+        ldt,
+        targetcardid: toId,
+        authkey: authKey,
+        ti: toId,
+      },
     });
 
-    const rawList = (res.PLAY_LIST ?? res.playList ?? []) as Array<Record<string, unknown>>;
+    const rawList = (res.PLAY_DATA_LIST ?? res.PLAY_LIST ?? []) as Array<Record<string, unknown>>;
     if (rawList.length === 0) break;
 
     for (const r of rawList) {
-      const rawAwards = (r.AWARDS ?? r.awards ?? []) as string[];
+      const gameId = Number(r.GAME_ID ?? 0);
+      const dl3 = r.DL3_INFO as Record<string, unknown> | null;
+
       all.push({
-        date: String(r.DATE ?? r.date ?? ''),
-        gameId: String(r.GAME_ID ?? r.gameId ?? ''),
-        gameName: String(r.GAME_NAME ?? r.gameName ?? ''),
-        score: parseNum(r.SCORE ?? r.score),
-        playLog: (r.PLAY_LOG ?? r.playLog ?? null) as unknown[] | null,
-        sensorData: r.SENSOR_DATA ?? r.sensorData ?? null,
-        awards: rawAwards,
+        date: String(r.TIME ?? r.DATE ?? ''),
+        gameId,
+        gameName: getGameName(gameId),
+        score: parseNum(r.SCORE),
+        playLog: typeof r.PLAY_LOG === 'string' ? r.PLAY_LOG : null,
+        dl3Info: dl3
+          ? {
+              vectorX: Number(dl3.AVG_VECTOR_X ?? 0),
+              vectorY: Number(dl3.AVG_VECTOR_Y ?? 0),
+              radius: Number(dl3.AVG_RADIUS ?? 0),
+              speed: Number(dl3.AVG_DART_SPEED ?? 0),
+            }
+          : null,
+        awards: extractAwards(r),
       });
     }
 
-    if (rawList.length < pageSize) break;
+    // ldt ページネーション: 最後の TIME を次のリクエストに
+    const lastTime = String(rawList[rawList.length - 1].TIME ?? '');
+    if (!lastTime) break;
+    ldt = lastTime.replace(' ', '_');
+
+    // 空ページで終了
+    if (rawList.length < 100) break;
   }
 
   return all;
@@ -426,7 +520,20 @@ export async function dlApiFullSync(email: string, password: string): Promise<Dl
     wrap('playHistory', dlApiFetchPlayHistory(authKey, toId)),
   ]);
 
-  return { bundle, dailyHistory, monthlyHistory, recentPlays };
+  // COUNT-UP プレイデータを抽出（PLAY_LOG付き）
+  const countupPlays: CountUpPlayData[] = recentPlays
+    .filter((p) => p.gameId === GAME_ID_COUNTUP && p.playLog)
+    .map((p) => ({
+      time: p.date,
+      score: p.score ?? 0,
+      playLog: p.playLog!,
+      dl3VectorX: p.dl3Info?.vectorX ?? 0,
+      dl3VectorY: p.dl3Info?.vectorY ?? 0,
+      dl3Radius: p.dl3Info?.radius ?? 0,
+      dl3Speed: p.dl3Info?.speed ?? 0,
+    }));
+
+  return { bundle, dailyHistory, monthlyHistory, recentPlays, countupPlays };
 }
 
 /**
@@ -469,4 +576,27 @@ function parseNum(val: unknown): number | null {
 function parseStr(val: unknown): string | null {
   if (val == null || val === '') return null;
   return String(val);
+}
+
+/** アワードフィールドを抽出 */
+function extractAwards(r: Record<string, unknown>): string[] {
+  const awards: string[] = [];
+  const awardFields = [
+    'DOUBLE_BULL',
+    'SINGLE_BULL',
+    'LOW_TON',
+    'HIGH_TON',
+    'HAT_TRICK',
+    'TON_EIGHTY',
+    'THREE_IN_A_BED',
+    'THREE_IN_THE_BLACK',
+    'WHITE_HORSE',
+  ];
+  for (const field of awardFields) {
+    const count = Number(r[field] ?? 0);
+    if (count > 0) {
+      for (let i = 0; i < count; i++) awards.push(field);
+    }
+  }
+  return awards;
 }
