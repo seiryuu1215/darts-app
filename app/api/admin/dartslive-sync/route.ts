@@ -22,7 +22,29 @@ export const POST = withErrorHandler(
     const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
     // API フル同期
-    const result = await dlApiFullSync(dlEmail, dlPassword);
+    let result;
+    try {
+      result = await dlApiFullSync(dlEmail, dlPassword);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // DARTSLIVE API側のエラーをユーザーにわかりやすく返す
+      if (msg.includes('500')) {
+        return NextResponse.json(
+          {
+            error:
+              'DARTSLIVEサーバーが一時的に利用できません。しばらく待ってから再試行してください。',
+          },
+          { status: 502 },
+        );
+      }
+      if (msg.includes('LOGIN_FAILED')) {
+        return NextResponse.json(
+          { error: 'DARTSLIVEログインに失敗しました。認証情報を確認してください。' },
+          { status: 401 },
+        );
+      }
+      throw err; // その他はwithErrorHandlerに任せる
+    }
 
     // 1. dartsliveApiCache/latest に保存
     await adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
