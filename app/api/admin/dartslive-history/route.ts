@@ -61,7 +61,22 @@ export const GET = withErrorHandler(
       recentPlays = JSON.parse(apiCacheData.recentPlays);
     }
 
-    return NextResponse.json({ records, enriched, dartoutList, awardList, recentPlays });
+    // playLog/sensorData 付きのサンプルデータ（COUNT-UP分析用）
+    let playLogSample = null;
+    if (recentPlays) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const withLog = recentPlays.filter((p: any) => p.playLog || p.sensorData);
+      playLogSample = withLog.slice(0, 3);
+    }
+
+    return NextResponse.json({
+      records,
+      enriched,
+      dartoutList,
+      awardList,
+      recentPlays,
+      playLogSample,
+    });
   }),
   'DARTSLIVE API履歴取得エラー',
 );

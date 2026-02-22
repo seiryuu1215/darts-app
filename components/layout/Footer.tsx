@@ -103,7 +103,9 @@ export default function Footer() {
       component="footer"
       sx={{
         borderTop: '1px solid',
-        borderColor: 'divider',
+        borderColor: (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'divider',
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'),
         mt: 6,
         pt: 4,
         pb: 'calc(12px + env(safe-area-inset-bottom, 0px))',

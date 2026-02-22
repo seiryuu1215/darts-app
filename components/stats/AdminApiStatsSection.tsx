@@ -10,6 +10,7 @@ import DartoutAnalysisCard from './DartoutAnalysisCard';
 import DailyHistoryChart from './DailyHistoryChart';
 import AwardTrendChart from './AwardTrendChart';
 import ScoreDistributionCard from './ScoreDistributionCard';
+import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
 import BestRecordsCard from './BestRecordsCard';
 import GameAveragesCard from './GameAveragesCard';
 
@@ -205,6 +206,11 @@ export default function AdminApiStatsSection({
         <>
           <SectionLabel>ゲーム分析</SectionLabel>
           <ScoreDistributionCard recentPlays={recentPlays} />
+          <CountUpDeepAnalysisCard
+            recentPlays={recentPlays}
+            stats01Detailed={enrichedData?.stats01Detailed}
+            bestRecords={enrichedData?.bestRecords}
+          />
         </>
       )}
 

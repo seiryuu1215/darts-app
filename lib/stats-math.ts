@@ -65,3 +65,15 @@ export function getConsistencyLabel(score: number): { label: string; color: stri
   if (score >= 40) return { label: 'ムラあり', color: '#f44336' };
   return { label: '不安定', color: '#d32f2f' };
 }
+
+export function buildScoreBands(
+  scores: number[],
+  bands: { label: string; min: number; max: number }[],
+): { label: string; count: number; percentage: number }[] {
+  const total = scores.length;
+  if (total === 0) return [];
+  return bands.map((band) => {
+    const count = scores.filter((s) => s >= band.min && s <= band.max).length;
+    return { label: band.label, count, percentage: Math.round((count / total) * 100) };
+  });
+}
