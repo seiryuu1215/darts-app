@@ -11,6 +11,7 @@ import {
   canViewDetailedAnalysis,
   canWriteArticles,
   canUsePushNotifications,
+  canAutoImportShops,
   getSettingsLimit,
   getShopBookmarkLimit,
   getStatsRetentionDays,
@@ -26,6 +27,7 @@ export interface PermissionState {
   canViewDetailedAnalysis: boolean;
   canWriteArticles: boolean;
   canUsePushNotifications: boolean;
+  canAutoImportShops: boolean;
   settingsLimit: number | null;
   shopBookmarkLimit: number | null;
   statsRetentionDays: number | null;
@@ -45,6 +47,7 @@ export function usePermission(): PermissionState {
     canViewDetailedAnalysis: canViewDetailedAnalysis(role),
     canWriteArticles: canWriteArticles(role),
     canUsePushNotifications: canUsePushNotifications(role),
+    canAutoImportShops: canAutoImportShops(role),
     settingsLimit: getSettingsLimit(role),
     shopBookmarkLimit: getShopBookmarkLimit(role),
     statsRetentionDays: getStatsRetentionDays(role),

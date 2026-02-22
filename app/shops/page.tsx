@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -38,6 +38,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  setDoc,
   Timestamp,
   increment,
   writeBatch,
@@ -45,11 +46,14 @@ import {
 import { db } from '@/lib/firebase';
 import dynamic from 'next/dynamic';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import SettingsIcon from '@mui/icons-material/Settings';
 import ShopCard from '@/components/shops/ShopCard';
 import ShopBookmarkDialog from '@/components/shops/ShopBookmarkDialog';
 import ShopListDialog from '@/components/shops/ShopListDialog';
 import ShopListChips from '@/components/shops/ShopListChips';
 import ShopViewToggle from '@/components/shops/ShopViewToggle';
+import TagManageDialog from '@/components/shops/TagManageDialog';
+import LineImportDialog from '@/components/shops/LineImportDialog';
 import ProPaywall from '@/components/ProPaywall';
 import { usePermission } from '@/lib/hooks/usePermission';
 import { SHOP_BOOKMARK_LIMIT_GENERAL } from '@/lib/permissions';
@@ -86,6 +90,10 @@ export default function ShopsPage() {
   const [showTagFilter, setShowTagFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [hiddenTags, setHiddenTags] = useState<string[]>([]);
+  const [tagManageOpen, setTagManageOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [favoriteLines, setFavoriteLines] = useState<string[]>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -162,6 +170,39 @@ export default function ShopsPage() {
     };
     fetchHomeShop();
   }, [session]);
+
+  // ショップ設定読み込み (hiddenTags, favoriteLines)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    getDoc(doc(db, 'users', session.user.id, 'shopPreferences', 'main'))
+      .then((snap) => {
+        if (snap.exists()) {
+          setHiddenTags(snap.data()?.hiddenTags ?? []);
+          setFavoriteLines(snap.data()?.favoriteLines ?? []);
+        }
+      })
+      .catch(() => {});
+  }, [session]);
+
+  const handleSaveHiddenTags = async (tags: string[]) => {
+    if (!session?.user?.id) return;
+    await setDoc(
+      doc(db, 'users', session.user.id, 'shopPreferences', 'main'),
+      { hiddenTags: tags },
+      { merge: true },
+    );
+    setHiddenTags(tags);
+  };
+
+  const handleSaveFavoriteLines = async (lines: string[]) => {
+    if (!session?.user?.id) return;
+    await setDoc(
+      doc(db, 'users', session.user.id, 'shopPreferences', 'main'),
+      { favoriteLines: lines },
+      { merge: true },
+    );
+    setFavoriteLines(lines);
+  };
 
   // PRO制限判定
   const atBookmarkLimit = shopBookmarkLimit !== null && bookmarks.length >= shopBookmarkLimit;
@@ -329,13 +370,15 @@ export default function ShopsPage() {
   // フィルター変更時にページリセット
   const resetPage = () => setCurrentPage(1);
 
-  // Curated filter tags
-  const FILTER_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
-  const FILTER_PARTIAL = ['チャージ', '持ち込み'];
+  // フィルター用タグ: 喫煙・台数以外の全タグ
+  const SMOKING_TAGS_SET = new Set(['分煙', '禁煙', '喫煙可']);
+  const MACHINE_TAG_RE = /^DL[23]\s+\d+台$/;
   const allRawTags = [...new Set(bookmarks.flatMap((bm) => bm.tags ?? []))];
   const filterTags = allRawTags
-    .filter((t) => FILTER_TAGS.includes(t) || FILTER_PARTIAL.some((p) => t.includes(p)))
+    .filter((t) => !SMOKING_TAGS_SET.has(t) && !MACHINE_TAG_RE.test(t))
     .sort();
+
+  const hiddenTagsSet = useMemo(() => new Set(hiddenTags), [hiddenTags]);
 
   // 路線フィルター
   const availableLineSet = new Set(bookmarks.flatMap((bm) => bm.lines ?? []));
@@ -409,18 +452,36 @@ export default function ShopsPage() {
           <ShopViewToggle viewMode={viewMode} onChange={setViewMode} />
         </Box>
 
-        {/* DARTSLIVE SEARCH link */}
-        <Button
-          component="a"
-          href="https://search.dartslive.com/jp/"
-          target="_blank"
-          rel="noopener noreferrer"
-          size="small"
-          endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
-          sx={{ mb: 2, textTransform: 'none' }}
-        >
-          ダーツライブサーチで探す
-        </Button>
+        {/* DARTSLIVE SEARCH link + 路線インポート */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Button
+            component="a"
+            href="https://search.dartslive.com/jp/"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="small"
+            endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+            sx={{ textTransform: 'none' }}
+          >
+            ダーツライブサーチで探す
+          </Button>
+          {isPro ? (
+            <Button
+              startIcon={<TrainIcon />}
+              onClick={() => setImportDialogOpen(true)}
+              size="small"
+              variant="outlined"
+            >
+              路線から取り込む
+            </Button>
+          ) : (
+            <ProPaywall
+              title="路線一括インポート"
+              description="よく使う路線のダーツバーを自動で取り込めます"
+              variant="compact"
+            />
+          )}
+        </Box>
 
         {/* PRO制限バナー */}
         {atBookmarkLimit && !isPro && (
@@ -609,20 +670,30 @@ export default function ShopsPage() {
         {/* 2行目: タグフィルター（折りたたみ） */}
         {filterTags.length > 0 && (
           <Box sx={{ mb: 1 }}>
-            <Chip
-              label={showTagFilter ? 'タグで絞る ▲' : 'タグで絞る ▼'}
-              size="small"
-              variant="outlined"
-              icon={
-                showTagFilter ? (
-                  <ExpandLessIcon sx={{ fontSize: '14px !important' }} />
-                ) : (
-                  <ExpandMoreIcon sx={{ fontSize: '14px !important' }} />
-                )
-              }
-              onClick={() => setShowTagFilter((prev) => !prev)}
-              sx={{ height: 24, fontSize: '0.7rem', mb: 0.5 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+              <Chip
+                label={showTagFilter ? 'タグで絞る ▲' : 'タグで絞る ▼'}
+                size="small"
+                variant="outlined"
+                icon={
+                  showTagFilter ? (
+                    <ExpandLessIcon sx={{ fontSize: '14px !important' }} />
+                  ) : (
+                    <ExpandMoreIcon sx={{ fontSize: '14px !important' }} />
+                  )
+                }
+                onClick={() => setShowTagFilter((prev) => !prev)}
+                sx={{ height: 24, fontSize: '0.7rem' }}
+              />
+              <Chip
+                icon={<SettingsIcon sx={{ fontSize: '14px !important' }} />}
+                label="表示設定"
+                size="small"
+                variant="outlined"
+                onClick={() => setTagManageOpen(true)}
+                sx={{ height: 24, fontSize: '0.7rem' }}
+              />
+            </Box>
             <Collapse in={showTagFilter}>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                 {filterTags.map((tag) => (
@@ -710,6 +781,7 @@ export default function ShopsPage() {
                     key={bm.id}
                     bookmark={bm}
                     lists={lists}
+                    hiddenTags={hiddenTagsSet}
                     onEdit={() => {
                       setEditingBookmark(bm);
                       setDialogOpen(true);
@@ -828,6 +900,24 @@ export default function ShopsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* タグ表示設定ダイアログ */}
+      <TagManageDialog
+        open={tagManageOpen}
+        onClose={() => setTagManageOpen(false)}
+        allTags={filterTags}
+        hiddenTags={hiddenTags}
+        onSave={handleSaveHiddenTags}
+      />
+
+      {/* 路線インポートダイアログ */}
+      <LineImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onComplete={loadBookmarks}
+        favoriteLines={favoriteLines}
+        onSaveFavoriteLines={handleSaveFavoriteLines}
+      />
     </Container>
   );
 }

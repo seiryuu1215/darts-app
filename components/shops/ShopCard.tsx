@@ -31,8 +31,8 @@ import type { ShopBookmark, ShopList } from '@/types';
 
 const SMOKING_TAGS = ['分煙', '禁煙', '喫煙可'];
 const MACHINE_TAG_RE = /^DL[23]\s+\d+台$/;
-const ALLOWED_TAGS = ['投げ放題', 'Wi-Fi完備', 'グッズ販売あり'];
-const ALLOWED_PARTIAL = ['チャージ', '持ち込み'];
+const PROMINENT_TAGS = new Set(['投げ放題', 'Wi-Fi完備', 'グッズ販売あり']);
+const PROMINENT_PARTIAL = ['チャージ', '持ち込み'];
 
 // MUIカラー名 → CSS色の簡易マップ
 const LIST_COLOR_MAP: Record<string, string> = {
@@ -47,6 +47,7 @@ const LIST_COLOR_MAP: Record<string, string> = {
 interface ShopCardProps {
   bookmark: ShopBookmark;
   lists?: ShopList[];
+  hiddenTags?: Set<string>;
   onEdit?: () => void;
   onDelete?: () => void;
   onVisit?: () => void;
@@ -56,6 +57,7 @@ interface ShopCardProps {
 export default function ShopCard({
   bookmark,
   lists,
+  hiddenTags,
   onEdit,
   onDelete,
   onVisit,
@@ -71,22 +73,21 @@ export default function ShopCard({
 
   const assignedLists = lists?.filter((l) => l.id && bookmark.listIds?.includes(l.id)) ?? [];
 
-  const { smokingTag, attributeText } = useMemo(() => {
-    const tags = bookmark.tags ?? [];
-    const smoking = tags.find((t) => SMOKING_TAGS.includes(t)) ?? null;
-    // 属性テキスト行用: 喫煙タグ以外の表示可能タグを「·」区切りで結合
-    const attrs = tags.filter((t) => {
-      if (SMOKING_TAGS.includes(t)) return false;
-      if (MACHINE_TAG_RE.test(t)) return false;
-      if (ALLOWED_TAGS.includes(t)) return true;
-      if (ALLOWED_PARTIAL.some((p) => t.includes(p))) return true;
-      return false;
-    });
-    const parts: string[] = [];
-    if (smoking) parts.push(smoking);
-    parts.push(...attrs);
-    return { smokingTag: smoking, attributeText: parts.join(' · ') };
-  }, [bookmark.tags]);
+  const { smokingTag, prominentTags, subtleTags } = useMemo(() => {
+    const allTags = (bookmark.tags ?? []).filter((t) => !hiddenTags?.has(t));
+    const smoking = allTags.find((t) => SMOKING_TAGS.includes(t)) ?? null;
+    const prominent: string[] = [];
+    const subtle: string[] = [];
+    for (const t of allTags) {
+      if (SMOKING_TAGS.includes(t) || MACHINE_TAG_RE.test(t)) continue;
+      if (PROMINENT_TAGS.has(t) || PROMINENT_PARTIAL.some((p) => t.includes(p))) {
+        prominent.push(t);
+      } else {
+        subtle.push(t);
+      }
+    }
+    return { smokingTag: smoking, prominentTags: prominent, subtleTags: subtle };
+  }, [bookmark.tags, hiddenTags]);
 
   return (
     <Paper
@@ -188,40 +189,80 @@ export default function ShopCard({
             </Box>
           </Box>
 
-          {/* ダーツ台数 — 最も目立たせる */}
+          {/* ダーツ台数 — 総台数メイン + DL3/DL2サブ */}
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-            {bookmark.machineCount?.dl3 != null && bookmark.machineCount.dl3 > 0 && (
-              <Chip
-                label={`DL3：${bookmark.machineCount.dl3}`}
-                size="small"
-                color="success"
-                sx={{ height: 26, fontSize: '0.8rem', fontWeight: 'bold' }}
-              />
-            )}
-            {bookmark.machineCount?.dl2 != null && bookmark.machineCount.dl2 > 0 && (
-              <Chip
-                label={`DL2：${bookmark.machineCount.dl2}`}
-                size="small"
-                sx={{
-                  height: 26,
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold',
-                  bgcolor: 'grey.700',
-                  color: 'grey.100',
-                }}
-              />
-            )}
+            {(() => {
+              const dl3 = bookmark.machineCount?.dl3 ?? 0;
+              const dl2 = bookmark.machineCount?.dl2 ?? 0;
+              const total = dl3 + dl2;
+              return (
+                <>
+                  {total > 0 && (
+                    <Chip
+                      label={`全 ${total}台`}
+                      size="small"
+                      color="success"
+                      sx={{ height: 26, fontSize: '0.8rem', fontWeight: 'bold' }}
+                    />
+                  )}
+                  {dl3 > 0 && (
+                    <Chip
+                      label={`DL3：${dl3}`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        bgcolor: 'action.hover',
+                        color: 'text.secondary',
+                      }}
+                    />
+                  )}
+                  {dl2 > 0 && (
+                    <Chip
+                      label={`DL2：${dl2}`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        bgcolor: 'action.hover',
+                        color: 'text.secondary',
+                      }}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </Box>
 
-          {/* 属性テキスト行（喫煙・投げ放題・Wi-Fi等を「·」区切り） */}
-          {attributeText && (
+          {/* 目立つタグ: 喫煙 + 投げ放題 + Wi-Fi等を「·」区切り */}
+          {(smokingTag || prominentTags.length > 0) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
               {smokingTag === '喫煙可' && (
                 <SmokingRoomsIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
               )}
               <Typography variant="caption" color="text.secondary">
-                {attributeText}
+                {[smokingTag, ...prominentTags].filter(Boolean).join(' · ')}
               </Typography>
+            </Box>
+          )}
+
+          {/* 控えめタグ: 小さいグレーChip群 */}
+          {subtleTags.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+              {subtleTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.55rem',
+                    bgcolor: 'action.hover',
+                    color: 'text.disabled',
+                    '& .MuiChip-label': { px: 0.5 },
+                  }}
+                />
+              ))}
             </Box>
           )}
 

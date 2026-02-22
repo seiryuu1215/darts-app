@@ -79,3 +79,7 @@ export function getShopBookmarkLimit(role: UserRole | undefined): number | null 
 export function canUsePushNotifications(role: UserRole | undefined): boolean {
   return role === 'pro' || role === 'admin';
 }
+
+export function canAutoImportShops(role: UserRole | undefined): boolean {
+  return role === 'pro' || role === 'admin';
+}
