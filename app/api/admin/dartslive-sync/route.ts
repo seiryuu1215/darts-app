@@ -27,7 +27,6 @@ export const POST = withErrorHandler(
       result = await dlApiFullSync(dlEmail, dlPassword);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // DARTSLIVE API側のエラーをユーザーにわかりやすく返す
       if (msg.includes('500')) {
         return NextResponse.json(
           {
@@ -39,37 +38,83 @@ export const POST = withErrorHandler(
       }
       if (msg.includes('LOGIN_FAILED')) {
         return NextResponse.json(
-          { error: 'DARTSLIVEログインに失敗しました。認証情報を確認してください。' },
+          { error: `DARTSLIVEログインに失敗しました。認証情報を確認してください。(${msg})` },
           { status: 401 },
         );
       }
-      throw err; // その他はwithErrorHandlerに任せる
+      throw err;
     }
 
-    // 1. dartsliveApiCache/latest に保存
-    await adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
-      bundle: JSON.stringify(result.bundle),
-      dailyHistoryCount: result.dailyHistory.length,
-      monthlyHistory: JSON.stringify(result.monthlyHistory),
-      recentPlays: JSON.stringify(result.recentPlays.slice(0, 100)),
-      lastSyncAt: FieldValue.serverTimestamp(),
-    });
+    // Firestore書き込みを並列実行（タイムアウト防止）
+    const writes: Promise<unknown>[] = [];
 
-    // 1b. COUNT-UPプレイデータ（PLAY_LOG付き）を別ドキュメントに保存
-    if (result.countupPlays.length > 0) {
-      await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
-        plays: JSON.stringify(result.countupPlays),
-        count: result.countupPlays.length,
+    // 1. dartsliveApiCache/latest
+    writes.push(
+      adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
+        bundle: JSON.stringify(result.bundle),
+        dailyHistoryCount: result.dailyHistory.length,
+        monthlyHistory: JSON.stringify(result.monthlyHistory),
+        recentPlays: JSON.stringify(result.recentPlays.slice(0, 100)),
         lastSyncAt: FieldValue.serverTimestamp(),
-      });
+      }),
+    );
+
+    // 2. COUNT-UPプレイデータ
+    if (result.countupPlays.length > 0) {
+      writes.push(
+        adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
+          plays: JSON.stringify(result.countupPlays),
+          count: result.countupPlays.length,
+          lastSyncAt: FieldValue.serverTimestamp(),
+        }),
+      );
     }
 
-    // 2. dartsLiveStats/{YYYY-MM-DD} にバッチ書き込み (500件チャンク)
+    // 3. dartsliveCache/latest enriched データ
+    const {
+      userData: apiUserData,
+      totalAward,
+      bestRecords,
+      gameAverages,
+      myDartsInfo,
+    } = result.bundle;
+    writes.push(
+      adminDb.doc(`users/${userId}/dartsliveCache/latest`).set(
+        {
+          maxRating: apiUserData.maxRating,
+          maxRatingDate: apiUserData.maxRatingDate,
+          stats01Detailed: {
+            avg: apiUserData.stats01Avg,
+            best: apiUserData.stats01Best,
+            winRate: apiUserData.stats01WinRate,
+            bullRate: apiUserData.stats01BullRate,
+            arrangeRate: apiUserData.stats01ArrangeRate,
+            avgBust: apiUserData.stats01AvgBust,
+            avg100: apiUserData.stats01Avg100,
+          },
+          statsCricketDetailed: {
+            avg: apiUserData.statsCriAvg,
+            best: apiUserData.statsCriBest,
+            winRate: apiUserData.statsCriWinRate,
+            tripleRate: apiUserData.statsCriTripleRate,
+            openCloseRate: apiUserData.statsCriOpenCloseRate,
+            avg100: apiUserData.statsCriAvg100,
+          },
+          bestRecords: JSON.stringify(bestRecords),
+          gameAverages: JSON.stringify(gameAverages),
+          myDartsInfo: myDartsInfo ? JSON.stringify(myDartsInfo) : null,
+          totalAward: JSON.stringify(totalAward),
+          apiSyncAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      ),
+    );
+
+    // 4. dartsLiveStats バッチ書き込み（500件チャンク、並列実行）
     const chunkSize = 500;
     for (let i = 0; i < result.dailyHistory.length; i += chunkSize) {
       const chunk = result.dailyHistory.slice(i, i + chunkSize);
       const batch = adminDb.batch();
-
       for (const day of chunk) {
         if (!day.date) continue;
         const dateStr = day.date.replace(/\//g, '-');
@@ -89,48 +134,11 @@ export const POST = withErrorHandler(
           { merge: true },
         );
       }
-
-      await batch.commit();
+      writes.push(batch.commit());
     }
 
-    // 3. dartsliveCache/latest に enriched データを merge
-    const {
-      userData: apiUserData,
-      totalAward,
-      bestRecords,
-      gameAverages,
-      myDartsInfo,
-    } = result.bundle;
-
-    await adminDb.doc(`users/${userId}/dartsliveCache/latest`).set(
-      {
-        maxRating: apiUserData.maxRating,
-        maxRatingDate: apiUserData.maxRatingDate,
-        stats01Detailed: {
-          avg: apiUserData.stats01Avg,
-          best: apiUserData.stats01Best,
-          winRate: apiUserData.stats01WinRate,
-          bullRate: apiUserData.stats01BullRate,
-          arrangeRate: apiUserData.stats01ArrangeRate,
-          avgBust: apiUserData.stats01AvgBust,
-          avg100: apiUserData.stats01Avg100,
-        },
-        statsCricketDetailed: {
-          avg: apiUserData.statsCriAvg,
-          best: apiUserData.statsCriBest,
-          winRate: apiUserData.statsCriWinRate,
-          tripleRate: apiUserData.statsCriTripleRate,
-          openCloseRate: apiUserData.statsCriOpenCloseRate,
-          avg100: apiUserData.statsCriAvg100,
-        },
-        bestRecords: JSON.stringify(bestRecords),
-        gameAverages: JSON.stringify(gameAverages),
-        myDartsInfo: myDartsInfo ? JSON.stringify(myDartsInfo) : null,
-        totalAward: JSON.stringify(totalAward),
-        apiSyncAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+    // 全書き込みを並列実行
+    await Promise.all(writes);
 
     return NextResponse.json({
       success: true,

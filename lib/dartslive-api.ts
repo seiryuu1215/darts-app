@@ -446,7 +446,7 @@ export async function dlApiFetchMonthlyHistory(
 export async function dlApiFetchPlayHistory(
   authKey: string,
   toId: string,
-  maxPages: number = 50,
+  maxPages: number = 15,
 ): Promise<DlApiPlayEntry[]> {
   const all: DlApiPlayEntry[] = [];
   let ldt = '2020-01-01_00:00:00';
