@@ -64,35 +64,35 @@ const featureCards: FeatureCard[] = [
     description: 'ブランド・スペックで絞り込み',
     href: '/barrels',
     icon: <SearchIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    gradient: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(109,40,217,0.25) 100%)',
   },
   {
     title: 'シャフト早見表',
     description: 'シャフト重量を一覧で比較',
     href: '/reference',
     icon: <StraightenIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    gradient: 'linear-gradient(135deg, rgba(236,72,153,0.25) 0%, rgba(190,24,93,0.25) 100%)',
   },
   {
     title: 'シミュレーター',
     description: 'バレル形状を可視化・比較',
     href: '/barrels/simulator',
     icon: <ViewInArIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    gradient: 'linear-gradient(135deg, rgba(56,189,248,0.25) 0%, rgba(14,165,233,0.25) 100%)',
   },
   {
     title: 'バレル診断',
     description: '質問に答えておすすめを探す',
     href: '/barrels/quiz',
     icon: <QuizIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    gradient: 'linear-gradient(135deg, rgba(52,211,153,0.25) 0%, rgba(16,185,129,0.25) 100%)',
   },
   {
     title: 'おすすめツール',
     description: '併用で便利な外部ツール紹介',
     href: '/tools',
     icon: <BuildIcon sx={{ fontSize: 40 }} />,
-    gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    gradient: 'linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(192,132,252,0.25) 100%)',
   },
   {
     title: 'セッティング比較',
@@ -100,7 +100,7 @@ const featureCards: FeatureCard[] = [
     href: '/darts/compare',
     icon: <CompareArrowsIcon sx={{ fontSize: 40 }} />,
     authOnly: true,
-    gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+    gradient: 'linear-gradient(135deg, rgba(251,191,36,0.25) 0%, rgba(245,158,11,0.25) 100%)',
   },
   {
     title: 'ブックマーク',
@@ -108,7 +108,7 @@ const featureCards: FeatureCard[] = [
     href: '/bookmarks',
     icon: <BookmarkIcon sx={{ fontSize: 40 }} />,
     authOnly: true,
-    gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
+    gradient: 'linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(99,102,241,0.2) 100%)',
   },
 ];
 
@@ -286,6 +286,7 @@ export default function HomePage() {
               sx={{
                 height: '100%',
                 background: card.gradient,
+                border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 3,
                 '&:hover': { boxShadow: 8, transform: 'translateY(-4px)' },
                 transition: 'all 0.2s ease-in-out',
@@ -303,12 +304,12 @@ export default function HomePage() {
                   justifyContent: 'center',
                 }}
               >
-                <Box sx={{ color: '#fff', mb: 1 }}>{card.icon}</Box>
+                <Box sx={{ color: 'rgba(255,255,255,0.9)', mb: 1 }}>{card.icon}</Box>
                 <CardContent sx={{ textAlign: 'center', p: 0, '&:last-child': { pb: 0 } }}>
-                  <Typography variant="subtitle1" fontWeight="bold" color="#fff">
+                  <Typography variant="subtitle1" fontWeight="bold">
                     {card.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                  <Typography variant="body2" color="text.secondary">
                     {card.description}
                   </Typography>
                 </CardContent>
