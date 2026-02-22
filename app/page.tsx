@@ -29,7 +29,7 @@ import XpBar from '@/components/progression/XpBar';
 import GoalSection from '@/components/goals/GoalSection';
 import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
-import QuickActions from '@/components/home/QuickActions';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import CompactStatsCard from '@/components/home/CompactStatsCard';
 import ActiveSettings from '@/components/home/ActiveSettings';
 import GuestHero from '@/components/home/GuestHero';
@@ -93,6 +93,13 @@ const featureCards: FeatureCard[] = [
     href: '/tools',
     icon: <BuildIcon sx={{ fontSize: 40 }} />,
     gradient: 'linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(192,132,252,0.25) 100%)',
+  },
+  {
+    title: 'ショップ',
+    description: '近くのダーツショップを探す',
+    href: '/shops',
+    icon: <StorefrontIcon sx={{ fontSize: 40 }} />,
+    gradient: 'linear-gradient(135deg, rgba(234,179,8,0.25) 0%, rgba(202,138,4,0.25) 100%)',
   },
   {
     title: 'セッティング比較',
@@ -264,10 +271,7 @@ export default function HomePage() {
         <GuestHero />
       )}
 
-      {/* 1. クイックアクション */}
-      {session && <QuickActions />}
-
-      {/* 2. DARTSLIVEスタッツ */}
+      {/* 1. DARTSLIVEスタッツ */}
       {session && dlCache && <CompactStatsCard dlCache={dlCache} />}
 
       {/* 3. 使用中セッティング */}
