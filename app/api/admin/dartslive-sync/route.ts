@@ -24,9 +24,14 @@ export const POST = withErrorHandler(
     // API フル同期
     let result;
     try {
+      console.log('[DL-SYNC] API取得開始...');
       result = await dlApiFullSync(dlEmail, dlPassword);
+      console.log(
+        `[DL-SYNC] API取得完了: daily=${result.dailyHistory.length}, plays=${result.recentPlays.length}, countup=${result.countupPlays.length}`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[DL-SYNC] API取得エラー:', msg);
       if (msg.includes('500')) {
         return NextResponse.json(
           {
@@ -45,100 +50,121 @@ export const POST = withErrorHandler(
       throw err;
     }
 
-    // Firestore書き込みを並列実行（タイムアウト防止）
-    const writes: Promise<unknown>[] = [];
+    // Firestore書き込み — 重要データを先に保存（タイムアウト対策）
+    try {
+      // Phase 1: 最重要データ（キャッシュ + countup + enriched）
+      console.log('[DL-SYNC] Phase 1: コアデータ書き込み...');
+      const coreWrites: Promise<unknown>[] = [];
 
-    // 1. dartsliveApiCache/latest
-    writes.push(
-      adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
-        bundle: JSON.stringify(result.bundle),
-        dailyHistoryCount: result.dailyHistory.length,
-        monthlyHistory: JSON.stringify(result.monthlyHistory),
-        recentPlays: JSON.stringify(result.recentPlays.slice(0, 100)),
-        lastSyncAt: FieldValue.serverTimestamp(),
-      }),
-    );
-
-    // 2. COUNT-UPプレイデータ
-    if (result.countupPlays.length > 0) {
-      writes.push(
-        adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
-          plays: JSON.stringify(result.countupPlays),
-          count: result.countupPlays.length,
+      // 1. dartsliveApiCache/latest
+      coreWrites.push(
+        adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).set({
+          bundle: JSON.stringify(result.bundle),
+          dailyHistoryCount: result.dailyHistory.length,
+          monthlyHistory: JSON.stringify(result.monthlyHistory),
+          recentPlays: JSON.stringify(result.recentPlays.slice(0, 100)),
           lastSyncAt: FieldValue.serverTimestamp(),
         }),
       );
-    }
 
-    // 3. dartsliveCache/latest enriched データ
-    const {
-      userData: apiUserData,
-      totalAward,
-      bestRecords,
-      gameAverages,
-      myDartsInfo,
-    } = result.bundle;
-    writes.push(
-      adminDb.doc(`users/${userId}/dartsliveCache/latest`).set(
-        {
-          maxRating: apiUserData.maxRating,
-          maxRatingDate: apiUserData.maxRatingDate,
-          stats01Detailed: {
-            avg: apiUserData.stats01Avg,
-            best: apiUserData.stats01Best,
-            winRate: apiUserData.stats01WinRate,
-            bullRate: apiUserData.stats01BullRate,
-            arrangeRate: apiUserData.stats01ArrangeRate,
-            avgBust: apiUserData.stats01AvgBust,
-            avg100: apiUserData.stats01Avg100,
-          },
-          statsCricketDetailed: {
-            avg: apiUserData.statsCriAvg,
-            best: apiUserData.statsCriBest,
-            winRate: apiUserData.statsCriWinRate,
-            tripleRate: apiUserData.statsCriTripleRate,
-            openCloseRate: apiUserData.statsCriOpenCloseRate,
-            avg100: apiUserData.statsCriAvg100,
-          },
-          bestRecords: JSON.stringify(bestRecords),
-          gameAverages: JSON.stringify(gameAverages),
-          myDartsInfo: myDartsInfo ? JSON.stringify(myDartsInfo) : null,
-          totalAward: JSON.stringify(totalAward),
-          apiSyncAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      ),
-    );
-
-    // 4. dartsLiveStats バッチ書き込み（500件チャンク、並列実行）
-    const chunkSize = 500;
-    for (let i = 0; i < result.dailyHistory.length; i += chunkSize) {
-      const chunk = result.dailyHistory.slice(i, i + chunkSize);
-      const batch = adminDb.batch();
-      for (const day of chunk) {
-        if (!day.date) continue;
-        const dateStr = day.date.replace(/\//g, '-');
-        const docRef = adminDb.doc(`users/${userId}/dartsLiveStats/${dateStr}`);
-        batch.set(
-          docRef,
-          {
-            date: new Date(dateStr + 'T00:00:00+09:00'),
-            rating: day.rating,
-            stats01Avg: day.stats01Avg,
-            statsCriAvg: day.statsCriAvg,
-            stats01Avg100: day.stats01Avg100,
-            statsCriAvg100: day.statsCriAvg100,
-            source: 'api',
-            updatedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
+      // 2. COUNT-UPプレイデータ
+      if (result.countupPlays.length > 0) {
+        coreWrites.push(
+          adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
+            plays: JSON.stringify(result.countupPlays),
+            count: result.countupPlays.length,
+            lastSyncAt: FieldValue.serverTimestamp(),
+          }),
         );
       }
-      writes.push(batch.commit());
-    }
 
-    // 全書き込みを並列実行
-    await Promise.all(writes);
+      // 3. dartsliveCache/latest enriched データ
+      const {
+        userData: apiUserData,
+        totalAward,
+        bestRecords,
+        gameAverages,
+        myDartsInfo,
+      } = result.bundle;
+      coreWrites.push(
+        adminDb.doc(`users/${userId}/dartsliveCache/latest`).set(
+          {
+            maxRating: apiUserData.maxRating,
+            maxRatingDate: apiUserData.maxRatingDate,
+            stats01Detailed: {
+              avg: apiUserData.stats01Avg,
+              best: apiUserData.stats01Best,
+              winRate: apiUserData.stats01WinRate,
+              bullRate: apiUserData.stats01BullRate,
+              arrangeRate: apiUserData.stats01ArrangeRate,
+              avgBust: apiUserData.stats01AvgBust,
+              avg100: apiUserData.stats01Avg100,
+            },
+            statsCricketDetailed: {
+              avg: apiUserData.statsCriAvg,
+              best: apiUserData.statsCriBest,
+              winRate: apiUserData.statsCriWinRate,
+              tripleRate: apiUserData.statsCriTripleRate,
+              openCloseRate: apiUserData.statsCriOpenCloseRate,
+              avg100: apiUserData.statsCriAvg100,
+            },
+            bestRecords: JSON.stringify(bestRecords),
+            gameAverages: JSON.stringify(gameAverages),
+            myDartsInfo: myDartsInfo ? JSON.stringify(myDartsInfo) : null,
+            totalAward: JSON.stringify(totalAward),
+            apiSyncAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        ),
+      );
+
+      await Promise.all(coreWrites);
+      console.log('[DL-SYNC] Phase 1 完了');
+
+      // Phase 2: 日別履歴（バッチ書き込み）
+      if (result.dailyHistory.length > 0) {
+        console.log(`[DL-SYNC] Phase 2: 日別履歴 ${result.dailyHistory.length}件...`);
+        const chunkSize = 500;
+        const batchWrites: Promise<unknown>[] = [];
+        for (let i = 0; i < result.dailyHistory.length; i += chunkSize) {
+          const chunk = result.dailyHistory.slice(i, i + chunkSize);
+          const batch = adminDb.batch();
+          for (const day of chunk) {
+            if (!day.date) continue;
+            const dateStr = day.date.replace(/\//g, '-');
+            const docRef = adminDb.doc(`users/${userId}/dartsLiveStats/${dateStr}`);
+            batch.set(
+              docRef,
+              {
+                date: new Date(dateStr + 'T00:00:00+09:00'),
+                rating: day.rating,
+                stats01Avg: day.stats01Avg,
+                statsCriAvg: day.statsCriAvg,
+                stats01Avg100: day.stats01Avg100,
+                statsCriAvg100: day.statsCriAvg100,
+                source: 'api',
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true },
+            );
+          }
+          batchWrites.push(batch.commit());
+        }
+        await Promise.all(batchWrites);
+        console.log('[DL-SYNC] Phase 2 完了');
+      }
+    } catch (writeErr) {
+      console.error('[DL-SYNC] Firestore書き込みエラー:', writeErr);
+      // コアデータは保存済みかもしれないので partial success を返す
+      return NextResponse.json({
+        success: true,
+        partial: true,
+        error: 'データは取得できましたが、一部の書き込みに失敗しました',
+        dailyHistoryImported: result.dailyHistory.length,
+        recentPlaysCount: result.recentPlays.length,
+        countupPlaysCount: result.countupPlays.length,
+      });
+    }
 
     return NextResponse.json({
       success: true,

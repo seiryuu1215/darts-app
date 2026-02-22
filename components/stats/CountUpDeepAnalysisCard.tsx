@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { Paper, Typography, Box, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import {
   ResponsiveContainer,
   BarChart,
@@ -58,14 +61,13 @@ interface CountUpDeepAnalysisCardProps {
   bestRecords?: BestRecord[] | null;
 }
 
-type PeriodKey = 'all' | 'month' | 'week' | 'day' | 'last30';
+type PeriodKey = 'last30' | 'month' | 'week' | 'day';
 
 const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: 'all', label: '全期間' },
+  { key: 'last30', label: '直近30G' },
   { key: 'month', label: '1ヶ月' },
   { key: 'week', label: '1週間' },
   { key: 'day', label: '1日' },
-  { key: 'last30', label: '直近30G' },
 ];
 
 const SCORE_BANDS = [
@@ -93,7 +95,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 /** 期間でフィルタ */
 function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] {
-  if (period === 'all') return plays;
   if (period === 'last30') return plays.slice(-30);
 
   const now = new Date();
@@ -115,125 +116,257 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
   return plays.filter((p) => new Date(p.time) >= cutoff);
 }
 
-/** 8方向レイアウト: direction → CSS grid position */
-const DIRECTION_POSITIONS: Record<DirectionLabel, { row: number; col: number }> = {
-  左上: { row: 0, col: 0 },
-  上: { row: 0, col: 1 },
-  右上: { row: 0, col: 2 },
-  左: { row: 1, col: 0 },
-  右: { row: 1, col: 2 },
-  左下: { row: 2, col: 0 },
-  下: { row: 2, col: 1 },
-  右下: { row: 2, col: 2 },
+// ─── 円形ダーツボード風ミス方向ビジュアル ───
+
+/** 8方向の角度 (0°=上, 時計回り) */
+const DIR_ANGLES: Record<DirectionLabel, number> = {
+  上: 0,
+  右上: 45,
+  右: 90,
+  右下: 135,
+  下: 180,
+  左下: 225,
+  左: 270,
+  左上: 315,
 };
 
-/** ミス方向ビジュアル */
-function MissDirectionGrid({ result }: { result: MissDirectionResult }) {
+function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
   const maxPct = Math.max(...result.directions.map((d) => d.percentage), 1);
+  const size = 260;
+  const cx = size / 2;
+  const cy = size / 2;
+  const outerR = size / 2 - 10;
+  const innerR = 36;
 
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gridTemplateRows: 'repeat(3, 1fr)',
-        gap: 0.5,
-        maxWidth: 320,
-        mx: 'auto',
-        my: 1,
-      }}
-    >
-      {result.directions.map((d) => {
-        const pos = DIRECTION_POSITIONS[d.label];
-        if (!pos) return null;
-        const intensity = d.percentage / maxPct;
-        const bgColor = `rgba(244, 67, 54, ${intensity * 0.6})`;
-        return (
-          <Box
-            key={d.label}
-            sx={{
-              gridRow: pos.row + 1,
-              gridColumn: pos.col + 1,
-              textAlign: 'center',
-              p: 1,
-              borderRadius: 1,
-              bgcolor: bgColor,
-              border: d.label === result.primaryDirection ? '2px solid #f44336' : '1px solid #333',
-              minHeight: 56,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: 11 }}>
-              {d.label}
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              {d.percentage}%
-            </Typography>
-            {d.numbers.length > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
-                {d.numbers
-                  .slice(0, 2)
-                  .map((n) => n.number)
-                  .join(', ')}
-              </Typography>
-            )}
-          </Box>
-        );
-      })}
-      {/* 中央: ブル率 */}
-      <Box
-        sx={{
-          gridRow: 2,
-          gridColumn: 2,
-          textAlign: 'center',
-          p: 1,
-          borderRadius: '50%',
-          bgcolor: 'rgba(76, 175, 80, 0.3)',
-          border: '2px solid #4caf50',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          aspectRatio: '1',
-        }}
-      >
-        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: 10 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 1 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* 外円 */}
+        <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#333" strokeWidth="1" />
+        <circle cx={cx} cy={cy} r={outerR * 0.66} fill="none" stroke="#222" strokeWidth="0.5" />
+        <circle cx={cx} cy={cy} r={outerR * 0.33} fill="none" stroke="#222" strokeWidth="0.5" />
+
+        {/* 8方向の区画 */}
+        {result.directions.map((d) => {
+          const angle = DIR_ANGLES[d.label];
+          if (angle == null) return null;
+          const intensity = d.percentage / maxPct;
+          const isPrimary = d.label === result.primaryDirection;
+
+          // 扇形の中心点（方向ラベル・数値の位置）
+          const midR = outerR * 0.55;
+          const rad = ((angle - 90) * Math.PI) / 180;
+          const tx = cx + midR * Math.cos(rad);
+          const ty = cy + midR * Math.sin(rad);
+
+          // 扇形パス（±22.5°の範囲）
+          const startAngle = angle - 22.5;
+          const endAngle = angle + 22.5;
+          const barR = innerR + (outerR - innerR) * intensity;
+          const sa = ((startAngle - 90) * Math.PI) / 180;
+          const ea = ((endAngle - 90) * Math.PI) / 180;
+
+          const x1 = cx + innerR * Math.cos(sa);
+          const y1 = cy + innerR * Math.sin(sa);
+          const x2 = cx + barR * Math.cos(sa);
+          const y2 = cy + barR * Math.sin(sa);
+          const x3 = cx + barR * Math.cos(ea);
+          const y3 = cy + barR * Math.sin(ea);
+          const x4 = cx + innerR * Math.cos(ea);
+          const y4 = cy + innerR * Math.sin(ea);
+
+          const pathD = [
+            `M ${x1} ${y1}`,
+            `L ${x2} ${y2}`,
+            `A ${barR} ${barR} 0 0 1 ${x3} ${y3}`,
+            `L ${x4} ${y4}`,
+            `A ${innerR} ${innerR} 0 0 0 ${x1} ${y1}`,
+            'Z',
+          ].join(' ');
+
+          const fillOpacity = 0.15 + intensity * 0.55;
+
+          return (
+            <g key={d.label}>
+              <path
+                d={pathD}
+                fill={isPrimary ? '#f44336' : '#ef5350'}
+                fillOpacity={fillOpacity}
+                stroke={isPrimary ? '#f44336' : '#444'}
+                strokeWidth={isPrimary ? 1.5 : 0.5}
+              />
+              {/* ラベル */}
+              <text
+                x={tx}
+                y={ty - 6}
+                textAnchor="middle"
+                fill={isPrimary ? '#f44336' : '#aaa'}
+                fontSize="10"
+                fontWeight={isPrimary ? 'bold' : 'normal'}
+              >
+                {d.label}
+              </text>
+              <text
+                x={tx}
+                y={ty + 8}
+                textAnchor="middle"
+                fill={isPrimary ? '#ff8a80' : '#ccc'}
+                fontSize="12"
+                fontWeight="bold"
+              >
+                {d.percentage}%
+              </text>
+            </g>
+          );
+        })}
+
+        {/* 中央 BULL */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={innerR}
+          fill="rgba(76,175,80,0.25)"
+          stroke="#4caf50"
+          strokeWidth="2"
+        />
+        <text x={cx} y={cy - 8} textAnchor="middle" fill="#4caf50" fontSize="9" fontWeight="bold">
           BULL
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+        </text>
+        <text x={cx} y={cy + 6} textAnchor="middle" fill="#4caf50" fontSize="14" fontWeight="bold">
           {result.bullRate}%
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
-          BB: {result.doubleBullRate}%
-        </Typography>
-      </Box>
+        </text>
+        <text x={cx} y={cy + 18} textAnchor="middle" fill="#888" fontSize="8">
+          BB:{result.doubleBullRate}%
+        </text>
+
+        {/* 主傾向の矢印 */}
+        {result.directionStrength > 0.05 &&
+          (() => {
+            const vec = result.avgVector;
+            const arrowLen = Math.min(result.directionStrength * outerR * 1.5, outerR * 0.85);
+            const mag = Math.sqrt(vec.x * vec.x + vec.y * vec.y) || 1;
+            const nx = vec.x / mag;
+            const ny = vec.y / mag;
+            const ax = cx + nx * arrowLen;
+            const ay = cy + ny * arrowLen;
+            return (
+              <line
+                x1={cx}
+                y1={cy}
+                x2={ax}
+                y2={ay}
+                stroke="#ff9800"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                markerEnd="url(#arrowhead)"
+                opacity="0.8"
+              />
+            );
+          })()}
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#ff9800" />
+          </marker>
+        </defs>
+      </svg>
     </Box>
   );
 }
+
+// ─── 前回30G比較ヘルパー ───
+
+interface ComparisonData {
+  prevAvg: number;
+  currAvg: number;
+  diff: number;
+  prevBullRate: number | null;
+  currBullRate: number | null;
+  bullDiff: number | null;
+  prevConsistency: number | null;
+  currConsistency: number | null;
+}
+
+function computeComparison(sorted: CountUpPlay[]): ComparisonData | null {
+  if (sorted.length < 60) return null;
+  const curr = sorted.slice(-30);
+  const prev = sorted.slice(-60, -30);
+
+  const currScores = curr.map((p) => p.score);
+  const prevScores = prev.map((p) => p.score);
+  const currAvg = currScores.reduce((a, b) => a + b, 0) / currScores.length;
+  const prevAvg = prevScores.reduce((a, b) => a + b, 0) / prevScores.length;
+
+  const currMiss = analyzeMissDirection(curr.map((p) => p.playLog));
+  const prevMiss = analyzeMissDirection(prev.map((p) => p.playLog));
+
+  const currCon = calculateConsistency(currScores);
+  const prevCon = calculateConsistency(prevScores);
+
+  return {
+    prevAvg,
+    currAvg,
+    diff: currAvg - prevAvg,
+    prevBullRate: prevMiss?.bullRate ?? null,
+    currBullRate: currMiss?.bullRate ?? null,
+    bullDiff:
+      currMiss?.bullRate != null && prevMiss?.bullRate != null
+        ? currMiss.bullRate - prevMiss.bullRate
+        : null,
+    prevConsistency: prevCon?.score ?? null,
+    currConsistency: currCon?.score ?? null,
+  };
+}
+
+function DiffChip({
+  value,
+  suffix = '',
+  inverse = false,
+}: {
+  value: number;
+  suffix?: string;
+  inverse?: boolean;
+}) {
+  const positive = inverse ? value < 0 : value > 0;
+  const color = positive ? '#4caf50' : value === 0 ? '#888' : '#f44336';
+  const Icon = value > 0 ? TrendingUpIcon : value < 0 ? TrendingDownIcon : TrendingFlatIcon;
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, color }}>
+      <Icon sx={{ fontSize: 14 }} />
+      <Typography variant="caption" sx={{ fontWeight: 'bold', color }}>
+        {value > 0 ? '+' : ''}
+        {value.toFixed(1)}
+        {suffix}
+      </Typography>
+    </Box>
+  );
+}
+
+// ─── メインコンポーネント ───
 
 export default function CountUpDeepAnalysisCard({
   countupPlays,
   stats01Detailed,
   bestRecords,
 }: CountUpDeepAnalysisCardProps) {
-  const [period, setPeriod] = useState<PeriodKey>('all');
+  const [period, setPeriod] = useState<PeriodKey>('last30');
 
-  // 時系列ソート
   const sortedPlays = useMemo(
     () => [...countupPlays].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()),
     [countupPlays],
   );
 
-  // 期間フィルタ
   const filtered = useMemo(() => filterByPeriod(sortedPlays, period), [sortedPlays, period]);
-
   const scores = useMemo(() => filtered.map((p) => p.score), [filtered]);
   const playLogs = useMemo(() => filtered.map((p) => p.playLog), [filtered]);
 
+  // 前回30Gとの比較（直近30Gモード時のみ）
+  const comparison = useMemo(
+    () => (period === 'last30' ? computeComparison(sortedPlays) : null),
+    [sortedPlays, period],
+  );
+
   if (sortedPlays.length < 3) return null;
 
-  // 表示データがない場合
   if (filtered.length === 0) {
     return (
       <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
@@ -241,11 +374,6 @@ export default function CountUpDeepAnalysisCard({
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
             COUNT-UP 深掘り分析
           </Typography>
-          <Chip
-            label={`${sortedPlays.length}件`}
-            size="small"
-            sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: '#fff' }}
-          />
         </Box>
         <PeriodSelector period={period} onChange={setPeriod} counts={sortedPlays} />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
@@ -259,7 +387,6 @@ export default function CountUpDeepAnalysisCard({
   const consistency = calculateConsistency(scores);
   const missDirection = analyzeMissDirection(playLogs);
 
-  // PPD期待スコア
   const ppd = stats01Detailed?.avg ?? null;
   const expectedScore = ppd != null ? Math.round(ppd * 24) : null;
   const performanceRatio =
@@ -267,27 +394,22 @@ export default function CountUpDeepAnalysisCard({
       ? Math.round((stats.avg / expectedScore) * 100)
       : null;
 
-  // ベストスコア
   const cuBest = bestRecords?.find(
     (r) => r.gameName === 'COUNT-UP' || r.gameId === 'COUNT-UP',
   )?.bestScore;
 
-  // スコア帯分布
   const bands = buildScoreBands(scores, SCORE_BANDS);
 
-  // 時系列データ
   const trendData = filtered.map((p, i) => ({
     idx: i + 1,
     score: p.score,
     date: new Date(p.time).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
   }));
 
-  // 安定性分析
   const consistencyLabel = consistency ? getConsistencyLabel(consistency.score) : null;
   const bestDeviation =
     cuBest != null && cuBest > 0 ? Math.round(((cuBest - stats.avg) / cuBest) * 100) : null;
 
-  // DL3センサーデータ集計
   const dl3Plays = filtered.filter(
     (p) => p.dl3VectorX !== 0 || p.dl3VectorY !== 0 || p.dl3Radius !== 0,
   );
@@ -303,7 +425,6 @@ export default function CountUpDeepAnalysisCard({
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-      {/* ヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           COUNT-UP 深掘り分析
@@ -313,20 +434,76 @@ export default function CountUpDeepAnalysisCard({
           size="small"
           sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: '#fff' }}
         />
-        {period !== 'all' && (
-          <Chip
-            label={`全${sortedPlays.length}件中`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
+        <Chip
+          label={`全${sortedPlays.length}件`}
+          size="small"
+          variant="outlined"
+          sx={{ fontSize: 10, height: 20 }}
+        />
       </Box>
 
-      {/* 期間セレクタ */}
       <PeriodSelector period={period} onChange={setPeriod} counts={sortedPlays} />
 
-      {/* 1. PPD vs COUNT-UP 比較 */}
+      {/* 前回30G比較（直近30Gモード時） */}
+      {comparison && period === 'last30' && (
+        <>
+          <SectionTitle>前回30Gとの比較</SectionTitle>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 1.5,
+              p: 1.5,
+              borderRadius: 1,
+              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid #333',
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                平均スコア
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {comparison.currAvg.toFixed(0)}
+              </Typography>
+              <DiffChip value={comparison.diff} />
+            </Box>
+            {comparison.currBullRate != null && (
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  ブル率
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  {comparison.currBullRate}%
+                </Typography>
+                {comparison.bullDiff != null && <DiffChip value={comparison.bullDiff} suffix="%" />}
+              </Box>
+            )}
+            {comparison.currConsistency != null && (
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  安定度
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  {comparison.currConsistency}点
+                </Typography>
+                {comparison.prevConsistency != null && (
+                  <DiffChip
+                    value={comparison.currConsistency - comparison.prevConsistency}
+                    suffix="pt"
+                  />
+                )}
+              </Box>
+            )}
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            前回30G: 平均 {comparison.prevAvg.toFixed(0)}
+            {comparison.prevBullRate != null && ` / ブル率 ${comparison.prevBullRate}%`}
+          </Typography>
+        </>
+      )}
+
+      {/* PPD vs COUNT-UP */}
       {expectedScore != null && (
         <>
           <SectionTitle>PPD vs COUNT-UP 比較</SectionTitle>
@@ -372,7 +549,7 @@ export default function CountUpDeepAnalysisCard({
         </>
       )}
 
-      {/* 2. スコア帯分布 */}
+      {/* スコア帯分布 */}
       <SectionTitle>スコア帯分布</SectionTitle>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={bands}>
@@ -386,15 +563,8 @@ export default function CountUpDeepAnalysisCard({
           <Bar dataKey="count" name="回数" fill={COLOR_COUNTUP} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-        {bands.map((b) => (
-          <Typography key={b.label} variant="caption" color="text.secondary">
-            {b.label}: {b.percentage}%
-          </Typography>
-        ))}
-      </Box>
 
-      {/* 3. スコア推移チャート */}
+      {/* スコア推移 */}
       <SectionTitle>スコア推移</SectionTitle>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={trendData}>
@@ -427,16 +597,13 @@ export default function CountUpDeepAnalysisCard({
         </LineChart>
       </ResponsiveContainer>
 
-      {/* 4. ミス方向分析 */}
+      {/* ミス方向分析（円形ダーツボード） */}
       {missDirection && missDirection.missCount > 0 && (
         <>
           <SectionTitle>ミス方向分析（ブル狙い）</SectionTitle>
+          <MissDirectionBoard result={missDirection} />
 
-          {/* 方向グリッド */}
-          <MissDirectionGrid result={missDirection} />
-
-          {/* 主傾向サマリー */}
-          <Box sx={{ textAlign: 'center', mt: 1 }}>
+          <Box sx={{ textAlign: 'center', mt: 0.5 }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               主傾向:{' '}
               <Box
@@ -445,13 +612,12 @@ export default function CountUpDeepAnalysisCard({
               >
                 {missDirection.directionStrength > 0.05
                   ? `${missDirection.primaryDirection}方向にミスしやすい`
-                  : 'ミス方向は均等（特定の傾向なし）'}
+                  : 'ミス方向は均等'}
               </Box>
             </Typography>
           </Box>
 
-          {/* TOP5 ミスナンバー */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1, justifyContent: 'center' }}>
             {missDirection.topMissNumbers.map((n) => (
               <Chip
                 key={n.number}
@@ -463,12 +629,13 @@ export default function CountUpDeepAnalysisCard({
             ))}
           </Box>
 
-          {/* DL3センサーデータ */}
           {avgDl3 && (
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1.5 }}>
-              <Box>
+            <Box
+              sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1.5, justifyContent: 'center' }}
+            >
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
-                  センサー偏り(X)
+                  偏り(X)
                 </Typography>
                 <Typography
                   variant="body2"
@@ -480,9 +647,9 @@ export default function CountUpDeepAnalysisCard({
                   {avgDl3.vectorX > 0 ? '右' : '左'} {Math.abs(avgDl3.vectorX).toFixed(1)}
                 </Typography>
               </Box>
-              <Box>
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
-                  センサー偏り(Y)
+                  偏り(Y)
                 </Typography>
                 <Typography
                   variant="body2"
@@ -494,7 +661,7 @@ export default function CountUpDeepAnalysisCard({
                   {avgDl3.vectorY > 0 ? '下' : '上'} {Math.abs(avgDl3.vectorY).toFixed(1)}
                 </Typography>
               </Box>
-              <Box>
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
                   グルーピング
                 </Typography>
@@ -502,9 +669,9 @@ export default function CountUpDeepAnalysisCard({
                   {avgDl3.radius.toFixed(1)}mm
                 </Typography>
               </Box>
-              <Box>
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
-                  平均スピード
+                  スピード
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                   {avgDl3.speed.toFixed(1)}km/h
@@ -515,7 +682,7 @@ export default function CountUpDeepAnalysisCard({
         </>
       )}
 
-      {/* 5. 安定性分析 */}
+      {/* 安定性分析 */}
       <SectionTitle>安定性分析</SectionTitle>
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         {consistency && (
@@ -560,20 +727,11 @@ export default function CountUpDeepAnalysisCard({
           </Box>
         )}
       </Box>
-      {consistency && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {consistency.cv < 10
-            ? '安定したスコアリング。ナンバー精度の向上に注力しましょう'
-            : consistency.cv < 20
-              ? 'まずまずの安定性。集中力を維持してスコアのブレを減らしましょう'
-              : 'スコアのバラつきが大きめ。フォームの一貫性を意識しましょう'}
-        </Typography>
-      )}
     </Paper>
   );
 }
 
-/** 期間セレクタコンポーネント */
+/** 期間セレクタ */
 function PeriodSelector({
   period,
   onChange,
@@ -583,9 +741,8 @@ function PeriodSelector({
   onChange: (v: PeriodKey) => void;
   counts: CountUpPlay[];
 }) {
-  // 各期間のゲーム数を計算
   const periodCounts = useMemo(() => {
-    const result: Record<PeriodKey, number> = { all: 0, month: 0, week: 0, day: 0, last30: 0 };
+    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, day: 0 };
     for (const p of PERIODS) {
       result[p.key] = filterByPeriod(counts, p.key).length;
     }

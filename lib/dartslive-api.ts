@@ -380,11 +380,12 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
 export async function dlApiFetchDailyHistory(
   authKey: string,
   toId: string,
+  maxPages: number = 10,
 ): Promise<DlApiDailyStats[]> {
   const all: DlApiDailyStats[] = [];
   let ldt = '2020-01-01_00:00:00';
 
-  while (true) {
+  for (let page = 0; page < maxPages; page++) {
     const res = await dlApiPost('WAPI-0006', {
       authkey: authKey,
       ti: toId,
