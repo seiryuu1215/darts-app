@@ -42,6 +42,7 @@ interface ShopBookmarkDialogProps {
     rating: number | null;
     isFavorite: boolean;
     listIds: string[];
+    dartsliveSearchUrl?: string | null;
   }) => void;
   initial?: Partial<ShopBookmark> | null;
   homeShop?: string | null;
@@ -73,6 +74,7 @@ export default function ShopBookmarkDialog({
   const [rating, setRating] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
+  const [dartsliveSearchUrl, setDartsliveSearchUrl] = useState<string | null>(null);
   const [showHomeShop, setShowHomeShop] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lastOpen, setLastOpen] = useState(false);
@@ -92,6 +94,7 @@ export default function ShopBookmarkDialog({
     setRating(initial?.rating ?? null);
     setIsFavorite(initial?.isFavorite ?? false);
     setSelectedListIds(initial?.listIds ?? []);
+    setDartsliveSearchUrl(initial?.dartsliveSearchUrl ?? null);
     setShowHomeShop(!initial?.name && !!homeShop);
     setUploading(false);
   }
@@ -117,6 +120,11 @@ export default function ShopBookmarkDialog({
       if (data.imageUrl) setImageUrl(data.imageUrl);
       if (data.machineCount) setMachineCount(data.machineCount);
       if (data.tags?.length) setTags(data.tags);
+      // ダーツライブサーチの店舗URLを保存
+      const trimmed = url.trim();
+      if (trimmed.includes('search.dartslive.com') && trimmed.includes('/shop/')) {
+        setDartsliveSearchUrl(trimmed);
+      }
     } catch {
       // Silently fail — user can manually input
     } finally {
@@ -157,6 +165,7 @@ export default function ShopBookmarkDialog({
       rating,
       isFavorite,
       listIds: selectedListIds,
+      dartsliveSearchUrl,
     });
   };
 

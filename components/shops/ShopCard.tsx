@@ -65,7 +65,9 @@ export default function ShopCard({
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bookmark.address || bookmark.name)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(bookmark.address || bookmark.name)}`;
-  const dartsliveSearchUrl = `https://search.dartslive.com/jp/shops/?freeword=${encodeURIComponent(bookmark.name)}`;
+  const dartsliveUrl =
+    bookmark.dartsliveSearchUrl ||
+    `https://search.dartslive.com/jp/shops/?freeword=${encodeURIComponent(bookmark.name)}`;
 
   const assignedLists = lists?.filter((l) => l.id && bookmark.listIds?.includes(l.id)) ?? [];
 
@@ -97,7 +99,7 @@ export default function ShopCard({
         cursor: 'pointer',
         '&:hover': { bgcolor: 'action.hover' },
       }}
-      onClick={() => window.open(dartsliveSearchUrl, '_blank', 'noopener,noreferrer')}
+      onClick={() => window.open(dartsliveUrl, '_blank', 'noopener,noreferrer')}
     >
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         {/* Thumbnail */}

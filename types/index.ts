@@ -334,6 +334,7 @@ export interface ShopBookmark {
   listIds: string[];
   lat?: number | null;
   lng?: number | null;
+  dartsliveSearchUrl?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

@@ -179,6 +179,7 @@ export default function ShopsPage() {
     rating: number | null;
     isFavorite: boolean;
     listIds: string[];
+    dartsliveSearchUrl?: string | null;
   }) => {
     if (!session?.user?.id) return;
     const userId = session.user.id;
@@ -205,6 +206,9 @@ export default function ShopsPage() {
           isFavorite: data.isFavorite,
           listIds: data.listIds,
           ...(coords && { lat: coords.lat, lng: coords.lng }),
+          ...(data.dartsliveSearchUrl !== undefined && {
+            dartsliveSearchUrl: data.dartsliveSearchUrl,
+          }),
           updatedAt: now,
         });
       } else {
@@ -223,6 +227,7 @@ export default function ShopsPage() {
           isFavorite: data.isFavorite,
           listIds: data.listIds,
           ...(coords && { lat: coords.lat, lng: coords.lng }),
+          dartsliveSearchUrl: data.dartsliveSearchUrl ?? null,
           createdAt: now,
           updatedAt: now,
         });
@@ -767,6 +772,7 @@ export default function ShopsPage() {
                 rating: editingBookmark.rating,
                 isFavorite: editingBookmark.isFavorite,
                 listIds: editingBookmark.listIds,
+                dartsliveSearchUrl: editingBookmark.dartsliveSearchUrl,
               }
             : null
         }
