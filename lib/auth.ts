@@ -5,8 +5,6 @@ import { adminDb } from '@/lib/firebase-admin';
 import { UserRole, StripeSubscriptionStatus } from '@/types';
 import type { NextAuthOptions } from 'next-auth';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -31,14 +29,6 @@ export const authOptions: NextAuthOptions = {
           if (userDoc.exists) {
             role = userDoc.data()?.role || 'general';
             subscriptionStatus = userDoc.data()?.subscriptionStatus || null;
-          }
-
-          // 管理者メールの場合、自動的にadmin権限を付与
-          if (user.email === ADMIN_EMAIL && role !== 'admin') {
-            role = 'admin';
-            if (userDoc.exists) {
-              await adminDb.doc(`users/${user.uid}`).update({ role: 'admin' });
-            }
           }
 
           return {
@@ -73,10 +63,6 @@ export const authOptions: NextAuthOptions = {
           if (userDoc.exists) {
             token.role = userDoc.data()?.role || 'general';
             token.subscriptionStatus = userDoc.data()?.subscriptionStatus || null;
-          }
-          // ADMIN_EMAIL チェック
-          if (token.email === ADMIN_EMAIL && token.role !== 'admin') {
-            token.role = 'admin';
           }
         } catch {
           // Firestore読み取りエラー時は既存のroleを維持

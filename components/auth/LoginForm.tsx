@@ -67,6 +67,11 @@ export default function LoginForm() {
         required
         sx={{ mb: 3 }}
       />
+      <Box sx={{ mb: 1, textAlign: 'right' }}>
+        <Link href="/forgot-password" style={{ fontSize: '0.875rem' }}>
+          パスワードを忘れた方
+        </Link>
+      </Box>
       <Button type="submit" variant="contained" fullWidth disabled={loading} sx={{ mb: 3 }}>
         {loading ? 'ログイン中...' : 'ログイン'}
       </Button>
