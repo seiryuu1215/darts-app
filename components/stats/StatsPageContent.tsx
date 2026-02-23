@@ -142,7 +142,6 @@ export default function StatsPageContent({
         cardImageUrl={c.cardImageUrl}
         toorina={c.toorina}
         homeShop={c.homeShop}
-        myAward={c.myAward}
         status={c.status}
       />
 

@@ -14,7 +14,6 @@ import {
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import PlaceIcon from '@mui/icons-material/Place';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PercentileChip from './PercentileChip';
 
 interface DiffLabelProps {
@@ -54,7 +53,6 @@ interface RatingHeroCardProps {
   cardImageUrl?: string;
   toorina?: string;
   homeShop?: string;
-  myAward?: string;
   status?: string;
 }
 
@@ -69,7 +67,6 @@ export default function RatingHeroCard({
   cardImageUrl,
   toorina,
   homeShop,
-  myAward,
   status,
 }: RatingHeroCardProps) {
   const theme = useTheme();
@@ -125,11 +122,7 @@ export default function RatingHeroCard({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.2 }}>
               {homeShop && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, minWidth: 0 }}>
-                  <PlaceIcon sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }} />
-                  <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: 11 }}>
-                    {homeShop}
-                  </Typography>
-                  {mapUrl && (
+                  {mapUrl ? (
                     <Tooltip title="Google Maps で開く">
                       <IconButton
                         size="small"
@@ -137,19 +130,16 @@ export default function RatingHeroCard({
                         href={mapUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        sx={{ p: 0, ml: -0.3 }}
+                        sx={{ p: 0 }}
                       >
                         <PlaceIcon sx={{ fontSize: 13, color: 'primary.main' }} />
                       </IconButton>
                     </Tooltip>
+                  ) : (
+                    <PlaceIcon sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }} />
                   )}
-                </Box>
-              )}
-              {myAward && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
-                  <EmojiEventsIcon sx={{ fontSize: 13, color: '#ffc107' }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                    {myAward}
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: 11 }}>
+                    {homeShop}
                   </Typography>
                 </Box>
               )}

@@ -41,7 +41,6 @@ export const WithProfile: Story = {
     cardImageUrl: 'https://placehold.co/128x128/7B1FA2/white?text=BB',
     toorina: '@mockplayer',
     homeShop: 'Bee 渋谷道玄坂店',
-    myAward: 'HAT TRICK',
     status: 'レーティングUP中',
   },
 };
