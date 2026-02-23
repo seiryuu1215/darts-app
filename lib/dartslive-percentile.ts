@@ -155,13 +155,16 @@ export function getPercentile(type: PercentileType, value: number): number {
   return Math.max(0.1, Math.round(interpolatePercentile(thresholds, value) * 10) / 10);
 }
 
-/** パーセンタイルに応じた色を返す */
+/** パーセンタイルに応じた色を返す（DARTSLIVEフライトカラー準拠） */
 export function getPercentileColor(percentile: number): string {
-  if (percentile <= 5) return '#E53935'; // 赤 — トッププレイヤー
-  if (percentile <= 15) return '#FF9800'; // オレンジ
-  if (percentile <= 30) return '#FDD835'; // 黄
-  if (percentile <= 50) return '#4CAF50'; // 緑
-  return '#1E88E5'; // 青 — アベレージ
+  if (percentile <= 1) return '#FDD835'; // SA — イエロー
+  if (percentile <= 5) return '#E65100'; // AA — 濃いオレンジ
+  if (percentile <= 10) return '#FF9800'; // A — オレンジ
+  if (percentile <= 20) return '#7B1FA2'; // BB — パープル
+  if (percentile <= 35) return '#1E88E5'; // B — ブルー
+  if (percentile <= 55) return '#00ACC1'; // CC — シアン
+  if (percentile <= 75) return '#4CAF50'; // C — グリーン
+  return '#808080'; // N — グレー
 }
 
 /** パーセンタイルに応じたラベルを返す */

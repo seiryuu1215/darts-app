@@ -84,26 +84,38 @@ describe('getPercentile', () => {
   });
 });
 
-describe('getPercentileColor', () => {
-  it('returns red for top 5%', () => {
-    expect(getPercentileColor(1)).toBe('#E53935');
-    expect(getPercentileColor(5)).toBe('#E53935');
+describe('getPercentileColor (DARTSLIVE flight colors)', () => {
+  it('returns SA yellow for top 1%', () => {
+    expect(getPercentileColor(0.5)).toBe('#FDD835');
+    expect(getPercentileColor(1)).toBe('#FDD835');
   });
-  it('returns orange for top 6-15%', () => {
+  it('returns AA dark orange for top 2-5%', () => {
+    expect(getPercentileColor(3)).toBe('#E65100');
+    expect(getPercentileColor(5)).toBe('#E65100');
+  });
+  it('returns A orange for top 6-10%', () => {
+    expect(getPercentileColor(8)).toBe('#FF9800');
     expect(getPercentileColor(10)).toBe('#FF9800');
-    expect(getPercentileColor(15)).toBe('#FF9800');
   });
-  it('returns yellow for top 16-30%', () => {
-    expect(getPercentileColor(20)).toBe('#FDD835');
-    expect(getPercentileColor(30)).toBe('#FDD835');
+  it('returns BB purple for top 11-20%', () => {
+    expect(getPercentileColor(15)).toBe('#7B1FA2');
+    expect(getPercentileColor(20)).toBe('#7B1FA2');
   });
-  it('returns green for top 31-50%', () => {
-    expect(getPercentileColor(40)).toBe('#4CAF50');
-    expect(getPercentileColor(50)).toBe('#4CAF50');
+  it('returns B blue for top 21-35%', () => {
+    expect(getPercentileColor(25)).toBe('#1E88E5');
+    expect(getPercentileColor(35)).toBe('#1E88E5');
   });
-  it('returns blue for average', () => {
-    expect(getPercentileColor(60)).toBe('#1E88E5');
-    expect(getPercentileColor(90)).toBe('#1E88E5');
+  it('returns CC cyan for top 36-55%', () => {
+    expect(getPercentileColor(40)).toBe('#00ACC1');
+    expect(getPercentileColor(55)).toBe('#00ACC1');
+  });
+  it('returns C green for top 56-75%', () => {
+    expect(getPercentileColor(60)).toBe('#4CAF50');
+    expect(getPercentileColor(75)).toBe('#4CAF50');
+  });
+  it('returns N grey for below 75%', () => {
+    expect(getPercentileColor(80)).toBe('#808080');
+    expect(getPercentileColor(90)).toBe('#808080');
   });
 });
 
