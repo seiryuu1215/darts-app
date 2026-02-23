@@ -1,8 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Box, Typography, Button, Chip, CircularProgress, Alert, Divider } from '@mui/material';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Chip,
+  CircularProgress,
+  Alert,
+  Divider,
+  Collapse,
+  IconButton,
+} from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SkillRadarChart from './SkillRadarChart';
 import PlayerDnaCard from './PlayerDnaCard';
 import PerformanceInsightsCard from './PerformanceInsightsCard';
@@ -93,19 +104,76 @@ interface AdminApiStatsSectionProps {
   countupPlays?: CountUpPlay[] | null;
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+const STORAGE_KEY = 'stats_collapsed_sections';
+
+function loadCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCollapsed(state: Record<string, boolean>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
+
+function CollapsibleSection({
+  id,
+  label,
+  collapsed,
+  onToggle,
+  children,
+}: {
+  id: string;
+  label: string;
+  collapsed: boolean;
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+}) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 1.5 }}>
-      <Divider sx={{ flex: 1 }} />
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ fontWeight: 'bold', letterSpacing: 1 }}
+    <>
+      <Box
+        onClick={() => onToggle(id)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          mt: 3,
+          mb: collapsed ? 0 : 1.5,
+          cursor: 'pointer',
+          userSelect: 'none',
+          '&:hover .section-label': { color: 'text.primary' },
+        }}
       >
-        {children}
-      </Typography>
-      <Divider sx={{ flex: 1 }} />
-    </Box>
+        <Divider sx={{ flex: 1 }} />
+        <Typography
+          className="section-label"
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontWeight: 'bold', letterSpacing: 1, transition: 'color 0.2s' }}
+        >
+          {label}
+        </Typography>
+        <IconButton
+          size="small"
+          sx={{
+            p: 0,
+            transition: 'transform 0.2s',
+            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          }}
+        >
+          <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+        </IconButton>
+        <Divider sx={{ flex: 1 }} />
+      </Box>
+      <Collapse in={!collapsed}>{children}</Collapse>
+    </>
   );
 }
 
@@ -121,6 +189,19 @@ export default function AdminApiStatsSection({
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setCollapsed(loadCollapsed());
+  }, []);
+
+  const toggleSection = useCallback((id: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      saveCollapsed(next);
+      return next;
+    });
+  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -281,53 +362,79 @@ export default function AdminApiStatsSection({
 
       {/* AI分析 */}
       {recInput && (
-        <>
-          <SectionLabel>AI分析</SectionLabel>
+        <CollapsibleSection
+          id="ai"
+          label="AI分析"
+          collapsed={!!collapsed.ai}
+          onToggle={toggleSection}
+        >
           <PracticeRecommendationsCard input={recInput} />
-        </>
+        </CollapsibleSection>
       )}
 
       {/* スキル分析 */}
-      <SectionLabel>スキル分析</SectionLabel>
-      <SkillRadarChart
-        stats01={enrichedData?.stats01Detailed ?? null}
-        statsCricket={enrichedData?.statsCricketDetailed ?? null}
-      />
-      <PlayerDnaCard
-        stats01={enrichedData?.stats01Detailed ?? null}
-        statsCricket={enrichedData?.statsCricketDetailed ?? null}
-        countupAvg={countupAvg}
-      />
-      {enrichedData && (
-        <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
-      )}
+      <CollapsibleSection
+        id="skill"
+        label="スキル分析"
+        collapsed={!!collapsed.skill}
+        onToggle={toggleSection}
+      >
+        <SkillRadarChart
+          stats01={enrichedData?.stats01Detailed ?? null}
+          statsCricket={enrichedData?.statsCricketDetailed ?? null}
+        />
+        <PlayerDnaCard
+          stats01={enrichedData?.stats01Detailed ?? null}
+          statsCricket={enrichedData?.statsCricketDetailed ?? null}
+          countupAvg={countupAvg}
+        />
+        {enrichedData && (
+          <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
+        )}
+      </CollapsibleSection>
 
       {/* ゲーム詳細 */}
-      <SectionLabel>ゲーム詳細</SectionLabel>
-      <DetailedGameStatsCard
-        stats01={enrichedData?.stats01Detailed ?? null}
-        statsCricket={enrichedData?.statsCricketDetailed ?? null}
-      />
-      <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
-      {enrichedData?.stats01Detailed?.avg != null &&
-        enrichedData?.statsCricketDetailed?.avg != null && (
-          <RatingSimulatorCard
-            currentPpd={enrichedData.stats01Detailed.avg}
-            currentMpr={enrichedData.statsCricketDetailed.avg}
-          />
-        )}
+      <CollapsibleSection
+        id="game_detail"
+        label="ゲーム詳細"
+        collapsed={!!collapsed.game_detail}
+        onToggle={toggleSection}
+      >
+        <DetailedGameStatsCard
+          stats01={enrichedData?.stats01Detailed ?? null}
+          statsCricket={enrichedData?.statsCricketDetailed ?? null}
+        />
+        <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
+        {enrichedData?.stats01Detailed?.avg != null &&
+          enrichedData?.statsCricketDetailed?.avg != null && (
+            <RatingSimulatorCard
+              currentPpd={enrichedData.stats01Detailed.avg}
+              currentMpr={enrichedData.statsCricketDetailed.avg}
+            />
+          )}
+      </CollapsibleSection>
 
       {/* 推移・履歴 */}
-      <SectionLabel>推移・履歴</SectionLabel>
-      {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
-      {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
-      {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
-      {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
+      <CollapsibleSection
+        id="trend"
+        label="推移・履歴"
+        collapsed={!!collapsed.trend}
+        onToggle={toggleSection}
+      >
+        {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
+        {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
+        {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
+        {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
+      </CollapsibleSection>
 
       {/* ゲーム分析 */}
       {(recentPlays?.length || countupPlays?.length || (dartoutList && dartoutList.length > 0)) && (
-        <>
-          <SectionLabel>ゲーム分析</SectionLabel>
+        <CollapsibleSection
+          id="game_analysis"
+          label="ゲーム分析"
+          collapsed={!!collapsed.game_analysis}
+          onToggle={toggleSection}
+        >
           {dartoutList && dartoutList.length > 0 && (
             <DartoutAnalysisCard dartoutList={dartoutList} />
           )}
@@ -347,24 +454,32 @@ export default function AdminApiStatsSection({
           {countupPlays && countupPlays.length >= 10 && (
             <SessionFatigueCard countupPlays={countupPlays} />
           )}
-        </>
+        </CollapsibleSection>
       )}
 
       {/* センサー分析 */}
       {countupPlays && countupPlays.length >= 10 && (
-        <>
-          <SectionLabel>センサー分析</SectionLabel>
+        <CollapsibleSection
+          id="sensor"
+          label="センサー分析"
+          collapsed={!!collapsed.sensor}
+          onToggle={toggleSection}
+        >
           <SensorTrendCard countupPlays={countupPlays} />
           <SpeedAccuracyCard countupPlays={countupPlays} />
-        </>
+        </CollapsibleSection>
       )}
 
       {/* 記録 */}
       {enrichedData?.gameAverages && (
-        <>
-          <SectionLabel>記録</SectionLabel>
+        <CollapsibleSection
+          id="records"
+          label="記録"
+          collapsed={!!collapsed.records}
+          onToggle={toggleSection}
+        >
           <GameAveragesCard averages={enrichedData.gameAverages} />
-        </>
+        </CollapsibleSection>
       )}
     </Box>
   );
