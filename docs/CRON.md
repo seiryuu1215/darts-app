@@ -9,6 +9,7 @@ Vercel Cron を使用して日次バッチ処理を実行する。DARTSLIVE ス�
 | ジョブ           | エンドポイント          | スケジュール                 | タイムゾーン |
 | ---------------- | ----------------------- | ---------------------------- | ------------ |
 | 日次スタッツ取得 | `/api/cron/daily-stats` | `0 1 * * *` (毎日 01:00 UTC) | JST 10:00    |
+| DARTSLIVE API同期 | `/api/cron/dartslive-api-sync` | `0 1 * * *` (毎日 01:00 UTC) | JST 10:00 |
 
 ```json
 // vercel.json
@@ -16,6 +17,10 @@ Vercel Cron を使用して日次バッチ処理を実行する。DARTSLIVE ス�
   "crons": [
     {
       "path": "/api/cron/daily-stats",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/dartslive-api-sync",
       "schedule": "0 1 * * *"
     }
   ]
@@ -39,7 +44,7 @@ sequenceDiagram
     participant Vercel as Vercel Cron
     participant API as /api/cron/daily-stats
     participant Firestore as Cloud Firestore
-    participant Puppeteer as Puppeteer (Chromium)
+    participant Browser as Browser (Chromium)
     participant DL as DARTSLIVE
     participant LINE as LINE Messaging API
 
@@ -48,10 +53,10 @@ sequenceDiagram
 
     loop 各ユーザー
         API->>Firestore: DL認証情報取得 (AES-256-GCM 復号)
-        API->>Puppeteer: ブラウザページ作成
-        Puppeteer->>DL: ログイン + スクレイピング
-        DL-->>Puppeteer: スタッツデータ
-        Puppeteer-->>API: パース済みデータ
+        API->>Browser: ブラウザページ作成
+        Browser->>DL: ログイン + データ取得
+        DL-->>Browser: スタッツデータ
+        Browser-->>API: パース済みデータ
 
         API->>Firestore: 前回キャッシュと比較
 
@@ -92,7 +97,7 @@ sequenceDiagram
 
 ### 2. DARTSLIVE スタッツ取得
 
-- Puppeteer (Chromium) で DARTSLIVE にログインしスクレイピング
+- サーバーサイドブラウザ自動化により DARTSLIVE にログインしデータを取得
 - 取得データ: Rating, 01 Stats (PPD), Cricket Stats (MPR), COUNT-UP, ゲーム数, アワード（HAT TRICK, D-BULL, S-BULL 等）
 - **共有ブラウザ**: 全ユーザーで 1 つの Chromium インスタンスを共有（ページは個別）
 
@@ -170,4 +175,4 @@ curl -X GET http://localhost:3000/api/cron/daily-stats \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 
-**注意**: Puppeteer によるスクレイピングを含むため、ローカル実行には Chromium が必要。Vercel 上では `@sparticuz/chromium` を使用。
+**注意**: サーバーサイドブラウザ自動化を含むため、ローカル実行には Chromium が必要。Vercel 上では `@sparticuz/chromium` を使用。

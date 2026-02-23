@@ -34,7 +34,7 @@ darts-app/
 │   ├── discussions/        # 掲示板
 │   ├── api/                # サーバーサイドAPI
 │   │   ├── auth/           # NextAuth.js
-│   │   ├── dartslive-stats/# Puppeteerスクレイピング
+│   │   ├── dartslive-stats/# DARTSLIVE自動データ取得
 │   │   ├── stripe/         # 決済
 │   │   ├── line/           # LINE連携
 │   │   ├── stats-calendar/  # カレンダー月別レコード取得
@@ -45,7 +45,7 @@ darts-app/
 │   ├── layout/             # Header, Footer, Sidebar, Breadcrumbs
 │   ├── darts/              # DartCard, DartDetail, DartForm
 │   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
-│   ├── stats/              # 16個のスタッツ可視化コンポーネント（CalendarGrid, DayDetailPanel含む）
+│   ├── stats/              # 46個のスタッツ可視化コンポーネント（高度分析・期間フィルター・表示切替対応）
 │   ├── affiliate/          # AffiliateButton, AffiliateBanner
 │   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
 │   ├── progression/        # XpBar, LevelUpSnackbar
@@ -64,6 +64,16 @@ darts-app/
 │   ├── recommend-barrels.ts# バレルレコメンドエンジン
 │   ├── dartslive-rating.ts # Rt計算・逆算ロジック
 │   ├── dartslive-percentile.ts # パーセンタイル分布
+│   ├── rate-limit.ts       # Upstash Redis レートリミット
+│   ├── line-stations.ts    # 路線・駅データ定義
+│   ├── shop-import.ts      # ショップデータインポート
+│   ├── heatmap-data.ts     # ダーツボードヒートマップデータ
+│   ├── session-analysis.ts # セッション疲労分析
+│   ├── sensor-analysis.ts  # センサー分析
+│   ├── stats-trend.ts      # スタッツトレンド分析
+│   ├── award-analysis.ts   # アワード分析
+│   ├── countup-round-analysis.ts # ラウンド分析
+│   ├── practice-recommendations.ts # AI練習レコメンデーション
 │   └── progression/        # XPシステム
 │       ├── xp-rules.ts     # XP獲得ルール定義
 │       ├── xp-engine.ts    # レベル計算・Cron XP算出
@@ -540,9 +550,9 @@ useEffect(() => {
   setDlData(res.json().data);
 }, []);
 
-// 2. DARTSLIVEログイン → 最新データをスクレイピング
+// 2. DARTSLIVEログイン → 最新データを自動データ取得
 const handleDlFetch = async () => {
-  const res = await fetch('/api/dartslive-stats', {  // POST: スクレイピング実行
+  const res = await fetch('/api/dartslive-stats', {  // POST: 自動データ取得実行
     method: 'POST',
     body: JSON.stringify({ email: dlEmail, password: dlPassword }),
   });
@@ -688,9 +698,9 @@ switch (event.type) {
 }
 ```
 
-### 6-2. DARTSLIVE スクレイピング（`app/api/dartslive-stats/route.ts`）
+### 6-2. DARTSLIVE 自動データ取得（`app/api/dartslive-stats/route.ts`）
 
-公式APIがないため、Puppeteerでブラウザを自動操作してデータ取得。
+公式APIがないため、サーバーサイドブラウザ自動化（puppeteer-core）でデータ取得。
 
 **制約と設計:**
 
@@ -756,7 +766,7 @@ LINE連携ユーザーを全件取得
     ↓
 各ユーザーごとに:
   1. 暗号化されたDL認証情報を復号
-  2. Puppeteerでスクレイピング（今月/累計のアワード値も取得）
+  2. サーバーサイドブラウザ自動化（puppeteer-core）で自動データ取得（今月/累計のアワード値も取得）
   3. dartsliveCache/latest にキャッシュ保存（bullStats, hatTricks含む）
   4. 前回/今回の差分からXPアクション算出（calculateCronXp）
   5. XP付与 → xpHistory記録 → 通知ドキュメント作成
@@ -778,7 +788,7 @@ LINE連携ユーザーを全件取得
   },
   "hatTricks": 15,
   "hatTricksMonthly": 2,
-  "fullData": "{ ... JSONスクレイピング全データ ... }",
+  "fullData": "{ ... JSON自動データ取得全データ ... }",
   "updatedAt": "Timestamp"
 }
 ```
@@ -942,7 +952,7 @@ Lv.1 Rookie 🎯 → Lv.10 AA Player 💎 → Lv.15 Champion ⭐ → Lv.20 THE G
 ```
 Vercel Cron (JST 10:00 = UTC 1:00) → POST /api/cron/daily-stats
     ↓
-LINE連携ユーザーごとに DARTSLIVEスクレイピング
+LINE連携ユーザーごとに DARTSLIVE自動データ取得
     ↓
 前回/今回のスタッツ比較 → calculateCronXp(prev, current)
     ↓
@@ -1034,12 +1044,12 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 | **NextAuth + Firebase Auth のデュアル認証**       | NextAuthだけだとFirestoreセキュリティルールが使えない。Firebase Authだけだとサーバーサイドのセッション管理が面倒                       |
 | **グローバル状態管理なし（Redux/Zustand不使用）** | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
 | **Recharts**                                      | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
-| **Puppeteerスクレイピング**                       | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
+| **サーバーサイドブラウザ自動化（puppeteer-core）** | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
 | **インメモリレートリミット**                      | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分                        |
 
 ### 知っておくべき懸念点
 
-**1. Puppeteer の不安定性**
+**1. サーバーサイドブラウザ自動化の不安定性**
 
 - DARTSLIVEサイトのHTML構造変更で即座に壊れる
 - Vercelの関数タイムアウト（60秒）内に処理が完了しないケースがある
@@ -1130,7 +1140,7 @@ npm run test:watch # ウォッチモード
 - Reactコンポーネント（React Testing Library未導入）
 - Firestoreセキュリティルール（Firebase Emulator未使用）
 - E2Eテスト（Playwright/Cypress未導入）
-- Puppeteerスクレイピング（モックブラウザテストなし）
+- 自動データ取得（モックブラウザテストなし）
 
 ### CI（GitHub Actions）
 
@@ -1192,7 +1202,7 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 
 | エンドポイント               | ファイル                            | 用途                           |
 | ---------------------------- | ----------------------------------- | ------------------------------ |
-| `POST /api/dartslive-stats`  | `app/api/dartslive-stats/route.ts`  | DLスクレイピング               |
+| `POST /api/dartslive-stats`  | `app/api/dartslive-stats/route.ts`  | DL自動データ取得               |
 | `GET /api/dartslive-stats`   | 同上                                | キャッシュ取得                 |
 | `POST /api/stripe/checkout`  | `app/api/stripe/checkout/route.ts`  | 決済セッション作成             |
 | `POST /api/stripe/webhook`   | `app/api/stripe/webhook/route.ts`   | Stripe Webhook                 |

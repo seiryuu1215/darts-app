@@ -12,11 +12,10 @@
 | ロール       | 識別値    | 付与方法                                                         |
 | ------------ | --------- | ---------------------------------------------------------------- |
 | 一般ユーザー | `general` | 新規登録時のデフォルト                                           |
-| PROユーザー  | `pro`     | 管理者が `/admin/users` から手動変更                             |
+| PROユーザー  | `pro`     | Stripeサブスクリプション決済で自動付与、または管理者が `/admin/users` から手動変更 |
 | 管理者       | `admin`   | `ADMIN_EMAIL` 環境変数と一致するメールで自動付与、または手動変更 |
 
-> **注記**: 現時点では決済（Stripe等）連携は未実装。PRO昇格は管理者の手動操作のみ。
-> 支援窓口として Buy Me a Coffee を設置している。
+> **注記**: Stripe連携実装済み。PRO昇格はStripeサブスクリプション決済、または管理者の手動操作で行う。
 
 ---
 
@@ -47,6 +46,7 @@
   - `app/stats/page.tsx` — UIにペイウォール表示（PRO未満はロック状態）
   - `app/api/dartslive-stats/route.ts` — API側でも権限チェック（403返却）
   - `app/api/stats-history/route.ts` — 履歴API権限チェック
+  - `app/api/line/save-dl-credentials/route.ts` — DL認証情報保存（Zod + 暗号化）
 
 ### 記事
 
@@ -82,11 +82,18 @@
 | ----------------------------- | :------------: | :-------: | :------------: |
 | ユーザー一覧・ロール変更      |       ×        |     ×     |       ○        |
 | サイト情報（about）編集リンク |       ×        |     ×     |       ○        |
+| 料金プラン管理                |       ×        |     ×     |       ○        |
+| DARTSLIVEスタッツ同期         |       ×        |     ×     |       ○        |
+| DARTSLIVEスタッツ履歴         |       ×        |     ×     |       ○        |
 
 - 制限箇所:
   - `app/admin/users/page.tsx` — ページ全体がadminガード
   - `app/api/admin/update-role/route.ts` — API側でFirestoreからadmin確認
   - `components/layout/Header.tsx` — 管理メニュー表示/非表示
+  - `app/admin/pricing/page.tsx` — 料金プラン管理
+  - `app/api/admin/update-pricing/route.ts` — 料金プラン更新API
+  - `app/api/admin/dartslive-sync/route.ts` — DARTSLIVE同期API
+  - `app/api/admin/dartslive-history/route.ts` — DARTSLIVE履歴API
 
 ### プロフィール
 
@@ -112,6 +119,8 @@
 | DARTSLIVE 履歴トラッキング | 利用不可           | **日次/週次/月次の推移グラフ** |
 | LINE自動スタッツ通知       | 利用不可           | **LINE Botで自動通知**         |
 | 記事投稿                   | 投稿不可           | **記事の作成・編集**           |
+| スタッツCSVエクスポート     | 利用不可           | **履歴データをCSVでダウンロード** |
+| スタッツカレンダー         | 基本のみ           | **コンディション記録・詳細分析** |
 
 ### ペイウォールUI
 
@@ -168,7 +177,7 @@ type UserRole = 'general' | 'pro' | 'admin';
 
 ## 今後の拡張案
 
-- [ ] Stripe連携によるPROプラン自動課金
-- [ ] PRO有効期限（サブスクリプション）の管理
+- [x] Stripe連携によるPROプラン自動課金
+- [x] PRO有効期限（サブスクリプション）の管理
 - [ ] ロール変更履歴のログ保存
 - [ ] 機能別の細かい権限（feature flags）

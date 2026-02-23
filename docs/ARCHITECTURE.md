@@ -54,7 +54,7 @@ graph TB
     Client -->|HTTPS| Vercel
     SSR --> API
     API_Auth -->|JWT| Auth
-    API_Stats -->|Puppeteer| DARTSLIVE
+    API_Stats -->|自動データ取得| DARTSLIVE
     API_Cron -->|日次バッチ| API_Stats
     API_Stripe -->|Webhook署名検証| Stripe
     API_LINE -->|Webhook署名検証| LINE
@@ -314,7 +314,11 @@ components/
 │   ├── ShopCard.tsx           # ショップカード（台数・タグ・お気に入り・メモ表示）
 │   ├── ShopBookmarkDialog.tsx # ショップ追加/編集ダイアログ（URL自動取得対応）
 │   ├── ShopListDialog.tsx     # リスト作成/編集ダイアログ
-│   └── ShopListChips.tsx      # リストフィルターChipバー
+│   ├── ShopListChips.tsx      # リストフィルターChipバー
+│   ├── ShopMapView.tsx        # Google Maps表示
+│   ├── ShopViewToggle.tsx     # リスト/マップ表示切替
+│   ├── TagManageDialog.tsx    # タグ管理ダイアログ
+│   └── LineImportDialog.tsx   # 路線一括インポートダイアログ
 ├── affiliate/                 # アフィリエイト
 │   ├── AffiliateButton.tsx    # 複数ショップドロップダウン購入ボタン
 │   └── AffiliateBanner.tsx    # ショップバナー
@@ -342,7 +346,7 @@ components/
 ├── comment/                   # コメント
 │   ├── CommentForm.tsx
 │   └── CommentList.tsx
-├── stats/                     # スタッツダッシュボード（16コンポーネント）
+├── stats/                     # スタッツダッシュボード（46コンポーネント）
 │   ├── PlayerProfileCard.tsx  # プレイヤープロフィール（通り名・ホームショップ・Google Maps連携）
 │   ├── RatingHeroCard.tsx     # レーティング + フライト + 進捗バー + パーセンタイル
 │   ├── PeriodStatsPanel.tsx   # 期間タブ（今日/今週/今月/累計）+ サマリーテーブル
@@ -358,7 +362,38 @@ components/
 │   ├── PRSiteSection.tsx      # おすすめブランドPRカード
 │   ├── StatsLoginDialog.tsx   # DARTSLIVE ログインダイアログ
 │   ├── CalendarGrid.tsx       # カレンダー月表示（CSS Grid、コンディション色ドット）
-│   └── DayDetailPanel.tsx     # 日別詳細パネル（Rating/PPD/MPR + メモ + 課題）
+│   ├── DayDetailPanel.tsx     # 日別詳細パネル（Rating/PPD/MPR + メモ + 課題）
+│   ├── AdminApiStatsSection.tsx # DARTSLIVE API連携スタッツ（折りたたみ・表示切替対応）
+│   ├── SkillRadarChart.tsx    # スキルレーダーチャート
+│   ├── PlayerDnaCard.tsx      # プレイヤーDNA
+│   ├── PracticeRecommendationsCard.tsx # AI練習レコメンデーション
+│   ├── PerformanceInsightsCard.tsx # パフォーマンスインサイト
+│   ├── DetailedGameStatsCard.tsx # 詳細ゲームスタッツ
+│   ├── RatingBenchmarkCard.tsx # レーティングベンチマーク
+│   ├── RatingSimulatorCard.tsx # レーティングシミュレーター
+│   ├── RollingTrendCard.tsx   # 移動平均トレンド
+│   ├── PeriodComparisonCard.tsx # 期間比較
+│   ├── StreakPatternCard.tsx  # 連勝パターン
+│   ├── AwardPaceCard.tsx      # アワードペース
+│   ├── CountUpDeepAnalysisCard.tsx # COUNT-UP深掘り分析
+│   ├── CountUpRoundAnalysisCard.tsx # ラウンド分析
+│   ├── DartboardHeatmap.tsx   # ダーツボードヒートマップ（期間フィルター対応）
+│   ├── SessionFatigueCard.tsx # セッション疲労分析（期間フィルター対応）
+│   ├── SensorTrendCard.tsx    # センサー推移
+│   ├── SpeedAccuracyCard.tsx  # スピード精度
+│   └── GameAveragesCard.tsx   # ゲーム別平均
+├── progression/               # 経験値・レベル
+│   ├── XpBar.tsx              # XPプログレスバー
+│   ├── LevelUpSnackbar.tsx    # レベルアップ通知
+│   ├── XpHistoryList.tsx      # XP履歴
+│   └── AchievementList.tsx    # 実績一覧
+├── notifications/             # 通知
+│   ├── NotificationBell.tsx   # 通知ベル
+│   ├── PushOptIn.tsx          # プッシュ通知オプトイン
+│   └── XpNotificationDialog.tsx # XP通知ダイアログ
+├── reports/                   # レポート
+│   ├── WeeklyReportCard.tsx   # 週次レポート
+│   └── MonthlyReportCard.tsx  # 月次レポート
 ├── OnboardingDialog.tsx       # 初回ログイン時のオンボーディング
 ├── ProPaywall.tsx             # PRO アップグレード誘導
 ├── UserAvatar.tsx             # DiceBear アバター
@@ -378,7 +413,7 @@ components/
 | ストレージ     | Firebase Storage              | 画像アップロード                                   |
 | 決済           | Stripe                        | サブスクリプション + Webhook                       |
 | グラフ         | Recharts 3                    | スタッツ可視化                                     |
-| スクレイピング | Puppeteer 24                  | DARTSLIVE データ取得                               |
+| 外部データ連携 | Puppeteer 24                  | DARTSLIVE 自動データ取得                           |
 | メッセージング | LINE Messaging API            | スタッツ通知 + アカウント連携                      |
 | エラー監視     | Sentry                        | 例外追跡 + エラーレポート                          |
 | テスト         | Vitest                        | ユニット / 統合テスト                              |
@@ -407,6 +442,13 @@ components/
 | `NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID`   | 公開 | 楽天アフィリエイトID                       |
 | `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG`   | 公開 | Amazonアソシエイトタグ                     |
 | `NEXT_PUBLIC_A8_MEDIA_ID`            | 公開 | A8.net メディアID                          |
+| `UPSTASH_REDIS_REST_URL`             | 秘密 | Upstash Redis REST API URL                 |
+| `UPSTASH_REDIS_REST_TOKEN`           | 秘密 | Upstash Redis REST API トークン            |
+| `ENCRYPTION_KEY`                     | 秘密 | AES-256-GCM 暗号化キー                    |
+| `CRON_SECRET`                        | 秘密 | Cron ジョブ認証シークレット               |
+| `VAPID_PUBLIC_KEY`                   | 公開 | Web Push VAPID 公開鍵                      |
+| `VAPID_PRIVATE_KEY`                  | 秘密 | Web Push VAPID 秘密鍵                      |
+| `SENTRY_AUTH_TOKEN`                  | 秘密 | Sentry 認証トークン（ソースマップ等）     |
 
 ## アフィリエイトフロー
 
@@ -457,7 +499,7 @@ graph LR
 
 ### API セキュリティ
 
-- **レートリミット**: IP ベース in-memory（60 req/min）、5分ごとにクリーンアップ
+- **レートリミット**: Upstash Redis によるIPベース分散レートリミット（60 req/min）
 - **Stripe Webhook**: 署名検証 + イベント重複排除（stripeEvents コレクション）
 - **LINE Webhook**: `crypto.timingSafeEqual` によるタイミングセーフ HMAC 検証
 - **SSRF 防止**: OG 画像生成でドメインホワイトリスト（`firebasestorage.googleapis.com` のみ）
@@ -466,7 +508,7 @@ graph LR
 
 ### その他
 
-- **DARTSLIVE 認証情報**: セッション中のみサーバーサイドで処理、永続化しない
+- **DARTSLIVE 認証情報**: オンデマンド時はメモリ一時利用、Cron時はAES-256-GCM暗号化保存
 - **環境変数管理**: 秘密情報は `.env.local` に分離、Git 管理外
 - **エラー監視**: Sentry による例外追跡（全 API ルートで `Sentry.captureException`）
 - **セキュリティヘッダー**: HSTS, X-Frame-Options, CSP 相当（Vercel 設定）

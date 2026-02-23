@@ -6,7 +6,7 @@
 | -------------- | ----------------------------------------------------------- |
 | プロジェクト名 | Darts Lab                                                   |
 | 初回作成日     | 2025-02-09                                                  |
-| 最終更新日     | 2026-02-13                                                  |
+| 最終更新日     | 2026-02-23                                                  |
 | 対象範囲       | アプリケーション全体（GitHub公開 + Vercel本番デプロイ前提） |
 | 総合評価       | **A-**（重大脆弱性なし、全中優先度項目対応済み）            |
 
@@ -29,7 +29,7 @@
 | 11  | Webhook署名検証                  |   OK   | Stripe署名検証 + LINE HMAC-SHA256 timingSafeEqual        |
 | 12  | CSVインジェクション              |   OK   | 数式プレフィックス無害化済み                             |
 | 13  | セキュリティヘッダー             |   OK   | 7種設定済み（CSP nonce方式含む）                         |
-| 14  | レートリミット                   | 要改善 | インメモリ実装（サーバーレス環境の制約あり）             |
+| 14  | レートリミット                   |   OK   | Upstash Redis による分散レートリミット                   |
 | 15  | 依存ライブラリ                   |   OK   | `npm audit` 脆弱性0件（2026-02-13時点）                  |
 | 16  | エラーハンドリング               |   OK   | Sentry連携 + 汎用エラーメッセージ（内部詳細非露出）      |
 | 17  | 暗号化                           |   OK   | AES-256-GCM + ランダムIV + 認証タグ                      |
@@ -65,7 +65,7 @@
 - APIミドルウェア: `withAuth` / `withAdmin` / `withPermission`（`lib/api-middleware.ts`）
 - `ADMIN_EMAIL` は環境変数化済み（`lib/auth.ts:8`）
 
-**APIルート認証マトリクス（全17ルート）:**
+**APIルート認証マトリクス（全30ルート）:**
 
 | エンドポイント                       | 認証方式             | 認可レベル  | バリデーション         |
 | ------------------------------------ | -------------------- | ----------- | ---------------------- |
@@ -87,6 +87,19 @@
 | `GET /api/proxy-image`               | なし（公開）         | —           | ドメインホワイトリスト |
 | `GET /api/cron/daily-stats`          | Bearerトークン       | Cron Secret | —                      |
 | `GET /api/og`                        | なし（Edge Runtime） | —           | —                      |
+| `GET /api/cron/dartslive-api-sync`   | Bearerトークン       | Cron Secret | —                      |
+| `GET /api/stats-calendar`            | withAuth             | ログイン    | —                      |
+| `POST /api/goals`                    | withAuth             | ログイン    | Zod                    |
+| `POST /api/goals/achieve`            | withAuth             | ログイン    | —                      |
+| `POST /api/push-subscription`        | withAuth             | ログイン    | —                      |
+| `GET /api/notifications`             | withAuth             | ログイン    | —                      |
+| `POST /api/n01-import`               | withAuth             | ログイン    | —                      |
+| `DELETE /api/account/delete`         | withAuth             | ログイン    | —                      |
+| `POST /api/shops/fetch-url`          | withAdmin            | Admin       | —                      |
+| `POST /api/shops/import-by-line`     | withAdmin            | Admin       | —                      |
+| `GET /api/progression`               | withAuth             | ログイン    | —                      |
+| `POST /api/admin/dartslive-sync`     | withAdmin            | Admin       | —                      |
+| `GET /api/admin/dartslive-history`   | withAdmin            | Admin       | —                      |
 
 **確認済み項目:**
 
@@ -259,18 +272,18 @@
 
 ---
 
-### 2.9 DARTSLIVE スクレイピングのセキュリティ
+### 2.9 DARTSLIVE データ連携のセキュリティ
 
 **リスク評価:**
 
 | リスク                 | 深刻度 | 対策状況                                                            |
 | ---------------------- | :----: | ------------------------------------------------------------------- |
-| 認証情報の永続化       |   高   | **対策済み**: オンデマンド時はメモリのみ、Cron時はAES-256-GCM暗号化 |
+| 認証情報の永続化       |   高   | **対策済み**: オンデマンドデータ取得時はメモリのみ、Cron時はAES-256-GCM暗号化 |
 | 認証情報のログ出力     |   高   | **対策済み**: エラーメッセージは汎用（「ログインに失敗しました」）  |
 | ブラウザプロセスリーク |   中   | **対策済み**: `finally` ブロックで `browser.close()`                |
 | MITM攻撃               |   低   | HTTPS通信（card.dartslive.com）                                     |
 
-**オンデマンドスクレイピング（POST `/api/dartslive-stats`）:**
+**オンデマンドデータ取得（POST `/api/dartslive-stats`）:**
 
 - [x] Zodによる入力バリデーション（email + password）
 - [x] `withPermission(canUseDartslive)` でPro以上に制限
@@ -279,11 +292,11 @@
 - [x] エラーログに認証情報が含まれない
 - [x] `maxDuration = 60` でタイムアウト制御
 
-**日次Cronスクレイピング（`app/api/cron/daily-stats/route.ts`）:**
+**日次Cronバッチ処理（`app/api/cron/daily-stats/route.ts`）:**
 
 - [x] Bearerトークン認証（`CRON_SECRET`）
 - [x] DL認証情報はAES-256-GCMで暗号化保存（`lib/crypto.ts`）
-- [x] `decrypt()` で復号 → スクレイピング → 関数スコープで破棄
+- [x] `decrypt()` で復号 → 自動データ取得 → 関数スコープで破棄
 - [x] ブラウザは全ユーザー処理後に `finally` で確実に閉じる
 - [x] エラーログは `userId` のみ（認証情報なし）
 - [x] `maxDuration = 300` でタイムアウト制御
@@ -367,19 +380,16 @@ if (/^[=+\-@\t\r]/.test(memo)) memo = `'${memo}`;
 | ウィンドウ     | 60秒                            |
 | 上限           | 60リクエスト/ウィンドウ         |
 | 識別子         | IPアドレス（`x-forwarded-for`） |
-| ストレージ     | インメモリ `Map`                |
+| ストレージ     | Upstash Redis                   |
 | クリーンアップ | 5分ごとに期限切れエントリを除去 |
 
 **制約:**
 
-- **サーバーレス環境での制限**: Vercelのサーバーレス関数は複数インスタンスが独立起動するため、インスタンス間でリミットが共有されない。コールドスタートごとにリセット
+- **Upstash Redisにより、サーバーレス環境でもインスタンス間でレートリミットが共有される**
 - **Cronエンドポイント除外**: `/api/cron/daily-stats` はAPIミドルウェアを経由しないためレートリミット対象外（Bearerトークン認証のみ）
 - **個人アプリ規模では十分**: 現在のユーザー数では実用上問題なし
 
-**スケール時の対応案:**
-
-- Vercel KV / Upstash Redis によるグローバルレートリミット
-- Vercel Edge Middleware での早期ブロック
+**対応済み**: Upstash Redis によるグローバルレートリミットを導入済み
 
 ---
 
@@ -446,7 +456,7 @@ found 0 vulnerabilities
 | `next-auth`      | 4.24.13    | v4最新（v5はbeta） |
 | `stripe`         | 20.3.1     | 最新安定版         |
 | `zod`            | 4.3.6      | 最新安定版         |
-| `puppeteer-core` | 24.37.2    | 最新安定版         |
+| `puppeteer-core` | 24.37.2    | DARTSLIVE 自動データ取得 |
 | `@sentry/nextjs` | 最新       | 設定済み           |
 
 **推奨:** `npm audit` を月次で実行、dependabotの有効化を検討
@@ -515,7 +525,7 @@ found 0 vulnerabilities
 | 1   | CSPヘッダー追加                   | **完了** | `proxy.ts` でnonce方式CSP導入、`layout.tsx` にnonce付与 |
 | 2   | scriptsのメールアドレス環境変数化 | **完了** | 5ファイルを `process.env.ADMIN_EMAIL` に統一            |
 | 3   | 暗号鍵ローテーション手順文書化    | **完了** | `docs/DEVELOPER-REFERENCE.md` §8 に記載                 |
-| 4   | Redis分散レートリミット           | 未着手   | ユーザー増加時に検討                                    |
+| 4   | Redis分散レートリミット           | **完了** | Upstash Redis 導入済み                                  |
 
 ### 低優先度
 
