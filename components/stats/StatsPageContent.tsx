@@ -6,7 +6,6 @@ import Link from 'next/link';
 import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
-import PlayerProfileCard from './PlayerProfileCard';
 import RatingHeroCard from './RatingHeroCard';
 import PeriodStatsPanel from './PeriodStatsPanel';
 import GameStatsCards from './GameStatsCards';
@@ -131,18 +130,7 @@ export default function StatsPageContent({
 
   return (
     <>
-      {/* 1. Player Profile */}
-      <PlayerProfileCard
-        cardName={c.cardName}
-        cardImageUrl={c.cardImageUrl}
-        toorina={c.toorina}
-        homeShop={c.homeShop}
-        myAward={c.myAward}
-        status={c.status}
-        flightColor={flightColor}
-      />
-
-      {/* 2. Rating Hero */}
+      {/* 1. Rating Hero + Profile */}
       <RatingHeroCard
         rating={c.rating}
         ratingPrev={prev?.rating ?? null}
@@ -150,6 +138,12 @@ export default function StatsPageContent({
         flightColor={flightColor}
         streak={periodSummary?.streak ?? 0}
         showStreak={periodTab === 'all'}
+        cardName={c.cardName}
+        cardImageUrl={c.cardImageUrl}
+        toorina={c.toorina}
+        homeShop={c.homeShop}
+        myAward={c.myAward}
+        status={c.status}
       />
 
       {/* 3. Period Stats */}

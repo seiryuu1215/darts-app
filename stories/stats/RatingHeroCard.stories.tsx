@@ -29,6 +29,23 @@ export const BBFlight: Story = {
   },
 };
 
+export const WithProfile: Story = {
+  args: {
+    rating: 8.32,
+    ratingPrev: 8.15,
+    flight: 'BB',
+    flightColor: getFlightColor('BB'),
+    streak: 5,
+    showStreak: true,
+    cardName: 'MOCK PLAYER',
+    cardImageUrl: 'https://placehold.co/128x128/7B1FA2/white?text=BB',
+    toorina: '@mockplayer',
+    homeShop: 'Bee 渋谷道玄坂店',
+    myAward: 'HAT TRICK',
+    status: 'レーティングUP中',
+  },
+};
+
 export const SAFlight: Story = {
   args: {
     rating: 14.21,

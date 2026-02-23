@@ -1,7 +1,20 @@
 'use client';
 
-import { Paper, Box, Typography, Chip, LinearProgress, useTheme } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Chip,
+  LinearProgress,
+  Avatar,
+  IconButton,
+  Tooltip,
+  useTheme,
+} from '@mui/material';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
+import AdjustIcon from '@mui/icons-material/Adjust';
+import PlaceIcon from '@mui/icons-material/Place';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PercentileChip from './PercentileChip';
 
 interface DiffLabelProps {
@@ -37,6 +50,12 @@ interface RatingHeroCardProps {
   flightColor: string;
   streak: number;
   showStreak: boolean;
+  cardName?: string;
+  cardImageUrl?: string;
+  toorina?: string;
+  homeShop?: string;
+  myAward?: string;
+  status?: string;
 }
 
 export default function RatingHeroCard({
@@ -46,20 +65,100 @@ export default function RatingHeroCard({
   flightColor,
   streak,
   showStreak,
+  cardName,
+  cardImageUrl,
+  toorina,
+  homeShop,
+  myAward,
+  status,
 }: RatingHeroCardProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
+  const mapUrl = homeShop
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(homeShop + ' ダーツ')}`
+    : null;
+
   return (
     <Paper
       sx={{
-        p: 2.5,
+        p: 2,
         mb: 2,
         borderRadius: 3,
         background: `linear-gradient(135deg, ${flightColor}22, ${flightColor}08)`,
         border: `1px solid ${flightColor}44`,
       }}
     >
+      {/* プロフィール行 */}
+      {cardName && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+          {cardImageUrl ? (
+            <Avatar
+              src={cardImageUrl}
+              alt={cardName}
+              sx={{ width: 44, height: 44, border: `2px solid ${flightColor}` }}
+            />
+          ) : (
+            <Avatar sx={{ width: 44, height: 44, bgcolor: flightColor }}>
+              <AdjustIcon sx={{ fontSize: 22 }} />
+            </Avatar>
+          )}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.2 }} noWrap>
+                {cardName}
+              </Typography>
+              {toorina && (
+                <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
+                  {toorina}
+                </Typography>
+              )}
+              {status && (
+                <Chip
+                  label={status}
+                  size="small"
+                  variant="outlined"
+                  sx={{ height: 18, fontSize: 10, ml: 0.5 }}
+                />
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.2 }}>
+              {homeShop && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, minWidth: 0 }}>
+                  <PlaceIcon sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }} />
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: 11 }}>
+                    {homeShop}
+                  </Typography>
+                  {mapUrl && (
+                    <Tooltip title="Google Maps で開く">
+                      <IconButton
+                        size="small"
+                        component="a"
+                        href={mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, ml: -0.3 }}
+                      >
+                        <PlaceIcon sx={{ fontSize: 13, color: 'primary.main' }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              )}
+              {myAward && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
+                  <EmojiEventsIcon sx={{ fontSize: 13, color: '#ffc107' }} />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                    {myAward}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {/* フライト + ストリーク */}
       <Box
         sx={{
           display: 'flex',

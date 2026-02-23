@@ -28,13 +28,11 @@ import PeriodComparisonCard from './PeriodComparisonCard';
 import AwardPaceCard from './AwardPaceCard';
 import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
-import CountUpRoundAnalysisCard from './CountUpRoundAnalysisCard';
 import DartboardHeatmap from './DartboardHeatmap';
 import SensorTrendCard from './SensorTrendCard';
 import SpeedAccuracyCard from './SpeedAccuracyCard';
 import SessionFatigueCard from './SessionFatigueCard';
 import PracticeRecommendationsCard from './PracticeRecommendationsCard';
-import GameAveragesCard from './GameAveragesCard';
 import RatingBenchmarkCard from './RatingBenchmarkCard';
 import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
 import { analyzeSensor } from '@/lib/sensor-analysis';
@@ -579,7 +577,6 @@ export default function AdminApiStatsSection({
           onToggle={toggleSection}
           cards={[
             { id: 'countup_deep', label: 'COUNT-UP深掘り' },
-            { id: 'countup_round', label: 'ラウンド分析' },
             { id: 'dartboard_heatmap', label: 'ヒートマップ' },
             { id: 'session_fatigue', label: 'セッション疲労' },
           ]}
@@ -592,9 +589,6 @@ export default function AdminApiStatsSection({
               stats01Detailed={enrichedData?.stats01Detailed}
               bestRecords={enrichedData?.bestRecords}
             />
-          )}
-          {!hiddenCards.countup_round && countupPlays && countupPlays.length >= 5 && (
-            <CountUpRoundAnalysisCard countupPlays={countupPlays} />
           )}
           {!hiddenCards.dartboard_heatmap && countupPlays && countupPlays.length >= 24 && (
             <DartboardHeatmap countupPlays={countupPlays} />
@@ -621,21 +615,6 @@ export default function AdminApiStatsSection({
         >
           {!hiddenCards.sensor_trend && <SensorTrendCard countupPlays={countupPlays} />}
           {!hiddenCards.speed_accuracy && <SpeedAccuracyCard countupPlays={countupPlays} />}
-        </CollapsibleSection>
-      )}
-
-      {/* 記録 */}
-      {enrichedData?.gameAverages && (
-        <CollapsibleSection
-          id="records"
-          label="記録"
-          collapsed={!!collapsed.records}
-          onToggle={toggleSection}
-          cards={[{ id: 'game_averages', label: 'ゲーム平均' }]}
-          hiddenCards={hiddenCards}
-          onToggleCard={toggleCard}
-        >
-          {!hiddenCards.game_averages && <GameAveragesCard averages={enrichedData.gameAverages} />}
         </CollapsibleSection>
       )}
     </Box>
