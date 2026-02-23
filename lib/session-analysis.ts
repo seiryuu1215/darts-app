@@ -57,7 +57,7 @@ export function groupPlaysBySession(plays: CountUpPlay[]): Session[] {
   const sessionMap = new Map<string, CountUpPlay[]>();
 
   for (const play of sorted) {
-    const date = play.time.split('T')[0] || play.time.split(' ')[0];
+    const date = play.time.split(/[T ]/)[0];
     if (!sessionMap.has(date)) {
       sessionMap.set(date, []);
     }
