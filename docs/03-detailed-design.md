@@ -2,11 +2,11 @@
 
 ## ドキュメント情報
 
-| 項目           | 内容              |
-| -------------- | ----------------- |
-| プロジェクト名 | Darts Lab         |
-| バージョン     | 3.0               |
-| 最終更新日     | 2026-02-23        |
+| 項目           | 内容       |
+| -------------- | ---------- |
+| プロジェクト名 | Darts Lab  |
+| バージョン     | 3.0        |
+| 最終更新日     | 2026-02-23 |
 
 ---
 
@@ -14,45 +14,45 @@
 
 ### 1.1 画面一覧
 
-| #     | 画面名                   | パス                      |    認証     | 概要                                                              |
-| ----- | ------------------------ | ------------------------- | :---------: | ----------------------------------------------------------------- |
-| S-001 | トップページ             | `/`                       |    不要     | フィーチャーカード、注目ダーツ/記事、ログイン時はスタッツサマリー |
-| S-002 | ログイン                 | `/login`                  |    不要     | メール/パスワード + Google OAuth                                  |
-| S-003 | 新規登録                 | `/register`               |    不要     | アカウント作成フォーム                                            |
-| S-004 | セッティング一覧         | `/darts`                  |    不要     | カード一覧、フィルタ、検索、おすすめタブ                          |
-| S-005 | セッティング詳細         | `/darts/[id]`             |    不要     | スペック詳細、画像、コメント、いいね                              |
-| S-006 | セッティング新規作成     | `/darts/new`              |    必要     | パーツ選択フォーム（バレル・チップ・シャフト・フライト）          |
-| S-007 | セッティング編集         | `/darts/[id]/edit`        |    必要     | S-006と同一フォーム（既存データプリフィル）                       |
-| S-008 | セッティング比較         | `/darts/compare`          |    不要     | 2つのセッティングを横並び比較                                     |
-| S-009 | バレル検索               | `/barrels`                |    不要     | スペックフィルタ、ページネーション、ブックマーク                  |
-| S-010 | スタッツダッシュボード   | `/stats`                  |    必要     | DARTSLIVE風UI、月間グラフ、直近プレイデータ                       |
-| S-011 | スタッツ手動入力         | `/stats/new`              |    必要     | 各種スタッツ入力 + DARTSLIVE自動取得ダイアログ                    |
-| S-012 | スタッツ編集             | `/stats/[id]/edit`        |    必要     | S-011と同一フォーム + 削除機能                                    |
-| S-013 | 記事一覧                 | `/articles`               |    不要     | 記事カード一覧                                                    |
-| S-014 | 記事詳細                 | `/articles/[slug]`        |    不要     | Markdownレンダリング                                              |
-| S-015 | 記事投稿                 | `/articles/new`           | 必要(pro+)  | Markdown入力フォーム                                              |
-| S-016 | 記事編集                 | `/articles/[slug]/edit`   | 必要(pro+)  | S-015と同一フォーム                                               |
-| S-017 | ブックマーク             | `/bookmarks`              |    必要     | ダーツ/バレルのブックマーク一覧                                   |
-| S-018 | プロフィール編集         | `/profile/edit`           |    必要     | ユーザー情報編集                                                  |
-| S-019 | リファレンス             | `/reference`              |    不要     | シャフトスペック早見表                                            |
-| S-020 | ユーザー管理             | `/admin/users`            | 必要(admin) | ロール変更                                                        |
-| S-021 | スタッツカレンダー       | `/stats/calendar`         |    必要     | 月間カレンダー、プレイ日可視化、日別詳細パネル                    |
-| S-022 | パスワードリセット       | `/forgot-password`        |    不要     | メールアドレス入力でリセットリンク送信                            |
-| S-023 | ショップ管理             | `/shops`                  |    必要     | ダーツショップ検索・ブックマーク・地図・路線フィルター            |
-| S-024 | ディスカッション一覧     | `/discussions`            |    不要     | カテゴリ別ディスカッション一覧                                    |
-| S-025 | ディスカッション詳細     | `/discussions/[id]`       |    不要     | ディスカッション本文 + リプライスレッド                           |
-| S-026 | ディスカッション新規作成 | `/discussions/new`        | 必要(pro+)  | ディスカッション投稿フォーム                                      |
-| S-027 | 料金プラン               | `/pricing`                |    不要     | Free / Pro プラン比較、Stripe決済                                 |
-| S-028 | サブスクリプション管理   | `/profile/subscription`   |    必要     | 現在のプラン表示、プラン変更・解約                                |
-| S-029 | サイトについて           | `/about`                  |    不要     | サービス紹介、開発者情報                                          |
-| S-030 | バレルシミュレーター     | `/barrels/simulator`      |    不要     | バレルスペックの仮想シミュレーション                              |
-| S-031 | バレル診断クイズ         | `/barrels/quiz`           |    不要     | 質問形式でおすすめバレルを診断                                    |
-| S-032 | おすすめバレル           | `/barrels/recommend`      |    不要     | ユーザーのプレイスタイルに基づくバレル推薦                        |
-| S-033 | セッティング使用履歴     | `/darts/history`          |    必要     | 過去のセッティング変更履歴タイムライン                            |
-| S-034 | レポート                 | `/reports`                |    必要     | 週次・月次レポート自動生成                                        |
-| S-035 | ツール                   | `/tools`                  |    不要     | ダーツ関連便利ツール集                                            |
-| S-036 | ユーザープロフィール     | `/users/[id]`             |    不要     | 公開ユーザープロフィール表示                                      |
-| S-037 | 管理: 料金設定           | `/admin/pricing`          | 必要(admin) | プラン料金・機能の管理設定                                        |
+| #     | 画面名                   | パス                    |    認証     | 概要                                                              |
+| ----- | ------------------------ | ----------------------- | :---------: | ----------------------------------------------------------------- |
+| S-001 | トップページ             | `/`                     |    不要     | フィーチャーカード、注目ダーツ/記事、ログイン時はスタッツサマリー |
+| S-002 | ログイン                 | `/login`                |    不要     | メール/パスワード + Google OAuth                                  |
+| S-003 | 新規登録                 | `/register`             |    不要     | アカウント作成フォーム                                            |
+| S-004 | セッティング一覧         | `/darts`                |    不要     | カード一覧、フィルタ、検索、おすすめタブ                          |
+| S-005 | セッティング詳細         | `/darts/[id]`           |    不要     | スペック詳細、画像、コメント、いいね                              |
+| S-006 | セッティング新規作成     | `/darts/new`            |    必要     | パーツ選択フォーム（バレル・チップ・シャフト・フライト）          |
+| S-007 | セッティング編集         | `/darts/[id]/edit`      |    必要     | S-006と同一フォーム（既存データプリフィル）                       |
+| S-008 | セッティング比較         | `/darts/compare`        |    不要     | 2つのセッティングを横並び比較                                     |
+| S-009 | バレル検索               | `/barrels`              |    不要     | スペックフィルタ、ページネーション、ブックマーク                  |
+| S-010 | スタッツダッシュボード   | `/stats`                |    必要     | DARTSLIVE風UI、月間グラフ、直近プレイデータ                       |
+| S-011 | スタッツ手動入力         | `/stats/new`            |    必要     | 各種スタッツ入力 + DARTSLIVE自動取得ダイアログ                    |
+| S-012 | スタッツ編集             | `/stats/[id]/edit`      |    必要     | S-011と同一フォーム + 削除機能                                    |
+| S-013 | 記事一覧                 | `/articles`             |    不要     | 記事カード一覧                                                    |
+| S-014 | 記事詳細                 | `/articles/[slug]`      |    不要     | Markdownレンダリング                                              |
+| S-015 | 記事投稿                 | `/articles/new`         | 必要(pro+)  | Markdown入力フォーム                                              |
+| S-016 | 記事編集                 | `/articles/[slug]/edit` | 必要(pro+)  | S-015と同一フォーム                                               |
+| S-017 | ブックマーク             | `/bookmarks`            |    必要     | ダーツ/バレルのブックマーク一覧                                   |
+| S-018 | プロフィール編集         | `/profile/edit`         |    必要     | ユーザー情報編集                                                  |
+| S-019 | リファレンス             | `/reference`            |    不要     | シャフトスペック早見表                                            |
+| S-020 | ユーザー管理             | `/admin/users`          | 必要(admin) | ロール変更                                                        |
+| S-021 | スタッツカレンダー       | `/stats/calendar`       |    必要     | 月間カレンダー、プレイ日可視化、日別詳細パネル                    |
+| S-022 | パスワードリセット       | `/forgot-password`      |    不要     | メールアドレス入力でリセットリンク送信                            |
+| S-023 | ショップ管理             | `/shops`                |    必要     | ダーツショップ検索・ブックマーク・地図・路線フィルター            |
+| S-024 | ディスカッション一覧     | `/discussions`          |    不要     | カテゴリ別ディスカッション一覧                                    |
+| S-025 | ディスカッション詳細     | `/discussions/[id]`     |    不要     | ディスカッション本文 + リプライスレッド                           |
+| S-026 | ディスカッション新規作成 | `/discussions/new`      | 必要(pro+)  | ディスカッション投稿フォーム                                      |
+| S-027 | 料金プラン               | `/pricing`              |    不要     | Free / Pro プラン比較、Stripe決済                                 |
+| S-028 | サブスクリプション管理   | `/profile/subscription` |    必要     | 現在のプラン表示、プラン変更・解約                                |
+| S-029 | サイトについて           | `/about`                |    不要     | サービス紹介、開発者情報                                          |
+| S-030 | バレルシミュレーター     | `/barrels/simulator`    |    不要     | バレルスペックの仮想シミュレーション                              |
+| S-031 | バレル診断クイズ         | `/barrels/quiz`         |    不要     | 質問形式でおすすめバレルを診断                                    |
+| S-032 | おすすめバレル           | `/barrels/recommend`    |    不要     | ユーザーのプレイスタイルに基づくバレル推薦                        |
+| S-033 | セッティング使用履歴     | `/darts/history`        |    必要     | 過去のセッティング変更履歴タイムライン                            |
+| S-034 | レポート                 | `/reports`              |    必要     | 週次・月次レポート自動生成                                        |
+| S-035 | ツール                   | `/tools`                |    不要     | ダーツ関連便利ツール集                                            |
+| S-036 | ユーザープロフィール     | `/users/[id]`           |    不要     | 公開ユーザープロフィール表示                                      |
+| S-037 | 管理: 料金設定           | `/admin/pricing`        | 必要(admin) | プラン料金・機能の管理設定                                        |
 
 ### 1.2 画面遷移図
 
@@ -254,12 +254,12 @@ useEffect(() => {
 
 #### API-002: DARTSLIVEアカウント連携（自動データ取得）
 
-| 項目           | 内容                                                       |
-| -------------- | ---------------------------------------------------------- |
-| エンドポイント | `/api/dartslive-stats`                                     |
-| メソッド       | POST                                                       |
-| 認証           | 必要（NextAuth セッション）                                |
-| タイムアウト   | 60秒 (`maxDuration: 60`)                                   |
+| 項目           | 内容                                                        |
+| -------------- | ----------------------------------------------------------- |
+| エンドポイント | `/api/dartslive-stats`                                      |
+| メソッド       | POST                                                        |
+| 認証           | 必要（NextAuth セッション）                                 |
+| タイムアウト   | 60秒 (`maxDuration: 60`)                                    |
 | 処理           | DARTSLIVEアカウント連携によるスタッツの自動データ取得・同期 |
 
 **リクエスト:**
@@ -363,17 +363,17 @@ useEffect(() => {
 
 #### API-005: Stripe決済
 
-| 項目           | 内容                                             |
-| -------------- | ------------------------------------------------ |
+| 項目           | 内容                                                                |
+| -------------- | ------------------------------------------------------------------- |
 | エンドポイント | `/api/stripe/checkout`, `/api/stripe/webhook`, `/api/stripe/portal` |
-| メソッド       | POST                                             |
-| 認証           | checkout: 必要、webhook: Stripe署名検証、portal: 必要 |
+| メソッド       | POST                                                                |
+| 認証           | checkout: 必要、webhook: Stripe署名検証、portal: 必要               |
 
-| パス                    | 処理                                               |
-| ----------------------- | -------------------------------------------------- |
-| `/api/stripe/checkout`  | Stripeチェックアウトセッション作成、決済フローへ遷移 |
-| `/api/stripe/webhook`   | Stripe Webhookイベント受信、サブスクリプション状態同期 |
-| `/api/stripe/portal`    | Stripeカスタマーポータルセッション作成              |
+| パス                   | 処理                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| `/api/stripe/checkout` | Stripeチェックアウトセッション作成、決済フローへ遷移   |
+| `/api/stripe/webhook`  | Stripe Webhookイベント受信、サブスクリプション状態同期 |
+| `/api/stripe/portal`   | Stripeカスタマーポータルセッション作成                 |
 
 #### API-006: LINE連携
 
@@ -383,49 +383,49 @@ useEffect(() => {
 | メソッド       | POST                                                                                       |
 | 認証           | webhook: LINE署名検証、その他: 必要（NextAuth セッション）                                 |
 
-| パス                             | 処理                                       |
-| -------------------------------- | ------------------------------------------ |
-| `/api/line/webhook`              | LINE Messaging APIイベント受信・自動応答   |
-| `/api/line/link`                 | LINEアカウントとユーザーアカウントの紐付け |
-| `/api/line/unlink`               | LINE連携の解除                             |
-| `/api/line/save-dl-credentials`  | DARTSLIVE連携用の認証情報をLINE経由で保存  |
+| パス                            | 処理                                       |
+| ------------------------------- | ------------------------------------------ |
+| `/api/line/webhook`             | LINE Messaging APIイベント受信・自動応答   |
+| `/api/line/link`                | LINEアカウントとユーザーアカウントの紐付け |
+| `/api/line/unlink`              | LINE連携の解除                             |
+| `/api/line/save-dl-credentials` | DARTSLIVE連携用の認証情報をLINE経由で保存  |
 
 #### API-007: 日次バッチ
 
-| 項目           | 内容                                                            |
-| -------------- | --------------------------------------------------------------- |
-| エンドポイント | `/api/cron/daily-stats`, `/api/cron/dartslive-api-sync`         |
-| メソッド       | GET                                                             |
-| 認証           | Vercel Cron認証（`CRON_SECRET`ヘッダー）                        |
+| 項目           | 内容                                                    |
+| -------------- | ------------------------------------------------------- |
+| エンドポイント | `/api/cron/daily-stats`, `/api/cron/dartslive-api-sync` |
+| メソッド       | GET                                                     |
+| 認証           | Vercel Cron認証（`CRON_SECRET`ヘッダー）                |
 
-| パス                            | 処理                                               |
-| ------------------------------- | -------------------------------------------------- |
-| `/api/cron/daily-stats`         | 全ユーザーの日次スタッツ集計・サマリー生成         |
-| `/api/cron/dartslive-api-sync`  | DARTSLIVEアカウント連携ユーザーの自動データ同期    |
+| パス                           | 処理                                            |
+| ------------------------------ | ----------------------------------------------- |
+| `/api/cron/daily-stats`        | 全ユーザーの日次スタッツ集計・サマリー生成      |
+| `/api/cron/dartslive-api-sync` | DARTSLIVEアカウント連携ユーザーの自動データ同期 |
 
 #### API-008: 目標管理
 
-| 項目           | 内容                                    |
-| -------------- | --------------------------------------- |
-| エンドポイント | `/api/goals`, `/api/goals/achieve`      |
-| メソッド       | GET, POST, PUT, DELETE                  |
-| 認証           | 必要（NextAuth セッション）             |
+| 項目           | 内容                               |
+| -------------- | ---------------------------------- |
+| エンドポイント | `/api/goals`, `/api/goals/achieve` |
+| メソッド       | GET, POST, PUT, DELETE             |
+| 認証           | 必要（NextAuth セッション）        |
 
-| パス                  | メソッド       | 処理                       |
-| --------------------- | -------------- | -------------------------- |
-| `/api/goals`          | GET            | ユーザーの目標一覧取得     |
-| `/api/goals`          | POST           | 新規目標作成               |
-| `/api/goals`          | PUT            | 目標更新                   |
-| `/api/goals`          | DELETE          | 目標削除                   |
-| `/api/goals/achieve`  | POST           | 目標達成の記録 + XP付与    |
+| パス                 | メソッド | 処理                    |
+| -------------------- | -------- | ----------------------- |
+| `/api/goals`         | GET      | ユーザーの目標一覧取得  |
+| `/api/goals`         | POST     | 新規目標作成            |
+| `/api/goals`         | PUT      | 目標更新                |
+| `/api/goals`         | DELETE   | 目標削除                |
+| `/api/goals/achieve` | POST     | 目標達成の記録 + XP付与 |
 
 #### API-009: XPプログレッション
 
-| 項目           | 内容                        |
-| -------------- | --------------------------- |
-| エンドポイント | `/api/progression`          |
-| メソッド       | GET, POST                   |
-| 認証           | 必要（NextAuth セッション） |
+| 項目           | 内容                                         |
+| -------------- | -------------------------------------------- |
+| エンドポイント | `/api/progression`                           |
+| メソッド       | GET, POST                                    |
+| 認証           | 必要（NextAuth セッション）                  |
 | 処理           | 経験値の取得・加算、レベル算出、実績解除判定 |
 
 #### API-010: 通知
@@ -439,79 +439,79 @@ useEffect(() => {
 
 #### API-011: スタッツ履歴
 
-| 項目           | 内容                                                  |
-| -------------- | ----------------------------------------------------- |
-| エンドポイント | `/api/stats-history`, `/api/stats-history/export`     |
-| メソッド       | GET, POST                                             |
-| 認証           | 必要（NextAuth セッション）                           |
+| 項目           | 内容                                              |
+| -------------- | ------------------------------------------------- |
+| エンドポイント | `/api/stats-history`, `/api/stats-history/export` |
+| メソッド       | GET, POST                                         |
+| 認証           | 必要（NextAuth セッション）                       |
 
-| パス                         | メソッド | 処理                          |
-| ---------------------------- | -------- | ----------------------------- |
-| `/api/stats-history`         | GET      | スタッツ履歴の一覧取得        |
-| `/api/stats-history`         | POST     | スタッツ履歴の新規登録        |
-| `/api/stats-history/export`  | GET      | CSV形式でスタッツデータ出力   |
+| パス                        | メソッド | 処理                        |
+| --------------------------- | -------- | --------------------------- |
+| `/api/stats-history`        | GET      | スタッツ履歴の一覧取得      |
+| `/api/stats-history`        | POST     | スタッツ履歴の新規登録      |
+| `/api/stats-history/export` | GET      | CSV形式でスタッツデータ出力 |
 
 #### API-012: スタッツカレンダー
 
-| 項目           | 内容                        |
-| -------------- | --------------------------- |
-| エンドポイント | `/api/stats-calendar`       |
-| メソッド       | GET                         |
-| 認証           | 必要（NextAuth セッション） |
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| エンドポイント | `/api/stats-calendar`                                |
+| メソッド       | GET                                                  |
+| 認証           | 必要（NextAuth セッション）                          |
 | 処理           | 月間プレイ日・スタッツサマリーをカレンダー形式で返却 |
 
 #### API-013: OGP画像生成
 
-| 項目           | 内容                        |
-| -------------- | --------------------------- |
-| エンドポイント | `/api/og`                   |
-| メソッド       | GET                         |
-| 認証           | 不要                        |
-| ランタイム     | Edge Runtime                |
+| 項目           | 内容                                                     |
+| -------------- | -------------------------------------------------------- |
+| エンドポイント | `/api/og`                                                |
+| メソッド       | GET                                                      |
+| 認証           | 不要                                                     |
+| ランタイム     | Edge Runtime                                             |
 | 処理           | 動的OGP画像の生成（ユーザー・記事ごとのSNSシェア用画像） |
 
 #### API-014: ショップ
 
-| 項目           | 内容                                                    |
-| -------------- | ------------------------------------------------------- |
-| エンドポイント | `/api/shops/fetch-url`, `/api/shops/import-by-line`     |
-| メソッド       | POST                                                    |
-| 認証           | 必要（NextAuth セッション）                             |
+| 項目           | 内容                                                |
+| -------------- | --------------------------------------------------- |
+| エンドポイント | `/api/shops/fetch-url`, `/api/shops/import-by-line` |
+| メソッド       | POST                                                |
+| 認証           | 必要（NextAuth セッション）                         |
 
-| パス                        | 処理                                     |
-| --------------------------- | ---------------------------------------- |
-| `/api/shops/fetch-url`      | URL指定でショップ情報を取得・登録        |
-| `/api/shops/import-by-line` | 路線指定で沿線ショップを一括インポート   |
+| パス                        | 処理                                   |
+| --------------------------- | -------------------------------------- |
+| `/api/shops/fetch-url`      | URL指定でショップ情報を取得・登録      |
+| `/api/shops/import-by-line` | 路線指定で沿線ショップを一括インポート |
 
 #### API-015: N01インポート
 
-| 項目           | 内容                        |
-| -------------- | --------------------------- |
-| エンドポイント | `/api/n01-import`           |
-| メソッド       | POST                        |
-| 認証           | 必要（NextAuth セッション） |
+| 項目           | 内容                                                        |
+| -------------- | ----------------------------------------------------------- |
+| エンドポイント | `/api/n01-import`                                           |
+| メソッド       | POST                                                        |
+| 認証           | 必要（NextAuth セッション）                                 |
 | 処理           | N01（ダーツ練習アプリ）のデータファイルをパース・インポート |
 
 #### API-016: Admin DARTSLIVEデータ連携
 
-| 項目           | 内容                                                              |
-| -------------- | ----------------------------------------------------------------- |
-| エンドポイント | `/api/admin/dartslive-sync`, `/api/admin/dartslive-history`       |
-| メソッド       | POST, GET                                                         |
-| 認証           | 必要（admin のみ）                                                |
+| 項目           | 内容                                                        |
+| -------------- | ----------------------------------------------------------- |
+| エンドポイント | `/api/admin/dartslive-sync`, `/api/admin/dartslive-history` |
+| メソッド       | POST, GET                                                   |
+| 認証           | 必要（admin のみ）                                          |
 
-| パス                            | メソッド | 処理                                           |
-| ------------------------------- | -------- | ---------------------------------------------- |
-| `/api/admin/dartslive-sync`     | POST     | 管理者によるDARTSLIVEデータの手動同期トリガー  |
-| `/api/admin/dartslive-history`  | GET      | 自動データ取得の実行履歴・ログ閲覧             |
+| パス                           | メソッド | 処理                                          |
+| ------------------------------ | -------- | --------------------------------------------- |
+| `/api/admin/dartslive-sync`    | POST     | 管理者によるDARTSLIVEデータの手動同期トリガー |
+| `/api/admin/dartslive-history` | GET      | 自動データ取得の実行履歴・ログ閲覧            |
 
 #### API-017: Push通知
 
-| 項目           | 内容                         |
-| -------------- | ---------------------------- |
-| エンドポイント | `/api/push-subscription`     |
-| メソッド       | POST, DELETE                 |
-| 認証           | 必要（NextAuth セッション）  |
+| 項目           | 内容                                       |
+| -------------- | ------------------------------------------ |
+| エンドポイント | `/api/push-subscription`                   |
+| メソッド       | POST, DELETE                               |
+| 認証           | 必要（NextAuth セッション）                |
 | 処理           | Web Push通知のサブスクリプション登録・解除 |
 
 ---
@@ -695,40 +695,40 @@ RootLayout (app/layout.tsx)
 
 ### 5.2 主要コンポーネントの責務
 
-| コンポーネント               | 責務                              | props/state                                                      |
-| ---------------------------- | --------------------------------- | ---------------------------------------------------------------- |
-| `DartForm`                   | セッティング入力の全管理          | 15+ state variables (barrel, tip, shaft, flight specs)           |
-| `DartCard`                   | セッティング一覧のカード表示      | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`                |
-| `BarrelCard`                 | バレル製品カード                  | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`            |
-| `CommentList`                | コメント一覧の表示・削除          | `dartId`, `comments[]`, `currentUserId`                          |
-| `Providers`                  | テーマ・セッション提供            | `children`, `darkMode` context                                   |
-| `PlayerProfileCard`          | DARTSLIVEプロフィール表示         | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor` |
-| `RatingHeroCard`             | レーティング+フライト+進捗バー    | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak`        |
-| `PeriodStatsPanel`           | 期間別スタッツ集計表示            | `periodTab`, `summary`, `records`, `loading`                     |
-| `GameStatsCards`             | 3カテゴリスタッツカード           | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile   |
-| `AdminApiStatsSection`       | API連携データのセクション管理     | `apiData`, セクション折りたたみ状態                              |
-| `PracticeRecommendationsCard`| AI練習メニュー提案                | `stats`, `games`                                                 |
-| `SkillRadarChart`            | スキルレーダーチャート            | `skillScores`                                                    |
-| `PlayerDnaCard`              | プレイヤーDNA可視化               | `dnaData`, `flightColor`                                         |
-| `DetailedGameStatsCard`      | 01/Cri/CU詳細統計                | `detailedStats`                                                  |
-| `RatingBenchmarkCard`        | フライト別ベンチマーク比較        | `rating`, `flight`, `benchmarks`                                 |
-| `RatingSimulatorCard`        | Rt変動シミュレーション            | `currentRating`, `games`                                         |
-| `RollingTrendCard`           | 移動平均トレンドライン            | `trendData`, `period`                                            |
-| `PeriodComparisonCard`       | 期間比較（前週比等）              | `currentPeriod`, `previousPeriod`                                |
-| `CountUpDeepAnalysisCard`    | COUNT-UP深掘り分析                | `games`                                                          |
-| `DartboardHeatmap`           | ダーツボードヒートマップ          | `hitData`                                                        |
-| `SensorTrendCard`            | センサーデータ推移                | `sensorData`                                                     |
-| `GameAveragesCard`           | ゲーム平均記録一覧                | `averages`                                                       |
-| `ShopCard`                   | ショップ情報カード                | `shop`, `isBookmarked`, `isVisited`, `tags`                      |
-| `ShopBookmarkDialog`         | ショップブックマーク管理          | `shop`, `lists`, `onSave`                                        |
-| `DiscussionCard`             | ディスカッションカード表示        | `discussion`, `replyCount`                                       |
-| `GoalCard`                   | 目標進捗カード                    | `goal`, `onAchieve`, `onEdit`                                    |
-| `XpBar`                      | 経験値プログレスバー              | `currentXp`, `level`, `nextLevelXp`                              |
-| `NotificationBell`           | ヘッダー通知アイコン              | `unreadCount`, `onClick`                                         |
-| `WeeklyReportCard`           | 週次レポートカード                | `reportData`, `weekRange`                                        |
-| `MonthlyReportCard`          | 月次レポートカード                | `reportData`, `month`                                            |
-| `CalendarGrid`               | カレンダー月表示・日選択          | `year`, `month`, `records`, `selectedDate`, `onSelectDate`       |
-| `DayDetailPanel`             | 選択日の詳細スタッツ表示          | `date`, `records`                                                |
+| コンポーネント                | 責務                           | props/state                                                      |
+| ----------------------------- | ------------------------------ | ---------------------------------------------------------------- |
+| `DartForm`                    | セッティング入力の全管理       | 15+ state variables (barrel, tip, shaft, flight specs)           |
+| `DartCard`                    | セッティング一覧のカード表示   | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`                |
+| `BarrelCard`                  | バレル製品カード               | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`            |
+| `CommentList`                 | コメント一覧の表示・削除       | `dartId`, `comments[]`, `currentUserId`                          |
+| `Providers`                   | テーマ・セッション提供         | `children`, `darkMode` context                                   |
+| `PlayerProfileCard`           | DARTSLIVEプロフィール表示      | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor` |
+| `RatingHeroCard`              | レーティング+フライト+進捗バー | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak`        |
+| `PeriodStatsPanel`            | 期間別スタッツ集計表示         | `periodTab`, `summary`, `records`, `loading`                     |
+| `GameStatsCards`              | 3カテゴリスタッツカード        | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile   |
+| `AdminApiStatsSection`        | API連携データのセクション管理  | `apiData`, セクション折りたたみ状態                              |
+| `PracticeRecommendationsCard` | AI練習メニュー提案             | `stats`, `games`                                                 |
+| `SkillRadarChart`             | スキルレーダーチャート         | `skillScores`                                                    |
+| `PlayerDnaCard`               | プレイヤーDNA可視化            | `dnaData`, `flightColor`                                         |
+| `DetailedGameStatsCard`       | 01/Cri/CU詳細統計              | `detailedStats`                                                  |
+| `RatingBenchmarkCard`         | フライト別ベンチマーク比較     | `rating`, `flight`, `benchmarks`                                 |
+| `RatingSimulatorCard`         | Rt変動シミュレーション         | `currentRating`, `games`                                         |
+| `RollingTrendCard`            | 移動平均トレンドライン         | `trendData`, `period`                                            |
+| `PeriodComparisonCard`        | 期間比較（前週比等）           | `currentPeriod`, `previousPeriod`                                |
+| `CountUpDeepAnalysisCard`     | COUNT-UP深掘り分析             | `games`                                                          |
+| `DartboardHeatmap`            | ダーツボードヒートマップ       | `hitData`                                                        |
+| `SensorTrendCard`             | センサーデータ推移             | `sensorData`                                                     |
+| `GameAveragesCard`            | ゲーム平均記録一覧             | `averages`                                                       |
+| `ShopCard`                    | ショップ情報カード             | `shop`, `isBookmarked`, `isVisited`, `tags`                      |
+| `ShopBookmarkDialog`          | ショップブックマーク管理       | `shop`, `lists`, `onSave`                                        |
+| `DiscussionCard`              | ディスカッションカード表示     | `discussion`, `replyCount`                                       |
+| `GoalCard`                    | 目標進捗カード                 | `goal`, `onAchieve`, `onEdit`                                    |
+| `XpBar`                       | 経験値プログレスバー           | `currentXp`, `level`, `nextLevelXp`                              |
+| `NotificationBell`            | ヘッダー通知アイコン           | `unreadCount`, `onClick`                                         |
+| `WeeklyReportCard`            | 週次レポートカード             | `reportData`, `weekRange`                                        |
+| `MonthlyReportCard`           | 月次レポートカード             | `reportData`, `month`                                            |
+| `CalendarGrid`                | カレンダー月表示・日選択       | `year`, `month`, `records`, `selectedDate`, `onSelectDate`       |
+| `DayDetailPanel`              | 選択日の詳細スタッツ表示       | `date`, `records`                                                |
 
 ---
 
@@ -764,13 +764,13 @@ RootLayout (app/layout.tsx)
 
 ### 6.4 DARTSLIVEアカウント連携のセキュリティ
 
-| リスク                 | 対策                                                       |
-| ---------------------- | ---------------------------------------------------------- |
-| 認証情報の漏洩         | メモリ上でのみ使用、Firestore/ログへの保存禁止             |
-| ブラウザプロセスの残存 | `finally` ブロックでの確実なブラウザ終了                   |
+| リスク                 | 対策                                                        |
+| ---------------------- | ----------------------------------------------------------- |
+| 認証情報の漏洩         | メモリ上でのみ使用、Firestore/ログへの保存禁止              |
+| ブラウザプロセスの残存 | `finally` ブロックでの確実なブラウザ終了                    |
 | サーバーサイド実行     | フロントエンドからの直接データ取得不可、API Route経由に限定 |
-| レート制限             | `maxDuration: 60` によるタイムアウト設定                   |
-| 暗号化通信             | HTTPS経由でのデータ送受信を強制                            |
+| レート制限             | `maxDuration: 60` によるタイムアウト設定                    |
+| 暗号化通信             | HTTPS経由でのデータ送受信を強制                             |
 
 ---
 
@@ -778,14 +778,14 @@ RootLayout (app/layout.tsx)
 
 ### 7.1 エラー分類
 
-| レベル           | 例                                | ハンドリング                             |
-| ---------------- | --------------------------------- | ---------------------------------------- |
-| バリデーション   | 必須項目未入力                    | Alert コンポーネントでインライン表示     |
-| 認証エラー       | 未ログイン、権限不足              | ログインページへリダイレクト             |
-| API通信エラー    | ネットワーク障害                  | 「通信エラーが発生しました」トースト表示 |
-| Firestoreエラー  | 権限不足、ドキュメント未存在      | エラーメッセージ表示 + コンソールログ    |
-| データ取得エラー | 外部サービス変更・タイムアウト    | 詳細エラーメッセージ + サーバーログ      |
-| 決済エラー       | Stripe決済失敗、Webhook処理失敗   | エラーメッセージ表示 + リトライ案内      |
+| レベル           | 例                              | ハンドリング                             |
+| ---------------- | ------------------------------- | ---------------------------------------- |
+| バリデーション   | 必須項目未入力                  | Alert コンポーネントでインライン表示     |
+| 認証エラー       | 未ログイン、権限不足            | ログインページへリダイレクト             |
+| API通信エラー    | ネットワーク障害                | 「通信エラーが発生しました」トースト表示 |
+| Firestoreエラー  | 権限不足、ドキュメント未存在    | エラーメッセージ表示 + コンソールログ    |
+| データ取得エラー | 外部サービス変更・タイムアウト  | 詳細エラーメッセージ + サーバーログ      |
+| 決済エラー       | Stripe決済失敗、Webhook処理失敗 | エラーメッセージ表示 + リトライ案内      |
 
 ### 7.2 エラーメッセージ方針
 

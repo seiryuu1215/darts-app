@@ -444,11 +444,11 @@ components/
 | `NEXT_PUBLIC_A8_MEDIA_ID`            | 公開 | A8.net メディアID                          |
 | `UPSTASH_REDIS_REST_URL`             | 秘密 | Upstash Redis REST API URL                 |
 | `UPSTASH_REDIS_REST_TOKEN`           | 秘密 | Upstash Redis REST API トークン            |
-| `ENCRYPTION_KEY`                     | 秘密 | AES-256-GCM 暗号化キー                    |
-| `CRON_SECRET`                        | 秘密 | Cron ジョブ認証シークレット               |
+| `ENCRYPTION_KEY`                     | 秘密 | AES-256-GCM 暗号化キー                     |
+| `CRON_SECRET`                        | 秘密 | Cron ジョブ認証シークレット                |
 | `VAPID_PUBLIC_KEY`                   | 公開 | Web Push VAPID 公開鍵                      |
 | `VAPID_PRIVATE_KEY`                  | 秘密 | Web Push VAPID 秘密鍵                      |
-| `SENTRY_AUTH_TOKEN`                  | 秘密 | Sentry 認証トークン（ソースマップ等）     |
+| `SENTRY_AUTH_TOKEN`                  | 秘密 | Sentry 認証トークン（ソースマップ等）      |
 
 ## アフィリエイトフロー
 
