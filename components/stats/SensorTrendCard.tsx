@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Paper, Typography, Box, Chip } from '@mui/material';
+import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
 import {
   ResponsiveContainer,
   ScatterChart,
@@ -12,7 +12,7 @@ import {
   CartesianGrid,
   Cell,
 } from 'recharts';
-import { analyzeSensor } from '@/lib/sensor-analysis';
+import { analyzeSensor, generateSensorInsights } from '@/lib/sensor-analysis';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 
 interface SensorTrendCardProps {
@@ -28,6 +28,7 @@ const TOOLTIP_STYLE = {
 
 export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) {
   const analysis = useMemo(() => analyzeSensor(countupPlays), [countupPlays]);
+  const insights = useMemo(() => (analysis ? generateSensorInsights(analysis) : []), [analysis]);
 
   if (!analysis) return null;
 
@@ -122,6 +123,17 @@ export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) 
           )}
         </Box>
       </Box>
+
+      {/* インサイト */}
+      {insights.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
+          {insights.map((insight, idx) => (
+            <Alert key={idx} severity={insight.severity} variant="outlined" sx={{ py: 0.5 }}>
+              {insight.message}
+            </Alert>
+          ))}
+        </Box>
+      )}
 
       {/* ベクトルscatter */}
       {trendPoints.length > 10 && (

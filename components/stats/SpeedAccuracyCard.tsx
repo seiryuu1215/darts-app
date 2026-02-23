@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Paper, Typography, Box, Chip } from '@mui/material';
+import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
 import {
   ResponsiveContainer,
   ScatterChart,
@@ -12,6 +12,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { correlateSpeedScore } from '@/lib/sensor-analysis';
+import type { SensorInsight } from '@/lib/sensor-analysis';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 
 interface SpeedAccuracyCardProps {
@@ -26,10 +27,16 @@ const TOOLTIP_STYLE = {
 };
 
 export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardProps) {
-  const { scatterData, correlation, sweetSpot, validCount } = useMemo(() => {
+  const { scatterData, correlation, sweetSpot, validCount, speedInsights } = useMemo(() => {
     const validPlays = countupPlays.filter((p) => p.dl3Speed > 0);
     if (validPlays.length < 10)
-      return { scatterData: [], correlation: 0, sweetSpot: null, validCount: 0 };
+      return {
+        scatterData: [],
+        correlation: 0,
+        sweetSpot: null,
+        validCount: 0,
+        speedInsights: [],
+      };
 
     const { speedBuckets: buckets, correlation: corr } = correlateSpeedScore(countupPlays);
 
@@ -41,11 +48,39 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
     const sweet =
       buckets.length > 0 ? buckets.reduce((a, b) => (b.avgScore > a.avgScore ? b : a)) : null;
 
+    // インサイト生成
+    const ins: SensorInsight[] = [];
+    if (corr > 0.3) {
+      ins.push({
+        message:
+          'スピードが速いほどスコアが高い傾向です。テンポを意識した投げ方が合っているかもしれません。',
+        severity: 'info',
+      });
+    } else if (corr < -0.3) {
+      ins.push({
+        message:
+          'スピードを抑えた方がスコアが安定する傾向です。丁寧なリリースを意識してみましょう。',
+        severity: 'info',
+      });
+    } else if (Math.abs(corr) <= 0.1) {
+      ins.push({
+        message: 'スピードとスコアにほぼ相関がありません。スピードより精度重視で問題ないでしょう。',
+        severity: 'info',
+      });
+    }
+    if (sweet) {
+      ins.push({
+        message: `${sweet.speedRange}km/hがあなたのスイートスポットです。この速度帯で最もスコアが安定しています。`,
+        severity: 'success',
+      });
+    }
+
     return {
       scatterData: scatter,
       correlation: corr,
       sweetSpot: sweet,
       validCount: validPlays.length,
+      speedInsights: ins,
     };
   }, [countupPlays]);
 
@@ -117,6 +152,17 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
           </Box>
         )}
       </Box>
+
+      {/* インサイト */}
+      {speedInsights.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
+          {speedInsights.map((insight, idx) => (
+            <Alert key={idx} severity={insight.severity} variant="outlined" sx={{ py: 0.5 }}>
+              {insight.message}
+            </Alert>
+          ))}
+        </Box>
+      )}
 
       {/* Scatter plot */}
       <ResponsiveContainer width="100%" height={220}>

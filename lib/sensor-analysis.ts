@@ -48,6 +48,12 @@ export interface VectorDrift {
   improving: boolean; // 中心に近づいているか
 }
 
+/** センサーインサイト */
+export interface SensorInsight {
+  message: string;
+  severity: 'success' | 'info' | 'warning';
+}
+
 /** センサー分析統合結果 */
 export interface SensorAnalysis {
   trendPoints: SensorTrendPoint[];
@@ -239,4 +245,87 @@ export function analyzeSensor(plays: SensorPlay[]): SensorAnalysis | null {
       speedScoreCorrelation: correlation,
     },
   };
+}
+
+/** センサー分析結果から日本語インサイトを生成 */
+export function generateSensorInsights(analysis: SensorAnalysis): SensorInsight[] {
+  const insights: SensorInsight[] = [];
+  const { overallStats, vectorDrift } = analysis;
+
+  // グルーピング半径
+  if (overallStats.avgRadius < 8) {
+    insights.push({
+      message: 'グルーピングが非常にタイトです。安定したリリースができています。',
+      severity: 'success',
+    });
+  } else if (overallStats.avgRadius > 15) {
+    insights.push({
+      message: `グルーピングが広め（${overallStats.avgRadius}mm）。リリースポイントの安定を意識してみましょう。`,
+      severity: 'warning',
+    });
+  }
+
+  // グルーピング改善率
+  if (overallStats.radiusImprovement != null) {
+    if (overallStats.radiusImprovement < -10) {
+      insights.push({
+        message: `グルーピングが${Math.abs(overallStats.radiusImprovement)}%改善しています。練習の成果が出ています。`,
+        severity: 'success',
+      });
+    } else if (overallStats.radiusImprovement > 10) {
+      insights.push({
+        message: `グルーピングが${overallStats.radiusImprovement}%広がっています。フォームの見直しやコンディション確認を。`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  // ベクトルドリフト
+  if (vectorDrift) {
+    if (vectorDrift.improving) {
+      insights.push({
+        message: '投げ位置が中心に近づいています。フォーム修正の効果が見られます。',
+        severity: 'success',
+      });
+    } else if (vectorDrift.driftMagnitude > 3) {
+      insights.push({
+        message: `投げ位置が中心から離れる傾向です（${vectorDrift.driftMagnitude}mm）。スタンスやグリップを確認してみましょう。`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  // X方向の偏り
+  if (Math.abs(overallStats.avgVectorX) > 8) {
+    const dir = overallStats.avgVectorX > 0 ? '右' : '左';
+    insights.push({
+      message: `投げ位置が${dir}に${Math.abs(overallStats.avgVectorX)}mm偏っています。スタンスの微調整で改善できる場合があります。`,
+      severity: 'info',
+    });
+  }
+
+  // Y方向の偏り
+  if (Math.abs(overallStats.avgVectorY) > 8) {
+    const dir = overallStats.avgVectorY > 0 ? '下' : '上';
+    insights.push({
+      message: `投げ位置が${dir}に${Math.abs(overallStats.avgVectorY)}mm偏っています。リリースの高さを意識してみましょう。`,
+      severity: 'info',
+    });
+  }
+
+  // スピード×スコア相関
+  if (overallStats.speedScoreCorrelation > 0.3) {
+    insights.push({
+      message:
+        'スピードが速いほどスコアが高い傾向です。テンポを意識した投げ方が合っているかもしれません。',
+      severity: 'info',
+    });
+  } else if (overallStats.speedScoreCorrelation < -0.3) {
+    insights.push({
+      message: 'スピードを抑えた方がスコアが安定する傾向です。丁寧なリリースを意識してみましょう。',
+      severity: 'info',
+    });
+  }
+
+  return insights;
 }
