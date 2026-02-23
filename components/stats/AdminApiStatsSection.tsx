@@ -1,19 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, Typography, Button, Chip, CircularProgress, Alert, Divider } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import SkillRadarChart from './SkillRadarChart';
+import PlayerDnaCard from './PlayerDnaCard';
 import PerformanceInsightsCard from './PerformanceInsightsCard';
 import DetailedGameStatsCard from './DetailedGameStatsCard';
 import DartoutAnalysisCard from './DartoutAnalysisCard';
+import RatingSimulatorCard from './RatingSimulatorCard';
 import DailyHistoryChart from './DailyHistoryChart';
+import RollingTrendCard from './RollingTrendCard';
+import StreakPatternCard from './StreakPatternCard';
+import PeriodComparisonCard from './PeriodComparisonCard';
 import AwardTrendChart from './AwardTrendChart';
+import AwardPaceCard from './AwardPaceCard';
 import ScoreDistributionCard from './ScoreDistributionCard';
 import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import CountUpRoundAnalysisCard from './CountUpRoundAnalysisCard';
+import DartboardHeatmap from './DartboardHeatmap';
+import SensorTrendCard from './SensorTrendCard';
+import SpeedAccuracyCard from './SpeedAccuracyCard';
+import SessionFatigueCard from './SessionFatigueCard';
+import PracticeRecommendationsCard from './PracticeRecommendationsCard';
 import BestRecordsCard from './BestRecordsCard';
 import GameAveragesCard from './GameAveragesCard';
+import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
+import { analyzeSensor } from '@/lib/sensor-analysis';
+import { analyzeSession } from '@/lib/session-analysis';
+import { analyzeRounds } from '@/lib/countup-round-analysis';
+import type { RecommendationInput } from '@/lib/practice-recommendations';
 
 interface DailyRecord {
   date: string;
@@ -135,6 +152,94 @@ export default function AdminApiStatsSection({
   // 直近のレーティング（日別履歴の最新）
   const currentRating = dailyHistory.length > 0 ? dailyHistory[0]?.rating : null;
 
+  // COUNT-UP平均スコア
+  const countupAvg = useMemo(() => {
+    if (!countupPlays || countupPlays.length === 0) return null;
+    const scores = countupPlays.map((p) => p.score);
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
+  }, [countupPlays]);
+
+  // 練習レコメンデーション用の入力データ構築
+  const recInput = useMemo((): RecommendationInput | null => {
+    if (!enrichedData) return null;
+    const s01 = enrichedData.stats01Detailed;
+    const sCri = enrichedData.statsCricketDetailed;
+
+    // COUNT-UPの安定度
+    let countupConsistency: number | null = null;
+    if (countupPlays && countupPlays.length >= 3) {
+      const consistency = calculateConsistency(countupPlays.map((p) => p.score));
+      countupConsistency = consistency?.score ?? null;
+    }
+
+    // ミス方向
+    let primaryMissDirection: string | null = null;
+    let directionStrength: number | null = null;
+    if (countupPlays && countupPlays.length > 0) {
+      const missResult = analyzeMissDirection(countupPlays.map((p) => p.playLog));
+      if (missResult) {
+        primaryMissDirection = missResult.primaryDirection;
+        directionStrength = missResult.directionStrength;
+      }
+    }
+
+    // センサー
+    let avgRadius: number | null = null;
+    let radiusImprovement: number | null = null;
+    let avgSpeed: number | null = null;
+    if (countupPlays && countupPlays.length >= 10) {
+      const sensor = analyzeSensor(countupPlays);
+      if (sensor) {
+        avgRadius = sensor.overallStats.avgRadius;
+        radiusImprovement = sensor.overallStats.radiusImprovement;
+        avgSpeed = sensor.overallStats.avgSpeed;
+      }
+    }
+
+    // セッション
+    let optimalSessionLength: number | null = null;
+    let peakGameNumber: number | null = null;
+    if (countupPlays && countupPlays.length >= 10) {
+      const session = analyzeSession(countupPlays);
+      if (session) {
+        optimalSessionLength = session.optimalLength.optimalLength;
+        peakGameNumber = session.optimalLength.peakGameNumber;
+      }
+    }
+
+    // ラウンド
+    let roundPattern: string | null = null;
+    let worstRound: number | null = null;
+    if (countupPlays && countupPlays.length >= 5) {
+      const rounds = analyzeRounds(countupPlays.map((p) => p.playLog));
+      if (rounds) {
+        roundPattern = rounds.pattern.pattern;
+        worstRound = rounds.worstRound;
+      }
+    }
+
+    return {
+      ppd: s01?.avg ?? null,
+      bullRate: s01?.bullRate ?? null,
+      arrangeRate: s01?.arrangeRate ?? null,
+      avgBust: s01?.avgBust ?? null,
+      mpr: sCri?.avg ?? null,
+      tripleRate: sCri?.tripleRate ?? null,
+      openCloseRate: sCri?.openCloseRate ?? null,
+      countupAvg,
+      countupConsistency,
+      primaryMissDirection,
+      directionStrength,
+      avgRadius,
+      radiusImprovement,
+      avgSpeed,
+      optimalSessionLength,
+      peakGameNumber,
+      roundPattern,
+      worstRound,
+    };
+  }, [enrichedData, countupPlays, countupAvg]);
+
   return (
     <Box sx={{ mt: 3 }}>
       {/* ヘッダー */}
@@ -179,11 +284,24 @@ export default function AdminApiStatsSection({
         </Typography>
       )}
 
+      {/* AI分析 */}
+      {recInput && (
+        <>
+          <SectionLabel>AI分析</SectionLabel>
+          <PracticeRecommendationsCard input={recInput} />
+        </>
+      )}
+
       {/* スキル分析 */}
       <SectionLabel>スキル分析</SectionLabel>
       <SkillRadarChart
         stats01={enrichedData?.stats01Detailed ?? null}
         statsCricket={enrichedData?.statsCricketDetailed ?? null}
+      />
+      <PlayerDnaCard
+        stats01={enrichedData?.stats01Detailed ?? null}
+        statsCricket={enrichedData?.statsCricketDetailed ?? null}
+        countupAvg={countupAvg}
       />
       {enrichedData && (
         <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
@@ -195,14 +313,30 @@ export default function AdminApiStatsSection({
         stats01={enrichedData?.stats01Detailed ?? null}
         statsCricket={enrichedData?.statsCricketDetailed ?? null}
       />
-      {dartoutList && dartoutList.length > 0 && <DartoutAnalysisCard dartoutList={dartoutList} />}
+      {dartoutList && dartoutList.length > 0 && (
+        <DartoutAnalysisCard
+          dartoutList={dartoutList}
+          arrangeRate={enrichedData?.stats01Detailed?.arrangeRate}
+        />
+      )}
+      {enrichedData?.stats01Detailed?.avg != null &&
+        enrichedData?.statsCricketDetailed?.avg != null && (
+          <RatingSimulatorCard
+            currentPpd={enrichedData.stats01Detailed.avg}
+            currentMpr={enrichedData.statsCricketDetailed.avg}
+          />
+        )}
 
       {/* 推移・履歴 */}
       <SectionLabel>推移・履歴</SectionLabel>
       {dailyHistory.length > 0 && (
         <DailyHistoryChart records={dailyHistory} flightColor={flightColor} />
       )}
+      {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
+      {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
+      {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
       {awardList && awardList.length > 0 && <AwardTrendChart awardList={awardList} />}
+      {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
 
       {/* ゲーム分析 */}
       {(recentPlays?.length || countupPlays?.length) && (
@@ -218,6 +352,22 @@ export default function AdminApiStatsSection({
               bestRecords={enrichedData?.bestRecords}
             />
           )}
+          {countupPlays && countupPlays.length >= 5 && (
+            <CountUpRoundAnalysisCard countupPlays={countupPlays} />
+          )}
+          {countupPlays && countupPlays.length >= 24 && (
+            <DartboardHeatmap countupPlays={countupPlays} />
+          )}
+        </>
+      )}
+
+      {/* センサー分析 */}
+      {countupPlays && countupPlays.length >= 10 && (
+        <>
+          <SectionLabel>センサー分析</SectionLabel>
+          <SensorTrendCard countupPlays={countupPlays} />
+          <SpeedAccuracyCard countupPlays={countupPlays} />
+          <SessionFatigueCard countupPlays={countupPlays} />
         </>
       )}
 
