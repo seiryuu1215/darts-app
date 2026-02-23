@@ -349,6 +349,7 @@ export default function CountUpDeepAnalysisCard({
   bestRecords,
 }: CountUpDeepAnalysisCardProps) {
   const [period, setPeriod] = useState<PeriodKey>('last30');
+  const [excludeOuterSingle, setExcludeOuterSingle] = useState(false);
 
   const sortedPlays = useMemo(
     () => [...countupPlays].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()),
@@ -385,7 +386,10 @@ export default function CountUpDeepAnalysisCard({
 
   const stats = computeStats(scores);
   const consistency = calculateConsistency(scores);
-  const missDirection = analyzeMissDirection(playLogs);
+  const missDirection = analyzeMissDirection(
+    playLogs,
+    excludeOuterSingle ? { excludeOuterSingle: true } : undefined,
+  );
 
   const ppd = stats01Detailed?.avg ?? null;
   const expectedScore = ppd != null ? Math.round(ppd * 24) : null;
@@ -600,7 +604,23 @@ export default function CountUpDeepAnalysisCard({
       {/* ミス方向分析（円形ダーツボード） */}
       {missDirection && missDirection.missCount > 0 && (
         <>
-          <SectionTitle>ミス方向分析（ブル狙い）</SectionTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2.5, mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa' }}>
+              ミス方向分析（ブル狙い）{excludeOuterSingle ? '(アウター除外)' : ''}
+            </Typography>
+            <Chip
+              label="アウター除外"
+              size="small"
+              variant={excludeOuterSingle ? 'filled' : 'outlined'}
+              onClick={() => setExcludeOuterSingle((v) => !v)}
+              sx={{
+                fontSize: 10,
+                height: 22,
+                cursor: 'pointer',
+                bgcolor: excludeOuterSingle ? 'rgba(244,67,54,0.2)' : undefined,
+              }}
+            />
+          </Box>
           <MissDirectionBoard result={missDirection} />
 
           <Box sx={{ textAlign: 'center', mt: 0.5 }}>

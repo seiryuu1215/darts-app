@@ -174,9 +174,14 @@ export interface MissDirectionResult {
 
 /**
  * PLAY_LOGデータからミス方向を分析（対象: ブル狙い）
+ * @param excludeOuterSingle true の場合、アウターシングル(Sxx)を分析対象から除外
  */
-export function analyzeMissDirection(playLogs: string[]): MissDirectionResult | null {
+export function analyzeMissDirection(
+  playLogs: string[],
+  options?: { excludeOuterSingle?: boolean },
+): MissDirectionResult | null {
   if (playLogs.length === 0) return null;
+  const excludeOuter = options?.excludeOuterSingle ?? false;
 
   let totalDarts = 0;
   let bullCount = 0;
@@ -207,6 +212,10 @@ export function analyzeMissDirection(playLogs: string[]): MissDirectionResult | 
     for (const dartCode of darts) {
       const parsed = parseDartCode(dartCode);
       if (!parsed) continue;
+
+      // アウターシングル除外モード
+      if (excludeOuter && parsed.area === 'outerSingle') continue;
+
       totalDarts++;
 
       if (parsed.isBull) {

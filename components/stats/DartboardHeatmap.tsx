@@ -10,6 +10,35 @@ interface DartboardHeatmapProps {
   countupPlays: CountUpPlay[];
 }
 
+type PeriodKey = 'last30' | 'month' | 'week' | 'day';
+
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: 'last30', label: '直近30G' },
+  { key: 'month', label: '1ヶ月' },
+  { key: 'week', label: '1週間' },
+  { key: 'day', label: '1日' },
+];
+
+function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] {
+  if (period === 'last30') return plays.slice(-30);
+  const now = new Date();
+  let cutoff: Date;
+  switch (period) {
+    case 'day':
+      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return plays;
+  }
+  return plays.filter((p) => new Date(p.time) >= cutoff);
+}
+
 /** ダーツボードの数字配置（12時=20、時計回り） */
 const BOARD_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 
@@ -216,15 +245,65 @@ function DartboardSvg({ heatmap }: { heatmap: HeatmapData }) {
 
 export default function DartboardHeatmap({ countupPlays }: DartboardHeatmapProps) {
   const [mode, setMode] = useState<'all' | 'miss'>('all');
+  const [period, setPeriod] = useState<PeriodKey>('last30');
+
+  const filtered = useMemo(() => filterByPeriod(countupPlays, period), [countupPlays, period]);
 
   const playLogs = useMemo(
-    () => countupPlays.map((p) => p.playLog).filter((l) => l && l.length > 0),
-    [countupPlays],
+    () => filtered.map((p) => p.playLog).filter((l) => l && l.length > 0),
+    [filtered],
   );
 
   const heatmap = useMemo(() => computeSegmentFrequency(playLogs, mode), [playLogs, mode]);
 
-  if (heatmap.totalDarts < 24) return null;
+  const periodCounts = useMemo(() => {
+    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, day: 0 };
+    for (const p of PERIODS) {
+      result[p.key] = filterByPeriod(countupPlays, p.key).length;
+    }
+    return result;
+  }, [countupPlays]);
+
+  if (countupPlays.length < 24) return null;
+
+  if (filtered.length === 0) {
+    return (
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+          ダーツボードヒートマップ
+        </Typography>
+        <ToggleButtonGroup
+          value={period}
+          exclusive
+          onChange={(_, v) => v && setPeriod(v as PeriodKey)}
+          size="small"
+          sx={{ mb: 1, flexWrap: 'wrap' }}
+        >
+          {PERIODS.map((p) => (
+            <ToggleButton
+              key={p.key}
+              value={p.key}
+              sx={{
+                fontSize: 11,
+                px: 1.2,
+                py: 0.4,
+                textTransform: 'none',
+                '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
+              }}
+            >
+              {p.label}
+              <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
+                ({periodCounts[p.key]})
+              </Typography>
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+          この期間のデータがありません
+        </Typography>
+      </Paper>
+    );
+  }
 
   // TOP5セグメント
   const top5 = Array.from(heatmap.segments.entries())
@@ -246,11 +325,38 @@ export default function DartboardHeatmap({ countupPlays }: DartboardHeatmapProps
       </Box>
 
       <ToggleButtonGroup
+        value={period}
+        exclusive
+        onChange={(_, v) => v && setPeriod(v as PeriodKey)}
+        size="small"
+        sx={{ mb: 1, flexWrap: 'wrap' }}
+      >
+        {PERIODS.map((p) => (
+          <ToggleButton
+            key={p.key}
+            value={p.key}
+            sx={{
+              fontSize: 11,
+              px: 1.2,
+              py: 0.4,
+              textTransform: 'none',
+              '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
+            }}
+          >
+            {p.label}
+            <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
+              ({periodCounts[p.key]})
+            </Typography>
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+
+      <ToggleButtonGroup
         value={mode}
         exclusive
         onChange={(_, v) => v && setMode(v as 'all' | 'miss')}
         size="small"
-        sx={{ mb: 1 }}
+        sx={{ mb: 1, ml: 1 }}
       >
         <ToggleButton value="all" sx={{ fontSize: 11, px: 1.2, py: 0.4, textTransform: 'none' }}>
           全ダーツ

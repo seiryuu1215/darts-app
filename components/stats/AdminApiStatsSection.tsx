@@ -11,14 +11,16 @@ import {
   Divider,
   Collapse,
   IconButton,
+  Popover,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import TuneIcon from '@mui/icons-material/Tune';
 import SkillRadarChart from './SkillRadarChart';
 import PlayerDnaCard from './PlayerDnaCard';
 import PerformanceInsightsCard from './PerformanceInsightsCard';
 import DetailedGameStatsCard from './DetailedGameStatsCard';
-import DartoutAnalysisCard from './DartoutAnalysisCard';
+
 import RatingSimulatorCard from './RatingSimulatorCard';
 import RollingTrendCard from './RollingTrendCard';
 import StreakPatternCard from './StreakPatternCard';
@@ -105,6 +107,7 @@ interface AdminApiStatsSectionProps {
 }
 
 const STORAGE_KEY = 'stats_collapsed_sections';
+const HIDDEN_CARDS_KEY = 'stats_hidden_cards';
 
 function loadCollapsed(): Record<string, boolean> {
   try {
@@ -123,55 +126,140 @@ function saveCollapsed(state: Record<string, boolean>) {
   }
 }
 
+function loadHiddenCards(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(HIDDEN_CARDS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveHiddenCards(state: Record<string, boolean>) {
+  try {
+    localStorage.setItem(HIDDEN_CARDS_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
+
+interface CardDef {
+  id: string;
+  label: string;
+}
+
 function CollapsibleSection({
   id,
   label,
   collapsed,
   onToggle,
+  cards,
+  hiddenCards,
+  onToggleCard,
   children,
 }: {
   id: string;
   label: string;
   collapsed: boolean;
   onToggle: (id: string) => void;
+  cards?: CardDef[];
+  hiddenCards?: Record<string, boolean>;
+  onToggleCard?: (cardId: string) => void;
   children: React.ReactNode;
 }) {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
   return (
     <>
       <Box
-        onClick={() => onToggle(id)}
         sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           mt: 3,
           mb: collapsed ? 0 : 1.5,
-          cursor: 'pointer',
           userSelect: 'none',
-          '&:hover .section-label': { color: 'text.primary' },
         }}
       >
         <Divider sx={{ flex: 1 }} />
-        <Typography
-          className="section-label"
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontWeight: 'bold', letterSpacing: 1, transition: 'color 0.2s' }}
-        >
-          {label}
-        </Typography>
-        <IconButton
-          size="small"
+        {cards && cards.length > 0 && onToggleCard && (
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              setAnchorEl(e.currentTarget);
+            }}
+            sx={{ p: 0 }}
+          >
+            <TuneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          </IconButton>
+        )}
+        <Box
+          onClick={() => onToggle(id)}
           sx={{
-            p: 0,
-            transition: 'transform 0.2s',
-            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            cursor: 'pointer',
+            '&:hover .section-label': { color: 'text.primary' },
           }}
         >
-          <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-        </IconButton>
+          <Typography
+            className="section-label"
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontWeight: 'bold', letterSpacing: 1, transition: 'color 0.2s' }}
+          >
+            {label}
+          </Typography>
+          <IconButton
+            size="small"
+            sx={{
+              p: 0,
+              transition: 'transform 0.2s',
+              transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            }}
+          >
+            <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+          </IconButton>
+        </Box>
         <Divider sx={{ flex: 1 }} />
       </Box>
+      {cards && hiddenCards && onToggleCard && (
+        <Popover
+          open={Boolean(anchorEl)}
+          anchorEl={anchorEl}
+          onClose={() => setAnchorEl(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+          slotProps={{
+            paper: {
+              sx: { p: 1.5, bgcolor: '#1e1e1e', border: '1px solid #444', maxWidth: 320 },
+            },
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            表示するカードを選択
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {cards.map((c) => (
+              <Chip
+                key={c.id}
+                label={c.label}
+                size="small"
+                variant={hiddenCards[c.id] ? 'outlined' : 'filled'}
+                onClick={() => onToggleCard(c.id)}
+                sx={{
+                  fontSize: 11,
+                  height: 26,
+                  opacity: hiddenCards[c.id] ? 0.5 : 1,
+                  cursor: 'pointer',
+                }}
+              />
+            ))}
+          </Box>
+        </Popover>
+      )}
       <Collapse in={!collapsed}>{children}</Collapse>
     </>
   );
@@ -190,15 +278,25 @@ export default function AdminApiStatsSection({
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setCollapsed(loadCollapsed());
+    setHiddenCards(loadHiddenCards());
   }, []);
 
   const toggleSection = useCallback((id: string) => {
     setCollapsed((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       saveCollapsed(next);
+      return next;
+    });
+  }, []);
+
+  const toggleCard = useCallback((cardId: string) => {
+    setHiddenCards((prev) => {
+      const next = { ...prev, [cardId]: !prev[cardId] };
+      saveHiddenCards(next);
       return next;
     });
   }, []);
@@ -228,10 +326,11 @@ export default function AdminApiStatsSection({
   // 直近のレーティング（日別履歴の最新）
   const currentRating = dailyHistory.length > 0 ? dailyHistory[0]?.rating : null;
 
-  // COUNT-UP平均スコア
+  // COUNT-UP平均スコア（直近30G）
   const countupAvg = useMemo(() => {
     if (!countupPlays || countupPlays.length === 0) return null;
-    const scores = countupPlays.map((p) => p.score);
+    const recent = countupPlays.slice(-30);
+    const scores = recent.map((p) => p.score);
     return scores.reduce((a, b) => a + b, 0) / scores.length;
   }, [countupPlays]);
 
@@ -367,8 +466,13 @@ export default function AdminApiStatsSection({
           label="AI分析"
           collapsed={!!collapsed.ai}
           onToggle={toggleSection}
+          cards={[{ id: 'practice_recommendations', label: 'レコメンド' }]}
+          hiddenCards={hiddenCards}
+          onToggleCard={toggleCard}
         >
-          <PracticeRecommendationsCard input={recInput} />
+          {!hiddenCards.practice_recommendations && (
+            <PracticeRecommendationsCard input={recInput} />
+          )}
         </CollapsibleSection>
       )}
 
@@ -378,17 +482,28 @@ export default function AdminApiStatsSection({
         label="スキル分析"
         collapsed={!!collapsed.skill}
         onToggle={toggleSection}
+        cards={[
+          { id: 'skill_radar', label: 'スキルレーダー' },
+          { id: 'player_dna', label: 'プレイヤーDNA' },
+          { id: 'performance_insights', label: 'インサイト' },
+        ]}
+        hiddenCards={hiddenCards}
+        onToggleCard={toggleCard}
       >
-        <SkillRadarChart
-          stats01={enrichedData?.stats01Detailed ?? null}
-          statsCricket={enrichedData?.statsCricketDetailed ?? null}
-        />
-        <PlayerDnaCard
-          stats01={enrichedData?.stats01Detailed ?? null}
-          statsCricket={enrichedData?.statsCricketDetailed ?? null}
-          countupAvg={countupAvg}
-        />
-        {enrichedData && (
+        {!hiddenCards.skill_radar && (
+          <SkillRadarChart
+            stats01={enrichedData?.stats01Detailed ?? null}
+            statsCricket={enrichedData?.statsCricketDetailed ?? null}
+          />
+        )}
+        {!hiddenCards.player_dna && (
+          <PlayerDnaCard
+            stats01={enrichedData?.stats01Detailed ?? null}
+            statsCricket={enrichedData?.statsCricketDetailed ?? null}
+            countupAvg={countupAvg}
+          />
+        )}
+        {!hiddenCards.performance_insights && enrichedData && (
           <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
         )}
       </CollapsibleSection>
@@ -399,13 +514,25 @@ export default function AdminApiStatsSection({
         label="ゲーム詳細"
         collapsed={!!collapsed.game_detail}
         onToggle={toggleSection}
+        cards={[
+          { id: 'detailed_game', label: 'ゲーム詳細' },
+          { id: 'rating_benchmark', label: 'ベンチマーク' },
+          { id: 'rating_simulator', label: 'レート予測' },
+        ]}
+        hiddenCards={hiddenCards}
+        onToggleCard={toggleCard}
       >
-        <DetailedGameStatsCard
-          stats01={enrichedData?.stats01Detailed ?? null}
-          statsCricket={enrichedData?.statsCricketDetailed ?? null}
-        />
-        <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
-        {enrichedData?.stats01Detailed?.avg != null &&
+        {!hiddenCards.detailed_game && (
+          <DetailedGameStatsCard
+            stats01={enrichedData?.stats01Detailed ?? null}
+            statsCricket={enrichedData?.statsCricketDetailed ?? null}
+          />
+        )}
+        {!hiddenCards.rating_benchmark && (
+          <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
+        )}
+        {!hiddenCards.rating_simulator &&
+          enrichedData?.stats01Detailed?.avg != null &&
           enrichedData?.statsCricketDetailed?.avg != null && (
             <RatingSimulatorCard
               currentPpd={enrichedData.stats01Detailed.avg}
@@ -420,38 +547,59 @@ export default function AdminApiStatsSection({
         label="推移・履歴"
         collapsed={!!collapsed.trend}
         onToggle={toggleSection}
+        cards={[
+          { id: 'rolling_trend', label: '移動平均' },
+          { id: 'period_comparison', label: '期間比較' },
+          { id: 'streak_pattern', label: '連勝パターン' },
+          { id: 'award_pace', label: 'アワードペース' },
+        ]}
+        hiddenCards={hiddenCards}
+        onToggleCard={toggleCard}
       >
-        {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
-        {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
-        {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
-        {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
+        {!hiddenCards.rolling_trend && dailyHistory.length >= 7 && (
+          <RollingTrendCard dailyHistory={dailyHistory} />
+        )}
+        {!hiddenCards.period_comparison && dailyHistory.length >= 4 && (
+          <PeriodComparisonCard dailyHistory={dailyHistory} />
+        )}
+        {!hiddenCards.streak_pattern && dailyHistory.length >= 5 && (
+          <StreakPatternCard dailyHistory={dailyHistory} />
+        )}
+        {!hiddenCards.award_pace && awardList && awardList.length >= 2 && (
+          <AwardPaceCard awardList={awardList} />
+        )}
       </CollapsibleSection>
 
       {/* ゲーム分析 */}
-      {(recentPlays?.length || countupPlays?.length || (dartoutList && dartoutList.length > 0)) && (
+      {(recentPlays?.length || countupPlays?.length) && (
         <CollapsibleSection
           id="game_analysis"
           label="ゲーム分析"
           collapsed={!!collapsed.game_analysis}
           onToggle={toggleSection}
+          cards={[
+            { id: 'countup_deep', label: 'COUNT-UP深掘り' },
+            { id: 'countup_round', label: 'ラウンド分析' },
+            { id: 'dartboard_heatmap', label: 'ヒートマップ' },
+            { id: 'session_fatigue', label: 'セッション疲労' },
+          ]}
+          hiddenCards={hiddenCards}
+          onToggleCard={toggleCard}
         >
-          {dartoutList && dartoutList.length > 0 && (
-            <DartoutAnalysisCard dartoutList={dartoutList} />
-          )}
-          {countupPlays && countupPlays.length > 0 && (
+          {!hiddenCards.countup_deep && countupPlays && countupPlays.length > 0 && (
             <CountUpDeepAnalysisCard
               countupPlays={countupPlays}
               stats01Detailed={enrichedData?.stats01Detailed}
               bestRecords={enrichedData?.bestRecords}
             />
           )}
-          {countupPlays && countupPlays.length >= 5 && (
+          {!hiddenCards.countup_round && countupPlays && countupPlays.length >= 5 && (
             <CountUpRoundAnalysisCard countupPlays={countupPlays} />
           )}
-          {countupPlays && countupPlays.length >= 24 && (
+          {!hiddenCards.dartboard_heatmap && countupPlays && countupPlays.length >= 24 && (
             <DartboardHeatmap countupPlays={countupPlays} />
           )}
-          {countupPlays && countupPlays.length >= 10 && (
+          {!hiddenCards.session_fatigue && countupPlays && countupPlays.length >= 10 && (
             <SessionFatigueCard countupPlays={countupPlays} />
           )}
         </CollapsibleSection>
@@ -464,9 +612,15 @@ export default function AdminApiStatsSection({
           label="センサー分析"
           collapsed={!!collapsed.sensor}
           onToggle={toggleSection}
+          cards={[
+            { id: 'sensor_trend', label: 'センサー推移' },
+            { id: 'speed_accuracy', label: 'スピード精度' },
+          ]}
+          hiddenCards={hiddenCards}
+          onToggleCard={toggleCard}
         >
-          <SensorTrendCard countupPlays={countupPlays} />
-          <SpeedAccuracyCard countupPlays={countupPlays} />
+          {!hiddenCards.sensor_trend && <SensorTrendCard countupPlays={countupPlays} />}
+          {!hiddenCards.speed_accuracy && <SpeedAccuracyCard countupPlays={countupPlays} />}
         </CollapsibleSection>
       )}
 
@@ -477,8 +631,11 @@ export default function AdminApiStatsSection({
           label="記録"
           collapsed={!!collapsed.records}
           onToggle={toggleSection}
+          cards={[{ id: 'game_averages', label: 'ゲーム平均' }]}
+          hiddenCards={hiddenCards}
+          onToggleCard={toggleCard}
         >
-          <GameAveragesCard averages={enrichedData.gameAverages} />
+          {!hiddenCards.game_averages && <GameAveragesCard averages={enrichedData.gameAverages} />}
         </CollapsibleSection>
       )}
     </Box>

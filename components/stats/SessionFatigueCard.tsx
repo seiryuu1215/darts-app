@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Paper, Typography, Box, Chip } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Paper, Typography, Box, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import {
   ResponsiveContainer,
   LineChart,
@@ -23,6 +23,35 @@ interface SessionFatigueCardProps {
   countupPlays: CountUpPlay[];
 }
 
+type PeriodKey = 'last30' | 'month' | 'week' | 'day';
+
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: 'last30', label: '直近30G' },
+  { key: 'month', label: '1ヶ月' },
+  { key: 'week', label: '1週間' },
+  { key: 'day', label: '1日' },
+];
+
+function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] {
+  if (period === 'last30') return plays.slice(-30);
+  const now = new Date();
+  let cutoff: Date;
+  switch (period) {
+    case 'day':
+      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return plays;
+  }
+  return plays.filter((p) => new Date(p.time) >= cutoff);
+}
+
 const TOOLTIP_STYLE = {
   backgroundColor: '#1e1e1e',
   border: '1px solid #444',
@@ -39,9 +68,59 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardProps) {
-  const analysis = useMemo(() => analyzeSession(countupPlays), [countupPlays]);
+  const [period, setPeriod] = useState<PeriodKey>('last30');
 
-  if (!analysis || analysis.sessionCurve.length < 3) return null;
+  const filtered = useMemo(() => filterByPeriod(countupPlays, period), [countupPlays, period]);
+  const analysis = useMemo(() => analyzeSession(filtered), [filtered]);
+
+  const periodCounts = useMemo(() => {
+    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, day: 0 };
+    for (const p of PERIODS) {
+      result[p.key] = filterByPeriod(countupPlays, p.key).length;
+    }
+    return result;
+  }, [countupPlays]);
+
+  if (countupPlays.length < 10) return null;
+
+  if (!analysis || analysis.sessionCurve.length < 3) {
+    return (
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+          セッション疲労分析
+        </Typography>
+        <ToggleButtonGroup
+          value={period}
+          exclusive
+          onChange={(_, v) => v && setPeriod(v as PeriodKey)}
+          size="small"
+          sx={{ mb: 1, flexWrap: 'wrap' }}
+        >
+          {PERIODS.map((p) => (
+            <ToggleButton
+              key={p.key}
+              value={p.key}
+              sx={{
+                fontSize: 11,
+                px: 1.2,
+                py: 0.4,
+                textTransform: 'none',
+                '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
+              }}
+            >
+              {p.label}
+              <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
+                ({periodCounts[p.key]})
+              </Typography>
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+          この期間のデータが不足しています
+        </Typography>
+      </Paper>
+    );
+  }
 
   const { sessionCurve, optimalLength, timeOfDay, avgSessionLength, totalSessions } = analysis;
 
@@ -68,6 +147,33 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: '#fff' }}
         />
       </Box>
+
+      <ToggleButtonGroup
+        value={period}
+        exclusive
+        onChange={(_, v) => v && setPeriod(v as PeriodKey)}
+        size="small"
+        sx={{ mb: 1, flexWrap: 'wrap' }}
+      >
+        {PERIODS.map((p) => (
+          <ToggleButton
+            key={p.key}
+            value={p.key}
+            sx={{
+              fontSize: 11,
+              px: 1.2,
+              py: 0.4,
+              textTransform: 'none',
+              '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
+            }}
+          >
+            {p.label}
+            <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
+              ({periodCounts[p.key]})
+            </Typography>
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* サマリー */}
       <Box
