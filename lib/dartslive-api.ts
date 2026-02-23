@@ -271,7 +271,7 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
     maxRating: parseNum(rawUser.MAX_RATING),
     maxRatingDate: parseStr(rawUser.MAX_RATING_DATE),
     stats01Avg: parseNum(rawUser.STATS_01 ?? rawUser.BASE_STATS_01),
-    stats01Best: parseNum(rawUser.HISCORE_COUNT_UP),
+    stats01Best: parseNum(rawUser.BEST_01 ?? rawUser.HISCORE_01 ?? rawUser.BEST_ZERO_ONE),
     stats01WinRate: parseNum(zeroOne.WIN_RATE_01),
     stats01BullRate: parseNum(zeroOne.BULL_RATE_01),
     stats01ArrangeRate: parseNum(zeroOne.ARRANGE_SKILL),
@@ -376,14 +376,16 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
 
 /**
  * 日別スタッツ履歴取得 (WAPI-0006)、ldt ページネーション
+ * @param startLdt 取得開始日時（差分同期用）。省略時は全件取得
  */
 export async function dlApiFetchDailyHistory(
   authKey: string,
   toId: string,
   maxPages: number = 10,
+  startLdt?: string,
 ): Promise<DlApiDailyStats[]> {
   const all: DlApiDailyStats[] = [];
-  let ldt = '2020-01-01_00:00:00';
+  let ldt = startLdt ?? '2020-01-01_00:00:00';
 
   for (let page = 0; page < maxPages; page++) {
     const res = await dlApiPost('WAPI-0006', {
@@ -443,14 +445,16 @@ export async function dlApiFetchMonthlyHistory(
 
 /**
  * プレイ履歴取得 (WAPI-0005)、ldt ページネーション（全件取得）
+ * @param startLdt 取得開始日時（差分同期用）。省略時は全件取得
  */
 export async function dlApiFetchPlayHistory(
   authKey: string,
   toId: string,
   maxPages: number = 15,
+  startLdt?: string,
 ): Promise<DlApiPlayEntry[]> {
   const all: DlApiPlayEntry[] = [];
-  let ldt = '2020-01-01_00:00:00';
+  let ldt = startLdt ?? '2020-01-01_00:00:00';
 
   for (let page = 0; page < maxPages; page++) {
     const res = await dlApiPost('WAPI-0005', {
@@ -525,6 +529,56 @@ export async function dlApiFullSync(email: string, password: string): Promise<Dl
   ]);
 
   // COUNT-UP プレイデータを抽出（PLAY_LOG付き）
+  const countupPlays: CountUpPlayData[] = recentPlays
+    .filter((p) => p.gameId === GAME_ID_COUNTUP && p.playLog)
+    .map((p) => ({
+      time: p.date,
+      score: p.score ?? 0,
+      playLog: p.playLog!,
+      dl3VectorX: p.dl3Info?.vectorX ?? 0,
+      dl3VectorY: p.dl3Info?.vectorY ?? 0,
+      dl3Radius: p.dl3Info?.radius ?? 0,
+      dl3Speed: p.dl3Info?.speed ?? 0,
+    }));
+
+  return { bundle, dailyHistory, monthlyHistory, recentPlays, countupPlays };
+}
+
+/**
+ * 差分同期: login → bundle(フル) + dailyHistory(差分) + playHistory(差分)
+ * フルsyncと同じ結果型を返すが、dailyHistory/recentPlaysは差分のみ
+ */
+export async function dlApiDiffSync(
+  email: string,
+  password: string,
+  lastSyncAt: string,
+): Promise<DlApiFullSyncResult> {
+  const { authKey, cards } = await dlApiLogin(email, password);
+
+  const mainCard = cards.find((c) => c.kind === 1) ?? cards[0];
+  if (!mainCard) {
+    throw new Error('NO_CARDS: カードが見つかりません');
+  }
+  const toId = mainCard.toId;
+
+  // lastSyncAt を ldt 形式に変換 (ISO → "YYYY-MM-DD_HH:mm:ss")
+  const syncLdt = lastSyncAt
+    .replace('T', '_')
+    .replace(/\.\d+Z?$/, '')
+    .slice(0, 19);
+
+  const wrap = <T>(label: string, fn: Promise<T>): Promise<T> =>
+    fn.catch((err) => {
+      throw new Error(`${label}: ${err instanceof Error ? err.message : String(err)}`);
+    });
+
+  const [bundle, dailyHistory, monthlyHistory, recentPlays] = await Promise.all([
+    wrap('bundle', dlApiFetchBundle(authKey, toId)),
+    wrap('dailyHistory', dlApiFetchDailyHistory(authKey, toId, 2, syncLdt)),
+    wrap('monthlyHistory', dlApiFetchMonthlyHistory(authKey, toId)),
+    wrap('playHistory', dlApiFetchPlayHistory(authKey, toId, 3, syncLdt)),
+  ]);
+
   const countupPlays: CountUpPlayData[] = recentPlays
     .filter((p) => p.gameId === GAME_ID_COUNTUP && p.playLog)
     .map((p) => ({

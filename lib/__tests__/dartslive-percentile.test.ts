@@ -32,8 +32,9 @@ describe('getPercentile', () => {
     });
     it('interpolates between thresholds', () => {
       const p = getPercentile('ppd', 50);
-      expect(p).toBeGreaterThan(20);
-      expect(p).toBeLessThan(50);
+      // PPD 50 = Rt.4境界 = 上位66.93%（公式データ準拠）
+      expect(p).toBeGreaterThan(50);
+      expect(p).toBeLessThan(90);
     });
   });
 

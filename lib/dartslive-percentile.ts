@@ -1,7 +1,8 @@
 /**
  * DARTSLIVE パーセンタイル分布ユーティリティ
- * DARTSLIVE公式分布(2024)を参考にした推定値
- * https://www.dartslive.com/jp/news/119869/
+ * DARTSLIVE公式分布(2024)を参考
+ * https://www.dartslive.com/jp/news/119869/ (Rating分布)
+ * https://www.dartslive.com/jp/news/118581/ (PPD↔Rating境界、ブル率)
  */
 
 // Rating 分布 (DARTSLIVE公式: 2024年版)
@@ -26,25 +27,28 @@ export const RATING_DISTRIBUTION = [
   { rating: 18, flight: 'SA', percentage: 0.05 },
 ];
 
-// PPD 分布 (DARTSLIVE Rating 計算式から逆算)
+// PPD 分布 (公式PPD↔Rating境界 × Rating分布から算出)
+// https://www.dartslive.com/jp/news/118581/
 const PPD_THRESHOLDS = [
-  { value: 15, percentile: 95 },
-  { value: 20, percentile: 87 },
-  { value: 25, percentile: 80 },
-  { value: 30, percentile: 70 },
-  { value: 35, percentile: 60 },
-  { value: 40, percentile: 51 }, // Rt.2 相当
-  { value: 45, percentile: 40 }, // Rt.3 相当
-  { value: 50, percentile: 33 }, // Rt.4 相当
-  { value: 55, percentile: 26 }, // Rt.5 相当
-  { value: 60, percentile: 20 }, // Rt.6 相当
-  { value: 65, percentile: 15 }, // Rt.7 相当
-  { value: 70, percentile: 11 }, // Rt.8 相当
-  { value: 75, percentile: 8 },
-  { value: 80, percentile: 5 }, // Rt.10 相当
-  { value: 90, percentile: 3 },
-  { value: 100, percentile: 1.5 },
-  { value: 110, percentile: 0.5 },
+  { value: 20, percentile: 99.5 },
+  { value: 30, percentile: 99.2 },
+  { value: 40, percentile: 98.99 }, // Rt.2
+  { value: 45, percentile: 86.92 }, // Rt.3
+  { value: 50, percentile: 66.93 }, // Rt.4
+  { value: 55, percentile: 50.9 }, // Rt.5
+  { value: 60, percentile: 37.24 }, // Rt.6
+  { value: 65, percentile: 26.78 }, // Rt.7
+  { value: 70, percentile: 18.85 }, // Rt.8
+  { value: 75, percentile: 12.96 }, // Rt.9
+  { value: 80, percentile: 8.6 }, // Rt.10
+  { value: 85, percentile: 5.42 }, // Rt.11
+  { value: 90, percentile: 3.31 }, // Rt.12
+  { value: 95, percentile: 1.89 }, // Rt.13
+  { value: 102, percentile: 1.04 }, // Rt.14
+  { value: 109, percentile: 0.53 }, // Rt.15
+  { value: 116, percentile: 0.26 }, // Rt.16
+  { value: 123, percentile: 0.12 }, // Rt.17
+  { value: 130, percentile: 0.05 }, // Rt.18
 ];
 
 // MPR 分布 (同様に逆算)

@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-stats",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/dartslive-api-sync",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

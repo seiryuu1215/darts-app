@@ -27,18 +27,61 @@ function normalize(value: number | null | undefined, min: number, max: number): 
   return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
 }
 
+function formatRaw(value: number | null | undefined, unit: string): string {
+  if (value == null) return '--';
+  return `${value}${unit}`;
+}
+
+interface RadarDataItem {
+  axis: string;
+  value: number;
+  rawLabel: string;
+}
+
 export default function SkillRadarChart({ stats01, statsCricket }: SkillRadarChartProps) {
   if (!stats01 && !statsCricket) return null;
 
-  const data = [
-    { axis: '01 Avg', value: normalize(stats01?.avg, 20, 80) },
-    { axis: '01 勝率', value: stats01?.winRate ?? 0 },
-    { axis: 'Bull率', value: stats01?.bullRate ?? 0 },
-    { axis: 'アレンジ率', value: stats01?.arrangeRate ?? 0 },
-    { axis: 'Cri Avg', value: normalize(statsCricket?.avg, 0.5, 4.0) },
-    { axis: 'Cri 勝率', value: statsCricket?.winRate ?? 0 },
-    { axis: 'トリプル率', value: statsCricket?.tripleRate ?? 0 },
-    { axis: 'Open-Close', value: statsCricket?.openCloseRate ?? 0 },
+  const data: RadarDataItem[] = [
+    {
+      axis: '01 Avg',
+      value: normalize(stats01?.avg, 20, 80),
+      rawLabel: `(${formatRaw(stats01?.avg, '')}/80)`,
+    },
+    {
+      axis: '01 勝率',
+      value: stats01?.winRate ?? 0,
+      rawLabel: `(${formatRaw(stats01?.winRate, '%')})`,
+    },
+    {
+      axis: 'Bull率',
+      value: stats01?.bullRate ?? 0,
+      rawLabel: `(${formatRaw(stats01?.bullRate, '%')})`,
+    },
+    {
+      axis: 'アレンジ率',
+      value: stats01?.arrangeRate ?? 0,
+      rawLabel: `(${formatRaw(stats01?.arrangeRate, '%')})`,
+    },
+    {
+      axis: 'Cri Avg',
+      value: normalize(statsCricket?.avg, 0.5, 4.0),
+      rawLabel: `(${formatRaw(statsCricket?.avg, '')}/4.0)`,
+    },
+    {
+      axis: 'Cri 勝率',
+      value: statsCricket?.winRate ?? 0,
+      rawLabel: `(${formatRaw(statsCricket?.winRate, '%')})`,
+    },
+    {
+      axis: 'トリプル率',
+      value: statsCricket?.tripleRate ?? 0,
+      rawLabel: `(${formatRaw(statsCricket?.tripleRate, '%')})`,
+    },
+    {
+      axis: 'Open-Close',
+      value: statsCricket?.openCloseRate ?? 0,
+      rawLabel: `(${formatRaw(statsCricket?.openCloseRate, '%')})`,
+    },
   ];
 
   return (
@@ -46,10 +89,39 @@ export default function SkillRadarChart({ stats01, statsCricket }: SkillRadarCha
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
         スキルレーダー
       </Typography>
-      <ResponsiveContainer width="100%" height={300}>
-        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
+      <ResponsiveContainer width="100%" height={320}>
+        <RadarChart data={data} cx="50%" cy="50%" outerRadius="65%">
           <PolarGrid stroke="#555" />
-          <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: '#aaa' }} />
+          <PolarAngleAxis
+            dataKey="axis"
+            tick={({ x, y, payload, index }: Record<string, unknown>) => {
+              const item = data[index as number];
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    textAnchor="middle"
+                    fill="#aaa"
+                    fontSize={11}
+                    dominantBaseline="central"
+                    dy={-6}
+                  >
+                    {payload && typeof payload === 'object' && 'value' in payload
+                      ? (payload as { value: string }).value
+                      : ''}
+                  </text>
+                  <text
+                    textAnchor="middle"
+                    fill="#888"
+                    fontSize={9}
+                    dominantBaseline="central"
+                    dy={8}
+                  >
+                    {item?.rawLabel ?? ''}
+                  </text>
+                </g>
+              );
+            }}
+          />
           <Radar
             dataKey="value"
             stroke="#FF9800"

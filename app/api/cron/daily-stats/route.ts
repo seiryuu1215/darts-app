@@ -34,7 +34,7 @@ import {
   withRetry,
   type ScrapedStats,
 } from '@/lib/dartslive-scraper';
-import { dlApiFullSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
+import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
 import { sendPushToUser } from '@/lib/push-notifications';
 
 export const maxDuration = 300;
@@ -85,9 +85,20 @@ export async function GET(request: NextRequest) {
           let apiSyncResult: Awaited<ReturnType<typeof dlApiFullSync>> | null = null;
 
           if (userData.role === 'admin') {
-            // 管理者: DARTSLIVE API を優先使用
+            // 管理者: DARTSLIVE API を優先使用（既存キャッシュあれば差分同期）
             try {
-              apiSyncResult = await dlApiFullSync(dlEmail, dlPassword);
+              const apiCacheDoc = await adminDb
+                .doc(`users/${userId}/dartsliveApiCache/latest`)
+                .get();
+              const existingLastSync = apiCacheDoc.exists
+                ? (apiCacheDoc.data()?.lastSyncAt?.toDate?.()?.toISOString() ?? null)
+                : null;
+
+              if (existingLastSync) {
+                apiSyncResult = await dlApiDiffSync(dlEmail, dlPassword, existingLastSync);
+              } else {
+                apiSyncResult = await dlApiFullSync(dlEmail, dlPassword);
+              }
               stats = mapApiToScrapedStats(apiSyncResult);
               gamesPlayed =
                 apiSyncResult.recentPlays.length > 0 ? apiSyncResult.recentPlays.length : 0;

@@ -417,7 +417,6 @@ export default function StatsPage() {
           <AdminApiStatsSection
             dailyHistory={apiDailyHistory}
             enrichedData={apiEnrichedData}
-            flightColor={flightColor}
             onSyncComplete={fetchAdminApiData}
             dartoutList={apiDartoutList}
             awardList={apiAwardList}

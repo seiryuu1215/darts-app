@@ -3,6 +3,8 @@
  * フィニッシュスコア帯分布、ダブル使用傾向、クラッチ率分析
  */
 
+import { getDartoutLabel } from '@/lib/dartout-labels';
+
 interface DartoutItem {
   score: number;
   count: number;
@@ -73,14 +75,7 @@ export function analyzeDoublePreference(dartoutList: DartoutItem[]): DoublePrefe
   return dartoutList
     .map((d) => {
       const isDouble = (d.score >= 2 && d.score <= 40 && d.score % 2 === 0) || d.score === 50;
-      let label: string;
-      if (d.score === 50) {
-        label = 'BULL';
-      } else if (isDouble) {
-        label = `D${d.score / 2}`;
-      } else {
-        label = `${d.score}`;
-      }
+      const label = getDartoutLabel(d.score) || `${d.score}`;
       return {
         label,
         score: d.score,

@@ -9,13 +9,10 @@ import PerformanceInsightsCard from './PerformanceInsightsCard';
 import DetailedGameStatsCard from './DetailedGameStatsCard';
 import DartoutAnalysisCard from './DartoutAnalysisCard';
 import RatingSimulatorCard from './RatingSimulatorCard';
-import DailyHistoryChart from './DailyHistoryChart';
 import RollingTrendCard from './RollingTrendCard';
 import StreakPatternCard from './StreakPatternCard';
 import PeriodComparisonCard from './PeriodComparisonCard';
-import AwardTrendChart from './AwardTrendChart';
 import AwardPaceCard from './AwardPaceCard';
-import ScoreDistributionCard from './ScoreDistributionCard';
 import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 import CountUpRoundAnalysisCard from './CountUpRoundAnalysisCard';
@@ -24,8 +21,8 @@ import SensorTrendCard from './SensorTrendCard';
 import SpeedAccuracyCard from './SpeedAccuracyCard';
 import SessionFatigueCard from './SessionFatigueCard';
 import PracticeRecommendationsCard from './PracticeRecommendationsCard';
-import BestRecordsCard from './BestRecordsCard';
 import GameAveragesCard from './GameAveragesCard';
+import RatingBenchmarkCard from './RatingBenchmarkCard';
 import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
 import { analyzeSensor } from '@/lib/sensor-analysis';
 import { analyzeSession } from '@/lib/session-analysis';
@@ -89,7 +86,6 @@ interface RecentPlay {
 interface AdminApiStatsSectionProps {
   dailyHistory: DailyRecord[];
   enrichedData: EnrichedData | null;
-  flightColor?: string;
   onSyncComplete: () => void;
   dartoutList?: DartoutItem[] | null;
   awardList?: AwardEntry[] | null;
@@ -116,7 +112,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export default function AdminApiStatsSection({
   dailyHistory,
   enrichedData,
-  flightColor,
   onSyncComplete,
   dartoutList,
   awardList,
@@ -313,6 +308,7 @@ export default function AdminApiStatsSection({
         stats01={enrichedData?.stats01Detailed ?? null}
         statsCricket={enrichedData?.statsCricketDetailed ?? null}
       />
+      <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
       {dartoutList && dartoutList.length > 0 && (
         <DartoutAnalysisCard
           dartoutList={dartoutList}
@@ -329,22 +325,15 @@ export default function AdminApiStatsSection({
 
       {/* 推移・履歴 */}
       <SectionLabel>推移・履歴</SectionLabel>
-      {dailyHistory.length > 0 && (
-        <DailyHistoryChart records={dailyHistory} flightColor={flightColor} />
-      )}
       {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
       {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
       {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
-      {awardList && awardList.length > 0 && <AwardTrendChart awardList={awardList} />}
       {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
 
       {/* ゲーム分析 */}
       {(recentPlays?.length || countupPlays?.length) && (
         <>
           <SectionLabel>ゲーム分析</SectionLabel>
-          {recentPlays && recentPlays.length > 0 && (
-            <ScoreDistributionCard recentPlays={recentPlays} />
-          )}
           {countupPlays && countupPlays.length > 0 && (
             <CountUpDeepAnalysisCard
               countupPlays={countupPlays}
@@ -372,11 +361,12 @@ export default function AdminApiStatsSection({
       )}
 
       {/* 記録 */}
-      {(enrichedData?.bestRecords || enrichedData?.gameAverages) && (
-        <SectionLabel>記録</SectionLabel>
+      {enrichedData?.gameAverages && (
+        <>
+          <SectionLabel>記録</SectionLabel>
+          <GameAveragesCard averages={enrichedData.gameAverages} />
+        </>
       )}
-      {enrichedData?.bestRecords && <BestRecordsCard records={enrichedData.bestRecords} />}
-      {enrichedData?.gameAverages && <GameAveragesCard averages={enrichedData.gameAverages} />}
     </Box>
   );
 }
