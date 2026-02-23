@@ -109,15 +109,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** 横並びラッパー */
-function RowLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' }, mb: 1.5 }}>
-      {children}
-    </Box>
-  );
-}
-
 export default function AdminApiStatsSection({
   dailyHistory,
   enrichedData,
@@ -328,33 +319,25 @@ export default function AdminApiStatsSection({
 
       {/* 推移・履歴 */}
       <SectionLabel>推移・履歴</SectionLabel>
-      <RowLayout>
-        {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
-        {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
-      </RowLayout>
-      <RowLayout>
-        {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
-        {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
-      </RowLayout>
+      {dailyHistory.length >= 7 && <RollingTrendCard dailyHistory={dailyHistory} />}
+      {dailyHistory.length >= 4 && <PeriodComparisonCard dailyHistory={dailyHistory} />}
+      {dailyHistory.length >= 5 && <StreakPatternCard dailyHistory={dailyHistory} />}
+      {awardList && awardList.length >= 2 && <AwardPaceCard awardList={awardList} />}
 
       {/* ゲーム分析 */}
       {(recentPlays?.length || countupPlays?.length || (dartoutList && dartoutList.length > 0)) && (
         <>
           <SectionLabel>ゲーム分析</SectionLabel>
-          <RowLayout>
-            {dartoutList && dartoutList.length > 0 && (
-              <DartoutAnalysisCard dartoutList={dartoutList} />
-            )}
-            {countupPlays && countupPlays.length > 0 && (
-              <Box sx={{ flex: 2, minWidth: 0 }}>
-                <CountUpDeepAnalysisCard
-                  countupPlays={countupPlays}
-                  stats01Detailed={enrichedData?.stats01Detailed}
-                  bestRecords={enrichedData?.bestRecords}
-                />
-              </Box>
-            )}
-          </RowLayout>
+          {dartoutList && dartoutList.length > 0 && (
+            <DartoutAnalysisCard dartoutList={dartoutList} />
+          )}
+          {countupPlays && countupPlays.length > 0 && (
+            <CountUpDeepAnalysisCard
+              countupPlays={countupPlays}
+              stats01Detailed={enrichedData?.stats01Detailed}
+              bestRecords={enrichedData?.bestRecords}
+            />
+          )}
           {countupPlays && countupPlays.length >= 5 && (
             <CountUpRoundAnalysisCard countupPlays={countupPlays} />
           )}
@@ -371,10 +354,8 @@ export default function AdminApiStatsSection({
       {countupPlays && countupPlays.length >= 10 && (
         <>
           <SectionLabel>センサー分析</SectionLabel>
-          <RowLayout>
-            <SensorTrendCard countupPlays={countupPlays} />
-            <SpeedAccuracyCard countupPlays={countupPlays} />
-          </RowLayout>
+          <SensorTrendCard countupPlays={countupPlays} />
+          <SpeedAccuracyCard countupPlays={countupPlays} />
         </>
       )}
 

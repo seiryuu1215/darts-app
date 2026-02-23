@@ -183,7 +183,7 @@ export default function PeriodComparisonCard({ dailyHistory }: PeriodComparisonC
   if (!comparison && mode !== 'week') return null;
 
   return (
-    <Paper sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 0 }}>
+    <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
         期間対比
       </Typography>

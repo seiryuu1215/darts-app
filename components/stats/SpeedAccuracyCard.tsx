@@ -61,7 +61,7 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
           : 'ほぼ無相関';
 
   return (
-    <Paper sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 0 }}>
+    <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           スピード × 精度

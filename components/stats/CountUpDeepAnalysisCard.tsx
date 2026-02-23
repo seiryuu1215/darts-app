@@ -369,7 +369,7 @@ export default function CountUpDeepAnalysisCard({
 
   if (filtered.length === 0) {
     return (
-      <Paper sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 0 }}>
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
             COUNT-UP 深掘り分析
@@ -424,7 +424,7 @@ export default function CountUpDeepAnalysisCard({
       : null;
 
   return (
-    <Paper sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 0 }}>
+    <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           COUNT-UP 深掘り分析
