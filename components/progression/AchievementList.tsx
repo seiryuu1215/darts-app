@@ -43,6 +43,12 @@ function getCategoryValue(category: AchievementCategory, snapshot: AchievementSn
       return snapshot.whiteHorse;
     case 'level':
       return snapshot.level;
+    case 'countup':
+      return snapshot.countupBest;
+    case 'nine_mark':
+      return snapshot.nineMark;
+    case 'three_in_a_black':
+      return snapshot.threeInABlack;
   }
 }
 

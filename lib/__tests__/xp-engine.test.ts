@@ -15,13 +15,13 @@ describe('calculateLevel', () => {
 
   it('returns correct level for mid-range XP', () => {
     const result = calculateLevel(1500);
-    expect(result.level).toBe(7);
-    expect(result.rank).toBe('B Player');
+    expect(result.level).toBe(10); // CC Player II at 1500 XP
+    expect(result.rank).toBe('CC Player II');
   });
 
   it('returns BEYOND GOD for max XP', () => {
-    const result = calculateLevel(500000);
-    expect(result.level).toBe(30);
+    const result = calculateLevel(850000);
+    expect(result.level).toBe(50);
     expect(result.rank).toBe('BEYOND GOD');
     expect(result.nextLevelXp).toBeNull();
   });
@@ -36,8 +36,8 @@ describe('getRankVisual', () => {
 
   it('returns icon and color for level 20', () => {
     const visual = getRankVisual(20);
-    expect(visual.icon).toBe('🏆');
-    expect(visual.color).toBe('#FFD700');
+    expect(visual.icon).toBe('🔥');
+    expect(visual.color).toBe('#E040FB');
   });
 });
 
@@ -64,7 +64,7 @@ describe('calculateCronXp', () => {
     const result = calculateCronXp(basePrev, current);
     const rating = result.find((r) => r.action === 'rating_milestone');
     expect(rating).toBeDefined();
-    expect(rating!.xp).toBe(30);
+    expect(rating!.xp).toBe(50); // 50 XP per milestone
   });
 
   it('detects hat trick award diff', () => {
@@ -73,7 +73,7 @@ describe('calculateCronXp', () => {
     const ht = result.find((r) => r.action === 'award_hat_trick');
     expect(ht).toBeDefined();
     expect(ht!.count).toBe(5);
-    expect(ht!.xp).toBe(25);
+    expect(ht!.xp).toBe(40); // 8 XP * 5 = 40 (under 100 threshold, full XP)
   });
 
   it('detects 9mark award', () => {
@@ -82,7 +82,7 @@ describe('calculateCronXp', () => {
     const nm = result.find((r) => r.action === 'award_9_mark');
     expect(nm).toBeDefined();
     expect(nm!.count).toBe(3);
-    expect(nm!.xp).toBe(30);
+    expect(nm!.xp).toBe(60); // 20 XP * 3 = 60
   });
 
   it('handles null prev (first run)', () => {

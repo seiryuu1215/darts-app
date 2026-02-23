@@ -53,6 +53,9 @@ export const GET = withErrorHandler(
       threeInABed: cacheData?.threeInABed ?? 0,
       whiteHorse: cacheData?.whiteHorse ?? 0,
       level: levelInfo.level,
+      countupBest: cacheData?.bestCountUp ?? 0,
+      nineMark: cacheData?.nineMark ?? 0,
+      threeInABlack: cacheData?.threeInABlack ?? 0,
     };
 
     return NextResponse.json({

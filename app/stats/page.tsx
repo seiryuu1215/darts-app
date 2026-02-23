@@ -33,7 +33,6 @@ import XpHistoryList from '@/components/progression/XpHistoryList';
 import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 
 // Stats components
-import PRSiteSection from '@/components/stats/PRSiteSection';
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 import StatsPageContent from '@/components/stats/StatsPageContent';
 import AdminApiStatsSection from '@/components/stats/AdminApiStatsSection';
@@ -505,10 +504,7 @@ export default function StatsPage() {
           </CardContent>
         </Card>
 
-        {/* 16. PR Site Section */}
-        <PRSiteSection />
-
-        {/* 16. Progression */}
+        {/* Progression */}
         <Box sx={{ mt: 4 }}>
           <AchievementList unlockedIds={achievements} snapshot={achievementSnapshot} />
           <XpHistoryList history={xpHistory} />

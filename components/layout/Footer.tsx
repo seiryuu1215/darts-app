@@ -89,6 +89,9 @@ export default function Footer() {
     { label: 'TiTO Online', href: 'https://tito-online.com/', external: true },
     { label: '楽天ダーツ', href: toRakutenSearchUrl('ダーツ バレル', config), external: true },
     { label: 'Amazon ダーツ', href: toAmazonSearchUrl('ダーツ バレル', config), external: true },
+    { label: 'JOKER DIRECT', href: 'https://jokerdirect.jp/smp/', external: true },
+    { label: 'JOKER DRIVER', href: 'https://jokerdriver.com', external: true },
+    { label: 'one mode', href: 'https://onemode.base.shop', external: true },
   ];
 
   const aboutLinks: FooterLink[] = [

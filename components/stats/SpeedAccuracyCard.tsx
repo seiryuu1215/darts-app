@@ -6,13 +6,10 @@ import {
   ResponsiveContainer,
   ScatterChart,
   Scatter,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  Cell,
 } from 'recharts';
 import { correlateSpeedScore } from '@/lib/sensor-analysis';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
@@ -29,10 +26,10 @@ const TOOLTIP_STYLE = {
 };
 
 export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardProps) {
-  const { scatterData, speedBuckets, correlation, sweetSpot, validCount } = useMemo(() => {
+  const { scatterData, correlation, sweetSpot, validCount } = useMemo(() => {
     const validPlays = countupPlays.filter((p) => p.dl3Speed > 0);
     if (validPlays.length < 10)
-      return { scatterData: [], speedBuckets: [], correlation: 0, sweetSpot: null, validCount: 0 };
+      return { scatterData: [], correlation: 0, sweetSpot: null, validCount: 0 };
 
     const { speedBuckets: buckets, correlation: corr } = correlateSpeedScore(countupPlays);
 
@@ -46,7 +43,6 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
 
     return {
       scatterData: scatter,
-      speedBuckets: buckets,
       correlation: corr,
       sweetSpot: sweet,
       validCount: validPlays.length,
@@ -65,7 +61,7 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
           : 'ほぼ無相関';
 
   return (
-    <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+    <Paper sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
           スピード × 精度
@@ -155,43 +151,6 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
           <Scatter data={scatterData} fill="#7B1FA2" fillOpacity={0.5} />
         </ScatterChart>
       </ResponsiveContainer>
-
-      {/* 速度帯別平均 */}
-      {speedBuckets.length >= 3 && (
-        <>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2, mb: 1, color: '#aaa' }}>
-            速度帯別平均スコア
-          </Typography>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={speedBuckets}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="speedRange" fontSize={10} tick={{ fill: '#aaa' }} />
-              <YAxis
-                fontSize={11}
-                tick={{ fill: '#aaa' }}
-                domain={['dataMin - 30', 'dataMax + 30']}
-              />
-              <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                formatter={(v: number | undefined) => [`${v ?? 0}`, '平均スコア']}
-                labelFormatter={(label) => `${label} km/h`}
-              />
-              <Bar dataKey="avgScore" name="avgScore" radius={[4, 4, 0, 0]}>
-                {speedBuckets.map((bucket, idx) => (
-                  <Cell
-                    key={idx}
-                    fill={
-                      sweetSpot && bucket.speedRange === sweetSpot.speedRange
-                        ? '#4caf50'
-                        : '#7B1FA2'
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </>
-      )}
     </Paper>
   );
 }

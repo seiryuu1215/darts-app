@@ -28,6 +28,14 @@ export interface DoublePreference {
   isDouble: boolean;
 }
 
+/** フィニッシュタイプ別集計 */
+export interface TypeBreakdown {
+  doubleRate: number;
+  singleRate: number;
+  bullRate: number;
+  tripleRate: number;
+}
+
 /** ダートアウト分析結果 */
 export interface DartoutAnalysis {
   finishRanges: FinishRange[];
@@ -39,6 +47,7 @@ export interface DartoutAnalysis {
   totalFinishes: number;
   avgFinishScore: number;
   medianFinishScore: number;
+  typeBreakdown: TypeBreakdown;
 }
 
 const FINISH_RANGES = [
@@ -124,6 +133,33 @@ export function analyzeDartout(dartoutList: DartoutItem[]): DartoutAnalysis | nu
     .reduce((sum, d) => sum + d.count, 0);
   const lowFinishRatio = Math.round((lowFinishCount / totalFinishes) * 1000) / 10;
 
+  // タイプ別集計
+  let doubleCount = 0;
+  let singleCount = 0;
+  let bullCount = 0;
+  let tripleCount = 0;
+  for (const d of dartoutList) {
+    if (d.score === 50 || d.score === 25) {
+      // Bull (D-BULL=50, S-BULL=25)
+      bullCount += d.count;
+    } else if (d.score >= 2 && d.score <= 40 && d.score % 2 === 0) {
+      // ダブル (D1-D20)
+      doubleCount += d.count;
+    } else if (d.score >= 3 && d.score <= 60 && d.score % 3 === 0 && d.score > 20) {
+      // トリプル (T7-T20: 21以上かつ3の倍数)
+      tripleCount += d.count;
+    } else {
+      // シングル
+      singleCount += d.count;
+    }
+  }
+  const typeBreakdown: TypeBreakdown = {
+    doubleRate: Math.round((doubleCount / totalFinishes) * 1000) / 10,
+    singleRate: Math.round((singleCount / totalFinishes) * 1000) / 10,
+    bullRate: Math.round((bullCount / totalFinishes) * 1000) / 10,
+    tripleRate: Math.round((tripleCount / totalFinishes) * 1000) / 10,
+  };
+
   return {
     finishRanges: classifyFinishRange(dartoutList),
     doublePreferences: analyzeDoublePreference(dartoutList),
@@ -134,5 +170,6 @@ export function analyzeDartout(dartoutList: DartoutItem[]): DartoutAnalysis | nu
     totalFinishes,
     avgFinishScore,
     medianFinishScore,
+    typeBreakdown,
   };
 }

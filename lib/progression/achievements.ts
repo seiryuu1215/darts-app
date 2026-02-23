@@ -7,7 +7,10 @@ export type AchievementCategory =
   | 'high_ton'
   | 'three_bed'
   | 'white_horse'
-  | 'level';
+  | 'level'
+  | 'countup'
+  | 'nine_mark'
+  | 'three_in_a_black';
 
 export interface AchievementDefinition {
   id: string;
@@ -28,6 +31,9 @@ export const CATEGORY_META: Record<AchievementCategory, { label: string; icon: s
   three_bed: { label: '3 IN A BED', icon: '🛏️' },
   white_horse: { label: 'WHITE HORSE', icon: '🐴' },
   level: { label: 'レベル', icon: '🏅' },
+  countup: { label: 'COUNT-UP', icon: '🎯' },
+  nine_mark: { label: '9マーク', icon: '🏏' },
+  three_in_a_black: { label: '3 IN A BLACK', icon: '⚫' },
 };
 
 function generateAchievements(
@@ -61,7 +67,10 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // HAT TRICK
   ...generateAchievements(
     'hat_trick',
-    [10, 50, 100, 300, 500, 1000, 3000, 5000, 7000, 10000, 20000],
+    [
+      10, 25, 50, 75, 100, 150, 250, 300, 500, 750, 1000, 1500, 2500, 3000, 4000, 5000, 7000, 8000,
+      10000, 15000, 20000,
+    ],
     'hat_trick',
     (n) => `HAT TRICK ${n.toLocaleString()}回`,
     (n) => `HAT TRICK累計${n.toLocaleString()}回達成`,
@@ -70,7 +79,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // TON 80
   ...generateAchievements(
     'ton80',
-    [5, 10, 30, 50, 100, 300, 500, 1000, 2000, 5000],
+    [5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
     'ton80',
     (n) => `TON 80 ${n.toLocaleString()}回`,
     (n) => `TON 80累計${n.toLocaleString()}回達成`,
@@ -79,7 +88,10 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // ブル (D+S)
   ...generateAchievements(
     'bulls',
-    [100, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000, 100000, 150000, 200000, 500000],
+    [
+      100, 250, 500, 750, 1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000,
+      50000, 75000, 100000, 150000, 200000, 250000, 350000, 500000,
+    ],
     'bulls',
     (n) => `ブル ${n.toLocaleString()}回`,
     (n) => `ブル(D+S)累計${n.toLocaleString()}回達成`,
@@ -88,7 +100,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // LOW TON
   ...generateAchievements(
     'low_ton',
-    [50, 100, 500, 1000, 2000, 5000, 10000],
+    [25, 50, 75, 100, 150, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000, 15000],
     'low_ton',
     (n) => `LOW TON ${n.toLocaleString()}回`,
     (n) => `LOW TON累計${n.toLocaleString()}回達成`,
@@ -97,7 +109,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // HIGH TON
   ...generateAchievements(
     'high_ton',
-    [10, 50, 100, 500, 1000, 2000, 5000],
+    [10, 25, 50, 75, 100, 150, 250, 500, 750, 1000, 1500, 2000, 3000, 5000],
     'high_ton',
     (n) => `HIGH TON ${n.toLocaleString()}回`,
     (n) => `HIGH TON累計${n.toLocaleString()}回達成`,
@@ -106,7 +118,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // 3 IN A BED
   ...generateAchievements(
     'three_bed',
-    [10, 50, 100, 200, 500, 1000],
+    [10, 25, 50, 75, 100, 150, 200, 300, 500, 750, 1000],
     'three_bed',
     (n) => `3 IN A BED ${n.toLocaleString()}回`,
     (n) => `3 IN A BED累計${n.toLocaleString()}回達成`,
@@ -115,7 +127,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // WHITE HORSE
   ...generateAchievements(
     'white_horse',
-    [5, 10, 50, 100, 200, 500],
+    [5, 10, 15, 25, 50, 75, 100, 150, 200, 300, 500],
     'white_horse',
     (n) => `WHITE HORSE ${n.toLocaleString()}回`,
     (n) => `WHITE HORSE累計${n.toLocaleString()}回達成`,
@@ -124,11 +136,38 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   // レベル
   ...generateAchievements(
     'level',
-    [5, 10, 15, 20, 25, 30],
+    [2, 3, 5, 7, 8, 10, 12, 15, 18, 20, 22, 25, 28, 30, 35, 40, 45, 50],
     'level',
     (n) => `レベル${n}`,
     (n) => `レベル${n}に到達`,
     '🏅',
+  ),
+  // COUNT-UP
+  ...generateAchievements(
+    'countup',
+    [300, 400, 500, 600, 700, 800],
+    'countup',
+    (n) => `COUNT-UP ${n}点`,
+    (n) => `COUNT-UPで${n}点以上を達成`,
+    '🎯',
+  ),
+  // 9マーク
+  ...generateAchievements(
+    'nine_mark',
+    [5, 10, 30, 50, 100, 300, 500],
+    'nine_mark',
+    (n) => `9マーク ${n.toLocaleString()}回`,
+    (n) => `9マーク累計${n.toLocaleString()}回達成`,
+    '🏏',
+  ),
+  // 3 IN A BLACK
+  ...generateAchievements(
+    'three_in_a_black',
+    [5, 10, 30, 50, 100, 300],
+    'three_in_a_black',
+    (n) => `3 IN A BLACK ${n.toLocaleString()}回`,
+    (n) => `3 IN A BLACK累計${n.toLocaleString()}回達成`,
+    '⚫',
   ),
 ];
 

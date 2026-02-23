@@ -47,6 +47,9 @@ export interface AchievementSnapshot {
   threeInABed: number;
   whiteHorse: number;
   level: number;
+  countupBest: number;
+  nineMark: number;
+  threeInABlack: number;
 }
 
 /**
@@ -94,10 +97,11 @@ export function calculateCronXp(
     const curFloor = Math.floor(current.rating);
     if (curFloor > prevFloor) {
       const milestones = curFloor - prevFloor;
+      const rule = XP_RULES.rating_milestone;
       actions.push({
         action: 'rating_milestone',
-        xp: 30 * milestones,
-        label: 'Rating整数到達',
+        xp: rule.xp * milestones,
+        label: rule.label,
         count: milestones,
       });
     }
@@ -172,6 +176,15 @@ export function checkAchievements(snapshot: AchievementSnapshot, existingIds: st
         break;
       case 'level':
         value = snapshot.level;
+        break;
+      case 'countup':
+        value = snapshot.countupBest;
+        break;
+      case 'nine_mark':
+        value = snapshot.nineMark;
+        break;
+      case 'three_in_a_black':
+        value = snapshot.threeInABlack;
         break;
     }
 

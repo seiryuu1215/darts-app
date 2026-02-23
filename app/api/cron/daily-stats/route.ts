@@ -469,6 +469,9 @@ export async function GET(request: NextRequest) {
                 threeInABed: stats.threeInABed,
                 whiteHorse: stats.whiteHorse,
                 level: userLevel,
+                countupBest: prevData?.bestCountUp ?? 0,
+                nineMark: prevData?.nineMark ?? 0,
+                threeInABlack: stats.threeInABlack ?? 0,
               };
 
               const newAchievementIds = checkAchievements(
