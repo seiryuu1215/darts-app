@@ -10,6 +10,7 @@ import {
   CardActionArea,
   CardContent,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
@@ -136,7 +137,7 @@ const featureCards: FeatureCard[] = [
 ];
 
 export default function HomePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { showToast } = useToast();
   const isAdminApi = canUseDartsliveApi(session?.user?.role);
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
@@ -298,6 +299,14 @@ export default function HomePage() {
   }, [session, isAdminApi]);
 
   const visibleCards = featureCards.filter((card) => !card.authOnly || session);
+
+  if (status === 'loading') {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

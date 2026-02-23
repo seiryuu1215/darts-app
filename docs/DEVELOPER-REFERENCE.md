@@ -920,26 +920,37 @@ function ppdForRating(targetRt: number): number {
 
 | ファイル                        | 役割                                      |
 | ------------------------------- | ----------------------------------------- |
-| `lib/progression/xp-rules.ts`   | XP獲得ルール定義（14種類）                |
+| `lib/progression/xp-rules.ts`   | XP獲得ルール定義（21種類）                |
 | `lib/progression/xp-engine.ts`  | レベル計算・Cron XP差分算出・実績チェック |
 | `lib/progression/ranks.ts`      | 20段階のランク定義（アイコン・色付き）    |
 | `lib/progression/milestones.ts` | 累計XPマイルストーン（バッジのみ）        |
 | `app/api/progression/route.ts`  | GET: XP/レベル取得、POST: XP付与          |
 
-**XP獲得ルール:**
+**XP獲得ルール（21種類）:**
 
-| ルールID                 | XP  | トリガー             |
-| ------------------------ | --- | -------------------- |
-| `stats_record`           | 10  | スタッツ手動記録     |
-| `rating_milestone`       | 30  | Rating整数到達       |
-| `award_hat_trick`        | 5   | HAT TRICK            |
-| `award_ton_80`           | 10  | TON 80               |
-| `award_3_black`          | 15  | 3 IN A BLACK         |
-| `award_9_mark`           | 10  | 9マーク              |
-| `award_low_ton/high_ton` | 3/5 | LOW TON / HIGH TON   |
-| `discussion_post`        | 5   | ディスカッション投稿 |
-| `condition_record`       | 3   | コンディション記録   |
-| `goal_achieved`          | 50  | 目標達成             |
+| ルールID              | XP  | トリガー               |
+| --------------------- | --- | ---------------------- |
+| `stats_record`        | 5   | スタッツ手動記録       |
+| `rating_milestone`    | 50  | Rating整数到達         |
+| `award_hat_trick`     | 8   | HAT TRICK              |
+| `award_ton_80`        | 20  | TON 80                 |
+| `award_3_black`       | 25  | 3 IN A BLACK           |
+| `award_9_mark`        | 20  | 9マーク                |
+| `award_low_ton`       | 4   | LOW TON                |
+| `award_high_ton`      | 8   | HIGH TON               |
+| `award_3_bed`         | 12  | 3 IN A BED             |
+| `award_white_horse`   | 20  | WHITE HORSE            |
+| `award_bull`          | 1   | ブル                   |
+| `countup_highscore`   | 15  | COUNT-UP自己ベスト更新 |
+| `win_streak_3`        | 10  | 3連勝ボーナス          |
+| `first_rating`        | 100 | 初Rating取得           |
+| `discussion_post`     | 5   | ディスカッション投稿   |
+| `condition_record`    | 3   | コンディション記録     |
+| `goal_achieved`       | 80  | 目標達成               |
+| `daily_goal_achieved` | 15  | デイリー目標達成       |
+| `weekly_active`       | 30  | 週間アクティブボーナス |
+| `monthly_active`      | 150 | 月間アクティブボーナス |
+| `n01_import`          | 5   | n01データ取り込み      |
 
 **ランク体系（20段階）:**
 
@@ -1038,14 +1049,14 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 
 ### 設計判断
 
-| 判断                                              | 理由                                                                                                                                   |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **全ページ`'use client'`**                        | Firestore Client SDKをブラウザで使うため。Server Componentsにすると全クエリをAPI Route経由にする必要があり、開発コストが大幅増加       |
-| **NextAuth + Firebase Auth のデュアル認証**       | NextAuthだけだとFirestoreセキュリティルールが使えない。Firebase Authだけだとサーバーサイドのセッション管理が面倒                       |
-| **グローバル状態管理なし（Redux/Zustand不使用）** | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
-| **Recharts**                                      | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
+| 判断                                               | 理由                                                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **全ページ`'use client'`**                         | Firestore Client SDKをブラウザで使うため。Server Componentsにすると全クエリをAPI Route経由にする必要があり、開発コストが大幅増加       |
+| **NextAuth + Firebase Auth のデュアル認証**        | NextAuthだけだとFirestoreセキュリティルールが使えない。Firebase Authだけだとサーバーサイドのセッション管理が面倒                       |
+| **グローバル状態管理なし（Redux/Zustand不使用）**  | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
+| **Recharts**                                       | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
 | **サーバーサイドブラウザ自動化（puppeteer-core）** | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
-| **インメモリレートリミット**                      | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分                        |
+| **インメモリレートリミット**                       | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分                        |
 
 ### 知っておくべき懸念点
 
@@ -1236,7 +1247,7 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 | `lib/dartslive-percentile.ts`   | パーセンタイル                     |
 | `lib/dartslive-colors.ts`       | フライト色定義                     |
 | `lib/goals.ts`                  | 目標定義・進捗計算                 |
-| `lib/progression/xp-rules.ts`   | XP獲得ルール（14種類）             |
+| `lib/progression/xp-rules.ts`   | XP獲得ルール（21種類）             |
 | `lib/progression/xp-engine.ts`  | レベル計算・Cron XP算出            |
 | `lib/progression/ranks.ts`      | ランク定義（20段階、アイコン・色） |
 | `lib/progression/milestones.ts` | マイルストーン（バッジ）定義       |

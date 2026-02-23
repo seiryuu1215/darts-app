@@ -83,6 +83,7 @@ export default function Header() {
           icon: <SportsBarIcon />,
           items: [
             { label: 'セッティング', href: '/darts' },
+            { label: 'セッティング履歴', href: '/darts/history' },
             { label: 'バレル検索', href: '/barrels' },
             { label: 'おすすめバレル', href: '/barrels/recommend' },
             { label: 'ショップ', href: '/shops' },
@@ -95,6 +96,7 @@ export default function Header() {
             { label: 'シミュレーター', href: '/barrels/simulator' },
             { label: '診断クイズ', href: '/barrels/quiz' },
             { label: 'セッティング比較', href: '/darts/compare' },
+            { label: 'シャフト早見表', href: '/reference' },
             { label: 'おすすめツール', href: '/tools' },
           ],
         },
@@ -104,6 +106,7 @@ export default function Header() {
           items: [
             { label: 'スタッツ記録', href: '/stats' },
             { label: 'レポート', href: '/reports' },
+            { label: 'カレンダー', href: '/stats/calendar' },
           ],
         },
         {
@@ -123,6 +126,7 @@ export default function Header() {
             { label: 'セッティング', href: '/darts' },
             { label: 'バレル検索', href: '/barrels' },
             { label: 'おすすめバレル', href: '/barrels/recommend' },
+            { label: 'ショップ', href: '/shops' },
           ],
         },
         {
@@ -131,7 +135,17 @@ export default function Header() {
           items: [
             { label: 'シミュレーター', href: '/barrels/simulator' },
             { label: '診断クイズ', href: '/barrels/quiz' },
+            { label: 'シャフト早見表', href: '/reference' },
             { label: 'おすすめツール', href: '/tools' },
+          ],
+        },
+        {
+          label: 'スタッツ',
+          icon: <BarChartIcon />,
+          items: [
+            { label: 'スタッツ記録', href: '/stats' },
+            { label: 'レポート', href: '/reports' },
+            { label: 'カレンダー', href: '/stats/calendar' },
           ],
         },
         {

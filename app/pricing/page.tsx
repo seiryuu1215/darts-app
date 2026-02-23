@@ -41,7 +41,6 @@ const FEATURES = [
   { label: 'DARTSLIVE連携', free: false, pro: true },
   { label: 'Push通知', free: false, pro: true },
   { label: 'ディスカッション投稿', free: false, pro: true },
-  { label: '記事投稿', free: false, pro: true },
   { label: 'バレル診断 詳細レポート', free: 'マッチ度のみ', pro: '詳細分析' },
   { label: 'スタッツ履歴', free: '30日間', pro: '無制限' },
   { label: 'CSV出力', free: false, pro: true },
