@@ -10,7 +10,7 @@ export function getDiffColors(
   if (valueA == null || valueB == null) return inherit;
   if (valueA === valueB) return inherit;
 
-  const green = '#4caf50';
+  const green = '#66bb6a';
   return {
     colorA: valueA > valueB ? green : 'inherit',
     colorB: valueB > valueA ? green : 'inherit',
