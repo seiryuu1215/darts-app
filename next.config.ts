@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com",
+              "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com https://wsrv.nl",
               "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://*.stripe.com https://*.sentry.io https://px.a8.net",
               'frame-src https://js.stripe.com https://*.firebaseapp.com',
               "object-src 'none'",
