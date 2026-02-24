@@ -408,13 +408,21 @@ function ComparisonTable({ dartA, dartB }: ComparisonTableProps) {
               <TableCell sx={{ ...labelCell, color: 'text.secondary', whiteSpace: 'nowrap' }}>
                 {row.label}
               </TableCell>
-              <TableCell
-                sx={{ ...leftCell, color: colorA, fontWeight: colorA !== 'inherit' ? 700 : 400 }}
-              >
-                {row.valueA != null ? `${row.valueA}${row.unit}` : '-'}
+              <TableCell sx={leftCell}>
+                <Box
+                  component="span"
+                  sx={{ color: colorA, fontWeight: colorA !== 'inherit' ? 700 : 400 }}
+                >
+                  {row.valueA != null ? `${row.valueA}${row.unit}` : '-'}
+                </Box>
               </TableCell>
-              <TableCell sx={{ color: colorB, fontWeight: colorB !== 'inherit' ? 700 : 400 }}>
-                {row.valueB != null ? `${row.valueB}${row.unit}` : '-'}
+              <TableCell>
+                <Box
+                  component="span"
+                  sx={{ color: colorB, fontWeight: colorB !== 'inherit' ? 700 : 400 }}
+                >
+                  {row.valueB != null ? `${row.valueB}${row.unit}` : '-'}
+                </Box>
                 {diff && (
                   <Typography
                     component="span"
