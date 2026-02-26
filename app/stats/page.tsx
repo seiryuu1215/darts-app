@@ -12,7 +12,11 @@ import {
   CardContent,
   CircularProgress,
   Paper,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -397,7 +401,6 @@ export default function StatsPage() {
             periodTab={periodTab}
             periodSummary={periodSummary}
             periodRecords={periodRecords}
-            periodLoading={periodLoading}
             flightColor={flightColor}
             expectedCountUp={expectedCountUp}
             dangerCountUp={dangerCountUp}
@@ -405,7 +408,6 @@ export default function StatsPage() {
             activeSoftDart={activeSoftDart}
             monthlyTab={monthlyTab}
             gameChartCategory={gameChartCategory}
-            onPeriodChange={setPeriodTab}
             onMonthlyTabChange={setMonthlyTab}
             onGameChartCategoryChange={setGameChartCategory}
           />
@@ -423,6 +425,27 @@ export default function StatsPage() {
             countupPlays={apiCountupPlays}
           />
         )}
+
+        {/* Progression (折り畳み) */}
+        <Accordion
+          defaultExpanded={false}
+          sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                実績 & XP
+              </Typography>
+              {achievements.length > 0 && (
+                <Chip label={`${achievements.length}件解除`} size="small" color="success" />
+              )}
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <AchievementList unlockedIds={achievements} snapshot={achievementSnapshot} />
+            <XpHistoryList history={xpHistory} />
+          </AccordionDetails>
+        </Accordion>
 
         {/* 13. CSV Export */}
         <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
@@ -503,12 +526,6 @@ export default function StatsPage() {
             </Button>
           </CardContent>
         </Card>
-
-        {/* Progression */}
-        <Box sx={{ mt: 4 }}>
-          <AchievementList unlockedIds={achievements} snapshot={achievementSnapshot} />
-          <XpHistoryList history={xpHistory} />
-        </Box>
       </Box>
 
       {/* Login Dialog */}

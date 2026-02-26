@@ -74,8 +74,8 @@ export default function SkillRadarChart({ stats01, statsCricket }: SkillRadarCha
     },
     {
       axis: 'トリプル率',
-      value: statsCricket?.tripleRate ?? 0,
-      rawLabel: `(${formatRaw(statsCricket?.tripleRate, '%')})`,
+      value: Math.max(0, (stats01?.bullRate ?? 0) - 25),
+      rawLabel: `(推定${Math.max(0, (stats01?.bullRate ?? 0) - 25).toFixed(1)}% / 実${formatRaw(statsCricket?.tripleRate, '%')})`,
     },
     {
       axis: 'Open-Close',

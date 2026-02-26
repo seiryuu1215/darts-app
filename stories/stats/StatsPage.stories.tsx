@@ -116,7 +116,6 @@ function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
             periodTab={periodTab}
             periodSummary={MOCK_PERIOD_SUMMARY}
             periodRecords={MOCK_PERIOD_RECORDS}
-            periodLoading={false}
             flightColor={flightColor}
             expectedCountUp={expectedCountUp}
             dangerCountUp={dangerCountUp}
@@ -124,7 +123,6 @@ function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
             activeSoftDart={null}
             monthlyTab={monthlyTab}
             gameChartCategory={gameChartCategory}
-            onPeriodChange={setPeriodTab}
             onMonthlyTabChange={setMonthlyTab}
             onGameChartCategoryChange={setGameChartCategory}
           />

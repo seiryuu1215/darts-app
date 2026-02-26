@@ -7,7 +7,6 @@ import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
 import RatingHeroCard from './RatingHeroCard';
-import PeriodStatsPanel from './PeriodStatsPanel';
 import GameStatsCards from './GameStatsCards';
 import BullStatsCard from './BullStatsCard';
 import CountUpDeltaChart from './CountUpDeltaChart';
@@ -99,7 +98,6 @@ export interface StatsPageContentProps {
   periodTab: 'today' | 'week' | 'month' | 'all';
   periodSummary: StatsHistorySummary | null;
   periodRecords: StatsHistoryRecord[];
-  periodLoading: boolean;
   flightColor: string;
   expectedCountUp: number | null;
   dangerCountUp: number | null;
@@ -107,7 +105,6 @@ export interface StatsPageContentProps {
   activeSoftDart: Dart | null;
   monthlyTab: MonthlyTab;
   gameChartCategory: string;
-  onPeriodChange: (tab: 'today' | 'week' | 'month' | 'all') => void;
   onMonthlyTabChange: (tab: MonthlyTab) => void;
   onGameChartCategoryChange: (cat: string) => void;
 }
@@ -117,7 +114,6 @@ export default function StatsPageContent({
   periodTab,
   periodSummary,
   periodRecords,
-  periodLoading,
   flightColor,
   expectedCountUp,
   dangerCountUp,
@@ -125,7 +121,6 @@ export default function StatsPageContent({
   activeSoftDart,
   monthlyTab,
   gameChartCategory,
-  onPeriodChange,
   onMonthlyTabChange,
   onGameChartCategoryChange,
 }: StatsPageContentProps) {
@@ -147,17 +142,6 @@ export default function StatsPageContent({
         toorina={c.toorina}
         homeShop={c.homeShop}
         status={c.status}
-      />
-
-      {/* 3. Period Stats */}
-      <PeriodStatsPanel
-        periodTab={periodTab}
-        onPeriodChange={onPeriodChange}
-        loading={periodLoading}
-        summary={periodSummary}
-        records={periodRecords}
-        prevPpd={prev?.stats01Avg ?? null}
-        prevMpr={prev?.statsCriAvg ?? null}
       />
 
       {/* 4. Game Stats Cards */}
