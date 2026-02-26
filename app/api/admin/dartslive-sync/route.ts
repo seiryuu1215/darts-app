@@ -67,12 +67,27 @@ export const POST = withErrorHandler(
         }),
       );
 
-      // 2. COUNT-UPプレイデータ
+      // 2. COUNT-UPプレイデータをマージ
       if (result.countupPlays.length > 0) {
+        const countupRef = adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`);
+        const existingDoc = await countupRef.get();
+        let mergedPlays = result.countupPlays;
+
+        if (existingDoc.exists) {
+          try {
+            const existingPlays = JSON.parse(existingDoc.data()?.plays ?? '[]');
+            const existingTimes = new Set(existingPlays.map((p: { time: string }) => p.time));
+            const newPlays = result.countupPlays.filter((p) => !existingTimes.has(p.time));
+            mergedPlays = [...existingPlays, ...newPlays];
+          } catch {
+            // パースエラー時は新規データで上書き
+          }
+        }
+
         coreWrites.push(
-          adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
-            plays: JSON.stringify(result.countupPlays),
-            count: result.countupPlays.length,
+          countupRef.set({
+            plays: JSON.stringify(mergedPlays),
+            count: mergedPlays.length,
             lastSyncAt: FieldValue.serverTimestamp(),
           }),
         );

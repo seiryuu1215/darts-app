@@ -27,6 +27,7 @@ import {
   parsePlayTime,
 } from '@/lib/stats-math';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
+import { correlateSpeedScore } from '@/lib/sensor-analysis';
 import { ppdForRating, calc01Rating } from '@/lib/dartslive-rating';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -410,6 +411,39 @@ export default function CountUpDeepAnalysisCard({
     [sortedPlays, period],
   );
 
+  // スピード分析
+  const speedAnalysis = useMemo(() => {
+    const speedPlays = filtered.filter((p) => p.dl3Speed > 0);
+    if (speedPlays.length < 10) return null;
+
+    const speeds = speedPlays.map((p) => p.dl3Speed);
+    const speedStats = computeStats(speeds);
+    const speedConsistency = calculateConsistency(speeds);
+    const { speedBuckets, correlation } = correlateSpeedScore(filtered);
+    const sweetSpot =
+      speedBuckets.length > 0
+        ? speedBuckets.reduce((a, b) => (b.avgScore > a.avgScore ? b : a))
+        : null;
+    const corrLabel =
+      Math.abs(correlation) > 0.5
+        ? '強い相関'
+        : Math.abs(correlation) > 0.3
+          ? '中程度の相関'
+          : Math.abs(correlation) > 0.1
+            ? '弱い相関'
+            : 'ほぼ無相関';
+
+    return {
+      avgSpeed: speedStats.avg,
+      speedConsistency,
+      correlation,
+      corrLabel,
+      sweetSpot,
+      speedBuckets,
+      count: speedPlays.length,
+    };
+  }, [filtered]);
+
   if (sortedPlays.length < 3) return null;
 
   if (filtered.length === 0) {
@@ -749,6 +783,116 @@ export default function CountUpDeepAnalysisCard({
                 </Typography>
               </Box>
             </Box>
+          )}
+        </>
+      )}
+
+      {/* スピード分析 */}
+      {speedAnalysis && (
+        <>
+          <SectionTitle>スピード分析</SectionTitle>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 1,
+              p: 1.5,
+              borderRadius: 1,
+              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid #333',
+              mb: 1.5,
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                平均スピード
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
+                {speedAnalysis.avgSpeed.toFixed(1)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+                km/h
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                スピード安定度
+              </Typography>
+              {speedAnalysis.speedConsistency && (
+                <>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: getConsistencyLabel(speedAnalysis.speedConsistency.score).color,
+                    }}
+                  >
+                    {speedAnalysis.speedConsistency.score}点
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: 9,
+                      color: getConsistencyLabel(speedAnalysis.speedConsistency.score).color,
+                    }}
+                  >
+                    {getConsistencyLabel(speedAnalysis.speedConsistency.score).label}
+                  </Typography>
+                </>
+              )}
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                速度-点数相関
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  fontWeight: 'bold',
+                  color: Math.abs(speedAnalysis.correlation) > 0.3 ? '#FF9800' : '#888',
+                }}
+              >
+                {speedAnalysis.correlation > 0 ? '+' : ''}
+                {speedAnalysis.correlation.toFixed(3)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+                {speedAnalysis.corrLabel}
+              </Typography>
+            </Box>
+            {speedAnalysis.sweetSpot && (
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  スイートスポット
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+                  {speedAnalysis.sweetSpot.speedRange}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+                  km/h (n={speedAnalysis.sweetSpot.count})
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* スピード帯別スコア分布 */}
+          {speedAnalysis.speedBuckets.length > 0 && (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={speedAnalysis.speedBuckets}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="speedRange" fontSize={10} tick={{ fill: '#aaa' }} unit="km/h" />
+                <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  formatter={(v: number | undefined) => [`${v ?? 0}点`, '平均スコア']}
+                  labelFormatter={(label) => `${label} km/h`}
+                />
+                <Bar dataKey="avgScore" name="avgScore" radius={[4, 4, 0, 0]}>
+                  {speedAnalysis.speedBuckets.map((b, i) => (
+                    <Cell key={i} fill={b === speedAnalysis.sweetSpot ? '#4caf50' : '#7B1FA2'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </>
       )}
