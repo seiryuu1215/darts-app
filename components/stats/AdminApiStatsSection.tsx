@@ -30,6 +30,8 @@ import PeriodComparisonCard from './PeriodComparisonCard';
 import AwardPaceCard from './AwardPaceCard';
 import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import ZeroOneDeepAnalysisCard from './ZeroOneDeepAnalysisCard';
+import CricketDeepAnalysisCard from './CricketDeepAnalysisCard';
 import DartboardHeatmap from './DartboardHeatmap';
 import SensorTrendCard from './SensorTrendCard';
 import SpeedAccuracyCard from './SpeedAccuracyCard';
@@ -558,6 +560,39 @@ export default function AdminApiStatsSection({
               currentMpr={enrichedData.statsCricketDetailed.avg}
             />
           )}
+      </CollapsibleSection>
+
+      {/* ゲーム別深掘り */}
+      <CollapsibleSection
+        id="game_deep"
+        label="ゲーム別深掘り"
+        collapsed={!!collapsed.game_deep}
+        onToggle={toggleSection}
+        cards={[
+          { id: 'zeroone_deep', label: '01深掘り' },
+          { id: 'cricket_deep', label: 'Cricket深掘り' },
+        ]}
+        hiddenCards={hiddenCards}
+        onToggleCard={toggleCard}
+      >
+        {!hiddenCards.zeroone_deep && (
+          <ZeroOneDeepAnalysisCard
+            stats01Detailed={enrichedData?.stats01Detailed ?? null}
+            dailyHistory={dailyHistory}
+            dartoutList={dartoutList ?? null}
+            currentRating={currentRating}
+            statsCriAvg={enrichedData?.statsCricketDetailed?.avg ?? null}
+          />
+        )}
+        {!hiddenCards.cricket_deep && (
+          <CricketDeepAnalysisCard
+            statsCricketDetailed={enrichedData?.statsCricketDetailed ?? null}
+            dailyHistory={dailyHistory}
+            bullRate={enrichedData?.stats01Detailed?.bullRate ?? null}
+            currentRating={currentRating}
+            stats01Avg={enrichedData?.stats01Detailed?.avg ?? null}
+          />
+        )}
       </CollapsibleSection>
 
       {/* 推移・履歴 */}
