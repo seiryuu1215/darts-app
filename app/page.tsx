@@ -32,11 +32,9 @@ import XpNotificationDialog from '@/components/notifications/XpNotificationDialo
 import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import StatsOverviewCard from '@/components/home/StatsOverviewCard';
-import AdminDashboardWidget from '@/components/home/AdminDashboardWidget';
 import ActiveSettings from '@/components/home/ActiveSettings';
 import GuestHero from '@/components/home/GuestHero';
 import { useToast } from '@/components/ToastProvider';
-import { canUseDartsliveApi } from '@/lib/permissions';
 import type { Dart } from '@/types';
 
 interface PrevMonthStats {
@@ -139,14 +137,11 @@ const featureCards: FeatureCard[] = [
 export default function HomePage() {
   const { data: session, status } = useSession();
   const { showToast } = useToast();
-  const isAdminApi = canUseDartsliveApi(session?.user?.role);
   const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
   const [activeSteelDart, setActiveSteelDart] = useState<Dart | null>(null);
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
   const [dlCache, setDlCache] = useState<DartsliveCache | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [adminApiData, setAdminApiData] = useState<any>(null);
   const [xpNotifications, setXpNotifications] = useState<
     {
       id: string;
@@ -283,21 +278,6 @@ export default function HomePage() {
     fetchDlCache();
   }, [session, showToast]);
 
-  // Admin API データ取得
-  useEffect(() => {
-    if (!session?.user?.id || !isAdminApi) return;
-    (async () => {
-      try {
-        const res = await fetch('/api/admin/dartslive-history');
-        if (!res.ok) return;
-        const json = await res.json();
-        setAdminApiData(json);
-      } catch {
-        /* ignore */
-      }
-    })();
-  }, [session, isAdminApi]);
-
   const visibleCards = featureCards.filter((card) => !card.authOnly || session);
 
   if (status === 'loading') {
@@ -354,17 +334,7 @@ export default function HomePage() {
           />
         )}
 
-      {/* 3. Admin Dashboard */}
-      {session && isAdminApi && adminApiData && (
-        <AdminDashboardWidget
-          recentPlays={adminApiData.recentPlays ?? null}
-          enrichedData={adminApiData.enriched ?? null}
-          dailyHistory={adminApiData.records ?? []}
-          flight={dlCache?.flight}
-        />
-      )}
-
-      {/* 4. 使用中セッティング */}
+      {/* 3. 使用中セッティング */}
       {session && (
         <ActiveSettings activeSoftDart={activeSoftDart} activeSteelDart={activeSteelDart} />
       )}
