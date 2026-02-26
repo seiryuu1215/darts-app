@@ -298,3 +298,8 @@ export function analyzeMissDirection(
     topMissNumbers,
   };
 }
+
+/** DARTSLIVE API の TIME 文字列 ("YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DD_HH:mm:ss") を安全にパース */
+export function parsePlayTime(time: string): Date {
+  return new Date(time.replace(/ |_/, 'T'));
+}

@@ -5,6 +5,7 @@ import { Paper, Typography, Box, ToggleButton, ToggleButtonGroup, Chip } from '@
 import { computeSegmentFrequency, getHeatIntensity } from '@/lib/heatmap-data';
 import type { HeatmapData } from '@/lib/heatmap-data';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import { parsePlayTime } from '@/lib/stats-math';
 
 interface DartboardHeatmapProps {
   countupPlays: CountUpPlay[];
@@ -36,7 +37,7 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
     default:
       return plays;
   }
-  return plays.filter((p) => new Date(p.time) >= cutoff);
+  return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
 }
 
 /** ダーツボードの数字配置（12時=20、時計回り） */

@@ -18,6 +18,7 @@ import {
 import { analyzeSession } from '@/lib/session-analysis';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import { parsePlayTime } from '@/lib/stats-math';
 
 interface SessionFatigueCardProps {
   countupPlays: CountUpPlay[];
@@ -49,7 +50,7 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
     default:
       return plays;
   }
-  return plays.filter((p) => new Date(p.time) >= cutoff);
+  return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
 }
 
 const TOOLTIP_STYLE = {

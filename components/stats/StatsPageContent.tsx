@@ -20,6 +20,10 @@ import ConsistencyCard from './ConsistencyCard';
 import CountUpAnalysisCard from './CountUpAnalysisCard';
 import ZeroOneAnalysisCard from './ZeroOneAnalysisCard';
 import ZeroOneConsistencyCard from './ZeroOneConsistencyCard';
+import ConditionCorrelationCard from './ConditionCorrelationCard';
+import GameMixCard from './GameMixCard';
+import RatingTrendCard from './RatingTrendCard';
+import AwardPaceSimpleCard from './AwardPaceSimpleCard';
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -187,6 +191,18 @@ export default function StatsPageContent({
 
       {/* 6e. 01 Consistency */}
       <ZeroOneConsistencyCard games={dlData.recentGames.games} />
+
+      {/* 6f. Condition × Performance Correlation */}
+      <ConditionCorrelationCard periodRecords={periodRecords} />
+
+      {/* 6g. Game Mix Analysis */}
+      <GameMixCard games={dlData.recentGames.games} />
+
+      {/* 6h. Rating Trend */}
+      <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
+
+      {/* 6i. Award Pace Prediction */}
+      <AwardPaceSimpleCard awards={c.awards} />
 
       {/* 7. Rating Target */}
       {c.stats01Avg != null && c.statsCriAvg != null && (

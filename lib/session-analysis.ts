@@ -4,6 +4,8 @@
  * パフォーマンスの変化を分析する
  */
 
+import { parsePlayTime } from './stats-math';
+
 interface CountUpPlay {
   time: string;
   score: number;
@@ -52,7 +54,9 @@ export interface SessionAnalysis {
 
 /** プレイを日ごとのセッションにグルーピング */
 export function groupPlaysBySession(plays: CountUpPlay[]): Session[] {
-  const sorted = [...plays].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  const sorted = [...plays].sort(
+    (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
+  );
 
   const sessionMap = new Map<string, CountUpPlay[]>();
 
@@ -68,7 +72,7 @@ export function groupPlaysBySession(plays: CountUpPlay[]): Session[] {
   for (const [date, sessionPlays] of sessionMap) {
     // 時間順にソートし、ゲーム番号を付与
     const timeSorted = sessionPlays.sort(
-      (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+      (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
     );
     const plays = timeSorted.map((p, i) => ({
       time: p.time,
@@ -150,7 +154,7 @@ export function analyzeTimeOfDay(plays: CountUpPlay[]): TimeOfDayResult[] {
   const hourBuckets = new Map<number, number[]>();
 
   for (const play of plays) {
-    const d = new Date(play.time);
+    const d = parsePlayTime(play.time);
     const hour = d.getHours();
     if (!hourBuckets.has(hour)) {
       hourBuckets.set(hour, []);

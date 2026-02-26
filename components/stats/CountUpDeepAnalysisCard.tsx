@@ -23,6 +23,7 @@ import {
   getConsistencyLabel,
   buildScoreBands,
   analyzeMissDirection,
+  parsePlayTime,
 } from '@/lib/stats-math';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
@@ -113,7 +114,7 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
       return plays;
   }
 
-  return plays.filter((p) => new Date(p.time) >= cutoff);
+  return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
 }
 
 // ─── 円形ダーツボード風ミス方向ビジュアル ───
@@ -352,7 +353,10 @@ export default function CountUpDeepAnalysisCard({
   const [excludeOuterSingle, setExcludeOuterSingle] = useState(false);
 
   const sortedPlays = useMemo(
-    () => [...countupPlays].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()),
+    () =>
+      [...countupPlays].sort(
+        (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
+      ),
     [countupPlays],
   );
 
@@ -407,7 +411,7 @@ export default function CountUpDeepAnalysisCard({
   const trendData = filtered.map((p, i) => ({
     idx: i + 1,
     score: p.score,
-    date: new Date(p.time).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
+    date: parsePlayTime(p.time).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
   }));
 
   const consistencyLabel = consistency ? getConsistencyLabel(consistency.score) : null;

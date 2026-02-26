@@ -3,6 +3,8 @@
  * ベクトル位置の推移、グルーピング半径の改善トレンド、スピード×スコア相関
  */
 
+import { parsePlayTime } from './stats-math';
+
 interface SensorPlay {
   time: string;
   score: number;
@@ -81,7 +83,9 @@ export function computeSensorTrends(plays: SensorPlay[]): SensorTrendPoint[] {
   const valid = filterValidSensorPlays(plays);
   if (valid.length === 0) return [];
 
-  const sorted = [...valid].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  const sorted = [...valid].sort(
+    (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
+  );
 
   const window = 20; // 20ゲーム移動平均
 
@@ -172,7 +176,9 @@ export function computeVectorDrift(plays: SensorPlay[]): VectorDrift | null {
   const valid = filterValidSensorPlays(plays);
   if (valid.length < 20) return null;
 
-  const sorted = [...valid].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  const sorted = [...valid].sort(
+    (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
+  );
 
   const quarterLen = Math.floor(sorted.length / 4);
   const early = sorted.slice(0, quarterLen);
@@ -220,7 +226,9 @@ export function analyzeSensor(plays: SensorPlay[]): SensorAnalysis | null {
 
   // radius改善率
   let radiusImprovement: number | null = null;
-  const sorted = [...valid].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  const sorted = [...valid].sort(
+    (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
+  );
   if (sorted.length >= 20) {
     const quarterLen = Math.floor(sorted.length / 4);
     const earlyRadius =
