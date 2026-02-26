@@ -21,17 +21,34 @@ export const POST = withErrorHandler(
     const dlEmail = decrypt(userData.dlCredentialsEncrypted.email);
     const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
-    // lastSyncAt を取得して差分 or フル同期を判定
-    const apiCacheDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).get();
-    const lastSyncAt = apiCacheDoc.exists
-      ? (apiCacheDoc.data()?.lastSyncAt?.toDate?.()?.toISOString() ?? null)
-      : null;
+    // 保存済みプレイの最新日時を取得し、差分同期の起点にする
+    const countupDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get();
+    let latestPlayTime: string | null = null;
+    if (countupDoc.exists) {
+      try {
+        const existingPlays = JSON.parse(countupDoc.data()?.plays ?? '[]') as {
+          time: string;
+        }[];
+        if (existingPlays.length > 0) {
+          latestPlayTime = existingPlays
+            .map((p) => p.time)
+            .sort()
+            .pop()!;
+        }
+      } catch {
+        // パースエラー時はフル同期にフォールバック
+      }
+    }
 
     let result;
     try {
-      if (lastSyncAt) {
-        console.log(`[DL-SYNC] 差分同期開始 (since ${lastSyncAt})...`);
-        result = await dlApiDiffSync(dlEmail, dlPassword, lastSyncAt);
+      if (latestPlayTime) {
+        // 保存済みの最新プレイ日時から差分取得
+        const syncFrom = new Date(latestPlayTime.replace(/ |_/, 'T')).toISOString();
+        console.log(
+          `[DL-SYNC] 差分同期開始 (since ${syncFrom}, latest play: ${latestPlayTime})...`,
+        );
+        result = await dlApiDiffSync(dlEmail, dlPassword, syncFrom);
       } else {
         console.log('[DL-SYNC] フル同期開始 (初回)...');
         result = await dlApiFullSync(dlEmail, dlPassword);
