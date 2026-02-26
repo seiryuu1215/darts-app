@@ -8,8 +8,17 @@ import { dlApiFullSync, dlApiDiffSync } from '@/lib/dartslive-api';
 export const maxDuration = 60;
 
 export const POST = withErrorHandler(
-  withAdmin(async (_req: NextRequest, ctx) => {
+  withAdmin(async (req: NextRequest, ctx) => {
     const userId = ctx.userId;
+
+    // forceFullSync フラグを取得
+    let forceFullSync = false;
+    try {
+      const body = await req.json();
+      forceFullSync = body.forceFullSync === true;
+    } catch {
+      /* ボディなしの場合は無視 */
+    }
 
     // DL認証情報を取得・復号
     const userDoc = await adminDb.doc(`users/${userId}`).get();
@@ -22,27 +31,29 @@ export const POST = withErrorHandler(
     const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
     // 保存済みプレイの最新日時を取得し、差分同期の起点にする
-    const countupDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get();
     let latestPlayTime: string | null = null;
-    if (countupDoc.exists) {
-      try {
-        const existingPlays = JSON.parse(countupDoc.data()?.plays ?? '[]') as {
-          time: string;
-        }[];
-        if (existingPlays.length > 0) {
-          latestPlayTime = existingPlays
-            .map((p) => p.time)
-            .sort()
-            .pop()!;
+    if (!forceFullSync) {
+      const countupDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get();
+      if (countupDoc.exists) {
+        try {
+          const existingPlays = JSON.parse(countupDoc.data()?.plays ?? '[]') as {
+            time: string;
+          }[];
+          if (existingPlays.length > 0) {
+            latestPlayTime = existingPlays
+              .map((p) => p.time)
+              .sort()
+              .pop()!;
+          }
+        } catch {
+          // パースエラー時はフル同期にフォールバック
         }
-      } catch {
-        // パースエラー時はフル同期にフォールバック
       }
     }
 
     let result;
     try {
-      if (latestPlayTime) {
+      if (latestPlayTime && !forceFullSync) {
         // 保存済みの最新プレイ日時から差分取得
         const syncFrom = new Date(latestPlayTime.replace(/ |_/, 'T')).toISOString();
         console.log(
@@ -50,7 +61,7 @@ export const POST = withErrorHandler(
         );
         result = await dlApiDiffSync(dlEmail, dlPassword, syncFrom);
       } else {
-        console.log('[DL-SYNC] フル同期開始 (初回)...');
+        console.log(`[DL-SYNC] フル同期開始 (${forceFullSync ? '強制' : '初回'})...`);
         result = await dlApiFullSync(dlEmail, dlPassword);
       }
       console.log(
@@ -94,20 +105,22 @@ export const POST = withErrorHandler(
         }),
       );
 
-      // 2. COUNT-UPプレイデータをマージ
+      // 2. COUNT-UPプレイデータをマージ（フル同期時は上書き）
       if (result.countupPlays.length > 0) {
         const countupRef = adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`);
-        const existingDoc = await countupRef.get();
         let mergedPlays = result.countupPlays;
 
-        if (existingDoc.exists) {
-          try {
-            const existingPlays = JSON.parse(existingDoc.data()?.plays ?? '[]');
-            const existingTimes = new Set(existingPlays.map((p: { time: string }) => p.time));
-            const newPlays = result.countupPlays.filter((p) => !existingTimes.has(p.time));
-            mergedPlays = [...existingPlays, ...newPlays];
-          } catch {
-            // パースエラー時は新規データで上書き
+        if (!forceFullSync) {
+          const existingDoc = await countupRef.get();
+          if (existingDoc.exists) {
+            try {
+              const existingPlays = JSON.parse(existingDoc.data()?.plays ?? '[]');
+              const existingTimes = new Set(existingPlays.map((p: { time: string }) => p.time));
+              const newPlays = result.countupPlays.filter((p) => !existingTimes.has(p.time));
+              mergedPlays = [...existingPlays, ...newPlays];
+            } catch {
+              // パースエラー時は新規データで上書き
+            }
           }
         }
 

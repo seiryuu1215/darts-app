@@ -6,6 +6,8 @@ import {
   Typography,
   Button,
   Chip,
+  Checkbox,
+  FormControlLabel,
   CircularProgress,
   Alert,
   Divider,
@@ -275,6 +277,7 @@ export default function AdminApiStatsSection({
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [forceFullSync, setForceFullSync] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [hiddenCards, setHiddenCards] = useState<Record<string, boolean>>({});
 
@@ -304,7 +307,11 @@ export default function AdminApiStatsSection({
     setSyncError(null);
     setSyncResult(null);
     try {
-      const res = await fetch('/api/admin/dartslive-sync', { method: 'POST' });
+      const res = await fetch('/api/admin/dartslive-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceFullSync }),
+      });
       const json = await res.json();
       if (!res.ok) {
         setSyncError(json.error || 'API同期に失敗しました');
@@ -423,15 +430,29 @@ export default function AdminApiStatsSection({
           </Typography>
           <Chip label="ADMIN" size="small" color="error" />
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={syncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
-          onClick={handleSync}
-          disabled={syncing}
-        >
-          {syncing ? '同期中...' : 'API同期'}
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={syncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            {syncing ? '同期中...' : 'API同期'}
+          </Button>
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={forceFullSync}
+                onChange={(_, v) => setForceFullSync(v)}
+              />
+            }
+            label="全部取り直し"
+            sx={{ ml: 0.5, '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+            disabled={syncing}
+          />
+        </Box>
       </Box>
 
       {syncError && (

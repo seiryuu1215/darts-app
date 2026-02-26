@@ -303,3 +303,168 @@ export function analyzeMissDirection(
 export function parsePlayTime(time: string): Date {
   return new Date(time.replace(/ |_/, 'T'));
 }
+
+// ─── ダーツコードのスコア値を取得 ────────────────────
+
+/** ダーツコードの得点を返す */
+function dartCodeScore(code: string): number {
+  const parsed = parseDartCode(code);
+  if (!parsed) return 0;
+  if (parsed.area === 'doubleBull') return 50;
+  if (parsed.area === 'singleBull') return 25;
+  if (parsed.area === 'out') return 0;
+  if (parsed.area === 'triple') return parsed.number * 3;
+  if (parsed.area === 'double') return parsed.number * 2;
+  return parsed.number;
+}
+
+// ─── ブル率改善シミュレーション ────────────────────
+
+export interface BullSimulationStep {
+  improvedBullRate: number;
+  estimatedAvgScore: number;
+  scoreDiff: number;
+}
+
+export interface BullSimulationResult {
+  currentBullRate: number;
+  currentAvgScore: number;
+  totalDarts: number;
+  totalGames: number;
+  missDartAvgScore: number;
+  steps: BullSimulationStep[];
+}
+
+/**
+ * ブル率改善がCOUNT-UPスコアに与える影響をシミュレーション
+ * 全PLAY_LOGをパースし、ミスダーツをブルに置き換えた場合のスコア上昇を計算
+ */
+export function simulateBullImprovement(
+  playLogs: string[],
+  currentAvgScore: number,
+): BullSimulationResult | null {
+  if (playLogs.length === 0) return null;
+
+  let totalDarts = 0;
+  let bullCount = 0;
+  let missDartScoreSum = 0;
+  let missCount = 0;
+
+  for (const log of playLogs) {
+    const darts = log.split(',');
+    for (const code of darts) {
+      const parsed = parseDartCode(code);
+      if (!parsed) continue;
+      totalDarts++;
+      if (parsed.isBull) {
+        bullCount++;
+      } else if (parsed.area !== 'out') {
+        missCount++;
+        missDartScoreSum += dartCodeScore(code);
+      }
+    }
+  }
+
+  if (totalDarts === 0 || playLogs.length === 0) return null;
+
+  const currentBullRate = (bullCount / totalDarts) * 100;
+  const missDartAvgScore = missCount > 0 ? missDartScoreSum / missCount : 0;
+  // ブルの平均得点 = (BB:50 + B:25) の加重平均。概算で37.5を使用
+  const avgBullScore = 37.5;
+  const scoreGainPerDart = avgBullScore - missDartAvgScore;
+  const totalGames = playLogs.length;
+  const dartsPerGame = totalDarts / totalGames;
+
+  const steps: BullSimulationStep[] = [];
+  for (let pct = 1; pct <= 10; pct++) {
+    const improvedBullRate = currentBullRate + pct;
+    // 改善分のダーツ数（1ゲームあたり）
+    const additionalBullDartsPerGame = (pct / 100) * dartsPerGame;
+    const scoreDiff = Math.round(additionalBullDartsPerGame * scoreGainPerDart * 10) / 10;
+    steps.push({
+      improvedBullRate: Math.round(improvedBullRate * 10) / 10,
+      estimatedAvgScore: Math.round((currentAvgScore + scoreDiff) * 10) / 10,
+      scoreDiff,
+    });
+  }
+
+  return {
+    currentBullRate: Math.round(currentBullRate * 10) / 10,
+    currentAvgScore,
+    totalDarts,
+    totalGames,
+    missDartAvgScore: Math.round(missDartAvgScore * 10) / 10,
+    steps,
+  };
+}
+
+// ─── 曜日×時間帯分析 ────────────────────
+
+export interface WeekdayHourlyCell {
+  day: number; // 0-6 (日〜土)
+  hour: number; // 0-23
+  avgScore: number;
+  count: number;
+}
+
+export interface WeekdayHourlyResult {
+  cells: WeekdayHourlyCell[];
+  bestCell: WeekdayHourlyCell | null;
+  worstCell: WeekdayHourlyCell | null;
+}
+
+const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+export function getDayLabel(day: number): string {
+  return DAY_LABELS[day] ?? '';
+}
+
+/**
+ * 曜日×時間帯ごとの平均スコアを分析
+ * 各セル最低2ゲーム以上で平均スコアを算出、全体で3セル以上で結果を返す
+ */
+export function analyzeWeekdayHourly(
+  plays: { time: string; score: number }[],
+): WeekdayHourlyResult | null {
+  if (plays.length === 0) return null;
+
+  // 曜日×時間帯でグルーピング
+  const buckets: Record<string, { scores: number[]; day: number; hour: number }> = {};
+
+  for (const play of plays) {
+    const dt = parsePlayTime(play.time);
+    const day = dt.getDay();
+    const hour = dt.getHours();
+    const key = `${day}-${hour}`;
+    if (!buckets[key]) {
+      buckets[key] = { scores: [], day, hour };
+    }
+    buckets[key].scores.push(play.score);
+  }
+
+  // 最低2ゲーム以上のセルのみ
+  const cells: WeekdayHourlyCell[] = [];
+  for (const bucket of Object.values(buckets)) {
+    if (bucket.scores.length >= 2) {
+      const avg = bucket.scores.reduce((a, b) => a + b, 0) / bucket.scores.length;
+      cells.push({
+        day: bucket.day,
+        hour: bucket.hour,
+        avgScore: Math.round(avg * 10) / 10,
+        count: bucket.scores.length,
+      });
+    }
+  }
+
+  // 3セル未満は表示しない
+  if (cells.length < 3) return null;
+
+  let bestCell: WeekdayHourlyCell | null = null;
+  let worstCell: WeekdayHourlyCell | null = null;
+  for (const cell of cells) {
+    if (!bestCell || cell.avgScore > bestCell.avgScore) bestCell = cell;
+    if (!worstCell || cell.avgScore < worstCell.avgScore) worstCell = cell;
+  }
+
+  return { cells, bestCell, worstCell };
+}
