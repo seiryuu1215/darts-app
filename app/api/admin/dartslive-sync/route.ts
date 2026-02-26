@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
 import { withAdmin, withErrorHandler } from '@/lib/api-middleware';
-import { dlApiFullSync } from '@/lib/dartslive-api';
+import { dlApiFullSync, dlApiDiffSync } from '@/lib/dartslive-api';
 
 export const maxDuration = 60;
 
@@ -21,11 +21,21 @@ export const POST = withErrorHandler(
     const dlEmail = decrypt(userData.dlCredentialsEncrypted.email);
     const dlPassword = decrypt(userData.dlCredentialsEncrypted.password);
 
-    // API フル同期
+    // lastSyncAt を取得して差分 or フル同期を判定
+    const apiCacheDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/latest`).get();
+    const lastSyncAt = apiCacheDoc.exists
+      ? (apiCacheDoc.data()?.lastSyncAt?.toDate?.()?.toISOString() ?? null)
+      : null;
+
     let result;
     try {
-      console.log('[DL-SYNC] API取得開始...');
-      result = await dlApiFullSync(dlEmail, dlPassword);
+      if (lastSyncAt) {
+        console.log(`[DL-SYNC] 差分同期開始 (since ${lastSyncAt})...`);
+        result = await dlApiDiffSync(dlEmail, dlPassword, lastSyncAt);
+      } else {
+        console.log('[DL-SYNC] フル同期開始 (初回)...');
+        result = await dlApiFullSync(dlEmail, dlPassword);
+      }
       console.log(
         `[DL-SYNC] API取得完了: daily=${result.dailyHistory.length}, plays=${result.recentPlays.length}, countup=${result.countupPlays.length}`,
       );
