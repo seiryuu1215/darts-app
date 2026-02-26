@@ -436,7 +436,7 @@ export default function CountUpDeepAnalysisCard({
   );
 
   const ppd = stats01Detailed?.avg ?? null;
-  const expectedScore = ppd != null ? Math.round(ppd * 24) : null;
+  const expectedScore = ppd != null ? Math.round(ppd * 8) : null;
   const performanceRatio =
     expectedScore != null && expectedScore > 0
       ? Math.round((stats.avg / expectedScore) * 100)
@@ -561,7 +561,7 @@ export default function CountUpDeepAnalysisCard({
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1 }}>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                期待スコア (PPD&times;24)
+                期待スコア (PPD&times;8)
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                 {expectedScore}
