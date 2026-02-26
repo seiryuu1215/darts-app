@@ -106,6 +106,7 @@ interface AdminApiStatsSectionProps {
   awardList?: AwardEntry[] | null;
   recentPlays?: RecentPlay[] | null;
   countupPlays?: CountUpPlay[] | null;
+  flight?: string;
 }
 
 const STORAGE_KEY = 'stats_collapsed_sections';
@@ -275,6 +276,7 @@ export default function AdminApiStatsSection({
   awardList,
   recentPlays,
   countupPlays,
+  flight,
 }: AdminApiStatsSectionProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -515,6 +517,7 @@ export default function AdminApiStatsSection({
           <SkillRadarChart
             stats01={enrichedData?.stats01Detailed ?? null}
             statsCricket={enrichedData?.statsCricketDetailed ?? null}
+            flight={flight}
           />
         )}
         {!hiddenCards.player_dna && (

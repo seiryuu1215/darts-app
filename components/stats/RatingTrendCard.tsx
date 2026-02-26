@@ -1,6 +1,7 @@
 'use client';
 
 import { Paper, Box, Typography, Chip } from '@mui/material';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
@@ -42,19 +43,24 @@ const TREND_DISPLAY: Record<
 };
 
 /**
- * 最小二乗法で線形回帰の傾きを算出
+ * 最小二乗法で線形回帰の傾き・切片を算出
  * x: 0-indexed day, y: rating
  */
-function linearSlope(points: { x: number; y: number }[]): number {
+function linearRegression(points: { x: number; y: number }[]): {
+  slope: number;
+  intercept: number;
+} {
   const n = points.length;
-  if (n < 2) return 0;
+  if (n < 2) return { slope: 0, intercept: points[0]?.y ?? 0 };
   const sumX = points.reduce((s, p) => s + p.x, 0);
   const sumY = points.reduce((s, p) => s + p.y, 0);
   const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
   const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
   const denom = n * sumX2 - sumX * sumX;
-  if (denom === 0) return 0;
-  return (n * sumXY - sumX * sumY) / denom;
+  if (denom === 0) return { slope: 0, intercept: sumY / n };
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
 }
 
 export default function RatingTrendCard({ periodRecords, currentRating }: RatingTrendCardProps) {
@@ -73,7 +79,14 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
     y: r.rating!,
   }));
 
-  const slope = linearSlope(points);
+  const { slope, intercept } = linearRegression(points);
+
+  // スパークラインデータ
+  const chartData = recent.map((r, i) => ({
+    date: r.date.slice(5), // "MM-DD"
+    rating: r.rating!,
+    trend: Math.round((intercept + slope * points[i].x) * 1000) / 1000,
+  }));
 
   let trend: Trend;
   if (slope > SLOPE_THRESHOLD) trend = 'rising';
@@ -106,6 +119,50 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
           size="small"
           variant="outlined"
         />
+      </Box>
+
+      {/* スパークライン */}
+      <Box sx={{ width: '100%', height: 120, mb: 1.5 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={slope > 0 ? '#4caf50' : '#f44336'} stopOpacity={0.4} />
+                <stop
+                  offset="95%"
+                  stopColor={slope > 0 ? '#4caf50' : '#f44336'}
+                  stopOpacity={0.05}
+                />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} />
+            <YAxis
+              domain={['auto', 'auto']}
+              tick={{ fontSize: 10, fill: '#888' }}
+              tickLine={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="rating"
+              stroke={slope > 0 ? '#4caf50' : '#f44336'}
+              fill="url(#ratingGrad)"
+              strokeWidth={2}
+              dot={false}
+            />
+            <ReferenceLine
+              segment={[
+                { x: chartData[0]?.date, y: chartData[0]?.trend },
+                {
+                  x: chartData[chartData.length - 1]?.date,
+                  y: chartData[chartData.length - 1]?.trend,
+                },
+              ]}
+              stroke="#ff9800"
+              strokeDasharray="6 3"
+              strokeWidth={1.5}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

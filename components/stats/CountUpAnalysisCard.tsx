@@ -7,11 +7,12 @@ import { computeStats, buildHistogram } from '@/lib/stats-math';
 
 interface CountUpAnalysisCardProps {
   games: { category: string; scores: number[] }[];
+  expectedCountUp?: number | null;
 }
 
 const MAX_GAMES = 30;
 
-export default function CountUpAnalysisCard({ games }: CountUpAnalysisCardProps) {
+export default function CountUpAnalysisCard({ games, expectedCountUp }: CountUpAnalysisCardProps) {
   const countUpGame = games?.find((g) => g.category === 'COUNT-UP');
   if (!countUpGame || countUpGame.scores.length < 3) return null;
 
@@ -19,11 +20,41 @@ export default function CountUpAnalysisCard({ games }: CountUpAnalysisCardProps)
   const { avg, max, min, median } = computeStats(recentScores);
   const histogram = buildHistogram(recentScores, 100);
 
-  const summaryItems = [
-    { label: '平均', value: Math.round(avg) },
-    { label: '最高', value: max },
-    { label: '最低', value: min },
-    { label: '中央値', value: Math.round(median) },
+  // Rt期待値以上の割合
+  const aboveExpectedPct =
+    expectedCountUp != null
+      ? Math.round(
+          (recentScores.filter((s) => s >= expectedCountUp).length / recentScores.length) * 100,
+        )
+      : null;
+
+  // 前半/後半比較トレンド
+  const half = Math.floor(recentScores.length / 2);
+  const firstHalfAvg = recentScores.slice(0, half).reduce((a, b) => a + b, 0) / half;
+  const secondHalfAvg = recentScores.slice(-half).reduce((a, b) => a + b, 0) / half;
+  const trendDiff = secondHalfAvg - firstHalfAvg;
+  const trendArrow = trendDiff > 10 ? '↑' : trendDiff < -10 ? '↓' : '→';
+  const trendColor = trendDiff > 10 ? '#4caf50' : trendDiff < -10 ? '#f44336' : '#888';
+
+  const summaryItems: { label: string; value: string; color?: string }[] = [
+    { label: '平均', value: `${Math.round(avg)}` },
+    { label: '最高', value: `${max}` },
+    { label: '最低', value: `${min}` },
+    { label: '中央値', value: `${Math.round(median)}` },
+    ...(aboveExpectedPct != null
+      ? [
+          {
+            label: 'Rt期待値以上',
+            value: `${aboveExpectedPct}%`,
+            color: aboveExpectedPct >= 50 ? '#4caf50' : '#f44336',
+          },
+        ]
+      : []),
+    {
+      label: '後半トレンド',
+      value: `${trendArrow}${Math.abs(Math.round(trendDiff))}`,
+      color: trendColor,
+    },
   ];
 
   return (
@@ -42,7 +73,10 @@ export default function CountUpAnalysisCard({ games }: CountUpAnalysisCardProps)
             <Typography variant="caption" color="text.secondary">
               {item.label}
             </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 'bold', color: item.color ?? 'text.primary' }}
+            >
               {item.value}
             </Typography>
           </Paper>

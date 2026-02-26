@@ -45,7 +45,7 @@ darts-app/
 │   ├── layout/             # Header, Footer, Sidebar, Breadcrumbs
 │   ├── darts/              # DartCard, DartDetail, DartForm
 │   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
-│   ├── stats/              # 46個のスタッツ可視化コンポーネント（高度分析・期間フィルター・表示切替対応）
+│   ├── stats/              # 53個のスタッツ可視化コンポーネント（高度分析・期間フィルター・表示切替対応）
 │   ├── affiliate/          # AffiliateButton, AffiliateBanner
 │   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
 │   ├── progression/        # XpBar, LevelUpSnackbar
@@ -501,7 +501,7 @@ service cloud.firestore {
 
 ### 5-2. スタッツ画面（`app/stats/page.tsx`）— 最も複雑なページ
 
-約565行のオーケストレーションページ。15個のサブコンポーネントにデータを配る。
+約550行のオーケストレーションページ。20個以上のサブコンポーネントにデータを配る。
 
 ```
 スタッツ画面
@@ -513,13 +513,17 @@ service cloud.firestore {
 ├── CountUpDeltaChart      ← CUスコア±差分バー
 ├── RatingTargetCard       ← Rt目標分析（3シナリオ）
 ├── MonthlyTrendChart      ← 月間推移折れ線グラフ
-├── RecentGamesChart       ← 直近ゲーム結果（ComposedChart）
+├── RecentGamesChart       ← 直近ゲーム結果（ComposedChart + サマリー行）
+├── SkillRadarChart        ← PRO簡易スキルレーダー（5軸 + ベンチマーク）
+├── RatingTrendCard        ← Rtトレンド（AreaChartスパークライン + 回帰直線）
+├── AwardPaceSimpleCard    ← アワードペース予測（簡易版）
 ├── RecentDaySummary       ← 直近プレイ日のサマリー
+├── SessionComparisonCard  ← 直近2セッション比較
 ├── AwardsTable            ← アワード一覧
 ├── Active Dart Display    ← 使用中セッティング
 ├── CSV Export             ← Pro専用エクスポート
 ├── Manual Input Link      ← 手動記録ページへのリンク
-└── PRSiteSection          ← おすすめブランドPR
+└── Calendar Link          ← カレンダーページへのリンク
 ```
 
 ### 5-3. カレンダー画面（`app/stats/calendar/page.tsx`）
@@ -1269,14 +1273,17 @@ vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
 
 ### スタッツコンポーネント（`components/stats/`）
 
-| コンポーネント          | 使っているチャート              |
-| ----------------------- | ------------------------------- |
-| `BullStatsCard.tsx`     | PieChart（ドーナツ）+ LineChart |
-| `CountUpDeltaChart.tsx` | BarChart（±差分）               |
-| `MonthlyTrendChart.tsx` | LineChart                       |
-| `RecentGamesChart.tsx`  | ComposedChart（Bar + Line）     |
-| `GameStatsCards.tsx`    | なし（数値表示のみ）            |
-| `RatingHeroCard.tsx`    | なし（大きなRt表示）            |
-| `RatingTargetCard.tsx`  | なし（テーブル表示）            |
-| `AwardsTable.tsx`       | なし（MUI Table）               |
-| `PercentileChip.tsx`    | なし（再利用可能バッジ）        |
+| コンポーネント              | 使っているチャート                             |
+| --------------------------- | ---------------------------------------------- |
+| `BullStatsCard.tsx`         | PieChart（ドーナツ）+ LineChart                |
+| `CountUpDeltaChart.tsx`     | BarChart（±差分）                              |
+| `MonthlyTrendChart.tsx`     | LineChart                                      |
+| `RecentGamesChart.tsx`      | ComposedChart（Bar + Line）+ サマリー行        |
+| `RatingTrendCard.tsx`       | AreaChart（スパークライン + 回帰直線）         |
+| `SkillRadarChart.tsx`       | RadarChart（詳細8軸 / 簡易5軸 + ベンチマーク） |
+| `SessionComparisonCard.tsx` | なし（グリッドテーブル + DeltaIndicator）      |
+| `GameStatsCards.tsx`        | なし（数値表示のみ）                           |
+| `RatingHeroCard.tsx`        | なし（大きなRt表示）                           |
+| `RatingTargetCard.tsx`      | なし（テーブル表示）                           |
+| `AwardsTable.tsx`           | なし（MUI Table）                              |
+| `PercentileChip.tsx`        | なし（再利用可能バッジ）                       |

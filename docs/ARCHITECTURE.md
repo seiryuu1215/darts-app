@@ -346,7 +346,7 @@ components/
 ├── comment/                   # コメント
 │   ├── CommentForm.tsx
 │   └── CommentList.tsx
-├── stats/                     # スタッツダッシュボード（46コンポーネント）
+├── stats/                     # スタッツダッシュボード（53コンポーネント）
 │   ├── PlayerProfileCard.tsx  # プレイヤープロフィール（通り名・ホームショップ・Google Maps連携）
 │   ├── RatingHeroCard.tsx     # レーティング + フライト + 進捗バー + パーセンタイル
 │   ├── PeriodStatsPanel.tsx   # 期間タブ（今日/今週/今月/累計）+ サマリーテーブル
@@ -381,7 +381,12 @@ components/
 │   ├── SessionFatigueCard.tsx # セッション疲労分析（期間フィルター対応）
 │   ├── SensorTrendCard.tsx    # センサー推移
 │   ├── SpeedAccuracyCard.tsx  # スピード精度
-│   └── GameAveragesCard.tsx   # ゲーム別平均
+│   ├── GameAveragesCard.tsx   # ゲーム別平均
+│   ├── RatingTrendCard.tsx    # レーティングトレンド（スパークライン付き）
+│   ├── AwardPaceSimpleCard.tsx # アワードペース予測（簡易版）
+│   ├── GameMixCard.tsx        # ゲームミックス分析
+│   ├── ConditionCorrelationCard.tsx # コンディション×パフォーマンス相関
+│   └── SessionComparisonCard.tsx # セッション比較（直近2回）
 ├── progression/               # 経験値・レベル
 │   ├── XpBar.tsx              # XPプログレスバー
 │   ├── LevelUpSnackbar.tsx    # レベルアップ通知

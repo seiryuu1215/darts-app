@@ -58,6 +58,9 @@ export default function AboutPage() {
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
           ダーツプレイヤーのためのセッティング管理・スタッツ記録・バレル探索アプリです。
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          DARTSLIVE連携によるスタッツ自動取得、スキルレーダー（フライト別ベンチマーク比較）、レーティングトレンド分析、セッション比較、7,000種以上のバレルDB、診断クイズなど豊富な機能を搭載。
+        </Typography>
         <Typography variant="body2" color="text.secondary">
           お問い合わせは X（Twitter）@seiryuu_darts までお気軽にどうぞ。
         </Typography>

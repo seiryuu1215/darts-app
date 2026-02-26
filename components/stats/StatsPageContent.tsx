@@ -23,6 +23,8 @@ import ConditionCorrelationCard from './ConditionCorrelationCard';
 import GameMixCard from './GameMixCard';
 import RatingTrendCard from './RatingTrendCard';
 import AwardPaceSimpleCard from './AwardPaceSimpleCard';
+import SkillRadarChart from './SkillRadarChart';
+import SessionComparisonCard from './SessionComparisonCard';
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -168,7 +170,7 @@ export default function StatsPageContent({
       <ConsistencyCard games={dlData.recentGames.games} />
 
       {/* 6c. COUNT-UP Analysis */}
-      <CountUpAnalysisCard games={dlData.recentGames.games} />
+      <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
 
       {/* 6d. 01 Analysis */}
       <ZeroOneAnalysisCard games={dlData.recentGames.games} />
@@ -181,6 +183,20 @@ export default function StatsPageContent({
 
       {/* 6g. Game Mix Analysis */}
       <GameMixCard games={dlData.recentGames.games} />
+
+      {/* 6g2. PRO Skill Radar */}
+      {c.stats01Avg != null && c.statsCriAvg != null && (
+        <SkillRadarChart
+          simpleMode
+          stats01Avg={c.stats01Avg}
+          statsCriAvg={c.statsCriAvg}
+          statsPraAvg={c.statsPraAvg}
+          dBullTotal={periodRecords.reduce((s, r) => s + (r.dBull ?? 0), 0) || null}
+          sBullTotal={periodRecords.reduce((s, r) => s + (r.sBull ?? 0), 0) || null}
+          countUpScores={dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores}
+          flight={c.flight || undefined}
+        />
+      )}
 
       {/* 6h. Rating Trend */}
       <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
@@ -217,6 +233,9 @@ export default function StatsPageContent({
 
       {/* 10. Recent Day Summary */}
       <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
+
+      {/* 10b. Session Comparison */}
+      <SessionComparisonCard periodRecords={periodRecords} />
 
       {/* 11. Awards Table */}
       <AwardsTable awards={c.awards} />

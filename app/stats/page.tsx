@@ -423,6 +423,7 @@ export default function StatsPage() {
             awardList={apiAwardList}
             recentPlays={apiRecentPlays}
             countupPlays={apiCountupPlays}
+            flight={c?.flight}
           />
         )}
 

@@ -39,7 +39,7 @@
 
 - **セッティング管理** — バレル・チップ・シャフト・フライトの組み合わせを登録、スペック自動計算、比較、変更履歴、OGP付きシェア
 - **バレル検索 & 探索** — 7,000種以上のDB、スペック横断検索、売上ランキング、実寸シミュレーター、診断クイズ、レコメンドエンジン
-- **DARTSLIVE スタッツ連携 (PRO)** — 自動取得（Puppeteer）、Rating/01/Cricket/COUNT-UP の月間推移グラフ、パーセンタイル表示、ブル統計、Rt目標分析
+- **DARTSLIVE スタッツ連携 (PRO)** — 自動取得（Puppeteer）、Rating/01/Cricket/COUNT-UP の月間推移グラフ、パーセンタイル表示、ブル統計、Rt目標分析、スキルレーダー（フライト別ベンチマーク付き）、レーティングトレンドスパークライン、セッション比較、ゲーム安定度分析
 - **マイショップ** — DARTSLIVE サーチ URL 貼り付けで店名・住所・駅・画像を自動登録、タグフィルター（禁煙・投げ放題等）、リスト管理、お気に入り
 - **週次/月次レポート** — LINE Flex Message で自動配信（前期間比較付き）
 - **XP / 経験値** — 14種のXPルール、日次Cron自動付与、30段階ランク、12種の実績
@@ -84,7 +84,7 @@
 | グラフ         | Recharts 3                                    |
 | スクレイピング | Puppeteer 24                                  |
 | エラー監視     | Sentry                                        |
-| テスト         | Vitest (125+ tests)                           |
+| テスト         | Vitest (150+ tests)                           |
 | CI             | GitHub Actions (lint / format / test / build) |
 | PWA            | Serwist (Workbox ベース)                      |
 | モバイル       | Capacitor 8 (iOS WebView)                     |

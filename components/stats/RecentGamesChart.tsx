@@ -172,6 +172,73 @@ export default function RecentGamesChart({
           </ComposedChart>
         </ResponsiveContainer>
       )}
+      {/* サマリー行 */}
+      {selectedGame &&
+        selectedGame.scores.length >= 5 &&
+        (() => {
+          const scores = selectedGame.scores;
+          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+          // 現在の連続: 末尾から期待値以上/未満の連続数
+          let currentStreak = 0;
+          const lastAbove = scores[scores.length - 1] >= threshold;
+          for (let i = scores.length - 1; i >= 0; i--) {
+            if (scores[i] >= threshold === lastAbove) currentStreak++;
+            else break;
+          }
+          const streakLabel = lastAbove ? `${currentStreak}連続↑` : `${currentStreak}連続↓`;
+
+          // 最長連続: 期待値以上の最長ラン
+          let maxRun = 0;
+          let run = 0;
+          for (const s of scores) {
+            if (s >= threshold) {
+              run++;
+              maxRun = Math.max(maxRun, run);
+            } else run = 0;
+          }
+
+          // 安定度: CV（変動係数）ベース
+          const stdDev = Math.sqrt(scores.reduce((s, v) => s + (v - avg) ** 2, 0) / scores.length);
+          const cv = avg > 0 ? stdDev / avg : 0;
+          const stabilityLabel =
+            cv < 0.08 ? '非常に安定' : cv < 0.15 ? '安定' : cv < 0.25 ? 'やや不安定' : '不安定';
+          const stabilityColor =
+            cv < 0.08 ? '#4caf50' : cv < 0.15 ? '#8bc34a' : cv < 0.25 ? '#ff9800' : '#f44336';
+
+          return (
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5, mb: 0.5 }}>
+              <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  現在の連続
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', color: lastAbove ? '#4caf50' : '#f44336' }}
+                >
+                  {streakLabel}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  最長連続↑
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  {maxRun}ゲーム
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  安定度
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: stabilityColor }}>
+                  {stabilityLabel}
+                </Typography>
+              </Paper>
+            </Box>
+          );
+        })()}
+
       {/* 色凡例 */}
       {isCountUpCategory && expectedCountUp != null && (
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1, mb: 0.5 }}>

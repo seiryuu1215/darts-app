@@ -102,7 +102,7 @@
 
 #### S-010: スタッツダッシュボード
 
-`app/stats/page.tsx` はオーケストレーターとして機能し、`AdminApiStatsSection` を中心に `components/stats/` 配下の30以上のコンポーネントにUIを委譲する。各セクションは折りたたみ可能で、コンポーネント単位の表示/非表示トグルを備える（状態はlocalStorageで保持）。各カードには期間フィルター（直近30G / 1ヶ月 / 1週間 / 1日）を提供。
+`app/stats/page.tsx` はオーケストレーターとして機能し、`AdminApiStatsSection` を中心に `components/stats/` 配下の50以上のコンポーネントにUIを委譲する。各セクションは折りたたみ可能で、コンポーネント単位の表示/非表示トグルを備える（状態はlocalStorageで保持）。各カードには期間フィルター（直近30G / 1ヶ月 / 1週間 / 1日）を提供。
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -168,7 +168,12 @@
 │  MonthlyTrendChart (Recharts LineChart 12ヶ月)     │
 │  DailyHistoryChart (日別推移)                       │
 │  AwardTrendChart (アワード推移)                     │
-│  RecentGamesChart (ComposedChart)                  │
+│  RecentGamesChart (ComposedChart + サマリー行)      │
+│  RatingTrendCard (AreaChart スパークライン)         │
+│  SessionComparisonCard (直近2セッション比較)       │
+│  GameMixCard (ゲームミックス分析)                   │
+│  ConditionCorrelationCard (コンディション相関)     │
+│  SkillRadarChart (PRO簡易5軸 + ベンチマーク)       │
 │  BestRecordsCard (自己ベスト記録)                   │
 │                                                    │
 │ ■ その他セクション                                 │
@@ -695,40 +700,44 @@ RootLayout (app/layout.tsx)
 
 ### 5.2 主要コンポーネントの責務
 
-| コンポーネント                | 責務                           | props/state                                                      |
-| ----------------------------- | ------------------------------ | ---------------------------------------------------------------- |
-| `DartForm`                    | セッティング入力の全管理       | 15+ state variables (barrel, tip, shaft, flight specs)           |
-| `DartCard`                    | セッティング一覧のカード表示   | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`                |
-| `BarrelCard`                  | バレル製品カード               | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`            |
-| `CommentList`                 | コメント一覧の表示・削除       | `dartId`, `comments[]`, `currentUserId`                          |
-| `Providers`                   | テーマ・セッション提供         | `children`, `darkMode` context                                   |
-| `PlayerProfileCard`           | DARTSLIVEプロフィール表示      | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor` |
-| `RatingHeroCard`              | レーティング+フライト+進捗バー | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak`        |
-| `PeriodStatsPanel`            | 期間別スタッツ集計表示         | `periodTab`, `summary`, `records`, `loading`                     |
-| `GameStatsCards`              | 3カテゴリスタッツカード        | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile   |
-| `AdminApiStatsSection`        | API連携データのセクション管理  | `apiData`, セクション折りたたみ状態                              |
-| `PracticeRecommendationsCard` | AI練習メニュー提案             | `stats`, `games`                                                 |
-| `SkillRadarChart`             | スキルレーダーチャート         | `skillScores`                                                    |
-| `PlayerDnaCard`               | プレイヤーDNA可視化            | `dnaData`, `flightColor`                                         |
-| `DetailedGameStatsCard`       | 01/Cri/CU詳細統計              | `detailedStats`                                                  |
-| `RatingBenchmarkCard`         | フライト別ベンチマーク比較     | `rating`, `flight`, `benchmarks`                                 |
-| `RatingSimulatorCard`         | Rt変動シミュレーション         | `currentRating`, `games`                                         |
-| `RollingTrendCard`            | 移動平均トレンドライン         | `trendData`, `period`                                            |
-| `PeriodComparisonCard`        | 期間比較（前週比等）           | `currentPeriod`, `previousPeriod`                                |
-| `CountUpDeepAnalysisCard`     | COUNT-UP深掘り分析             | `games`                                                          |
-| `DartboardHeatmap`            | ダーツボードヒートマップ       | `hitData`                                                        |
-| `SensorTrendCard`             | センサーデータ推移             | `sensorData`                                                     |
-| `GameAveragesCard`            | ゲーム平均記録一覧             | `averages`                                                       |
-| `ShopCard`                    | ショップ情報カード             | `shop`, `isBookmarked`, `isVisited`, `tags`                      |
-| `ShopBookmarkDialog`          | ショップブックマーク管理       | `shop`, `lists`, `onSave`                                        |
-| `DiscussionCard`              | ディスカッションカード表示     | `discussion`, `replyCount`                                       |
-| `GoalCard`                    | 目標進捗カード                 | `goal`, `onAchieve`, `onEdit`                                    |
-| `XpBar`                       | 経験値プログレスバー           | `currentXp`, `level`, `nextLevelXp`                              |
-| `NotificationBell`            | ヘッダー通知アイコン           | `unreadCount`, `onClick`                                         |
-| `WeeklyReportCard`            | 週次レポートカード             | `reportData`, `weekRange`                                        |
-| `MonthlyReportCard`           | 月次レポートカード             | `reportData`, `month`                                            |
-| `CalendarGrid`                | カレンダー月表示・日選択       | `year`, `month`, `records`, `selectedDate`, `onSelectDate`       |
-| `DayDetailPanel`              | 選択日の詳細スタッツ表示       | `date`, `records`                                                |
+| コンポーネント                | 責務                           | props/state                                                                                                                                                         |
+| ----------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DartForm`                    | セッティング入力の全管理       | 15+ state variables (barrel, tip, shaft, flight specs)                                                                                                              |
+| `DartCard`                    | セッティング一覧のカード表示   | `dart: Dart`, `onLike`, `isLiked`, `isBookmarked`                                                                                                                   |
+| `BarrelCard`                  | バレル製品カード               | `barrel: BarrelProduct`, `isBookmarked`, `onBookmark`                                                                                                               |
+| `CommentList`                 | コメント一覧の表示・削除       | `dartId`, `comments[]`, `currentUserId`                                                                                                                             |
+| `Providers`                   | テーマ・セッション提供         | `children`, `darkMode` context                                                                                                                                      |
+| `PlayerProfileCard`           | DARTSLIVEプロフィール表示      | `cardName`, `toorina`, `homeShop`, `cardImageUrl`, `flightColor`                                                                                                    |
+| `RatingHeroCard`              | レーティング+フライト+進捗バー | `rating`, `ratingPrev`, `flight`, `flightColor`, `streak`                                                                                                           |
+| `PeriodStatsPanel`            | 期間別スタッツ集計表示         | `periodTab`, `summary`, `records`, `loading`                                                                                                                        |
+| `GameStatsCards`              | 3カテゴリスタッツカード        | `stats01Avg`, `statsCriAvg`, `statsPraAvg` + prev + percentile                                                                                                      |
+| `AdminApiStatsSection`        | API連携データのセクション管理  | `apiData`, セクション折りたたみ状態                                                                                                                                 |
+| `PracticeRecommendationsCard` | AI練習メニュー提案             | `stats`, `games`                                                                                                                                                    |
+| `SkillRadarChart`             | スキルレーダー（詳細+簡易）    | 詳細: `stats01`, `statsCricket`, `flight?`。簡易: `simpleMode`, `stats01Avg`, `statsCriAvg`, `statsPraAvg`, `dBullTotal`, `sBullTotal`, `countUpScores?`, `flight?` |
+| `PlayerDnaCard`               | プレイヤーDNA可視化            | `dnaData`, `flightColor`                                                                                                                                            |
+| `DetailedGameStatsCard`       | 01/Cri/CU詳細統計              | `detailedStats`                                                                                                                                                     |
+| `RatingBenchmarkCard`         | フライト別ベンチマーク比較     | `rating`, `flight`, `benchmarks`                                                                                                                                    |
+| `RatingSimulatorCard`         | Rt変動シミュレーション         | `currentRating`, `games`                                                                                                                                            |
+| `RollingTrendCard`            | 移動平均トレンドライン         | `trendData`, `period`                                                                                                                                               |
+| `PeriodComparisonCard`        | 期間比較（前週比等）           | `currentPeriod`, `previousPeriod`                                                                                                                                   |
+| `CountUpDeepAnalysisCard`     | COUNT-UP深掘り分析             | `games`                                                                                                                                                             |
+| `DartboardHeatmap`            | ダーツボードヒートマップ       | `hitData`                                                                                                                                                           |
+| `SensorTrendCard`             | センサーデータ推移             | `sensorData`                                                                                                                                                        |
+| `GameAveragesCard`            | ゲーム平均記録一覧             | `averages`                                                                                                                                                          |
+| `RatingTrendCard`             | Rtトレンドスパークライン       | `periodRecords`, `currentRating`                                                                                                                                    |
+| `SessionComparisonCard`       | 直近2セッション比較            | `periodRecords`                                                                                                                                                     |
+| `CountUpAnalysisCard`         | CU統計分析+Rt期待値メトリクス  | `games`, `expectedCountUp?`                                                                                                                                         |
+| `RecentGamesChart`            | 直近ゲーム+サマリー行          | `games`, `gameChartCategory`, `onCategoryChange`, `expectedCountUp`, `dangerCountUp`, `excellentCountUp`                                                            |
+| `ShopCard`                    | ショップ情報カード             | `shop`, `isBookmarked`, `isVisited`, `tags`                                                                                                                         |
+| `ShopBookmarkDialog`          | ショップブックマーク管理       | `shop`, `lists`, `onSave`                                                                                                                                           |
+| `DiscussionCard`              | ディスカッションカード表示     | `discussion`, `replyCount`                                                                                                                                          |
+| `GoalCard`                    | 目標進捗カード                 | `goal`, `onAchieve`, `onEdit`                                                                                                                                       |
+| `XpBar`                       | 経験値プログレスバー           | `currentXp`, `level`, `nextLevelXp`                                                                                                                                 |
+| `NotificationBell`            | ヘッダー通知アイコン           | `unreadCount`, `onClick`                                                                                                                                            |
+| `WeeklyReportCard`            | 週次レポートカード             | `reportData`, `weekRange`                                                                                                                                           |
+| `MonthlyReportCard`           | 月次レポートカード             | `reportData`, `month`                                                                                                                                               |
+| `CalendarGrid`                | カレンダー月表示・日選択       | `year`, `month`, `records`, `selectedDate`, `onSelectDate`                                                                                                          |
+| `DayDetailPanel`              | 選択日の詳細スタッツ表示       | `date`, `records`                                                                                                                                                   |
 
 ---
 

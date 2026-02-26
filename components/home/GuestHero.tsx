@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 const highlights = [
   { icon: <SearchIcon />, text: 'バレル7,000種検索' },
-  { icon: <BarChartIcon />, text: 'スタッツ分析' },
+  { icon: <BarChartIcon />, text: 'スタッツ50+分析' },
   { icon: <SettingsIcon />, text: 'セッティング管理' },
 ];
 

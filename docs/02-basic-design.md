@@ -598,7 +598,7 @@ darts-app/
 │   ├── layout/                   #   Header, Footer
 │   ├── darts/                    #   DartCard, DartForm, DartDetail
 │   ├── barrels/                  #   BarrelCard
-│   ├── stats/                    #   スタッツダッシュボード（46コンポーネント）
+│   ├── stats/                    #   スタッツダッシュボード（53コンポーネント）
 │   │   ├── AdminApiStatsSection  #     管理者向けAPI連携スタッツ
 │   │   ├── PlayerProfileCard     #     プロフィール（通り名・ホームショップ・Maps連携）
 │   │   ├── RatingHeroCard        #     レーティング + フライト + パーセンタイル
@@ -607,7 +607,7 @@ darts-app/
 │   │   ├── DetailedGameStatsCard #     詳細ゲーム統計
 │   │   ├── BullStatsCard         #     ブル統計 + ドーナツ/バーチャート
 │   │   ├── CountUpDeltaChart     #     COUNT-UP ±差分バーチャート
-│   │   ├── CountUpAnalysisCard   #     COUNT-UP分析
+│   │   ├── CountUpAnalysisCard   #     COUNT-UP分析（Rt期待値メトリクス + 前後半トレンド）
 │   │   ├── CountUpDeepAnalysisCard #   COUNT-UP深掘り分析
 │   │   ├── CountUpRoundAnalysisCard #  COUNT-UPラウンド分析
 │   │   ├── ZeroOneAnalysisCard   #     01分析
@@ -619,12 +619,12 @@ darts-app/
 │   │   ├── MonthlyTrendChart     #     月間推移グラフ
 │   │   ├── DailyHistoryChart     #     日別履歴チャート
 │   │   ├── RollingTrendCard      #     ローリングトレンド
-│   │   ├── RecentGamesChart      #     直近ゲーム結果チャート
+│   │   ├── RecentGamesChart      #     直近ゲーム結果チャート + サマリー行（連続/最長/安定度）
 │   │   ├── RecentDaySummary      #     直近プレイ日サマリー
 │   │   ├── CalendarGrid          #     カレンダーグリッド
 │   │   ├── DayDetailPanel        #     日別詳細パネル
 │   │   ├── PlayerDnaCard         #     プレイヤーDNA分析
-│   │   ├── SkillRadarChart       #     スキルレーダーチャート
+│   │   ├── SkillRadarChart       #     スキルレーダー（詳細8軸 + 簡易5軸 / ベンチマーク比較）
 │   │   ├── DartboardHeatmap      #     ダーツボードヒートマップ
 │   │   ├── ScoreDistributionCard #     スコア分布
 │   │   ├── ConsistencyCard       #     安定性カード
@@ -644,6 +644,11 @@ darts-app/
 │   │   ├── PercentileChip        #     上位X%バッジ（再利用可能）
 │   │   ├── PRSiteSection         #     おすすめブランドPRカード
 │   │   ├── StatsLoginDialog      #     DARTSLIVE ログインダイアログ
+│   │   ├── RatingTrendCard       #     レーティングトレンド（スパークライン + 回帰直線）
+│   │   ├── SessionComparisonCard #    セッション比較（直近2回のプレイ日比較）
+│   │   ├── AwardPaceSimpleCard  #     アワードペース予測（簡易版）
+│   │   ├── GameMixCard          #     ゲームミックス分析
+│   │   ├── ConditionCorrelationCard # コンディション×パフォーマンス相関
 │   │   └── StatsPageContent      #     スタッツページコンテンツ
 │   ├── shops/                    #   ショップ関連
 │   │   ├── ShopCard              #     ショップカード
