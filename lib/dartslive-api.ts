@@ -381,7 +381,7 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
 export async function dlApiFetchDailyHistory(
   authKey: string,
   toId: string,
-  maxPages: number = 10,
+  maxPages: number = 20,
   startLdt?: string,
 ): Promise<DlApiDailyStats[]> {
   const all: DlApiDailyStats[] = [];
@@ -412,9 +412,16 @@ export async function dlApiFetchDailyHistory(
 
     // ldt ページネーション: 最後の DATE を次のリクエストに
     const lastDate = String(rawList[rawList.length - 1].DATE ?? '');
+    console.log(
+      `[DL-API] dailyHistory page ${page}: ${rawList.length}件, lastDate=${lastDate}, total=${all.length}`,
+    );
     if (!lastDate || rawList.length < 300) break;
     ldt = lastDate.replace(' ', '_');
   }
+
+  console.log(
+    `[DL-API] dailyHistory完了: ${all.length}件 (最古=${all[0]?.date}, 最新=${all[all.length - 1]?.date})`,
+  );
 
   return all;
 }
@@ -450,7 +457,7 @@ export async function dlApiFetchMonthlyHistory(
 export async function dlApiFetchPlayHistory(
   authKey: string,
   toId: string,
-  maxPages: number = 15,
+  maxPages: number = 50,
   startLdt?: string,
 ): Promise<DlApiPlayEntry[]> {
   const all: DlApiPlayEntry[] = [];
@@ -495,9 +502,17 @@ export async function dlApiFetchPlayHistory(
     if (!lastTime) break;
     ldt = lastTime.replace(' ', '_');
 
+    console.log(
+      `[DL-API] playHistory page ${page}: ${rawList.length}件, ldt=${ldt}, total=${all.length}`,
+    );
+
     // 空ページで終了
     if (rawList.length < 100) break;
   }
+
+  console.log(
+    `[DL-API] playHistory完了: ${all.length}件 (最古=${all[0]?.date}, 最新=${all[all.length - 1]?.date})`,
+  );
 
   return all;
 }
