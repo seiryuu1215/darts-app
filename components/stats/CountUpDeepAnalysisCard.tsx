@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -26,6 +27,7 @@ import {
   parsePlayTime,
 } from '@/lib/stats-math';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
+import { ppdForRating, calc01Rating } from '@/lib/dartslive-rating';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
 /** COUNT-UPプレイデータ（PLAY_LOG付き） */
@@ -71,13 +73,51 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: 'day', label: '1日' },
 ];
 
-const SCORE_BANDS = [
-  { label: '~399', min: 0, max: 399 },
-  { label: '400-499', min: 400, max: 499 },
-  { label: '500-599', min: 500, max: 599 },
-  { label: '600-699', min: 600, max: 699 },
-  { label: '700+', min: 700, max: 9999 },
-];
+interface RatingBand {
+  label: string;
+  min: number;
+  max: number;
+  rt: number;
+}
+
+/** ユーザーのCOUNT-UPスコアを基準に、前後3Rtレベル分（計7バンド＋上下限）を動的生成 */
+function generateRatingBands(centerScore: number): { bands: RatingBand[]; centerRt: number } {
+  const centerPpr = centerScore / 8;
+  const centerRt = Math.round(calc01Rating(centerPpr));
+
+  const startRt = Math.max(2, centerRt - 3);
+  const endRt = Math.min(18, centerRt + 3);
+
+  const bands: RatingBand[] = [];
+
+  // 下限バンド
+  bands.push({
+    label: `~Rt${startRt - 1}`,
+    min: 0,
+    max: Math.round(ppdForRating(startRt) * 8) - 1,
+    rt: startRt - 1,
+  });
+
+  // 各Rtレベルのバンド
+  for (let rt = startRt; rt <= endRt; rt++) {
+    bands.push({
+      label: `Rt${rt}`,
+      min: Math.round(ppdForRating(rt) * 8),
+      max: Math.round(ppdForRating(rt + 1) * 8) - 1,
+      rt,
+    });
+  }
+
+  // 上限バンド
+  bands.push({
+    label: `Rt${endRt + 1}~`,
+    min: Math.round(ppdForRating(endRt + 1) * 8),
+    max: 9999,
+    rt: endRt + 1,
+  });
+
+  return { bands, centerRt };
+}
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#1e1e1e',
@@ -406,7 +446,10 @@ export default function CountUpDeepAnalysisCard({
     (r) => r.gameName === 'COUNT-UP' || r.gameId === 'COUNT-UP',
   )?.bestScore;
 
-  const bands = buildScoreBands(scores, SCORE_BANDS);
+  // レーティングベースのスコア帯分布：PPDから期待スコア、なければ実データ平均から推定
+  const centerScore = expectedScore ?? stats.avg;
+  const { bands: ratingBands, centerRt } = generateRatingBands(centerScore);
+  const bands = buildScoreBands(scores, ratingBands);
 
   const trendData = filtered.map((p, i) => ({
     idx: i + 1,
@@ -558,17 +601,21 @@ export default function CountUpDeepAnalysisCard({
       )}
 
       {/* スコア帯分布 */}
-      <SectionTitle>スコア帯分布</SectionTitle>
-      <ResponsiveContainer width="100%" height={180}>
+      <SectionTitle>スコア帯分布（Rt{centerRt}基準）</SectionTitle>
+      <ResponsiveContainer width="100%" height={200}>
         <BarChart data={bands}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="label" fontSize={11} tick={{ fill: '#aaa' }} />
+          <XAxis dataKey="label" fontSize={10} tick={{ fill: '#aaa' }} />
           <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(v: number | undefined) => [`${v ?? 0}回`, '回数']}
           />
-          <Bar dataKey="count" name="回数" fill={COLOR_COUNTUP} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="count" name="回数" radius={[4, 4, 0, 0]}>
+            {ratingBands.map((b, i) => (
+              <Cell key={i} fill={b.rt === centerRt ? '#ff9800' : COLOR_COUNTUP} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
 
