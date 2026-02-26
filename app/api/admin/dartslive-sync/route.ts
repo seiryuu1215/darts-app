@@ -54,8 +54,8 @@ export const POST = withErrorHandler(
     let result;
     try {
       if (latestPlayTime && !forceFullSync) {
-        // 保存済みの最新プレイ日時から差分取得
-        const syncFrom = new Date(latestPlayTime.replace(/ |_/, 'T')).toISOString();
+        // 保存済みの最新プレイ日時(JST)を正しくUTCへ変換して差分取得
+        const syncFrom = new Date(latestPlayTime.replace(/ |_/, 'T') + '+09:00').toISOString();
         console.log(
           `[DL-SYNC] 差分同期開始 (since ${syncFrom}, latest play: ${latestPlayTime})...`,
         );

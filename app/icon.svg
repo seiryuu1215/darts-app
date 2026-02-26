@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1976d2"/>
+      <stop offset="100%" stop-color="#42a5f5"/>
+    </linearGradient>
+    <linearGradient id="dart" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9800"/>
+      <stop offset="100%" stop-color="#FFC107"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="url(#ring)" stroke-width="18" opacity="0.9"/>
+  <!-- Middle ring -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#ring)" stroke-width="10" opacity="0.5"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="80" fill="none" stroke="url(#ring)" stroke-width="6" opacity="0.3"/>
+  <!-- Crosshair lines -->
+  <line x1="256" y1="56" x2="256" y2="456" stroke="#42a5f5" stroke-width="2" opacity="0.2"/>
+  <line x1="56" y1="256" x2="456" y2="256" stroke="#42a5f5" stroke-width="2" opacity="0.2"/>
+  <!-- Bull (center) -->
+  <circle cx="256" cy="256" r="28" fill="url(#dart)" opacity="0.95"/>
+  <circle cx="256" cy="256" r="12" fill="#fff" opacity="0.95"/>
+  <!-- Dart arrow hitting bull -->
+  <g transform="translate(256,256) rotate(-45)">
+    <!-- Shaft -->
+    <rect x="-3" y="-160" width="6" height="120" rx="2" fill="#ccc" opacity="0.85"/>
+    <!-- Tip -->
+    <polygon points="0,-175 -5,-155 5,-155" fill="#e0e0e0"/>
+    <!-- Flights -->
+    <polygon points="0,-40 -20,-80 0,-65" fill="url(#dart)" opacity="0.8"/>
+    <polygon points="0,-40 20,-80 0,-65" fill="#FF9800" opacity="0.6"/>
+  </g>
+</svg>

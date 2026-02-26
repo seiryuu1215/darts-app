@@ -576,8 +576,12 @@ export async function dlApiDiffSync(
   }
   const toId = mainCard.toId;
 
-  // lastSyncAt を ldt 形式に変換 (ISO → "YYYY-MM-DD_HH:mm:ss")
-  const syncLdt = lastSyncAt
+  // lastSyncAt (ISO UTC) を JST に変換してから ldt 形式へ
+  // DARTSLIVE API は JST ベースの日時を期待する
+  const syncDate = new Date(lastSyncAt);
+  syncDate.setHours(syncDate.getHours() + 9); // UTC → JST
+  const syncLdt = syncDate
+    .toISOString()
     .replace('T', '_')
     .replace(/\.\d+Z?$/, '')
     .slice(0, 19);

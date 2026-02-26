@@ -31,7 +31,7 @@ interface FullStatsPageProps {
 }
 
 function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
-  const [periodTab, setPeriodTab] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const periodTab = 'all' as const;
   const [monthlyTab, setMonthlyTab] = useState<'rating' | 'zeroOne' | 'cricket' | 'countUp'>(
     'rating',
   );
