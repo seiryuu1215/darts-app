@@ -3,7 +3,7 @@
  * ベクトル位置の推移、グルーピング半径の改善トレンド、スピード×スコア相関
  */
 
-import { parsePlayTime } from './stats-math';
+import { parsePlayTime, analyzeMissDirection } from './stats-math';
 
 interface SensorPlay {
   time: string;
@@ -252,6 +252,274 @@ export function analyzeSensor(plays: SensorPlay[]): SensorAnalysis | null {
       radiusImprovement,
       speedScoreCorrelation: correlation,
     },
+  };
+}
+
+// ─── スピード帯別セグメント分析 ────────────────────
+
+export interface SpeedSegment {
+  label: string;
+  min: number;
+  max: number;
+  count: number;
+  avgScore: number;
+  bullRate: number;
+  doubleBullRate: number;
+  primaryMissDir: string;
+  directionStrength: number;
+  avgRadius: number;
+}
+
+export interface SpeedSegmentAnalysis {
+  segments: SpeedSegment[];
+  bestSegment: SpeedSegment | null;
+  bestBullSegment: SpeedSegment | null;
+  slowVsFast: {
+    slowLabel: string;
+    fastLabel: string;
+    slowBullRate: number;
+    fastBullRate: number;
+    slowMissDir: string;
+    fastMissDir: string;
+    slowAvgScore: number;
+    fastAvgScore: number;
+  } | null;
+  insights: string[];
+  speedRange: { min: number; max: number };
+  correlation: number;
+}
+
+interface SpeedAnalysisPlay {
+  score: number;
+  dl3Speed: number;
+  dl3Radius: number;
+  playLog: string;
+}
+
+/** 四分位数を計算 */
+function quantile(sorted: number[], q: number): number {
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (base + 1 < sorted.length) {
+    return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+  }
+  return sorted[base];
+}
+
+/** スピード帯別セグメント分析（アダプティブ刻み幅） */
+export function analyzeSpeedSegments(plays: SpeedAnalysisPlay[]): SpeedSegmentAnalysis | null {
+  const valid = plays.filter((p) => p.dl3Speed > 0);
+  if (valid.length < 15) return null;
+
+  // IQRベースの外れ値除外
+  const sortedSpeeds = valid.map((p) => p.dl3Speed).sort((a, b) => a - b);
+  const q1 = quantile(sortedSpeeds, 0.25);
+  const q3 = quantile(sortedSpeeds, 0.75);
+  const iqr = q3 - q1;
+  const lowerFence = q1 - 1.5 * iqr;
+  const upperFence = q3 + 1.5 * iqr;
+
+  const inliers = valid.filter((p) => p.dl3Speed >= lowerFence && p.dl3Speed <= upperFence);
+  if (inliers.length < 15) return null;
+
+  const speeds = inliers.map((p) => p.dl3Speed);
+  const minSpeed = Math.min(...speeds);
+  const maxSpeed = Math.max(...speeds);
+  const range = maxSpeed - minSpeed;
+
+  // 全て同じ速度なら分析不可
+  if (range === 0) return null;
+
+  // アダプティブ刻み幅
+  const step = range <= 3 ? 0.25 : range <= 6 ? 0.5 : 1.0;
+  const decimals = step >= 1 ? 0 : 1;
+
+  const bucketStart = Math.floor(minSpeed / step) * step;
+  const bucketEnd = Math.ceil(maxSpeed / step) * step;
+  const bucketCount = Math.round((bucketEnd - bucketStart) / step);
+
+  interface TempBucket {
+    min: number;
+    max: number;
+    plays: SpeedAnalysisPlay[];
+  }
+
+  const tempBuckets: TempBucket[] = [];
+  for (let i = 0; i < bucketCount; i++) {
+    const bMin = Math.round((bucketStart + i * step) * 100) / 100;
+    const bMax = Math.round((bucketStart + (i + 1) * step) * 100) / 100;
+    tempBuckets.push({ min: bMin, max: bMax, plays: [] });
+  }
+
+  for (const p of inliers) {
+    const idx = Math.min(Math.floor((p.dl3Speed - bucketStart) / step), bucketCount - 1);
+    if (idx >= 0 && idx < tempBuckets.length) {
+      tempBuckets[idx].plays.push(p);
+    }
+  }
+
+  // 空バケット除去
+  const buckets = tempBuckets.filter((b) => b.plays.length > 0);
+
+  // 小バケット（3ゲーム未満）を隣と統合
+  let changed = true;
+  while (changed && buckets.length > 1) {
+    changed = false;
+    const idx = buckets.findIndex((b) => b.plays.length < 3);
+    if (idx === -1) break;
+    changed = true;
+    if (idx === 0) {
+      buckets[1] = {
+        min: buckets[0].min,
+        max: buckets[1].max,
+        plays: [...buckets[0].plays, ...buckets[1].plays],
+      };
+      buckets.splice(0, 1);
+    } else if (idx === buckets.length - 1) {
+      buckets[idx - 1] = {
+        min: buckets[idx - 1].min,
+        max: buckets[idx].max,
+        plays: [...buckets[idx - 1].plays, ...buckets[idx].plays],
+      };
+      buckets.splice(idx, 1);
+    } else {
+      if (buckets[idx - 1].plays.length <= buckets[idx + 1].plays.length) {
+        buckets[idx - 1] = {
+          min: buckets[idx - 1].min,
+          max: buckets[idx].max,
+          plays: [...buckets[idx - 1].plays, ...buckets[idx].plays],
+        };
+      } else {
+        buckets[idx + 1] = {
+          min: buckets[idx].min,
+          max: buckets[idx + 1].max,
+          plays: [...buckets[idx].plays, ...buckets[idx + 1].plays],
+        };
+      }
+      buckets.splice(idx, 1);
+    }
+  }
+
+  // セグメント生成
+  const segments: SpeedSegment[] = buckets.map((b) => {
+    const bScores = b.plays.map((p) => p.score);
+    const avgScore = Math.round(bScores.reduce((a, s) => a + s, 0) / bScores.length);
+    const avgRadius =
+      Math.round((b.plays.reduce((a, p) => a + p.dl3Radius, 0) / b.plays.length) * 10) / 10;
+    const missResult = analyzeMissDirection(b.plays.map((p) => p.playLog));
+
+    return {
+      label: `${b.min.toFixed(decimals)}-${b.max.toFixed(decimals)}`,
+      min: b.min,
+      max: b.max,
+      count: b.plays.length,
+      avgScore,
+      bullRate: missResult?.bullRate ?? 0,
+      doubleBullRate: missResult?.doubleBullRate ?? 0,
+      primaryMissDir: missResult?.primaryDirection ?? '-',
+      directionStrength: missResult?.directionStrength ?? 0,
+      avgRadius,
+    };
+  });
+
+  if (segments.length === 0) return null;
+
+  const bestSegment = segments.reduce((a, b) => (b.avgScore > a.avgScore ? b : a));
+  const bestBullSegment = segments.reduce((a, b) => (b.bullRate > a.bullRate ? b : a));
+
+  // slowVsFast: 中央値で2分割
+  const sortedForMedian = [...speeds].sort((a, b) => a - b);
+  const medianSpeed = quantile(sortedForMedian, 0.5);
+  const slowPlays = inliers.filter((p) => p.dl3Speed < medianSpeed);
+  const fastPlays = inliers.filter((p) => p.dl3Speed >= medianSpeed);
+
+  let slowVsFast: SpeedSegmentAnalysis['slowVsFast'] = null;
+  if (slowPlays.length >= 5 && fastPlays.length >= 5) {
+    const slowMiss = analyzeMissDirection(slowPlays.map((p) => p.playLog));
+    const fastMiss = analyzeMissDirection(fastPlays.map((p) => p.playLog));
+    const slowAvgScore = Math.round(slowPlays.reduce((a, p) => a + p.score, 0) / slowPlays.length);
+    const fastAvgScore = Math.round(fastPlays.reduce((a, p) => a + p.score, 0) / fastPlays.length);
+    slowVsFast = {
+      slowLabel: `~${medianSpeed.toFixed(1)}`,
+      fastLabel: `${medianSpeed.toFixed(1)}~`,
+      slowBullRate: slowMiss?.bullRate ?? 0,
+      fastBullRate: fastMiss?.bullRate ?? 0,
+      slowMissDir: slowMiss?.primaryDirection ?? '-',
+      fastMissDir: fastMiss?.primaryDirection ?? '-',
+      slowAvgScore,
+      fastAvgScore,
+    };
+  }
+
+  // ピアソン相関係数
+  const n = inliers.length;
+  const allSpeeds = inliers.map((p) => p.dl3Speed);
+  const allScores = inliers.map((p) => p.score);
+  const avgSpd = allSpeeds.reduce((a, b) => a + b, 0) / n;
+  const avgScr = allScores.reduce((a, b) => a + b, 0) / n;
+  let numerator = 0;
+  let denomSpd = 0;
+  let denomScr = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = allSpeeds[i] - avgSpd;
+    const dy = allScores[i] - avgScr;
+    numerator += dx * dy;
+    denomSpd += dx * dx;
+    denomScr += dy * dy;
+  }
+  const denom = Math.sqrt(denomSpd * denomScr);
+  const correlation = denom > 0 ? Math.round((numerator / denom) * 1000) / 1000 : 0;
+
+  // インサイト生成
+  const insights: string[] = [];
+
+  insights.push(
+    `${bestSegment.label}km/hがベスト。スコア平均${bestSegment.avgScore}点、ブル率${bestSegment.bullRate}%`,
+  );
+
+  if (bestBullSegment.label !== bestSegment.label) {
+    insights.push(`ブル率は${bestBullSegment.label}km/hが最高（${bestBullSegment.bullRate}%）`);
+  }
+
+  if (slowVsFast) {
+    const betterSide = slowVsFast.slowBullRate > slowVsFast.fastBullRate ? '遅い帯' : '速い帯';
+    insights.push(
+      `遅い帯(${slowVsFast.slowLabel})はブル率${slowVsFast.slowBullRate}%、速い帯(${slowVsFast.fastLabel})は${slowVsFast.fastBullRate}%。${betterSide}が有利`,
+    );
+  }
+
+  if (segments.length >= 3) {
+    const slowSeg = segments[0];
+    const fastSeg = segments[segments.length - 1];
+    if (
+      slowSeg.directionStrength > 0.1 &&
+      fastSeg.directionStrength > 0.1 &&
+      slowSeg.primaryMissDir !== fastSeg.primaryMissDir
+    ) {
+      insights.push(
+        `遅い帯(${slowSeg.label})は${slowSeg.primaryMissDir}方向、速い帯(${fastSeg.label})は${fastSeg.primaryMissDir}方向にミスが偏る`,
+      );
+    }
+  }
+
+  if (correlation > 0.3) {
+    insights.push('スピードが速いほどスコアが高い傾向。テンポを意識した投げ方が合っている可能性');
+  } else if (correlation < -0.3) {
+    insights.push('スピードを抑えた方がスコアが安定する傾向。丁寧なリリースを意識');
+  }
+
+  return {
+    segments,
+    bestSegment,
+    bestBullSegment,
+    slowVsFast,
+    insights,
+    speedRange: {
+      min: Math.round(minSpeed * 10) / 10,
+      max: Math.round(maxSpeed * 10) / 10,
+    },
+    correlation,
   };
 }
 

@@ -1,7 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Paper, Typography, Box, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {
+  Paper,
+  Typography,
+  Box,
+  Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Alert,
+} from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
@@ -12,6 +20,7 @@ import {
   Cell,
   LineChart,
   Line,
+  ComposedChart,
   XAxis,
   YAxis,
   Tooltip,
@@ -27,7 +36,7 @@ import {
   parsePlayTime,
 } from '@/lib/stats-math';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
-import { correlateSpeedScore } from '@/lib/sensor-analysis';
+import { analyzeSpeedSegments } from '@/lib/sensor-analysis';
 import { ppdForRating, calc01Rating } from '@/lib/dartslive-rating';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -383,6 +392,48 @@ function DiffChip({
   );
 }
 
+// ─── スピードチャートTooltip ───
+
+function SpeedChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: Record<string, unknown> }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+  return (
+    <Box
+      sx={{
+        bgcolor: '#1e1e1e',
+        border: '1px solid #444',
+        borderRadius: 1,
+        p: 1,
+        minWidth: 120,
+      }}
+    >
+      <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#fff', display: 'block' }}>
+        {label} km/h (n={data.count as number})
+      </Typography>
+      <Typography variant="caption" sx={{ color: '#CE93D8', display: 'block' }}>
+        スコア: {data.avgScore as number}点
+      </Typography>
+      <Typography variant="caption" sx={{ color: '#FF9800', display: 'block' }}>
+        ブル率: {data.bullRate as number}%
+      </Typography>
+      {data.primaryMissDir !== '-' && (
+        <Typography variant="caption" sx={{ color: '#aaa', display: 'block' }}>
+          主ミス方向: {data.primaryMissDir as string}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 // ─── メインコンポーネント ───
 
 export default function CountUpDeepAnalysisCard({
@@ -411,38 +462,8 @@ export default function CountUpDeepAnalysisCard({
     [sortedPlays, period],
   );
 
-  // スピード分析
-  const speedAnalysis = useMemo(() => {
-    const speedPlays = filtered.filter((p) => p.dl3Speed > 0);
-    if (speedPlays.length < 10) return null;
-
-    const speeds = speedPlays.map((p) => p.dl3Speed);
-    const speedStats = computeStats(speeds);
-    const speedConsistency = calculateConsistency(speeds);
-    const { speedBuckets, correlation } = correlateSpeedScore(filtered);
-    const sweetSpot =
-      speedBuckets.length > 0
-        ? speedBuckets.reduce((a, b) => (b.avgScore > a.avgScore ? b : a))
-        : null;
-    const corrLabel =
-      Math.abs(correlation) > 0.5
-        ? '強い相関'
-        : Math.abs(correlation) > 0.3
-          ? '中程度の相関'
-          : Math.abs(correlation) > 0.1
-            ? '弱い相関'
-            : 'ほぼ無相関';
-
-    return {
-      avgSpeed: speedStats.avg,
-      speedConsistency,
-      correlation,
-      corrLabel,
-      sweetSpot,
-      speedBuckets,
-      count: speedPlays.length,
-    };
-  }, [filtered]);
+  // スピード帯別セグメント分析
+  const speedSegments = useMemo(() => analyzeSpeedSegments(filtered), [filtered]);
 
   if (sortedPlays.length < 3) return null;
 
@@ -788,13 +809,15 @@ export default function CountUpDeepAnalysisCard({
       )}
 
       {/* スピード分析 */}
-      {speedAnalysis && (
+      {speedSegments && (
         <>
           <SectionTitle>スピード分析</SectionTitle>
+
+          {/* サマリー（3列グリッド） */}
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 1,
               p: 1.5,
               borderRadius: 1,
@@ -805,94 +828,160 @@ export default function CountUpDeepAnalysisCard({
           >
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
-                平均スピード
+                ベスト速度帯
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+                {speedSegments.bestSegment?.label}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+                km/h（スコア最高）
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                最高ブル率帯
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
-                {speedAnalysis.avgSpeed.toFixed(1)}
+                {speedSegments.bestBullSegment?.label}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+                km/h（ブル率{speedSegments.bestBullSegment?.bullRate}%）
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                速度レンジ
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {speedSegments.speedRange.min}-{speedSegments.speedRange.max}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
                 km/h
               </Typography>
             </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                スピード安定度
-              </Typography>
-              {speedAnalysis.speedConsistency && (
-                <>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      fontWeight: 'bold',
-                      color: getConsistencyLabel(speedAnalysis.speedConsistency.score).color,
-                    }}
-                  >
-                    {speedAnalysis.speedConsistency.score}点
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: 9,
-                      color: getConsistencyLabel(speedAnalysis.speedConsistency.score).color,
-                    }}
-                  >
-                    {getConsistencyLabel(speedAnalysis.speedConsistency.score).label}
-                  </Typography>
-                </>
-              )}
-            </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                速度-点数相関
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontWeight: 'bold',
-                  color: Math.abs(speedAnalysis.correlation) > 0.3 ? '#FF9800' : '#888',
-                }}
-              >
-                {speedAnalysis.correlation > 0 ? '+' : ''}
-                {speedAnalysis.correlation.toFixed(3)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
-                {speedAnalysis.corrLabel}
-              </Typography>
-            </Box>
-            {speedAnalysis.sweetSpot && (
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
-                  スイートスポット
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
-                  {speedAnalysis.sweetSpot.speedRange}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
-                  km/h (n={speedAnalysis.sweetSpot.count})
-                </Typography>
-              </Box>
-            )}
           </Box>
 
-          {/* スピード帯別スコア分布 */}
-          {speedAnalysis.speedBuckets.length > 0 && (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={speedAnalysis.speedBuckets}>
+          {/* スピード帯別チャート（複合バーチャート） */}
+          {speedSegments.segments.length > 1 && (
+            <ResponsiveContainer width="100%" height={200}>
+              <ComposedChart data={speedSegments.segments}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis dataKey="speedRange" fontSize={10} tick={{ fill: '#aaa' }} unit="km/h" />
-                <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  formatter={(v: number | undefined) => [`${v ?? 0}点`, '平均スコア']}
-                  labelFormatter={(label) => `${label} km/h`}
+                <XAxis dataKey="label" fontSize={10} tick={{ fill: '#aaa' }} />
+                <YAxis
+                  yAxisId="left"
+                  fontSize={11}
+                  tick={{ fill: '#aaa' }}
+                  domain={['dataMin - 30', 'dataMax + 30']}
                 />
-                <Bar dataKey="avgScore" name="avgScore" radius={[4, 4, 0, 0]}>
-                  {speedAnalysis.speedBuckets.map((b, i) => (
-                    <Cell key={i} fill={b === speedAnalysis.sweetSpot ? '#4caf50' : '#7B1FA2'} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  fontSize={11}
+                  tick={{ fill: '#aaa' }}
+                  unit="%"
+                />
+                <Tooltip content={<SpeedChartTooltip />} />
+                <Bar yAxisId="left" dataKey="avgScore" name="平均スコア" radius={[4, 4, 0, 0]}>
+                  {speedSegments.segments.map((s, i) => (
+                    <Cell
+                      key={i}
+                      fill={s.label === speedSegments.bestSegment?.label ? '#4caf50' : '#7B1FA2'}
+                    />
                   ))}
                 </Bar>
-              </BarChart>
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="bullRate"
+                  name="ブル率"
+                  stroke="#FF9800"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: '#FF9800' }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
+          )}
+
+          {/* 遅い帯 vs 速い帯 比較テーブル */}
+          {speedSegments.slowVsFast && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '80px 1fr 1fr',
+                gap: 0.5,
+                mt: 1.5,
+                p: 1.5,
+                borderRadius: 1,
+                bgcolor: 'rgba(255,255,255,0.03)',
+                border: '1px solid #333',
+                alignItems: 'center',
+              }}
+            >
+              <Box />
+              <Typography
+                variant="caption"
+                sx={{ textAlign: 'center', fontWeight: 'bold', color: '#64B5F6' }}
+              >
+                遅い帯({speedSegments.slowVsFast.slowLabel})
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ textAlign: 'center', fontWeight: 'bold', color: '#EF5350' }}
+              >
+                速い帯({speedSegments.slowVsFast.fastLabel})
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                スコア
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.slowAvgScore}
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.fastAvgScore}
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                ブル率
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.slowBullRate}%
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.fastBullRate}%
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                ミス傾向
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.slowMissDir}方向
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                {speedSegments.slowVsFast.fastMissDir}方向
+              </Typography>
+            </Box>
+          )}
+
+          {/* インサイト */}
+          {speedSegments.insights.length > 0 && (
+            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {speedSegments.insights.map((insight, i) => (
+                <Alert
+                  key={i}
+                  severity={
+                    i === 0
+                      ? 'success'
+                      : insight.includes('ミス') || insight.includes('偏る')
+                        ? 'warning'
+                        : 'info'
+                  }
+                  sx={{ py: 0, '& .MuiAlert-message': { fontSize: 12 } }}
+                >
+                  {insight}
+                </Alert>
+              ))}
+            </Box>
           )}
         </>
       )}
