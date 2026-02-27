@@ -21,9 +21,7 @@ import CountUpAnalysisCard from './CountUpAnalysisCard';
 import ZeroOneAnalysisCard from './ZeroOneAnalysisCard';
 import ZeroOneConsistencyCard from './ZeroOneConsistencyCard';
 import ConditionCorrelationCard from './ConditionCorrelationCard';
-import GameMixCard from './GameMixCard';
 import RatingTrendCard from './RatingTrendCard';
-import AwardPaceSimpleCard from './AwardPaceSimpleCard';
 import SkillRadarChart from './SkillRadarChart';
 import SessionComparisonCard from './SessionComparisonCard';
 
@@ -195,10 +193,7 @@ export default function StatsPageContent({
       {/* 6f. Condition × Performance Correlation */}
       <ConditionCorrelationCard periodRecords={periodRecords} />
 
-      {/* 6g. Game Mix Analysis */}
-      <GameMixCard games={dlData.recentGames.games} />
-
-      {/* 6g2. PRO Skill Radar */}
+      {/* 6g. PRO Skill Radar */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
         <SkillRadarChart
           simpleMode
@@ -214,9 +209,6 @@ export default function StatsPageContent({
 
       {/* 6h. Rating Trend */}
       <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
-
-      {/* 6i. Award Pace Prediction */}
-      <AwardPaceSimpleCard awards={c.awards} />
 
       {/* 7. Rating Target */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
