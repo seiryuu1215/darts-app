@@ -82,13 +82,13 @@ interface CountUpDeepAnalysisCardProps {
   bestRecords?: BestRecord[] | null;
 }
 
-type PeriodKey = 'last30' | 'month' | 'week' | 'day';
+type PeriodKey = 'last30' | 'month' | 'week' | 'latest';
 
 const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: 'last30', label: '直近30G' },
   { key: 'month', label: '1ヶ月' },
   { key: 'week', label: '1週間' },
-  { key: 'day', label: '1日' },
+  { key: 'latest', label: '直近' },
 ];
 
 interface RatingBand {
@@ -159,9 +159,13 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
   const now = new Date();
   let cutoff: Date;
   switch (period) {
-    case 'day':
-      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    case 'latest': {
+      // 最新プレイ日のデータのみ返す
+      if (plays.length === 0) return [];
+      const latestTime = parsePlayTime(plays[plays.length - 1].time);
+      cutoff = new Date(latestTime.getFullYear(), latestTime.getMonth(), latestTime.getDate());
       break;
+    }
     case 'week':
       cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
@@ -1315,7 +1319,7 @@ function PeriodSelector({
   counts: CountUpPlay[];
 }) {
   const periodCounts = useMemo(() => {
-    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, day: 0 };
+    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, latest: 0 };
     for (const p of PERIODS) {
       result[p.key] = filterByPeriod(counts, p.key).length;
     }
