@@ -43,8 +43,8 @@ interface StatsHistoryRecord {
 }
 
 interface PeriodStatsPanelProps {
-  periodTab: 'today' | 'week' | 'month' | 'all';
-  onPeriodChange: (v: 'today' | 'week' | 'month' | 'all') => void;
+  periodTab: 'latest' | 'week' | 'month' | 'all';
+  onPeriodChange: (v: 'latest' | 'week' | 'month' | 'all') => void;
   loading: boolean;
   summary: StatsHistorySummary | null;
   records: StatsHistoryRecord[];
@@ -97,7 +97,7 @@ export default function PeriodStatsPanel({
           '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem' },
         }}
       >
-        <Tab label="今日" value="today" />
+        <Tab label="直近" value="latest" />
         <Tab label="今週" value="week" />
         <Tab label="今月" value="month" />
         <Tab label="累計" value="all" />

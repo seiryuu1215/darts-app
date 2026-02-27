@@ -3,7 +3,7 @@ import { useState } from 'react';
 import PeriodStatsPanel from '@/components/stats/PeriodStatsPanel';
 import { MOCK_PERIOD_SUMMARY, MOCK_PERIOD_RECORDS } from '../mocks/dartslive-stats';
 
-type PeriodTab = 'today' | 'week' | 'month' | 'all';
+type PeriodTab = 'latest' | 'week' | 'month' | 'all';
 
 function PeriodStatsPanelWrapper({
   initialTab,
@@ -46,8 +46,8 @@ export const All: Story = {
   args: { initialTab: 'all' },
 };
 
-export const Today: Story = {
-  args: { initialTab: 'today' },
+export const Latest: Story = {
+  args: { initialTab: 'latest' },
 };
 
 export const Loading: Story = {

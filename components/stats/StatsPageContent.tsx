@@ -98,7 +98,7 @@ type MonthlyTab = 'rating' | 'zeroOne' | 'cricket' | 'countUp';
 
 export interface StatsPageContentProps {
   dlData: DartsliveData;
-  periodTab: 'today' | 'week' | 'month' | 'all';
+  periodTab: 'latest' | 'week' | 'month' | 'all';
   periodSummary: StatsHistorySummary | null;
   periodRecords: StatsHistoryRecord[];
   flightColor: string;

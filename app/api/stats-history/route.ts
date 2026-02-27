@@ -22,8 +22,9 @@ function getDateRange(period: string): { start: Date; end: Date } {
   const tomorrowStartJST = new Date(todayStartJST.getTime() + 24 * 60 * 60 * 1000);
 
   switch (period) {
-    case 'today':
-      return { start: todayStartJST, end: tomorrowStartJST };
+    case 'latest':
+      // 「直近」は特殊処理（getDateRange外で最新日を探す）
+      return { start: new Date(0), end: tomorrowStartJST };
     case 'week': {
       // 月曜始まり: day=0(日)→6日前, day=1(月)→0日前, ...
       const daysToMonday = day === 0 ? 6 : day - 1;
@@ -43,12 +44,11 @@ function getDateRange(period: string): { start: Date; end: Date } {
 export const GET = withErrorHandler(
   withAuth(async (request: NextRequest, { userId, role }) => {
     const rawPeriod = request.nextUrl.searchParams.get('period') || 'all';
-    const VALID_PERIODS = ['today', 'week', 'month', 'all'] as const;
+    const VALID_PERIODS = ['latest', 'week', 'month', 'all'] as const;
     const period = VALID_PERIODS.includes(rawPeriod as (typeof VALID_PERIODS)[number])
       ? rawPeriod
       : 'all';
-    let { start } = getDateRange(period);
-    const { end } = getDateRange(period);
+    let { start, end } = getDateRange(period);
 
     // DARTSLIVE連携自体はPROのみだが、履歴参照はFreeでも可能（30日制限）
     const retentionDays = getStatsRetentionDays(role);
@@ -60,6 +60,46 @@ export const GET = withErrorHandler(
     }
 
     const colRef = adminDb.collection(`users/${userId}/dartsLiveStats`);
+
+    // 「直近」は最新1件の日付を取得し、その日のレコードのみ返す
+    if (period === 'latest') {
+      const latestSnap = await colRef.orderBy('date', 'desc').limit(1).get();
+      if (latestSnap.empty) {
+        return NextResponse.json({
+          period,
+          summary: {
+            avgRating: null,
+            avgPpd: null,
+            avgMpr: null,
+            avgCondition: null,
+            totalGames: 0,
+            playDays: 0,
+            ratingChange: null,
+            bestRating: null,
+            bestPpd: null,
+            bestMpr: null,
+            streak: 0,
+          },
+          records: [],
+        });
+      }
+      const latestDate = latestSnap.docs[0].data().date?.toDate?.() ?? new Date();
+      const dayStart = new Date(
+        Date.UTC(
+          latestDate.getUTCFullYear(),
+          latestDate.getUTCMonth(),
+          latestDate.getUTCDate(),
+          -9,
+          0,
+          0,
+          0,
+        ),
+      );
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      start = dayStart;
+      end = dayEnd;
+    }
+
     let query = colRef.orderBy('date', 'asc');
 
     if (period !== 'all' || retentionDays !== null) {

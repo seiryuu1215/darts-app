@@ -153,7 +153,7 @@ export function useStatsPage() {
   const [apiCountupPlays, setApiCountupPlays] = useState<CountUpPlay[] | null>(null);
 
   // Period state
-  const [periodTab, setPeriodTab] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [periodTab, setPeriodTab] = useState<'latest' | 'week' | 'month' | 'all'>('all');
   const [periodSummary, setPeriodSummary] = useState<StatsHistorySummary | null>(null);
   const [periodRecords, setPeriodRecords] = useState<StatsHistoryRecord[]>([]);
   const [periodLoading, setPeriodLoading] = useState(false);
