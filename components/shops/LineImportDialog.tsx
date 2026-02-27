@@ -130,7 +130,8 @@ export default function LineImportDialog({
             // 権限エラーの場合は中断
             break;
           }
-          console.error(`インポートエラー (${line}):`, err);
+          // インポートエラーは結果リストに表示されるのでログ不要
+          void err;
         }
       } catch {
         setResults((prev) => [

@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -21,285 +20,67 @@ import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import Chip from '@mui/material/Chip';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import type { Dart } from '@/types';
 import { getFlightColor } from '@/lib/dartslive-colors';
 import { calc01Rating, ppdForRating } from '@/lib/dartslive-rating';
-import { canUseDartslive, canUseDartsliveApi, canExportCsv } from '@/lib/permissions';
+import { canExportCsv } from '@/lib/permissions';
 import ProPaywall from '@/components/ProPaywall';
 
 // Progression components
 import AchievementList from '@/components/progression/AchievementList';
 import XpHistoryList from '@/components/progression/XpHistoryList';
-import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 
 // Stats components
 import StatsLoginDialog from '@/components/stats/StatsLoginDialog';
 import StatsPageContent from '@/components/stats/StatsPageContent';
 import AdminApiStatsSection from '@/components/stats/AdminApiStatsSection';
 
-// === Types ===
-interface StatsHistorySummary {
-  avgRating: number | null;
-  avgPpd: number | null;
-  avgMpr: number | null;
-  avgCondition: number | null;
-  totalGames: number;
-  playDays: number;
-  ratingChange: number | null;
-  bestRating: number | null;
-  bestPpd: number | null;
-  bestMpr: number | null;
-  streak: number;
-}
-
-interface StatsHistoryRecord {
-  id: string;
-  date: string;
-  rating: number | null;
-  ppd: number | null;
-  mpr: number | null;
-  gamesPlayed: number;
-  condition: number | null;
-  memo: string;
-  dBull: number | null;
-  sBull: number | null;
-}
-
-interface DartsliveData {
-  current: {
-    cardName: string;
-    toorina: string;
-    cardImageUrl: string;
-    rating: number | null;
-    ratingInt: number | null;
-    flight: string;
-    stats01Avg: number | null;
-    statsCriAvg: number | null;
-    statsPraAvg: number | null;
-    stats01Best: number | null;
-    statsCriBest: number | null;
-    statsPraBest: number | null;
-    awards: Record<string, { monthly: number; total: number }>;
-    homeShop?: string;
-    status?: string;
-    myAward?: string;
-  };
-  monthly: Record<string, { month: string; value: number }[]>;
-  recentGames: {
-    dayStats: {
-      best01: number | null;
-      bestCri: number | null;
-      bestCountUp: number | null;
-      avg01: number | null;
-      avgCri: number | null;
-      avgCountUp: number | null;
-    };
-    games: { category: string; scores: number[] }[];
-    shops: string[];
-  };
-  prev: {
-    rating: number | null;
-    stats01Avg: number | null;
-    statsCriAvg: number | null;
-    statsPraAvg: number | null;
-  } | null;
-}
-
-type MonthlyTab = 'rating' | 'zeroOne' | 'cricket' | 'countUp';
+import { useStatsPage } from '@/lib/hooks/useStatsPage';
 
 export default function StatsPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
-  const canDartslive = canUseDartslive(session?.user?.role);
-  const isAdminApi = canUseDartsliveApi(session?.user?.role);
-
-  const [dlData, setDlData] = useState<DartsliveData | null>(null);
-  const [dlOpen, setDlOpen] = useState(false);
-  const [dlEmail, setDlEmail] = useState('');
-  const [dlPassword, setDlPassword] = useState('');
-  const [dlLoading, setDlLoading] = useState(false);
-  const [dlError, setDlError] = useState('');
-  const [dlConsent, setDlConsent] = useState(false);
-  const [monthlyTab, setMonthlyTab] = useState<MonthlyTab>('rating');
-  const [gameChartCategory, setGameChartCategory] = useState<string>('');
-  const [activeSoftDart, setActiveSoftDart] = useState<Dart | null>(null);
-  const [dlUpdatedAt, setDlUpdatedAt] = useState<string | null>(null);
-  const [periodTab, setPeriodTab] = useState<'today' | 'week' | 'month' | 'all'>('all');
-  const [periodSummary, setPeriodSummary] = useState<StatsHistorySummary | null>(null);
-  const [periodRecords, setPeriodRecords] = useState<StatsHistoryRecord[]>([]);
-  const [periodLoading, setPeriodLoading] = useState(false);
-  const [achievements, setAchievements] = useState<string[]>([]);
-  const [achievementSnapshot, setAchievementSnapshot] = useState<AchievementSnapshot | null>(null);
-  const [xpHistory, setXpHistory] = useState<
-    { id: string; action: string; xp: number; detail: string; createdAt: string }[]
-  >([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [apiEnrichedData, setApiEnrichedData] = useState<any>(null);
-  const [apiDailyHistory, setApiDailyHistory] = useState<
-    {
-      date: string;
-      rating: number | null;
-      stats01Avg: number | null;
-      statsCriAvg: number | null;
-      stats01Avg100?: number | null;
-      statsCriAvg100?: number | null;
-    }[]
-  >([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [apiDartoutList, setApiDartoutList] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [apiAwardList, setApiAwardList] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [apiRecentPlays, setApiRecentPlays] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [apiCountupPlays, setApiCountupPlays] = useState<any>(null);
+  const {
+    session,
+    status,
+    canDartslive,
+    isAdminApi,
+    dlData,
+    dlOpen,
+    setDlOpen,
+    dlEmail,
+    setDlEmail,
+    dlPassword,
+    setDlPassword,
+    dlLoading,
+    dlError,
+    dlConsent,
+    setDlConsent,
+    dlUpdatedAt,
+    handleFetch,
+    apiEnrichedData,
+    apiDailyHistory,
+    apiDartoutList,
+    apiAwardList,
+    apiRecentPlays,
+    apiCountupPlays,
+    fetchAdminApiData,
+    periodTab,
+    periodSummary,
+    periodRecords,
+    monthlyTab,
+    setMonthlyTab,
+    gameChartCategory,
+    setGameChartCategory,
+    activeSoftDart,
+    achievements,
+    achievementSnapshot,
+    xpHistory,
+  } = useStatsPage();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
-
-  useEffect(() => {
-    try {
-      if (localStorage.getItem('dartslive_consent') === '1') setDlConsent(true);
-      localStorage.removeItem('dartslive_credentials');
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    if (canDartslive) {
-      const fetchCachedStats = async () => {
-        try {
-          const res = await fetch('/api/dartslive-stats');
-          if (!res.ok) return;
-          const json = await res.json();
-          if (json.data) {
-            setDlData(json.data);
-            if (json.updatedAt) setDlUpdatedAt(json.updatedAt);
-            if (json.data.recentGames?.games?.length > 0) {
-              const games = json.data.recentGames.games;
-              const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
-              setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
-            }
-          }
-        } catch {
-          /* ignore */
-        }
-      };
-      fetchCachedStats();
-    }
-    const fetchActiveDart = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', session.user.id));
-        if (!userDoc.exists()) return;
-        const userData = userDoc.data();
-        if (userData.activeSoftDartId) {
-          const dartDoc = await getDoc(doc(db, 'darts', userData.activeSoftDartId));
-          if (dartDoc.exists()) {
-            setActiveSoftDart({ id: dartDoc.id, ...dartDoc.data() } as Dart);
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    fetchActiveDart();
-
-    // Progression data
-    const fetchProgression = async () => {
-      try {
-        const res = await fetch('/api/progression');
-        if (!res.ok) return;
-        const json = await res.json();
-        setAchievements(json.achievements ?? []);
-        setAchievementSnapshot(json.achievementSnapshot ?? null);
-        setXpHistory(json.history ?? []);
-      } catch {
-        // ignore
-      }
-    };
-    fetchProgression();
-  }, [session, canDartslive]);
-
-  const fetchAdminApiData = async () => {
-    try {
-      const res = await fetch('/api/admin/dartslive-history');
-      if (!res.ok) return;
-      const json = await res.json();
-      setApiDailyHistory(json.records ?? []);
-      setApiEnrichedData(json.enriched ?? null);
-      setApiDartoutList(json.dartoutList ?? null);
-      setApiAwardList(json.awardList ?? null);
-      setApiRecentPlays(json.recentPlays ?? null);
-      setApiCountupPlays(json.countupPlays ?? null);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  useEffect(() => {
-    if (!session?.user?.id || !isAdminApi) return;
-    fetchAdminApiData();
-  }, [session, isAdminApi]);
-
-  useEffect(() => {
-    if (!session?.user?.id || !canDartslive) return;
-    const fetchPeriodStats = async () => {
-      setPeriodLoading(true);
-      try {
-        const res = await fetch(`/api/stats-history?period=${periodTab}`);
-        if (!res.ok) return;
-        const json = await res.json();
-        setPeriodSummary(json.summary ?? null);
-        setPeriodRecords(json.records ?? []);
-      } catch {
-        /* ignore */
-      } finally {
-        setPeriodLoading(false);
-      }
-    };
-    fetchPeriodStats();
-  }, [session, canDartslive, periodTab]);
-
-  const handleFetch = async () => {
-    if (!dlEmail || !dlPassword) {
-      setDlError('メールアドレスとパスワードを入力してください');
-      return;
-    }
-    setDlError('');
-    setDlLoading(true);
-    try {
-      const res = await fetch('/api/dartslive-stats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: dlEmail, password: dlPassword }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setDlError(json.error || '取得に失敗しました');
-        return;
-      }
-      setDlData(json.data);
-      setDlOpen(false);
-      setDlUpdatedAt(new Date().toISOString());
-      localStorage.setItem('dartslive_consent', '1');
-      if (json.data.recentGames?.games?.length > 0) {
-        const games = json.data.recentGames.games;
-        const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
-        setGameChartCategory(countUp ? 'COUNT-UP' : games[0].category);
-      }
-    } catch {
-      setDlError('通信エラーが発生しました');
-    } finally {
-      setDlLoading(false);
-    }
-  };
 
   if (status === 'loading') {
     return (

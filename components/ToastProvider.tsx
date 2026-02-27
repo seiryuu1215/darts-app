@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { Snackbar, Alert, AlertColor } from '@mui/material';
 
 interface ToastContextValue {
@@ -17,11 +25,20 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [severity, setSeverity] = useState<AlertColor>('error');
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // タイマーのクリーンアップ（メモリリーク防止）
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const showToast = useCallback((msg: string, sev: AlertColor = 'error') => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     setOpen(false);
     // Small delay to allow close animation before showing new toast
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setMessage(msg);
       setSeverity(sev);
       setOpen(true);

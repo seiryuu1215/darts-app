@@ -87,7 +87,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       const snapshot = await getDocs(q);
       setComments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Comment[]);
     } catch (err) {
-      console.error('コメント取得エラー:', err);
+      void err;
     }
   }, [dartId]);
 
@@ -102,7 +102,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           .filter((m) => (m as Memo).userId === session.user.id) as Memo[],
       );
     } catch (err) {
-      console.error('メモ取得エラー:', err);
+      void err;
     }
   }, [dartId, session, isOwner]);
 
@@ -259,7 +259,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       setIsActiveDart(true);
       setHistoryDialogOpen(false);
     } catch (err) {
-      console.error('履歴記録エラー:', err);
+      void err;
     } finally {
       setHistoryLoading(false);
     }
@@ -287,7 +287,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       await deleteDoc(doc(db, 'darts', dartId));
       router.push('/');
     } catch (err) {
-      console.error('削除エラー:', err);
+      void err;
     }
   };
 

@@ -76,7 +76,8 @@ export default function ReplyForm({ discussionId, onReplyAdded }: ReplyFormProps
       setText('');
       onReplyAdded();
     } catch (err) {
-      console.error('返信投稿エラー:', err);
+      // 投稿失敗時はUIが更新されないため、ユーザーは気付ける
+      void err;
     } finally {
       setLoading(false);
     }

@@ -75,7 +75,7 @@ export default function RecommendPage() {
         })) as BarrelProduct[];
         setAllBarrels(barrels);
       } catch (err) {
-        console.error('データ取得エラー:', err);
+        void err;
       } finally {
         setLoading(false);
       }
@@ -137,7 +137,7 @@ export default function RecommendPage() {
       );
       setResults(analyzed);
     } catch (err) {
-      console.error('おすすめ検索エラー:', err);
+      void err;
     } finally {
       setSearching(false);
     }

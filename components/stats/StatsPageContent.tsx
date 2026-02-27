@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Box, Card, CardContent, CardMedia, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
@@ -129,6 +130,19 @@ export default function StatsPageContent({
   const c = dlData.current;
   const prev = dlData.prev;
 
+  const dBullTotal = useMemo(
+    () => periodRecords.reduce((s, r) => s + (r.dBull ?? 0), 0) || null,
+    [periodRecords],
+  );
+  const sBullTotal = useMemo(
+    () => periodRecords.reduce((s, r) => s + (r.sBull ?? 0), 0) || null,
+    [periodRecords],
+  );
+  const countUpScores = useMemo(
+    () => dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores,
+    [dlData.recentGames.games],
+  );
+
   return (
     <>
       {/* 1. Rating Hero + Profile */}
@@ -191,9 +205,9 @@ export default function StatsPageContent({
           stats01Avg={c.stats01Avg}
           statsCriAvg={c.statsCriAvg}
           statsPraAvg={c.statsPraAvg}
-          dBullTotal={periodRecords.reduce((s, r) => s + (r.dBull ?? 0), 0) || null}
-          sBullTotal={periodRecords.reduce((s, r) => s + (r.sBull ?? 0), 0) || null}
-          countUpScores={dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores}
+          dBullTotal={dBullTotal}
+          sBullTotal={sBullTotal}
+          countUpScores={countUpScores}
           flight={c.flight || undefined}
         />
       )}

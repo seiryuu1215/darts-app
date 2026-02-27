@@ -48,7 +48,7 @@ export default function ArticleDetailPage() {
           setArticle({ id: doc.id, ...doc.data() } as Article);
         }
       } catch (err) {
-        console.error('記事取得エラー:', err);
+        void err;
       } finally {
         setLoading(false);
       }

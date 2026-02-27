@@ -35,7 +35,7 @@ export default function EditDartPage() {
           setDart(data);
         }
       } catch (err) {
-        console.error('ダーツ取得エラー:', err);
+        void err;
       } finally {
         setLoading(false);
       }

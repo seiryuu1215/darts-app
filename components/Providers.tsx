@@ -25,7 +25,8 @@ function FirebaseAuthSync() {
         const { token } = await res.json();
         await signInWithCustomToken(firebaseAuth, token);
       } catch (err) {
-        console.error('Firebase Auth sync error:', err);
+        // Firebase Auth同期エラーはデバッグ用に残す
+        console.warn('Firebase Auth sync error:', err);
       }
     });
 

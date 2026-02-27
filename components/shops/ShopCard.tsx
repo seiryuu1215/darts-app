@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import {
   Paper,
   Box,
@@ -54,7 +55,7 @@ interface ShopCardProps {
   onToggleFavorite?: () => void;
 }
 
-export default function ShopCard({
+const ShopCard = React.memo(function ShopCard({
   bookmark,
   lists,
   hiddenTags,
@@ -389,4 +390,6 @@ export default function ShopCard({
       </Menu>
     </Paper>
   );
-}
+});
+
+export default ShopCard;

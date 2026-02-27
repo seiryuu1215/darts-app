@@ -84,7 +84,7 @@ export default function ProfileEditPage() {
             setHasDlCredentials(!!data.dlCredentialsEncrypted);
           }
         } catch (err) {
-          console.error('プロフィール取得エラー:', err);
+          void err;
         } finally {
           setLoading(false);
         }

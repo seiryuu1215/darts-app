@@ -22,7 +22,8 @@ export default function CommentList({ dartId, comments, onCommentDeleted }: Comm
       await deleteDoc(doc(db, 'darts', dartId, 'comments', commentId));
       onCommentDeleted();
     } catch (err) {
-      console.error('コメント削除エラー:', err);
+      // 削除失敗時はUIが更新されないため、ユーザーは気付ける
+      void err;
     }
   };
 

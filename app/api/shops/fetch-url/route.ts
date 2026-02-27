@@ -15,8 +15,8 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
   }
 
-  // DARTSLIVEドメインのみ許可（SSRF対策）
-  if (!parsedUrl.hostname.endsWith('dartslive.com')) {
+  // DARTSLIVEドメインのみ許可（SSRF対策 — evil-dartslive.com を防ぐため完全一致）
+  if (parsedUrl.hostname !== 'dartslive.com' && !parsedUrl.hostname.endsWith('.dartslive.com')) {
     return NextResponse.json({ error: 'Only dartslive.com URLs are allowed' }, { status: 400 });
   }
 

@@ -23,7 +23,7 @@ export default function DartDetailPage() {
           setDart({ id: docSnap.id, ...docSnap.data() } as Dart);
         }
       } catch (err) {
-        console.error('ダーツ取得エラー:', err);
+        void err;
       } finally {
         setLoading(false);
       }

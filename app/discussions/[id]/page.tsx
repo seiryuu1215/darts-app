@@ -85,7 +85,7 @@ export default function DiscussionDetailPage() {
       const snap = await getDocs(q);
       setReplies(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DiscussionReply));
     } catch {
-      console.error('返信取得エラー');
+      /* データ取得エラーは無視 */
     }
   }, [discussionId]);
 
@@ -153,7 +153,7 @@ export default function DiscussionDetailPage() {
       });
       setReported(true);
     } catch (err) {
-      console.error('通報エラー:', err);
+      void err;
     }
   };
 

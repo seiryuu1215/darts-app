@@ -81,7 +81,7 @@ export default function SettingHistoryPage() {
         const snap = await getDocs(q);
         setHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as SettingHistory[]);
       } catch (err) {
-        console.error('履歴取得エラー:', err);
+        void err;
         setFetchError(true);
       } finally {
         setLoading(false);
@@ -141,7 +141,7 @@ export default function SettingHistoryPage() {
       );
       setEditEntry(null);
     } catch (err) {
-      console.error('期間更新エラー:', err);
+      void err;
       setEditError('保存に失敗しました');
     } finally {
       setEditSaving(false);

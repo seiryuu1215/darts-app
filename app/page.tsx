@@ -220,7 +220,7 @@ export default function HomePage() {
           setActiveSteelDart(null);
         }
       } catch (err) {
-        console.error('ユーザーデータ取得エラー:', err);
+        void err;
       }
     };
     const fetchMyDarts = async () => {
@@ -233,7 +233,7 @@ export default function HomePage() {
         const snapshot = await getDocs(q);
         setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
       } catch (err) {
-        console.error('マイセッティング取得エラー:', err);
+        void err;
       }
     };
     const fetchDlCache = async () => {

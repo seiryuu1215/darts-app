@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -27,7 +28,7 @@ interface BarrelCardProps {
   isBookmarked?: boolean;
 }
 
-export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
+const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   // localOverride: ユーザーがローカルで操作した場合のみ値が入る
@@ -59,7 +60,7 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
       }
       setLocalOverride(!bookmarked);
     } catch (err) {
-      console.error('ブックマークエラー:', err);
+      void err;
     }
   };
 
@@ -184,4 +185,6 @@ export default function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
       </Box>
     </Card>
   );
-}
+});
+
+export default BarrelCard;

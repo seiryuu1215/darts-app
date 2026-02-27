@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card, CardContent, CardMedia, Typography, Box, Chip } from '@mui/material';
 import Link from 'next/link';
 import type { Dart } from '@/types';
@@ -11,7 +12,7 @@ interface DartCardProps {
   dart: Dart;
 }
 
-export default function DartCard({ dart }: DartCardProps) {
+const DartCard = React.memo(function DartCard({ dart }: DartCardProps) {
   const { data: session } = useSession();
   const isOwner = session?.user?.id === dart.userId;
   const totals = calcDartTotals(dart);
@@ -107,4 +108,6 @@ export default function DartCard({ dart }: DartCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default DartCard;

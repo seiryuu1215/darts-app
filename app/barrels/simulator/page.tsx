@@ -89,7 +89,7 @@ function SimulatorContent() {
         const ids = new Set(snap.docs.map((d) => d.data().barrelId as string));
         setBookmarkedIds(ids);
       })
-      .catch((err) => console.error('ブックマーク取得エラー:', err));
+      .catch(() => {});
   }, [session]);
 
   const filtered = useMemo(() => {

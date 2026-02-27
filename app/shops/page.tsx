@@ -56,6 +56,7 @@ import TagManageDialog from '@/components/shops/TagManageDialog';
 import LineImportDialog from '@/components/shops/LineImportDialog';
 import ProPaywall from '@/components/ProPaywall';
 import { usePermission } from '@/lib/hooks/usePermission';
+import { useToast } from '@/components/ToastProvider';
 import { SHOP_BOOKMARK_LIMIT_GENERAL } from '@/lib/permissions';
 import { geocodeAddress } from '@/lib/geocode';
 import type { ShopBookmark, ShopList } from '@/types';
@@ -70,6 +71,7 @@ export default function ShopsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { isPro, shopBookmarkLimit } = usePermission();
+  const { showToast } = useToast();
   const [bookmarks, setBookmarks] = useState<ShopBookmark[]>([]);
   const [lists, setLists] = useState<ShopList[]>([]);
   const [bookmarksLoading, setBookmarksLoading] = useState(true);
@@ -277,7 +279,7 @@ export default function ShopsPage() {
       setEditingBookmark(null);
       await loadBookmarks();
     } catch {
-      // ignore
+      showToast('ショップの保存に失敗しました');
     }
   };
 
@@ -336,7 +338,7 @@ export default function ShopsPage() {
       setEditingList(null);
       await loadLists();
     } catch {
-      // ignore
+      showToast('リストの保存に失敗しました');
     }
   };
 
@@ -363,7 +365,7 @@ export default function ShopsPage() {
       await loadLists();
       await loadBookmarks();
     } catch {
-      // ignore
+      showToast('リストの削除に失敗しました');
     }
   };
 

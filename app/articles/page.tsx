@@ -33,7 +33,7 @@ export default function ArticlesPage() {
           });
         setArticles(docs);
       } catch (err) {
-        console.error('記事取得エラー:', err);
+        void err;
       } finally {
         setLoading(false);
       }
