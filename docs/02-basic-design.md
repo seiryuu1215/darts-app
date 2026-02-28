@@ -7,7 +7,28 @@
 | プロジェクト名 | Darts Lab  |
 | バージョン     | 3.0        |
 | 作成日         | 2025-02-09 |
-| 最終更新日     | 2026-02-23 |
+| 最終更新日     | 2026-03-01 |
+
+---
+
+## インタラクティブ設計図
+
+以下の7つのインタラクティブ設計図をポートフォリオサイトで公開しています。
+クリック操作で詳細表示・タブ切替が可能な SVG ベースの設計図です。
+
+**[設計図ビューア → https://portfolio-seiryuu.vercel.app/projects/darts-lab](https://portfolio-seiryuu.vercel.app/projects/darts-lab)**
+
+| 設計図 | 内容 |
+|---|---|
+| 📐 アーキテクチャ | Client → Vercel → Firebase → 外部サービスの全体構成 |
+| 🗄️ ER図 | Firestore 12コレクション + 11サブコレクション + リレーション |
+| 🔐 認証・課金 | NextAuth JWT フロー / Stripe Webhook / LINE連携 |
+| ⏰ Cronバッチ | 日次自動パイプライン（9ステップ + XPルール14種） |
+| 📱 画面遷移 | 30+ページ × ロール別アクセス制御 |
+| 🔄 API・データフロー | 25+ APIルート / セキュリティレイヤー |
+| 📋 要件・ペルソナ | 機能マップ / ペルソナ / 非機能要件 / 技術選定 |
+
+> TSXソースは [`docs/diagrams/`](./diagrams/) に収録。
 
 ---
 
@@ -395,19 +416,9 @@ Firestore Root
 
 ### 5.2 認可マトリクス
 
-| 機能                   | 未ログイン |    general    |      pro      |   admin   |
-| ---------------------- | :--------: | :-----------: | :-----------: | :-------: |
-| セッティング閲覧       |     O      |       O       |       O       |     O     |
-| バレル検索             |     O      |       O       |       O       |     O     |
-| 記事閲覧               |     O      |       O       |       O       |     O     |
-| セッティング登録・編集 |     X      | O（自分のみ） | O（自分のみ） | O（全て） |
-| いいね・コメント       |     X      |       O       |       O       |     O     |
-| ブックマーク           |     X      |       O       |       O       |     O     |
-| スタッツ記録           |     X      |       O       |       O       |     O     |
-| ショップ管理           |     X      |       O       |       O       |     O     |
-| 掲示板投稿・返信       |     X      |       O       |       O       |     O     |
-| 記事投稿・編集         |     X      |       X       |       O       |     O     |
-| ユーザーロール管理     |     X      |       X       |       X       |     O     |
+> 詳細な機能別アクセス権限マトリクスは **[ROLES-AND-PLANS.md](./ROLES-AND-PLANS.md)** を参照。
+
+**概要:** 3ロール（`admin` / `pro` / `general`）+ 未ログイン。権限判定は `lib/permissions.ts` に一元化。
 
 ---
 
@@ -436,6 +447,7 @@ Firestore Root
 ```
 
 **セキュリティ対策:**
+（詳細は [05-security-review.md §2.9](./05-security-review.md#29-dartslive-データ連携のセキュリティ) を参照）
 
 - 認証情報はリクエストボディで受信、サーバーメモリ上で一時利用のみ
 - 認証情報はAES暗号化を施し、平文での保存を回避
@@ -486,6 +498,29 @@ LINE Messaging API を使用したアカウント連携と日次通知。
   │                  │── ロール更新 ──────→│
   │←── Pro有効化 ────│                    │
 ```
+
+### 6.5 アフィリエイト（6ショップ）
+
+バレル商品から6つのショップへの購入リンクを生成する。
+詳細は [設計図ビューア「API・データフロー」タブ](https://portfolio-seiryuu.vercel.app/projects/darts-lab) を参照。
+
+```
+バレル詳細 / セッティング詳細
+    ↓
+AffiliateButton (ドロップダウン)
+    ↓ getShopLinks(barrel)
+lib/affiliate.ts → 6ショップURL生成
+    ├── ダーツハイブ (A8.net経由)
+    ├── エスダーツ
+    ├── MAXIM
+    ├── TiTO
+    ├── 楽天市場 (アフィリエイトID付き)
+    └── Amazon (アソシエイトタグ付き)
+```
+
+- `lib/affiliate.ts` — `getShopLinks(barrel)` で6ショップのURLを生成
+- `AffiliateButton.tsx` — ドロップダウンで購入先選択、`target="_blank"` + `rel="noopener noreferrer"`
+- `AffiliateBanner.tsx` — サイドバー等に表示するショップバナー
 
 ---
 

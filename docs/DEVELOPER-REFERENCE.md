@@ -1,7 +1,7 @@
 # Darts Lab 開発者リファレンス
 
 > TypeScript 3年・React 3年程度の経験者が、このアプリの全体像を把握するためのドキュメント。
-> 既存の `ARCHITECTURE.md`（技術選定・システム構成図）と合わせて読むこと。
+> 設計情報の正規ソースは [02-basic-design.md](./02-basic-design.md)。本書はコードウォークスルーと実装ノートに特化。
 
 ---
 
@@ -22,68 +22,7 @@
 
 ## 1. プロジェクト構造の読み方
 
-```
-darts-app/
-├── app/                    # Next.js App Router（ページ + API）
-│   ├── layout.tsx          # ルートレイアウト（全ページ共通）
-│   ├── page.tsx            # ホーム画面 /
-│   ├── darts/              # セッティング管理
-│   ├── barrels/            # バレル検索・シミュレーター・診断
-│   ├── stats/              # スタッツダッシュボード + カレンダー
-│   ├── articles/           # 記事
-│   ├── discussions/        # 掲示板
-│   ├── api/                # サーバーサイドAPI
-│   │   ├── auth/           # NextAuth.js
-│   │   ├── dartslive-stats/# DARTSLIVE自動データ取得
-│   │   ├── stripe/         # 決済
-│   │   ├── line/           # LINE連携
-│   │   ├── stats-calendar/  # カレンダー月別レコード取得
-│   │   ├── goals/          # 目標CRUD・進捗計算
-│   │   └── cron/           # 定期バッチ
-│   └── sw.ts               # Service Worker（PWA）
-├── components/             # UIコンポーネント（機能ごとにフォルダ分け）
-│   ├── layout/             # Header, Footer, Sidebar, Breadcrumbs
-│   ├── darts/              # DartCard, DartDetail, DartForm
-│   ├── barrels/            # BarrelCard, BarrelSimulator, BarrelQuiz
-│   ├── stats/              # 53個のスタッツ可視化コンポーネント（高度分析・期間フィルター・表示切替対応）
-│   ├── affiliate/          # AffiliateButton, AffiliateBanner
-│   ├── goals/              # GoalSection, GoalCard, GoalSettingDialog, GoalAchievedDialog
-│   ├── progression/        # XpBar, LevelUpSnackbar
-│   ├── notifications/      # XpNotificationDialog
-│   ├── discussions/        # DiscussionCard, ReplyForm, ReplyList
-│   ├── articles/           # ArticleCard, MarkdownContent
-│   └── Providers.tsx       # 全プロバイダーをまとめるラッパー
-├── lib/                    # ビジネスロジック・ユーティリティ
-│   ├── firebase.ts         # Firebase Client SDK 初期化
-│   ├── firebase-admin.ts   # Firebase Admin SDK 初期化
-│   ├── auth.ts             # NextAuth設定
-│   ├── permissions.ts      # ロール別権限関数
-│   ├── api-middleware.ts   # API共通ミドルウェア
-│   ├── affiliate.ts        # アフィリエイトリンク生成
-│   ├── goals.ts            # 目標定義・進捗計算ヘルパー
-│   ├── recommend-barrels.ts# バレルレコメンドエンジン
-│   ├── dartslive-rating.ts # Rt計算・逆算ロジック
-│   ├── dartslive-percentile.ts # パーセンタイル分布
-│   ├── rate-limit.ts       # Upstash Redis レートリミット
-│   ├── line-stations.ts    # 路線・駅データ定義
-│   ├── shop-import.ts      # ショップデータインポート
-│   ├── heatmap-data.ts     # ダーツボードヒートマップデータ
-│   ├── session-analysis.ts # セッション疲労分析
-│   ├── sensor-analysis.ts  # センサー分析
-│   ├── stats-trend.ts      # スタッツトレンド分析
-│   ├── award-analysis.ts   # アワード分析
-│   ├── countup-round-analysis.ts # ラウンド分析
-│   ├── practice-recommendations.ts # AI練習レコメンデーション
-│   └── progression/        # XPシステム
-│       ├── xp-rules.ts     # XP獲得ルール定義
-│       ├── xp-engine.ts    # レベル計算・Cron XP算出
-│       ├── ranks.ts        # ランク定義（アイコン・色付き）
-│       └── milestones.ts   # マイルストーン（バッジ）定義
-├── types/index.ts          # 全型定義
-├── firestore.rules         # Firestoreセキュリティルール
-├── storage.rules           # Storageセキュリティルール
-└── docs/                   # 設計書・仕様書
-```
+> ディレクトリツリーの全量は [02-basic-design.md §8](./02-basic-design.md#8-ディレクトリ構成) を参照。
 
 **読む順序のおすすめ:**
 
@@ -198,6 +137,8 @@ export default function AdminPage() {
 
 ## 3. 認証アーキテクチャ（デュアル認証）
 
+> 認証フロー図は [02-basic-design.md §5.1](./02-basic-design.md#51-認証フロー) を参照。
+
 ### なぜ2つの認証が必要？
 
 | レイヤー          | 使うもの         | 何のため？                                          |
@@ -206,31 +147,6 @@ export default function AdminPage() {
 | **Firebase Auth** | カスタムトークン | **クライアントからFirestoreに直接読み書き**するため |
 
 Firestoreのセキュリティルール（`firestore.rules`）は `request.auth` を見て認証判定する。これはFirebase Authのトークンでしか動かない。だからNextAuthで認証した後、Firebase Authにもログインさせる必要がある。
-
-### 認証フロー図
-
-```
-[ユーザー] → ログインフォーム
-    ↓
-[NextAuth] signIn('credentials', {email, password})
-    ↓
-[lib/auth.ts] CredentialsProvider内で
-    Firebase Auth の signInWithEmailAndPassword() を呼ぶ
-    → Firebase UID を取得
-    → Firestore から role を取得
-    → JWT に {id, role, subscriptionStatus} を埋め込んで返却
-    ↓
-[ブラウザ] NextAuth セッション確立（Cookie）
-    ↓
-[Providers.tsx] FirebaseAuthSync コンポーネント
-    → セッションの存在を検知
-    → /api/firebase-token を呼ぶ
-    → サーバーが Admin SDK で createCustomToken(uid) を発行
-    → クライアントで signInWithCustomToken(firebaseAuth, token) を実行
-    ↓
-[Firebase Auth] クライアントSDK認証完了
-    → Firestore への読み書きが可能に
-```
 
 ### 認証設定の実装（`lib/auth.ts`）
 
@@ -658,168 +574,32 @@ const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 
 ## 6. 外部サービス連携
 
-### 6-1. Stripe（サブスクリプション決済）
+> フロー図・シーケンス図は [02-basic-design.md §6](./02-basic-design.md#6-外部連携設計) を参照。
+> 日次バッチの詳細は [CRON.md](./CRON.md) を参照。
 
-**フロー:**
+### 6-1. Stripe — 実装ノート
 
-```
-ユーザー → /pricing → 「PRO登録」ボタン
-    ↓
-POST /api/stripe/checkout
-    → Stripe Checkout Session 作成
-    → ユーザーをStripeの決済ページにリダイレクト
-    ↓
-Stripe決済ページ → 支払い完了
-    ↓
-POST /api/stripe/webhook  ← Stripeが自動的に呼ぶ
-    → 署名検証（Webhook Secret）
-    → イベント重複排除（stripeEvents コレクション）
-    → users/{uid} の role を 'pro' に更新
-```
+- **Webhook署名検証**: `stripe.webhooks.constructEvent()` で生ボディ + 署名ヘッダーを照合
+- **冪等性**: `stripeEvents/{eventId}` で重複イベント排除（`existing.exists` チェック）
+- **イベント**: `checkout.session.completed` / `subscription.updated` / `subscription.deleted` / `invoice.payment_failed`
+- **手動PRO**: `subscriptionId` なしユーザーは自動ダウングレード対象外
 
-**Webhook の実装ポイント（`app/api/stripe/webhook/route.ts`）:**
+### 6-2. DARTSLIVE — 実装ノート
 
-```typescript
-// 1. 署名検証 — これがないと偽のWebhookを受け入れてしまう
-const event = stripe.webhooks.constructEvent(
-  await req.text(), // 生のリクエストボディ
-  req.headers.get('stripe-signature'), // Stripeが付与する署名ヘッダー
-  process.env.STRIPE_WEBHOOK_SECRET, // 照合用シークレット
-);
+- `@sparticuz/chromium` + `puppeteer-core` でVercel上にChromium起動
+- `maxDuration = 60`、認証情報は関数スコープで自動破棄
+- Cron時は AES-256-GCM 暗号化保存（`lib/crypto.ts`）→ 復号 → 自動データ取得 → 破棄
 
-// 2. 冪等性チェック — 同じイベントが2回来ても2回処理しない
-const eventRef = adminDb.doc(`stripeEvents/${event.id}`);
-const existing = await eventRef.get();
-if (existing.exists) return NextResponse.json({ received: true });
-await eventRef.set({ type: event.type, processed: true, createdAt: new Date() });
+### 6-3. LINE — 実装ノート
 
-// 3. イベント種別ごとの処理
-switch (event.type) {
-  case 'checkout.session.completed': // 初回購入完了
-  case 'customer.subscription.updated': // プラン変更・更新
-  case 'customer.subscription.deleted': // 解約
-  case 'invoice.payment_failed': // 支払い失敗
-}
-```
+- 連携コード: 8桁、10分有効（`lineLinkCodes/{code}`）
+- Webhook署名: `crypto.timingSafeEqual()` でHMAC-SHA256検証
+- コンディション記録: LINEで「★3」→ メモ入力 → Firestore保存
 
-### 6-2. DARTSLIVE 自動データ取得（`app/api/dartslive-stats/route.ts`）
+### 6-4. アフィリエイト — 実装ノート
 
-公式APIがないため、サーバーサイドブラウザ自動化（puppeteer-core）でデータ取得。
-
-**制約と設計:**
-
-- Vercel Serverless Functions上でChromiumを起動（`@sparticuz/chromium` パッケージ）
-- タイムアウト: 60秒（`maxDuration = 60`）
-- 認証情報はリクエストボディで受け取り、**サーバーメモリ上でのみ使用**、永続化しない
-
-```typescript
-// 取得データ
-{
-  profile: { cardName, toorina, homeShop, profileImage },
-  stats: {
-    rating: 8.52,
-    flight: 'BB',
-    zeroOne: { avg: 52.30, best: 67.12 },
-    cricket: { avg: 2.45, best: 3.80 },
-    countUp: { avg: 520, best: 701 },
-    awards: {
-      'D-BULL': { monthly: 12, total: 456 },
-      'S-BULL': { monthly: 34, total: 890 },
-      'HAT TRICK': { monthly: 2, total: 15 },
-      'TON 80': { monthly: 0, total: 3 },
-      'LOW TON': { monthly: 5, total: 120 },
-      'HIGH TON': { monthly: 1, total: 30 },
-      '3 IN A BLACK': { monthly: 0, total: 1 },
-      '9 MARK': { monthly: 0, total: 2 },
-      // ...
-    }
-  },
-  monthly: [ { month: '2025-01', rating: 8.1 }, ... ],
-  games: [ { category: 'COUNT-UP', scores: [520, 480, ...] }, ... ],
-}
-```
-
-### 6-3. LINE Messaging API
-
-**機能:**
-
-1. **アカウント連携** — WebアプリとLINEアカウントを紐づけ
-2. **日次スタッツ通知** — Cronで自動取得 → LINE Pushメッセージ
-3. **コンディション記録** — LINEチャットで「★3」→ メモ入力 → Firestore保存
-
-**連携フロー:**
-
-```
-[Webアプリ] POST /api/line/link → 8桁コード生成（10分有効）
-    ↓
-[ユーザー] LINEで「12345678」と送信
-    ↓
-[LINE] POST /api/line/webhook
-    → 署名検証（timingSafeEqual）
-    → lineLinkCodes/{code} を検索
-    → users/{uid} に lineUserId をセット
-    → 連携完了メッセージ送信
-```
-
-**日次Cron（`app/api/cron/daily-stats/route.ts`）:**
-
-```
-Vercel Cron (JST 10:00 = UTC 1:00) → POST /api/cron/daily-stats (Bearer token認証)
-    ↓
-LINE連携ユーザーを全件取得
-    ↓
-各ユーザーごとに:
-  1. 暗号化されたDL認証情報を復号
-  2. サーバーサイドブラウザ自動化（puppeteer-core）で自動データ取得（今月/累計のアワード値も取得）
-  3. dartsliveCache/latest にキャッシュ保存（bullStats, hatTricks含む）
-  4. 前回/今回の差分からXPアクション算出（calculateCronXp）
-  5. XP付与 → xpHistory記録 → 通知ドキュメント作成
-  6. 前回と変化があれば → LINE Push通知
-  7. 会話状態を 'waiting_condition' に設定
-```
-
-**キャッシュ構造（`dartsliveCache/latest`）:**
-
-```json
-{
-  "rating": 8.52,
-  "flight": "BB",
-  "bullStats": {
-    "dBull": 456,
-    "sBull": 890,
-    "dBullMonthly": 12,
-    "sBullMonthly": 34
-  },
-  "hatTricks": 15,
-  "hatTricksMonthly": 2,
-  "fullData": "{ ... JSON自動データ取得全データ ... }",
-  "updatedAt": "Timestamp"
-}
-```
-
-### 6-4. アフィリエイト（`lib/affiliate.ts`）
-
-バレル商品から6つのショップへの購入リンクを生成:
-
-```typescript
-// lib/affiliate.ts
-export function getShopLinks(barrel: BarrelProduct): ShopLink[] {
-  const searchQuery = `${barrel.brand} ${barrel.name}`;
-  return [
-    { name: 'ダーツハイブ', url: toDartshiveAffiliateUrl(searchQuery) }, // A8.net経由
-    { name: 'エスダーツ', url: toSdartsSearchUrl(searchQuery) },
-    { name: 'MAXIM', url: toMaximSearchUrl(searchQuery) },
-    { name: 'TiTO', url: toTitoSearchUrl(searchQuery) },
-    { name: '楽天市場', url: toRakutenSearchUrl(searchQuery) }, // アフィリエイトID付き
-    { name: 'Amazon', url: toAmazonSearchUrl(searchQuery) }, // アソシエイトタグ付き
-  ];
-}
-```
-
-**UIコンポーネント（`components/affiliate/AffiliateButton.tsx`）:**
-
-- ドロップダウンメニューで6ショップを選択
-- すべて `target="_blank"` + `rel="noopener noreferrer"` で外部遷移
+- `lib/affiliate.ts` → `getShopLinks(barrel)` で6ショップURL生成
+- `AffiliateButton.tsx` — ドロップダウン、`target="_blank"` + `rel="noopener noreferrer"`
 
 ---
 
@@ -827,32 +607,17 @@ export function getShopLinks(barrel: BarrelProduct): ShopLink[] {
 
 ### 7-1. 権限管理（`lib/permissions.ts`）
 
-3つのロールと権限マトリクス:
+> ロール定義・権限マトリクスの正規情報は **[ROLES-AND-PLANS.md](./ROLES-AND-PLANS.md)** を参照。
+
+主要な権限判定関数（`lib/permissions.ts`）:
 
 ```typescript
-// lib/permissions.ts
-type UserRole = 'admin' | 'pro' | 'general';
-
-export function isPro(role?: string): boolean {
-  return role === 'pro' || role === 'admin';
-}
-export function isAdmin(role?: string): boolean {
-  return role === 'admin';
-}
-export function canUseDartslive(role?: string): boolean {
-  return isPro(role); // Pro以上
-}
-export function canCreateDiscussion(role?: string): boolean {
-  return isPro(role); // Pro以上
-}
-export function canReplyDiscussion(role?: string): boolean {
-  return !!role; // ログインしていれば誰でも
-}
-
-// セッティング登録上限
-export function getSettingsLimit(role?: string): number | null {
-  return isPro(role) ? null : 1; // 無料: 1個, Pro: 無制限
-}
+isPro(role?) → boolean          // pro || admin
+isAdmin(role?) → boolean        // admin のみ
+canUseDartslive(role?) → boolean // Pro以上
+canCreateDiscussion(role?) → boolean // Pro以上
+canReplyDiscussion(role?) → boolean  // ログイン済みなら誰でも
+getSettingsLimit(role?) → number | null // general: 3, pro/admin: null
 ```
 
 ### 7-2. API ミドルウェア（`lib/api-middleware.ts`）
@@ -1131,6 +896,9 @@ vercel --prod
 
 ## 9. テスト・CI・デプロイ
 
+> CI/CD パイプラインとデプロイ構成は [02-basic-design.md §7](./02-basic-design.md#7-デプロイ構成) を参照。
+> 環境変数一覧は [02-basic-design.md §7.1](./02-basic-design.md#71-環境変数の分類) を参照。
+
 ### テスト（Vitest）
 
 ```bash
@@ -1156,34 +924,6 @@ npm run test:watch # ウォッチモード
 - Firestoreセキュリティルール（Firebase Emulator未使用）
 - E2Eテスト（Playwright/Cypress未導入）
 - 自動データ取得（モックブラウザテストなし）
-
-### CI（GitHub Actions）
-
-```yaml
-# .github/workflows/ci.yml（推定構成）
-- npm ci
-- npm run lint # ESLint
-- npm run build # Next.jsビルド（型エラー検出）
-- npm test # Vitest
-```
-
-### デプロイ
-
-**自動デプロイ:**
-
-- `git push origin main` → Vercelが自動検知してビルド・デプロイ
-
-**手動デプロイ:**
-
-```bash
-vercel --prod     # Vercel CLIで即座にプロダクションデプロイ
-```
-
-**環境変数の管理:**
-
-- ローカル: `.env.local`（Git管理外）
-- Vercel: ダッシュボードの Environment Variables で設定
-- 全環境変数の一覧は `docs/ARCHITECTURE.md` を参照
 
 ---
 
