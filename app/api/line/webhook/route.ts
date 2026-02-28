@@ -26,12 +26,13 @@ async function getConversation(lineUserId: string) {
   const ref = adminDb.doc(`lineConversations/${lineUserId}`);
   const snap = await ref.get();
   if (!snap.exists)
-    return { state: 'idle' as const, pendingStats: null, condition: null, memo: null };
+    return { state: 'idle' as const, pendingStats: null, condition: null, memo: null, pendingMemo: null };
   return snap.data() as {
-    state: 'idle' | 'waiting_condition' | 'waiting_memo' | 'waiting_challenge';
+    state: 'idle' | 'waiting_condition' | 'waiting_memo' | 'waiting_challenge' | 'waiting_practice_memo';
     pendingStats: Record<string, unknown> | null;
     condition: number | null;
     memo: string | null;
+    pendingMemo: string | null;
   };
 }
 
@@ -274,11 +275,59 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
     return;
   }
 
+  // waiting_practice_memo 状態: メモテキストを保存
+  if (conv.state === 'waiting_practice_memo') {
+    const memoText = trimmed;
+
+    await setConversation(lineUserId, {
+      state: 'idle',
+      pendingMemo: memoText,
+      pendingMemoAt: FieldValue.serverTimestamp(),
+    });
+
+    await replyLineMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: `メモを保存しました。次回スタッツ更新時に反映されます。\n\n📝 ${memoText}`,
+      },
+    ]);
+    return;
+  }
+
+  // idle 状態: 「メモ」コマンド → 練習メモ入力モードへ
+  if (conv.state === 'idle' && trimmed === 'メモ') {
+    // 既にpendingMemoがある場合は上書き確認
+    if (conv.pendingMemo) {
+      await setConversation(lineUserId, {
+        state: 'waiting_practice_memo',
+      });
+
+      await replyLineMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: `既にメモがあります:\n「${conv.pendingMemo}」\n\n新しいメモを入力すると上書きされます。練習メモを入力してください。`,
+        },
+      ]);
+    } else {
+      await setConversation(lineUserId, {
+        state: 'waiting_practice_memo',
+      });
+
+      await replyLineMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: '練習メモを入力してください。次回のスタッツ更新時に紐づけます。',
+        },
+      ]);
+    }
+    return;
+  }
+
   // idle 状態での通常メッセージ
   await replyLineMessage(event.replyToken, [
     {
       type: 'text',
-      text: 'Darts Lab Bot です。\n毎朝DARTSLIVEのスタッツを確認して、プレイがあれば通知します。\n\n「取得」と送信すると、今すぐスタッツを取得できます。',
+      text: 'Darts Lab Bot です。\n毎朝DARTSLIVEのスタッツを確認して、プレイがあれば通知します。\n\n「取得」と送信すると、今すぐスタッツを取得できます。\n「メモ」と送信すると、練習メモを残せます。',
     },
   ]);
 }

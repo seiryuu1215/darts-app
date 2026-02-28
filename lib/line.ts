@@ -700,3 +700,281 @@ export function buildMonthlyReportFlexMessage(report: ReportFlexInput): object {
     },
   };
 }
+
+// ──────────────────────────────
+// COUNT-UP 分析 Flex Message
+// ──────────────────────────────
+
+export interface CuNotifyStats {
+  date: string;
+  gameCount: number;
+  avgScore: number;
+  maxScore: number;
+  consistency: number;
+  bullRate: number;
+  // 前回比較（前回有効セッションとの差分）
+  prevAvgScore?: number | null;
+  prevConsistency?: number | null;
+  prevBullRate?: number | null;
+  // ミスパターン変化
+  currentMissDir?: string | null;
+  prevMissDir?: string | null;
+  vectorXChange?: number | null;
+  vectorYChange?: number | null;
+  radiusChange?: number | null;
+}
+
+/** 差分表示ヘルパー ("+1.2" / "-0.5") */
+function formatDelta(val: number | null | undefined, suffix: string = ''): string {
+  if (val == null) return '';
+  const sign = val > 0 ? '+' : '';
+  return `${sign}${val.toFixed(1)}${suffix}`;
+}
+
+/** COUNT-UP 分析用 Flex Message */
+export function buildCountUpFlexMessage(cu: CuNotifyStats): object {
+  const bodyContents: object[] = [
+    { type: 'text', text: cu.date, size: 'sm', color: '#888888' },
+    {
+      type: 'text',
+      text: `${cu.gameCount}ゲーム`,
+      size: 'xs',
+      color: '#888888',
+      margin: 'sm',
+    },
+    // スコア行
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'md',
+      margin: 'md',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          contents: [
+            { type: 'text', text: '平均', size: 'xs', color: '#888888' },
+            { type: 'text', text: String(cu.avgScore), size: 'xl', weight: 'bold' },
+          ],
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          contents: [
+            { type: 'text', text: '最高', size: 'xs', color: '#888888' },
+            { type: 'text', text: String(cu.maxScore), size: 'xl', weight: 'bold' },
+          ],
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          contents: [
+            { type: 'text', text: '安定性', size: 'xs', color: '#888888' },
+            { type: 'text', text: String(cu.consistency), size: 'xl', weight: 'bold' },
+          ],
+        },
+      ],
+    },
+    // ブル率
+    {
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'md',
+      contents: [
+        { type: 'text', text: 'ブル率', size: 'xs', color: '#888888', flex: 2 },
+        {
+          type: 'text',
+          text: `${cu.bullRate}%`,
+          size: 'sm',
+          weight: 'bold',
+          flex: 1,
+          align: 'end',
+        },
+      ],
+    },
+  ];
+
+  // 前回比較セクション
+  const hasPrevComparison =
+    cu.prevAvgScore != null || cu.prevConsistency != null || cu.prevBullRate != null;
+
+  if (hasPrevComparison) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({
+      type: 'text',
+      text: '前回30G日との比較',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+
+    const comparisonItems: { label: string; delta: string; color: string }[] = [];
+
+    if (cu.prevAvgScore != null) {
+      const d = cu.avgScore - cu.prevAvgScore;
+      comparisonItems.push({
+        label: '平均スコア',
+        delta: formatDelta(d),
+        color: d > 0 ? '#4CAF50' : d < 0 ? '#E53935' : '#888888',
+      });
+    }
+    if (cu.prevConsistency != null) {
+      const d = cu.consistency - cu.prevConsistency;
+      comparisonItems.push({
+        label: '安定性',
+        delta: formatDelta(d, 'pt'),
+        color: d > 0 ? '#4CAF50' : d < 0 ? '#E53935' : '#888888',
+      });
+    }
+    if (cu.prevBullRate != null) {
+      const d = cu.bullRate - cu.prevBullRate;
+      comparisonItems.push({
+        label: 'ブル率',
+        delta: formatDelta(d, '%'),
+        color: d > 0 ? '#4CAF50' : d < 0 ? '#E53935' : '#888888',
+      });
+    }
+
+    for (const item of comparisonItems) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: item.label, size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: item.delta,
+            size: 'xxs',
+            color: item.color,
+            weight: 'bold',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+  }
+
+  // ミスパターン変化セクション
+  const hasMissChange =
+    cu.vectorXChange != null || cu.vectorYChange != null || cu.radiusChange != null;
+
+  if (hasMissChange) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({
+      type: 'text',
+      text: 'センサー変化',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+
+    if (cu.vectorXChange != null) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: '横ずれ', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: formatDelta(cu.vectorXChange, 'mm'),
+            size: 'xxs',
+            color: '#333333',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+    if (cu.vectorYChange != null) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: '縦ずれ', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: formatDelta(cu.vectorYChange, 'mm'),
+            size: 'xxs',
+            color: '#333333',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+    if (cu.radiusChange != null) {
+      const rColor = cu.radiusChange < 0 ? '#4CAF50' : cu.radiusChange > 0 ? '#E53935' : '#888888';
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: 'レンジ', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: formatDelta(cu.radiusChange, 'mm'),
+            size: 'xxs',
+            color: rColor,
+            weight: 'bold',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+
+    // ミス方向変化
+    if (cu.currentMissDir && cu.prevMissDir && cu.currentMissDir !== cu.prevMissDir) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: 'ミス傾向', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: `${cu.prevMissDir}→${cu.currentMissDir}`,
+            size: 'xxs',
+            color: '#333333',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+  }
+
+  return {
+    type: 'flex',
+    altText: `COUNT-UP: 平均${cu.avgScore} / 最高${cu.maxScore} / ${cu.gameCount}G`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#2E7D32',
+        paddingAll: '16px',
+        contents: [
+          { type: 'text', text: 'Darts Lab', color: '#ffffff', size: 'sm', weight: 'bold' },
+          { type: 'text', text: 'COUNT-UP 分析', color: '#ffffffcc', size: 'xs' },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: '16px',
+        spacing: 'sm',
+        contents: bodyContents,
+      },
+    },
+  };
+}

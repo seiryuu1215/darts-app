@@ -45,6 +45,8 @@ import type {
   WeekdayHourlyResult,
 } from '@/lib/stats-math';
 import { analyzeSpeedSegments } from '@/lib/sensor-analysis';
+import { compareLastTwoSessions } from '@/lib/countup-session-compare';
+import type { CuSessionComparison } from '@/lib/countup-session-compare';
 import { ppdForRating, calc01Rating } from '@/lib/dartslive-rating';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -645,6 +647,12 @@ export default function CountUpDeepAnalysisCard({
     [sortedPlays, period],
   );
 
+  // 有効セッション比較（30G以上の日）
+  const sessionComparison = useMemo(
+    (): CuSessionComparison | null => compareLastTwoSessions(sortedPlays),
+    [sortedPlays],
+  );
+
   // スピード帯別セグメント分析
   const speedSegments = useMemo(() => analyzeSpeedSegments(filtered), [filtered]);
 
@@ -802,6 +810,173 @@ export default function CountUpDeepAnalysisCard({
             前回30G: 平均 {comparison.prevAvg.toFixed(0)}
             {comparison.prevBullRate != null && ` / ブル率 ${comparison.prevBullRate}%`}
           </Typography>
+        </>
+      )}
+
+      {/* 有効セッション比較 (30G以上の日) */}
+      {sessionComparison && (
+        <>
+          <SectionTitle>前回練習日 vs 今回練習日 (30G以上)</SectionTitle>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '80px 1fr 1fr 1fr',
+              gap: 0.5,
+              p: 1.5,
+              borderRadius: 1,
+              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid #333',
+            }}
+          >
+            {/* ヘッダー行 */}
+            <Box />
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {sessionComparison.prev.date}
+              <br />({sessionComparison.prev.gameCount}G)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {sessionComparison.current.date}
+              <br />({sessionComparison.current.gameCount}G)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              差分
+            </Typography>
+
+            {/* スコア平均 */}
+            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+              スコア平均
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.prev.avgScore}
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.current.avgScore}
+            </Typography>
+            <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              <DiffChip value={sessionComparison.deltas.avgScore} />
+            </Box>
+
+            {/* 安定性 */}
+            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+              安定性
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.prev.consistency}
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.current.consistency}
+            </Typography>
+            <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              <DiffChip value={sessionComparison.deltas.consistency} suffix="pt" />
+            </Box>
+
+            {/* ブル率 */}
+            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+              ブル率
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.prev.bullRate}%
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              {sessionComparison.current.bullRate}%
+            </Typography>
+            <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+              <DiffChip value={sessionComparison.deltas.bullRate} suffix="%" />
+            </Box>
+
+            {/* 横ずれ(X) */}
+            {(sessionComparison.prev.avgVectorX !== 0 || sessionComparison.current.avgVectorX !== 0) && (
+              <>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                  横ずれ(X)
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.prev.avgVectorX}mm
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.current.avgVectorX}mm
+                </Typography>
+                <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  <DiffChip value={sessionComparison.deltas.vectorX} suffix="mm" inverse />
+                </Box>
+              </>
+            )}
+
+            {/* 縦ずれ(Y) */}
+            {(sessionComparison.prev.avgVectorY !== 0 || sessionComparison.current.avgVectorY !== 0) && (
+              <>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                  縦ずれ(Y)
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.prev.avgVectorY}mm
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.current.avgVectorY}mm
+                </Typography>
+                <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  <DiffChip value={sessionComparison.deltas.vectorY} suffix="mm" inverse />
+                </Box>
+              </>
+            )}
+
+            {/* レンジ(半径) */}
+            {(sessionComparison.prev.avgRadius !== 0 || sessionComparison.current.avgRadius !== 0) && (
+              <>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                  レンジ
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.prev.avgRadius}mm
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.current.avgRadius}mm
+                </Typography>
+                <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  <DiffChip value={sessionComparison.deltas.radius} suffix="mm" inverse />
+                </Box>
+              </>
+            )}
+
+            {/* スピード */}
+            {(sessionComparison.prev.avgSpeed !== 0 || sessionComparison.current.avgSpeed !== 0) && (
+              <>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                  スピード
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.prev.avgSpeed}km/h
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  {sessionComparison.current.avgSpeed}km/h
+                </Typography>
+                <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                  <DiffChip value={sessionComparison.deltas.speed} suffix="km/h" />
+                </Box>
+              </>
+            )}
+          </Box>
+
+          {/* インサイト */}
+          {sessionComparison.insights.length > 0 && (
+            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {sessionComparison.insights.map((insight, i) => (
+                <Alert
+                  key={i}
+                  severity={
+                    insight.includes('改善') || insight.includes('アップ') || insight.includes('近づ')
+                      ? 'success'
+                      : insight.includes('低下') || insight.includes('ダウン') || insight.includes('広が')
+                        ? 'warning'
+                        : 'info'
+                  }
+                  sx={{ py: 0, '& .MuiAlert-message': { fontSize: 12 } }}
+                >
+                  {insight}
+                </Alert>
+              ))}
+            </Box>
+          )}
         </>
       )}
 

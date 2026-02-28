@@ -8,7 +8,15 @@ import {
   buildAchievementFlexMessage,
   buildWeeklyReportFlexMessage,
   buildMonthlyReportFlexMessage,
+  buildCountUpFlexMessage,
 } from '@/lib/line';
+import type { CuNotifyStats } from '@/lib/line';
+import {
+  compareLastTwoSessions,
+  summarizeSession,
+  extractQualifiedSessions,
+} from '@/lib/countup-session-compare';
+import type { CountUpPlayData } from '@/lib/dartslive-api';
 import { gatherPeriodReport } from '@/lib/report-data';
 import {
   calculateCronXp,
@@ -183,6 +191,26 @@ export async function GET(request: NextRequest) {
             }
 
             if (hasChange) {
+              // pendingMemo の取り込み: lineConversations から pendingMemo を取得
+              let practiceMemo: string | null = null;
+              try {
+                const convRef = adminDb.doc(`lineConversations/${lineUserId}`);
+                const convDoc = await convRef.get();
+                if (convDoc.exists) {
+                  const convData = convDoc.data();
+                  if (convData?.pendingMemo) {
+                    practiceMemo = convData.pendingMemo;
+                    // pendingMemo をクリア
+                    await convRef.update({
+                      pendingMemo: FieldValue.delete(),
+                      pendingMemoAt: FieldValue.delete(),
+                    });
+                  }
+                }
+              } catch (memoErr) {
+                console.error(`PendingMemo pickup error for user ${userId}:`, memoErr);
+              }
+
               // dartsLiveStats ドキュメント自動作成（既存なら上書きしない）
               const statsDocRef = adminDb.doc(`users/${userId}/dartsLiveStats/${todayStr}`);
               const existingStatsDoc = await statsDocRef.get();
@@ -200,6 +228,7 @@ export async function GET(request: NextRequest) {
                   hatTricks: stats.hatTricksTotal,
                   hatTricksMonthly: stats.hatTricksMonthly,
                   lowTonMonthly: stats.lowTonMonthly,
+                  ...(practiceMemo ? { memo: practiceMemo } : {}),
                   source: 'cron',
                   createdAt: FieldValue.serverTimestamp(),
                 });
@@ -1006,6 +1035,90 @@ export async function GET(request: NextRequest) {
                 }
               } catch (apiSaveErr) {
                 console.error(`API enriched save error for user ${userId}:`, apiSaveErr);
+              }
+            }
+
+            // COUNT-UP 通知: apiSyncResult がある場合、CUプレイを分析してLINE送信
+            if (apiSyncResult && apiSyncResult.countupPlays.length > 0) {
+              try {
+                // Firestoreから既存のcountupPlaysを取得してマージ
+                const cuCacheDoc = await adminDb
+                  .doc(`users/${userId}/dartsliveApiCache/countupPlays`)
+                  .get();
+                const existingCuPlays: CountUpPlayData[] = cuCacheDoc.exists
+                  ? (JSON.parse(cuCacheDoc.data()?.data ?? '[]') as CountUpPlayData[])
+                  : [];
+
+                // 新しいプレイをマージ（重複排除）
+                const existingKeys = new Set(existingCuPlays.map((p) => `${p.time}_${p.score}`));
+                const newPlays = apiSyncResult.countupPlays.filter(
+                  (p) => !existingKeys.has(`${p.time}_${p.score}`),
+                );
+                const allCuPlays = [...existingCuPlays, ...newPlays].sort(
+                  (a, b) => a.time.localeCompare(b.time),
+                );
+
+                // countupPlaysキャッシュを保存
+                await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
+                  data: JSON.stringify(allCuPlays),
+                  count: allCuPlays.length,
+                  updatedAt: FieldValue.serverTimestamp(),
+                });
+
+                // 昨日のCUプレイを抽出
+                const yesterdayJST = new Date();
+                yesterdayJST.setHours(yesterdayJST.getHours() + 9);
+                yesterdayJST.setDate(yesterdayJST.getDate() - 1);
+                const yesterdayStr = `${yesterdayJST.getFullYear()}-${String(yesterdayJST.getMonth() + 1).padStart(2, '0')}-${String(yesterdayJST.getDate()).padStart(2, '0')}`;
+
+                const yesterdayCuPlays = newPlays.filter((p) => {
+                  const dateStr = p.time.replace(/\//g, '-').split(/[T _]/)[0];
+                  return dateStr === yesterdayStr;
+                });
+
+                if (yesterdayCuPlays.length > 0) {
+                  // 基本サマリーを算出
+                  const cuScores = yesterdayCuPlays.map((p) => p.score);
+                  const cuAvg = Math.round((cuScores.reduce((a, b) => a + b, 0) / cuScores.length) * 10) / 10;
+                  const cuMax = Math.max(...cuScores);
+
+                  // 安定性
+                  const { calculateConsistency } = await import('@/lib/stats-math');
+                  const cuCon = calculateConsistency(cuScores);
+
+                  // ブル率
+                  const { analyzeMissDirection } = await import('@/lib/stats-math');
+                  const cuMiss = analyzeMissDirection(yesterdayCuPlays.map((p) => p.playLog));
+
+                  const cuStats: CuNotifyStats = {
+                    date: yesterdayStr,
+                    gameCount: yesterdayCuPlays.length,
+                    avgScore: cuAvg,
+                    maxScore: cuMax,
+                    consistency: cuCon?.score ?? 0,
+                    bullRate: cuMiss?.bullRate ?? 0,
+                  };
+
+                  // 30G以上の場合は前回比較を追加
+                  if (yesterdayCuPlays.length >= 30) {
+                    const comparison = compareLastTwoSessions(allCuPlays, 30);
+                    if (comparison) {
+                      cuStats.prevAvgScore = comparison.prev.avgScore;
+                      cuStats.prevConsistency = comparison.prev.consistency;
+                      cuStats.prevBullRate = comparison.prev.bullRate;
+                      cuStats.currentMissDir = comparison.current.primaryMissDir;
+                      cuStats.prevMissDir = comparison.prev.primaryMissDir;
+                      cuStats.vectorXChange = comparison.deltas.vectorX;
+                      cuStats.vectorYChange = comparison.deltas.vectorY;
+                      cuStats.radiusChange = comparison.deltas.radius;
+                    }
+                  }
+
+                  const cuFlexMsg = buildCountUpFlexMessage(cuStats);
+                  await sendLinePushMessage(lineUserId, [cuFlexMsg]);
+                }
+              } catch (cuErr) {
+                console.error(`CU notification error for user ${userId}:`, cuErr);
               }
             }
           }
