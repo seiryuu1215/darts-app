@@ -95,7 +95,34 @@ export async function scrapeStats(page: Page): Promise<ScrapedStats> {
     };
 
     const ratingInt = getNum('#statusRtValue');
-    const ratingRef = getNum('#refValue');
+    let ratingRef = getNum('#refValue');
+
+    // #refValue が取得できない場合の代替手段
+    if (ratingRef == null && ratingInt != null) {
+      // 方法1: #statusRtValue の親要素テキスト全体から小数レーティングを抽出
+      const rtEl = document.querySelector('#statusRtValue');
+      if (rtEl?.parentElement) {
+        const parentText = rtEl.parentElement.textContent?.trim() || '';
+        const decimalMatch = parentText.match(/(\d+\.\d+)/);
+        if (decimalMatch) {
+          const parsed = parseFloat(decimalMatch[1]);
+          if (!isNaN(parsed)) ratingRef = parsed;
+        }
+      }
+
+      // 方法2: #statusRtValue の次の兄弟要素から小数部分を取得して結合
+      if (ratingRef == null && rtEl) {
+        const nextSib = rtEl.nextElementSibling;
+        if (nextSib) {
+          const sibText = nextSib.textContent?.trim() || '';
+          const decPart = sibText.match(/\.(\d+)/);
+          if (decPart) {
+            const combined = parseFloat(`${ratingInt}.${decPart[1]}`);
+            if (!isNaN(combined)) ratingRef = combined;
+          }
+        }
+      }
+    }
 
     let stats01Avg: number | null = null;
     let statsCriAvg: number | null = null;

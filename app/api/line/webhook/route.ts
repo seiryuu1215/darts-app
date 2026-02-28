@@ -9,6 +9,8 @@ import {
   buildStatsFlexMessage,
 } from '@/lib/line';
 import { decrypt } from '@/lib/crypto';
+import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
+import type { ScrapedStats } from '@/lib/dartslive-scraper';
 
 export const maxDuration = 60;
 
@@ -281,7 +283,7 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
   ]);
 }
 
-/** 「取得」コマンド: オンデマンドスクレイピング */
+/** 「取得」コマンド: オンデマンドスタッツ取得（admin→API優先、非admin→Puppeteer） */
 async function handleFetchStats(replyToken: string, lineUserId: string) {
   const user = await findUserByLineId(lineUserId);
   if (!user) {
@@ -307,126 +309,129 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
     return;
   }
 
-  let browser:
-    | Awaited<ReturnType<typeof import('@/lib/dartslive-scraper').launchBrowser>>
-    | undefined;
   try {
     const dlEmail = decrypt(dlCreds.email);
     const dlPassword = decrypt(dlCreds.password);
 
-    const { launchBrowser, createPage, login, scrapeStats } =
-      await import('@/lib/dartslive-scraper');
+    let stats: ScrapedStats;
 
-    browser = await launchBrowser();
-    const page = await createPage(browser);
+    if (userData.role === 'admin') {
+      // admin: DARTSLIVE API を優先使用（cronと同一パス）
+      try {
+        const apiCacheDoc = await adminDb
+          .doc(`users/${user.id}/dartsliveApiCache/latest`)
+          .get();
+        const existingLastSync = apiCacheDoc.exists
+          ? (apiCacheDoc.data()?.lastSyncAt?.toDate?.()?.toISOString() ?? null)
+          : null;
 
-    try {
-      const loginSuccess = await login(page, dlEmail, dlPassword);
-      if (!loginSuccess) {
-        await replyLineMessage(replyToken, [
-          {
-            type: 'text',
-            text: 'DARTSLIVEへのログインに失敗しました。認証情報を確認してください。',
-          },
-        ]);
-        return;
+        let apiSyncResult;
+        if (existingLastSync) {
+          apiSyncResult = await dlApiDiffSync(dlEmail, dlPassword, existingLastSync);
+        } else {
+          apiSyncResult = await dlApiFullSync(dlEmail, dlPassword);
+        }
+        stats = mapApiToScrapedStats(apiSyncResult);
+      } catch (apiErr) {
+        console.error(`API sync failed for admin ${user.id}, falling back to scraper:`, apiErr);
+        // Puppeteerにフォールバック
+        stats = await fetchStatsByScraper(dlEmail, dlPassword);
       }
+    } else {
+      // 非admin: 従来通りPuppeteer使用
+      stats = await fetchStatsByScraper(dlEmail, dlPassword);
+    }
 
-      const stats = await scrapeStats(page);
+    // 前回キャッシュを取得
+    const cacheRef = adminDb.doc(`users/${user.id}/dartsliveCache/latest`);
+    const prevDoc = await cacheRef.get();
+    const prevData = prevDoc.exists ? prevDoc.data() : null;
 
-      // 前回キャッシュを取得
-      const cacheRef = adminDb.doc(`users/${user.id}/dartsliveCache/latest`);
-      const prevDoc = await cacheRef.get();
-      const prevData = prevDoc.exists ? prevDoc.data() : null;
+    // 今日の日付文字列 (JST)
+    const now = new Date();
+    now.setHours(now.getHours() + 9); // UTC→JST
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
 
-      // 今日の日付文字列 (JST)
-      const now = new Date();
-      now.setHours(now.getHours() + 9); // UTC→JST
-      const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+    // Flex Message でスタッツ表示（差分付き）
+    const flexMsg = buildStatsFlexMessage({
+      date: dateStr,
+      rating: stats.rating,
+      ppd: stats.stats01Avg,
+      mpr: stats.statsCriAvg,
+      prevRating: prevData?.rating ?? null,
+      awards: {
+        dBull: stats.dBullTotal,
+        sBull: stats.sBullTotal,
+        hatTricks: stats.hatTricksTotal,
+        ton80: stats.ton80,
+        lowTon: stats.lowTon,
+        highTon: stats.highTon,
+        threeInABed: stats.threeInABed,
+        threeInABlack: stats.threeInABlack,
+        whiteHorse: stats.whiteHorse,
+      },
+      prevAwards: prevData
+        ? {
+            dBull: prevData.bullStats?.dBull ?? 0,
+            sBull: prevData.bullStats?.sBull ?? 0,
+            hatTricks: prevData.hatTricks ?? 0,
+            ton80: prevData.ton80 ?? 0,
+            lowTon: prevData.lowTon ?? 0,
+            highTon: prevData.highTon ?? 0,
+            threeInABed: prevData.threeInABed ?? 0,
+            threeInABlack: prevData.threeInABlack ?? 0,
+            whiteHorse: prevData.whiteHorse ?? 0,
+          }
+        : undefined,
+    });
 
-      // Flex Message でスタッツ表示（差分付き）
-      const flexMsg = buildStatsFlexMessage({
+    await replyLineMessage(replyToken, [flexMsg]);
+
+    // キャッシュ更新
+    await cacheRef.set(
+      {
+        rating: stats.rating,
+        stats01Avg: stats.stats01Avg,
+        statsCriAvg: stats.statsCriAvg,
+        bullStats: {
+          dBull: stats.dBullTotal,
+          sBull: stats.sBullTotal,
+        },
+        hatTricks: stats.hatTricksTotal,
+        ton80: stats.ton80,
+        lowTon: stats.lowTon,
+        highTon: stats.highTon,
+        threeInABed: stats.threeInABed,
+        threeInABlack: stats.threeInABlack,
+        whiteHorse: stats.whiteHorse,
+        prevRating: prevData?.rating ?? null,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    // 会話状態を waiting_condition に遷移
+    await setConversation(lineUserId, {
+      state: 'waiting_condition',
+      pendingStats: {
         date: dateStr,
         rating: stats.rating,
         ppd: stats.stats01Avg,
         mpr: stats.statsCriAvg,
-        prevRating: prevData?.rating ?? null,
-        awards: {
-          dBull: stats.dBullTotal,
-          sBull: stats.sBullTotal,
-          hatTricks: stats.hatTricksTotal,
-          ton80: stats.ton80,
-          lowTon: stats.lowTon,
-          highTon: stats.highTon,
-          threeInABed: stats.threeInABed,
-          threeInABlack: stats.threeInABlack,
-          whiteHorse: stats.whiteHorse,
-        },
-        prevAwards: prevData
-          ? {
-              dBull: prevData.bullStats?.dBull ?? 0,
-              sBull: prevData.bullStats?.sBull ?? 0,
-              hatTricks: prevData.hatTricks ?? 0,
-              ton80: prevData.ton80 ?? 0,
-              lowTon: prevData.lowTon ?? 0,
-              highTon: prevData.highTon ?? 0,
-              threeInABed: prevData.threeInABed ?? 0,
-              threeInABlack: prevData.threeInABlack ?? 0,
-              whiteHorse: prevData.whiteHorse ?? 0,
-            }
-          : undefined,
-      });
-
-      await replyLineMessage(replyToken, [flexMsg]);
-
-      // キャッシュ更新
-      await cacheRef.set(
-        {
-          rating: stats.rating,
-          stats01Avg: stats.stats01Avg,
-          statsCriAvg: stats.statsCriAvg,
-          bullStats: {
-            dBull: stats.dBullTotal,
-            sBull: stats.sBullTotal,
-          },
-          hatTricks: stats.hatTricksTotal,
-          ton80: stats.ton80,
-          lowTon: stats.lowTon,
-          highTon: stats.highTon,
-          threeInABed: stats.threeInABed,
-          threeInABlack: stats.threeInABlack,
-          whiteHorse: stats.whiteHorse,
-          prevRating: prevData?.rating ?? null,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-
-      // 会話状態を waiting_condition に遷移
-      await setConversation(lineUserId, {
-        state: 'waiting_condition',
-        pendingStats: {
-          date: dateStr,
-          rating: stats.rating,
-          ppd: stats.stats01Avg,
-          mpr: stats.statsCriAvg,
-          avg01: stats.stats01Avg,
-          dBullTotal: stats.dBullTotal,
-          sBullTotal: stats.sBullTotal,
-          ton80: stats.ton80,
-          lowTon: stats.lowTon,
-          highTon: stats.highTon,
-          threeInABed: stats.threeInABed,
-          threeInABlack: stats.threeInABlack,
-          whiteHorse: stats.whiteHorse,
-          hatTricksTotal: stats.hatTricksTotal,
-        },
-        condition: null,
-        memo: null,
-      });
-    } finally {
-      await page.close();
-    }
+        avg01: stats.stats01Avg,
+        dBullTotal: stats.dBullTotal,
+        sBullTotal: stats.sBullTotal,
+        ton80: stats.ton80,
+        lowTon: stats.lowTon,
+        highTon: stats.highTon,
+        threeInABed: stats.threeInABed,
+        threeInABlack: stats.threeInABlack,
+        whiteHorse: stats.whiteHorse,
+        hatTricksTotal: stats.hatTricksTotal,
+      },
+      condition: null,
+      memo: null,
+    });
   } catch (err) {
     console.error('Fetch stats error:', err);
     await replyLineMessage(replyToken, [
@@ -435,10 +440,28 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
         text: 'スタッツの取得に失敗しました。DARTSLIVEの認証情報を確認してください。',
       },
     ]);
-  } finally {
-    if (browser) {
-      await browser.close().catch(() => {});
+  }
+}
+
+/** Puppeteerでスタッツ取得（非admin / APIフォールバック共用） */
+async function fetchStatsByScraper(dlEmail: string, dlPassword: string): Promise<ScrapedStats> {
+  const { launchBrowser, createPage, login, scrapeStats } =
+    await import('@/lib/dartslive-scraper');
+
+  const browser = await launchBrowser();
+  try {
+    const page = await createPage(browser);
+    try {
+      const loginSuccess = await login(page, dlEmail, dlPassword);
+      if (!loginSuccess) {
+        throw new Error('DARTSLIVEへのログインに失敗しました。');
+      }
+      return await scrapeStats(page);
+    } finally {
+      await page.close();
     }
+  } finally {
+    await browser.close().catch(() => {});
   }
 }
 

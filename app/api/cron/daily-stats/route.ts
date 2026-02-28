@@ -338,7 +338,7 @@ export async function GET(request: NextRequest) {
               // Push通知も送信
               await sendPushToUser(userId, {
                 title: 'スタッツ更新',
-                body: `Rating: ${stats.rating ?? '-'} / 01: ${stats.stats01Avg ?? '-'} / Cri: ${stats.statsCriAvg ?? '-'}`,
+                body: `Rating: ${stats.rating != null ? stats.rating.toFixed(2) : '-'} / 01: ${stats.stats01Avg ?? '-'} / Cri: ${stats.statsCriAvg ?? '-'}`,
                 url: '/stats',
               }).catch(() => {});
 
