@@ -108,17 +108,33 @@ graph LR
         StatsNew["/stats/new 記録"]
         Bookmarks["/bookmarks ブックマーク"]
         Profile["/profile/edit プロフィール"]
+        Reports["/reports レポート (PRO)"]
         Pricing["/pricing 料金"]
+        XP["XP / レベル / 実績"]
+    end
+
+    subgraph Shops["マイショップ"]
+        ShopList["/shops ショップ一覧"]
+        ShopMap["マップ表示 (Leaflet)"]
+        ShopListManage["リスト・タグ管理"]
     end
 
     subgraph Admin["管理"]
         AdminUsers["/admin ユーザー管理"]
+        AdminArticles["/articles/new 記事投稿"]
+    end
+
+    subgraph AuthPages["認証"]
+        Login["/login ログイン"]
+        Register["/register 登録"]
+        ForgotPw["/forgot-password パスワードリセット"]
     end
 
     subgraph Info["情報"]
         About["/about サイトについて"]
         Privacy["/privacy プライバシー"]
         Terms["/terms 利用規約"]
+        Reference["/reference シャフト早見表"]
     end
 
     Stats --> StatsCalendar
@@ -131,6 +147,7 @@ graph LR
     Articles --> ArticleDetail
     Discussions --> DiscussionDetail & DiscussionNew
     Pricing -.->|Stripe Checkout| Stripe["Stripe"]
+    ShopList --> ShopMap & ShopListManage
 ```
 
 ## データフロー
@@ -208,11 +225,17 @@ erDiagram
     users {
         string displayName
         string email
-        string role
+        string role "admin|pro|general"
+        number xp
+        number level
+        string rank
         string activeSoftDartId
         string activeSteelDartId
         string stripeCustomerId
         string subscriptionStatus
+        string dlCredentialsEncrypted "AES-256-GCM"
+        string lineUserId
+        array achievements
         timestamp createdAt
     }
 
@@ -290,12 +313,15 @@ erDiagram
     darts ||--o{ comments : has
     darts ||--o{ memos : has
     discussions ||--o{ replies : has
-    users ||--o{ likes : has
-    users ||--o{ bookmarks : has
+    users ||--o{ dartLikes : has
+    users ||--o{ dartBookmarks : has
     users ||--o{ barrelBookmarks : has
     users ||--o{ settingHistory : has
     users ||--o{ dartsliveCache : "Admin SDK only"
     users ||--o{ dartsLiveStats : has
+    users ||--o{ goals : has
+    users ||--o{ xpHistory : has
+    users ||--o{ notifications : has
     users ||--o{ shopBookmarks : has
     users ||--o{ shopLists : has
 ```

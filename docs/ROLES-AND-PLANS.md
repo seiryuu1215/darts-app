@@ -26,11 +26,11 @@
 | 機能                         | 一般 (general) | PRO (pro) | 管理者 (admin) |
 | ---------------------------- | :------------: | :-------: | :------------: |
 | セッティング閲覧             |       ○        |     ○     |       ○        |
-| セッティング登録             |  **1件まで**   |  無制限   |     無制限     |
+| セッティング登録             |  **3件まで**   |  無制限   |     無制限     |
 | 自分のセッティング編集・削除 |       ○        |     ○     |       ○        |
 
-- 上限定数: `SETTINGS_LIMIT_GENERAL = 1` (`lib/permissions.ts`)
-- 判定関数: `getSettingsLimit(role)` — PRO/admin は `null`（無制限）、general は `1`
+- 上限定数: `SETTINGS_LIMIT_GENERAL = 3` (`lib/permissions.ts`)
+- 判定関数: `getSettingsLimit(role)` — PRO/admin は `null`（無制限）、general は `3`
 - 制限箇所: `app/darts/new/page.tsx` でサーバー件数を確認し、上限到達時は登録不可
 
 ### DARTSLIVE連携
@@ -114,7 +114,7 @@
 
 | 機能                       | 一般ユーザーの制限 | PRO で解放                        |
 | -------------------------- | ------------------ | --------------------------------- |
-| セッティング登録数         | **1件まで**        | **無制限**                        |
+| セッティング登録数         | **3件まで**        | **無制限**                        |
 | DARTSLIVE スタッツ連携     | 利用不可           | **レーティング・スタッツ取得**    |
 | DARTSLIVE 履歴トラッキング | 利用不可           | **日次/週次/月次の推移グラフ**    |
 | LINE自動スタッツ通知       | 利用不可           | **LINE Botで自動通知**            |
@@ -144,7 +144,7 @@ lib/permissions.ts          ← 全権限判定関数を集約
   ├─ canWriteArticles(role) ← admin のみ
   ├─ canEditArticle(...)    ← admin: 全記事, pro: 自分の記事のみ
   ├─ canUseDartslive(role)  ← pro || admin
-  └─ getSettingsLimit(role) ← general: 1, pro/admin: null (無制限)
+  └─ getSettingsLimit(role) ← general: 3, pro/admin: null (無制限)
 ```
 
 ### ロール判定フロー
