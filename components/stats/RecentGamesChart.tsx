@@ -9,6 +9,7 @@ import {
   Chip,
   useTheme,
 } from '@mui/material';
+import { useChartTheme } from '@/lib/chart-theme';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -49,10 +50,7 @@ export default function RecentGamesChart({
 }: RecentGamesChartProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const chartGrid = isDark ? '#333' : '#ddd';
-  const chartText = isDark ? '#ccc' : '#666';
-  const chartTooltipBg = isDark ? '#1e1e1e' : '#fff';
-  const chartTooltipBorder = isDark ? '#444' : '#ddd';
+  const ct = useChartTheme();
   const chartAvgLine = isDark ? '#90caf9' : '#1565c0';
 
   const playableGames = games.filter((g) => g.scores.length >= 5);
@@ -118,16 +116,11 @@ export default function RecentGamesChart({
       {gameChartData.length > 0 && (
         <ResponsiveContainer width="100%" height={230}>
           <ComposedChart data={gameChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-            <XAxis dataKey="game" fontSize={11} tick={{ fill: chartText }} />
-            <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+            <XAxis dataKey="game" fontSize={11} tick={{ fill: ct.text }} />
+            <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: ct.text }} />
             <Tooltip
-              contentStyle={{
-                backgroundColor: chartTooltipBg,
-                border: `1px solid ${chartTooltipBorder}`,
-                borderRadius: 6,
-                color: chartText,
-              }}
+              contentStyle={ct.tooltipStyle}
               labelFormatter={(v) => `Game ${v}`}
             />
             <Legend iconType="plainline" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />

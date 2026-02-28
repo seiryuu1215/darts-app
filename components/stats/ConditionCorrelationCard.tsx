@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface StatsHistoryRecord {
   id: string;
@@ -59,6 +60,7 @@ function pearsonCorrelation(xs: number[], ys: number[]): number {
 }
 
 export default function ConditionCorrelationCard({ periodRecords }: ConditionCorrelationCardProps) {
+  const ct = useChartTheme();
   const valid = periodRecords.filter(
     (r) => r.condition != null && r.condition >= 1 && r.condition <= 5 && r.ppd != null,
   );
@@ -141,12 +143,12 @@ export default function ConditionCorrelationCard({ periodRecords }: ConditionCor
       <Box sx={{ width: '100%', height: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="condition" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
+            <XAxis dataKey="condition" tick={{ fontSize: 11, fill: ct.text }} />
+            <YAxis tick={{ fontSize: 11, fill: ct.text }} />
             <Tooltip
               formatter={(v: number | undefined) => [`${v ?? 0}`, '平均PPD']}
-              contentStyle={{ fontSize: 12 }}
+              contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
             />
             <Bar dataKey="avgPpd" radius={[4, 4, 0, 0]}>
               {chartData.map((entry) => (

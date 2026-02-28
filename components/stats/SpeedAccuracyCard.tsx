@@ -14,19 +14,14 @@ import {
 import { correlateSpeedScore } from '@/lib/sensor-analysis';
 import type { SensorInsight } from '@/lib/sensor-analysis';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface SpeedAccuracyCardProps {
   countupPlays: CountUpPlay[];
 }
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
-
 export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardProps) {
+  const ct = useChartTheme();
   const { scatterData, correlation, sweetSpot, validCount, speedInsights } = useMemo(() => {
     const validPlays = countupPlays.filter((p) => p.dl3Speed > 0);
     if (validPlays.length < 10)
@@ -167,13 +162,13 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
       {/* Scatter plot */}
       <ResponsiveContainer width="100%" height={220}>
         <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
           <XAxis
             type="number"
             dataKey="speed"
             name="速度"
             fontSize={10}
-            tick={{ fill: '#aaa' }}
+            tick={{ fill: ct.text }}
             label={{
               value: 'km/h',
               position: 'insideBottomRight',
@@ -187,11 +182,11 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
             dataKey="score"
             name="スコア"
             fontSize={10}
-            tick={{ fill: '#aaa' }}
+            tick={{ fill: ct.text }}
             domain={['dataMin - 50', 'dataMax + 50']}
           />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={ct.tooltipStyle}
             formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}`, '']}
           />
           <Scatter data={scatterData} fill="#7B1FA2" fillOpacity={0.5} />

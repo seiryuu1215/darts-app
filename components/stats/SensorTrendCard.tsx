@@ -14,19 +14,14 @@ import {
 } from 'recharts';
 import { analyzeSensor, generateSensorInsights } from '@/lib/sensor-analysis';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface SensorTrendCardProps {
   countupPlays: CountUpPlay[];
 }
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
-
 export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) {
+  const ct = useChartTheme();
   const analysis = useMemo(() => analyzeSensor(countupPlays), [countupPlays]);
   const insights = useMemo(() => (analysis ? generateSensorInsights(analysis) : []), [analysis]);
 
@@ -143,13 +138,13 @@ export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) 
           </Typography>
           <ResponsiveContainer width="100%" height={220}>
             <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
               <XAxis
                 type="number"
                 dataKey="vectorX"
                 name="X"
                 fontSize={10}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 label={{ value: '← 左　　右 →', position: 'bottom', fontSize: 10, fill: '#888' }}
               />
               <YAxis
@@ -157,7 +152,7 @@ export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) 
                 dataKey="vectorY"
                 name="Y"
                 fontSize={10}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 reversed
                 label={{
                   value: '↑ 上　　下 ↓',
@@ -168,7 +163,7 @@ export default function SensorTrendCard({ countupPlays }: SensorTrendCardProps) 
                 }}
               />
               <Tooltip
-                contentStyle={TOOLTIP_STYLE}
+                contentStyle={ct.tooltipStyle}
                 formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}`, '']}
               />
               <Scatter data={trendPoints} fill="#7B1FA2" fillOpacity={0.4}>

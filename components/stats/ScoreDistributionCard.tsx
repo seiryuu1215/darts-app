@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Paper, Typography, Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { computeStats, buildHistogram, calculateConsistency } from '@/lib/stats-math';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface RecentPlay {
   date: string;
@@ -18,6 +19,8 @@ interface ScoreDistributionCardProps {
 }
 
 export default function ScoreDistributionCard({ recentPlays }: ScoreDistributionCardProps) {
+  const ct = useChartTheme();
+
   // ゲーム名でグループ化
   const gameGroups = useMemo(() => {
     if (!recentPlays || recentPlays.length === 0) return {};
@@ -117,24 +120,17 @@ export default function ScoreDistributionCard({ recentPlays }: ScoreDistribution
       {/* ヒストグラム */}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={histogram}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
           <XAxis
             dataKey="range"
             fontSize={10}
-            tick={{ fill: '#aaa' }}
+            tick={{ fill: ct.text }}
             angle={-30}
             textAnchor="end"
             height={50}
           />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e1e1e',
-              border: '1px solid #444',
-              borderRadius: 6,
-              color: '#ccc',
-            }}
-          />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} />
+          <Tooltip contentStyle={ct.tooltipStyle} />
           <Bar dataKey="count" name="回数" fill="#43A047" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

@@ -4,6 +4,7 @@ import { Paper, Box, Typography, Chip } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { COLOR_01 } from '@/lib/dartslive-colors';
 import { computeStats, buildHistogram } from '@/lib/stats-math';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface ZeroOneAnalysisCardProps {
   games: { category: string; scores: number[] }[];
@@ -16,6 +17,7 @@ function is01Category(cat: string): boolean {
 }
 
 export default function ZeroOneAnalysisCard({ games }: ZeroOneAnalysisCardProps) {
+  const ct = useChartTheme();
   const zeroOneGames = games?.filter((g) => is01Category(g.category)) ?? [];
   if (zeroOneGames.length === 0) return null;
 
@@ -81,12 +83,12 @@ export default function ZeroOneAnalysisCard({ games }: ZeroOneAnalysisCardProps)
       <Box sx={{ width: '100%', height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={histogram} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
+            <XAxis dataKey="range" tick={{ fontSize: 11, fill: ct.text }} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: ct.text }} />
             <Tooltip
               formatter={(value) => [`${value}ゲーム`, '回数']}
-              contentStyle={{ fontSize: 12 }}
+              contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
             />
             <Bar dataKey="count" fill={COLOR_01} radius={[4, 4, 0, 0]} />
           </BarChart>

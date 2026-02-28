@@ -18,19 +18,14 @@ import {
 import { analyzeRounds } from '@/lib/countup-round-analysis';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface CountUpRoundAnalysisCardProps {
   countupPlays: CountUpPlay[];
 }
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
-
 export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundAnalysisCardProps) {
+  const ct = useChartTheme();
   const analysis = useMemo(() => {
     const playLogs = countupPlays.map((p) => p.playLog).filter((l) => l && l.length > 0);
     return analyzeRounds(playLogs);
@@ -127,11 +122,11 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
       {/* ラウンド別平均スコア */}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="name" fontSize={11} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} domain={[0, 'auto']} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="name" fontSize={11} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} domain={[0, 'auto']} />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={ct.tooltipStyle}
             formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}`, '点']}
           />
           <ReferenceLine
@@ -160,10 +155,10 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
       {/* ラウンド推移（ライン） */}
       <ResponsiveContainer width="100%" height={160}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="name" fontSize={11} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} domain={[0, 'auto']} />
-          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="name" fontSize={11} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} domain={[0, 'auto']} />
+          <Tooltip contentStyle={ct.tooltipStyle} />
           <Line
             type="monotone"
             dataKey="maxScore"

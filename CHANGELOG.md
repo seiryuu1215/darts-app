@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-03-01
+
+### Added
+
+- **PHOENIX 換算ページ** — DARTSLIVE スタッツから PHOENIX レーティングに換算 + 比較機能
+- **COUNT-UP セッション間比較分析** — 30G 以上の有効セッションで前回/今回の差分分析
+- **LINE COUNT-UP 通知** — CU プレイがある日は自動通知
+- **LINE 練習メモ機能** — 「メモ」コマンドで次回スタッツに紐づけ
+- **LINE リッチメニュー自動セットアップスクリプト**
+- **LINE ボットアイコン生成スクリプト**
+- **LINE ヘルプコマンド**
+
+### Changed
+
+- **グラフツールチップをダーク/ライトモード両対応に統一** — 共通 `useChartTheme` hook で全 17 チャートコンポーネントのツールチップ・軸ラベル・グリッド線を統一
+
+### Fixed
+
+- **LINE 通知のレーティング精度改善**
+- **COUNT-UP 分析の期間タブ「直近」自動検出**
+- **コード品質・セキュリティ改善**（11 項目）
+
 ## [3.0.0] - 2026-02-21
 
 ### Added
@@ -94,6 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **カウントアップスコア色付け** — 01 期待値ベースの色分け表示
 - **ランキング** — バレル売上ランキング
 
+[3.1.0]: https://github.com/seiryuu1215/darts-app/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/seiryuu1215/darts-app/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/seiryuu1215/darts-app/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/seiryuu1215/darts-app/compare/v1.0.0...v1.1.0

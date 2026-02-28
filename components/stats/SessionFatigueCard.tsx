@@ -19,6 +19,7 @@ import { analyzeSession } from '@/lib/session-analysis';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 import { parsePlayTime } from '@/lib/stats-math';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface SessionFatigueCardProps {
   countupPlays: CountUpPlay[];
@@ -56,13 +57,6 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
   return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
 }
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
-
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, color: '#aaa' }}>
@@ -72,6 +66,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardProps) {
+  const ct = useChartTheme();
   const [period, setPeriod] = useState<PeriodKey>('last30');
 
   const filtered = useMemo(() => filterByPeriod(countupPlays, period), [countupPlays, period]);
@@ -235,11 +230,11 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
       <SectionTitle>ゲーム番号別平均スコア</SectionTitle>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={sessionCurve}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
           <XAxis
             dataKey="gameNumber"
             fontSize={11}
-            tick={{ fill: '#aaa' }}
+            tick={{ fill: ct.text }}
             label={{
               value: 'G目',
               position: 'insideBottomRight',
@@ -248,9 +243,9 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
               fill: '#888',
             }}
           />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} domain={['dataMin - 30', 'dataMax + 30']} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} domain={['dataMin - 30', 'dataMax + 30']} />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={ct.tooltipStyle}
             formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}`, '平均スコア']}
             labelFormatter={(label) => `${label}G目`}
           />
@@ -315,20 +310,20 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           <SectionTitle>時間帯別パフォーマンス</SectionTitle>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={timeOfDay}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
               <XAxis
                 dataKey="hour"
                 fontSize={10}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 tickFormatter={(h: number) => `${h}時`}
               />
               <YAxis
                 fontSize={11}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 domain={['dataMin - 30', 'dataMax + 30']}
               />
               <Tooltip
-                contentStyle={TOOLTIP_STYLE}
+                contentStyle={ct.tooltipStyle}
                 labelFormatter={(h) => `${h}時台`}
                 formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}`, '平均スコア']}
               />

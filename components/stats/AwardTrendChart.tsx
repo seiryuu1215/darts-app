@@ -11,6 +11,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
+import { useChartTheme } from '@/lib/chart-theme';
 
 type AwardCategory = 'bull' | 'hatTrick' | 'lowTon' | 'highTon' | 'ton80';
 
@@ -53,6 +54,7 @@ const AWARD_CONFIG: Record<AwardCategory, { label: string; keys: string[]; color
 
 export default function AwardTrendChart({ awardList }: AwardTrendChartProps) {
   const [category, setCategory] = useState<AwardCategory>('bull');
+  const ct = useChartTheme();
 
   if (!awardList || awardList.length === 0) return null;
 
@@ -92,16 +94,11 @@ export default function AwardTrendChart({ awardList }: AwardTrendChartProps) {
       </Box>
       <ResponsiveContainer width="100%" height={240}>
         <AreaChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="date" fontSize={10} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e1e1e',
-              border: '1px solid #444',
-              borderRadius: 6,
-              color: '#ccc',
-            }}
+            contentStyle={ct.tooltipStyle}
           />
           <Area
             type="monotone"

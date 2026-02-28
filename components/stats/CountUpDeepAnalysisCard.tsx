@@ -49,6 +49,7 @@ import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import type { CuSessionComparison } from '@/lib/countup-session-compare';
 import { ppdForRating, calc01Rating } from '@/lib/dartslive-rating';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
+import { useChartTheme } from '@/lib/chart-theme';
 
 /** COUNT-UPプレイデータ（PLAY_LOG付き） */
 export interface CountUpPlay {
@@ -138,13 +139,6 @@ function generateRatingBands(centerScore: number): { bands: RatingBand[]; center
 
   return { bands, centerRt };
 }
-
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -626,6 +620,7 @@ export default function CountUpDeepAnalysisCard({
   stats01Detailed,
   bestRecords,
 }: CountUpDeepAnalysisCardProps) {
+  const ct = useChartTheme();
   const [period, setPeriod] = useState<PeriodKey>('last30');
   const [excludeOuterSingle, setExcludeOuterSingle] = useState(false);
 
@@ -1030,11 +1025,11 @@ export default function CountUpDeepAnalysisCard({
       <SectionTitle>スコア帯分布（Rt{centerRt}基準）</SectionTitle>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={bands}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="label" fontSize={10} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="label" fontSize={10} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={ct.tooltipStyle}
             formatter={(v: number | undefined) => [`${v ?? 0}回`, '回数']}
           />
           <Bar dataKey="count" name="回数" radius={[4, 4, 0, 0]}>
@@ -1049,10 +1044,10 @@ export default function CountUpDeepAnalysisCard({
       <SectionTitle>スコア推移</SectionTitle>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={trendData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="date" fontSize={10} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} domain={['dataMin - 50', 'dataMax + 50']} />
-          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} domain={['dataMin - 50', 'dataMax + 50']} />
+          <Tooltip contentStyle={ct.tooltipStyle} />
           <ReferenceLine
             y={stats.avg}
             stroke="#ff9800"
@@ -1236,19 +1231,19 @@ export default function CountUpDeepAnalysisCard({
           {speedSegments.segments.length > 1 && (
             <ResponsiveContainer width="100%" height={200}>
               <ComposedChart data={speedSegments.segments}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis dataKey="label" fontSize={10} tick={{ fill: '#aaa' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="label" fontSize={10} tick={{ fill: ct.text }} />
                 <YAxis
                   yAxisId="left"
                   fontSize={11}
-                  tick={{ fill: '#aaa' }}
+                  tick={{ fill: ct.text }}
                   domain={['dataMin - 30', 'dataMax + 30']}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
                   fontSize={11}
-                  tick={{ fill: '#aaa' }}
+                  tick={{ fill: ct.text }}
                   unit="%"
                 />
                 <Tooltip content={<SpeedChartTooltip />} />
@@ -1400,16 +1395,16 @@ export default function CountUpDeepAnalysisCard({
           </Box>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={bullSimulation.steps}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
               <XAxis
                 dataKey="improvedBullRate"
                 fontSize={10}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 tickFormatter={(v: number) => `${v}%`}
               />
-              <YAxis fontSize={11} tick={{ fill: '#aaa' }} unit="点" />
+              <YAxis fontSize={11} tick={{ fill: ct.text }} unit="点" />
               <Tooltip
-                contentStyle={TOOLTIP_STYLE}
+                contentStyle={ct.tooltipStyle}
                 formatter={(v: number | undefined) => [`+${v ?? 0}点`, 'スコア上昇']}
                 labelFormatter={(v: unknown) => `ブル率 ${v}%`}
               />

@@ -19,6 +19,7 @@ import { RATING_BENCHMARKS } from '@/lib/dartslive-reference';
 import { getPercentile, getPercentileColor } from '@/lib/dartslive-percentile';
 import { COLOR_CRICKET } from '@/lib/dartslive-colors';
 import { getFlightColor } from '@/lib/dartslive-colors';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface StatsCricketDetailed {
   avg: number | null;
@@ -45,13 +46,6 @@ interface CricketDeepAnalysisCardProps {
   currentRating: number | null;
   stats01Avg: number | null;
 }
-
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -80,6 +74,7 @@ export default function CricketDeepAnalysisCard({
   currentRating,
   stats01Avg,
 }: CricketDeepAnalysisCardProps) {
+  const ct = useChartTheme();
   const mpr = statsCricketDetailed?.avg ?? null;
   const mpr100 = statsCricketDetailed?.avg100 ?? null;
   const winRate = statsCricketDetailed?.winRate ?? null;
@@ -418,10 +413,10 @@ export default function CricketDeepAnalysisCard({
           {/* Bull率/トリプル率チャート */}
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={benchmarkData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="rating" fontSize={10} tick={{ fill: '#aaa' }} />
-              <YAxis fontSize={11} tick={{ fill: '#aaa' }} unit="%" />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="rating" fontSize={10} tick={{ fill: ct.text }} />
+              <YAxis fontSize={11} tick={{ fill: ct.text }} unit="%" />
+              <Tooltip contentStyle={ct.tooltipStyle} />
               <Line
                 type="monotone"
                 dataKey="bullRate"
@@ -527,14 +522,14 @@ export default function CricketDeepAnalysisCard({
           <SectionTitle>MPR推移（直近90日）</SectionTitle>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="date" fontSize={10} tick={{ fill: '#aaa' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
               <YAxis
                 fontSize={11}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 domain={['dataMin - 0.3', 'dataMax + 0.3']}
               />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip contentStyle={ct.tooltipStyle} />
               {mpr != null && (
                 <ReferenceLine
                   y={mpr}

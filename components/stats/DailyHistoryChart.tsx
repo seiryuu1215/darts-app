@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Paper, Box, Typography, ToggleButtonGroup, ToggleButton, useTheme } from '@mui/material';
+import { Paper, Box, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { useChartTheme } from '@/lib/chart-theme';
 import {
   ResponsiveContainer,
   LineChart,
@@ -57,13 +58,7 @@ const TAB_CONFIG: Record<
 
 export default function DailyHistoryChart({ records, flightColor }: DailyHistoryChartProps) {
   const [tab, setTab] = useState<DailyTab>('rating');
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  const chartGrid = isDark ? '#333' : '#ddd';
-  const chartText = isDark ? '#ccc' : '#666';
-  const chartTooltipBg = isDark ? '#1e1e1e' : '#fff';
-  const chartTooltipBorder = isDark ? '#444' : '#ddd';
+  const ct = useChartTheme();
 
   const config = { ...TAB_CONFIG };
   if (flightColor) {
@@ -126,25 +121,18 @@ export default function DailyHistoryChart({ records, flightColor }: DailyHistory
       </Box>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
           <XAxis
             dataKey="date"
             fontSize={10}
-            tick={{ fill: chartText }}
+            tick={{ fill: ct.text }}
             interval={tickInterval}
             angle={-30}
             textAnchor="end"
             height={50}
           />
-          <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: chartText }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: chartTooltipBg,
-              border: `1px solid ${chartTooltipBorder}`,
-              borderRadius: 6,
-              color: chartText,
-            }}
-          />
+          <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: ct.text }} />
+          <Tooltip contentStyle={ct.tooltipStyle} />
           <Line
             type="monotone"
             dataKey="value"

@@ -18,6 +18,7 @@ import {
 import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
 import type { CrossSignal } from '@/lib/stats-trend';
 import { COLOR_01, COLOR_CRICKET } from '@/lib/dartslive-colors';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface DailyRecord {
   date: string;
@@ -38,14 +39,8 @@ const METRICS: { key: MetricKey; label: string; color: string }[] = [
   { key: 'statsCriAvg', label: 'Cri Avg', color: COLOR_CRICKET },
 ];
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
-
 export default function RollingTrendCard({ dailyHistory }: RollingTrendCardProps) {
+  const ct = useChartTheme();
   const [metric, setMetric] = useState<MetricKey>('rating');
 
   const sorted = useMemo(
@@ -138,10 +133,10 @@ export default function RollingTrendCard({ dailyHistory }: RollingTrendCardProps
       {/* SMAチャート */}
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey="displayDate" fontSize={10} tick={{ fill: '#aaa' }} />
-          <YAxis fontSize={11} tick={{ fill: '#aaa' }} domain={['dataMin - 1', 'dataMax + 1']} />
-          <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={(label) => `日付: ${label}`} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="displayDate" fontSize={10} tick={{ fill: ct.text }} />
+          <YAxis fontSize={11} tick={{ fill: ct.text }} domain={['dataMin - 1', 'dataMax + 1']} />
+          <Tooltip contentStyle={ct.tooltipStyle} labelFormatter={(label) => `日付: ${label}`} />
           {/* 生データ */}
           <Line
             type="monotone"

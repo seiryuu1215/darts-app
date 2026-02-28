@@ -1,6 +1,7 @@
 'use client';
 
-import { Paper, Box, Typography, useTheme } from '@mui/material';
+import { Paper, Box, Typography } from '@mui/material';
+import { useChartTheme } from '@/lib/chart-theme';
 import {
   ResponsiveContainer,
   BarChart,
@@ -21,7 +22,7 @@ function DeltaTooltipContent({ active, payload, tooltipBg, tooltipBorder, textCo
     <Box
       sx={{
         bgcolor: tooltipBg,
-        border: `1px solid ${tooltipBorder}`,
+        border: tooltipBorder,
         borderRadius: 1.5,
         p: 1,
         fontSize: 12,
@@ -52,12 +53,7 @@ interface CountUpDeltaChartProps {
 }
 
 export default function CountUpDeltaChart({ games, avgScore }: CountUpDeltaChartProps) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const chartText = isDark ? '#ccc' : '#666';
-  const chartGrid = isDark ? '#333' : '#ddd';
-  const chartTooltipBg = isDark ? '#1e1e1e' : '#fff';
-  const chartTooltipBorder = isDark ? '#444' : '#ddd';
+  const ct = useChartTheme();
 
   const countUpGames = games.filter((g) => g.category === 'COUNT-UP').flatMap((g) => g.scores);
 
@@ -98,19 +94,19 @@ export default function CountUpDeltaChart({ games, avgScore }: CountUpDeltaChart
         <Box sx={{ minWidth: Math.max(280, chartData.length * 14) }}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-              <XAxis dataKey="index" fontSize={10} tick={{ fill: chartText }} />
-              <YAxis fontSize={10} tick={{ fill: chartText }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="index" fontSize={10} tick={{ fill: ct.text }} />
+              <YAxis fontSize={10} tick={{ fill: ct.text }} />
               <Tooltip
                 content={
                   <DeltaTooltipContent
-                    tooltipBg={chartTooltipBg}
-                    tooltipBorder={chartTooltipBorder}
-                    textColor={chartText}
+                    tooltipBg={ct.tooltipStyle.backgroundColor}
+                    tooltipBorder={ct.tooltipStyle.border}
+                    textColor={ct.text}
                   />
                 }
               />
-              <ReferenceLine y={0} stroke={chartText} strokeWidth={1.5} />
+              <ReferenceLine y={0} stroke={ct.text} strokeWidth={1.5} />
               <Bar dataKey="delta" radius={[2, 2, 0, 0]}>
                 {chartData.map((entry, i) => (
                   <Cell

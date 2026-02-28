@@ -27,6 +27,7 @@ import {
   classifyFinishRange,
   analyzeDoublePreference,
 } from '@/lib/dartout-analysis';
+import { useChartTheme } from '@/lib/chart-theme';
 
 interface Stats01Detailed {
   avg: number | null;
@@ -59,13 +60,6 @@ interface ZeroOneDeepAnalysisCardProps {
   currentRating: number | null;
   statsCriAvg: number | null;
 }
-
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1e1e1e',
-  border: '1px solid #444',
-  borderRadius: 6,
-  color: '#ccc',
-};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -168,6 +162,8 @@ export default function ZeroOneDeepAnalysisCard({
     const nextRt = Math.floor(rt01) + 1;
     return { nextRt, requiredPpd: ppdForRating(nextRt) };
   }, [rt01]);
+
+  const ct = useChartTheme();
 
   if (!stats01Detailed || ppd == null) return null;
 
@@ -452,10 +448,10 @@ export default function ZeroOneDeepAnalysisCard({
           {/* Bull率/トリプル率チャート */}
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={bullBenchmarkData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="rating" fontSize={10} tick={{ fill: '#aaa' }} />
-              <YAxis fontSize={11} tick={{ fill: '#aaa' }} unit="%" />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="rating" fontSize={10} tick={{ fill: ct.text }} />
+              <YAxis fontSize={11} tick={{ fill: ct.text }} unit="%" />
+              <Tooltip contentStyle={ct.tooltipStyle} />
               <Line
                 type="monotone"
                 dataKey="bullRate"
@@ -565,11 +561,11 @@ export default function ZeroOneDeepAnalysisCard({
               </Typography>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={finishRanges}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="label" fontSize={10} tick={{ fill: '#aaa' }} />
-                  <YAxis fontSize={11} tick={{ fill: '#aaa' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="label" fontSize={10} tick={{ fill: ct.text }} />
+                  <YAxis fontSize={11} tick={{ fill: ct.text }} />
                   <Tooltip
-                    contentStyle={TOOLTIP_STYLE}
+                    contentStyle={ct.tooltipStyle}
                     formatter={(v: number | undefined) => [
                       `${v ?? 0}回 (${(((v ?? 0) / dartoutAnalysis.totalFinishes) * 100).toFixed(1)}%)`,
                       '回数',
@@ -593,17 +589,17 @@ export default function ZeroOneDeepAnalysisCard({
               </Typography>
               <ResponsiveContainer width="100%" height={Math.max(180, topFinishes.length * 28)}>
                 <BarChart data={topFinishes} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis type="number" fontSize={11} tick={{ fill: '#aaa' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis type="number" fontSize={11} tick={{ fill: ct.text }} />
                   <YAxis
                     type="category"
                     dataKey="label"
                     fontSize={10}
-                    tick={{ fill: '#aaa' }}
+                    tick={{ fill: ct.text }}
                     width={50}
                   />
                   <Tooltip
-                    contentStyle={TOOLTIP_STYLE}
+                    contentStyle={ct.tooltipStyle}
                     formatter={(v: number | undefined) => [`${v ?? 0}回`, '回数']}
                   />
                   <Bar dataKey="count" name="回数" radius={[0, 4, 4, 0]}>
@@ -664,14 +660,14 @@ export default function ZeroOneDeepAnalysisCard({
           <SectionTitle>PPD推移（直近90日）</SectionTitle>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="date" fontSize={10} tick={{ fill: '#aaa' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
               <YAxis
                 fontSize={11}
-                tick={{ fill: '#aaa' }}
+                tick={{ fill: ct.text }}
                 domain={['dataMin - 5', 'dataMax + 5']}
               />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip contentStyle={ct.tooltipStyle} />
               {ppd != null && (
                 <ReferenceLine
                   y={ppd}
