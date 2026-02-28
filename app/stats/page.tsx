@@ -20,6 +20,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import Chip from '@mui/material/Chip';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { getFlightColor } from '@/lib/dartslive-colors';
@@ -124,17 +125,30 @@ export default function StatsPage() {
               </Typography>
             )}
           </Box>
-          {canDartslive && (
-            <Button
-              variant={dlData ? 'outlined' : 'contained'}
-              startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
-              onClick={() => setDlOpen(true)}
-              disabled={dlLoading}
-              size="small"
-            >
-              {dlLoading ? '取得中...' : dlData ? '更新' : 'ダーツライブ連携'}
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isAdminApi && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<OpenInNewIcon />}
+                component={Link}
+                href="/stats/phoenix"
+              >
+                PHOENIX換算
+              </Button>
+            )}
+            {canDartslive && (
+              <Button
+                variant={dlData ? 'outlined' : 'contained'}
+                startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
+                onClick={() => setDlOpen(true)}
+                disabled={dlLoading}
+                size="small"
+              >
+                {dlLoading ? '取得中...' : dlData ? '更新' : 'ダーツライブ連携'}
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {/* PRO アップグレード案内 */}
