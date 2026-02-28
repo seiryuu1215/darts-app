@@ -16,6 +16,8 @@
     "scrape:ranking": "tsx scripts/scrape-ranking.ts",
     "scrape:barrels": "tsx scripts/scrape-barrels2.ts",
     "scrape:shops": "tsx scripts/add-multi-line-shops.ts",
+    "line:richmenu": "tsx scripts/setup-line-richmenu.ts",
+    "line:icon": "tsx scripts/generate-line-icon.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
