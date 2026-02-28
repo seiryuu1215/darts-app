@@ -5,7 +5,7 @@
 以下の6つのインタラクティブ設計図をポートフォリオサイトで公開しています。
 クリック操作で詳細表示・タブ切替が可能な SVG ベースの設計図です。
 
-**[設計図ビューア → https://portfolio-nine-gamma-5k3oqilp7a.vercel.app/projects/darts-lab](https://portfolio-nine-gamma-5k3oqilp7a.vercel.app/projects/darts-lab)**
+**[設計図ビューア → https://portfolio-seiryuu.vercel.app/projects/darts-lab](https://portfolio-seiryuu.vercel.app/projects/darts-lab)**
 
 | 設計図 | 内容 |
 |---|---|
@@ -173,7 +173,7 @@ components/
 
 ## アフィリエイトフロー
 
-6ショップのアフィリエイト導線の詳細は [設計図ビューア「API・データフロー」タブ](https://portfolio-nine-gamma-5k3oqilp7a.vercel.app/projects/darts-lab) を参照。
+6ショップのアフィリエイト導線の詳細は [設計図ビューア「API・データフロー」タブ](https://portfolio-seiryuu.vercel.app/projects/darts-lab) を参照。
 
 - `lib/affiliate.ts` — `getShopLinks(barrel)` で6ショップのURLを生成
 - `AffiliateButton.tsx` — ドロップダウンで購入先選択
