@@ -95,43 +95,83 @@
 
 ```mermaid
 graph TB
-    subgraph Client["Browser / PWA / iOS"]
-        App["Next.js 16<br/>React 19 + MUI v7"]
-        SW["Service Worker"]
+    subgraph Client["🖥 Client — Browser / PWA / iOS"]
+        App["Next.js 16 App Router<br/>React 19 + MUI v7 + Recharts"]
+        SW["Service Worker<br/>(Serwist)"]
         Cap["Capacitor<br/>iOS WebView"]
     end
 
-    subgraph Vercel
-        Edge["Edge Network"]
+    subgraph Vercel["▲ Vercel Platform"]
+        Edge["Edge Network<br/>SSR / Static"]
         SF["Serverless Functions"]
+        Cron["Vercel Cron<br/>JST 10:00 Daily"]
         OG["OGP Image Generator<br/>(Edge Runtime)"]
     end
 
-    subgraph Firebase
-        Auth["Auth"]
-        FS["Firestore"]
-        ST["Storage"]
+    subgraph Firebase["🔥 Firebase"]
+        Auth["Authentication"]
+        FS["Cloud Firestore"]
+        ST["Cloud Storage"]
     end
 
-    subgraph External
-        DL["DARTSLIVE"]
-        LINE["LINE Messaging API"]
-        Stripe["Stripe"]
+    subgraph ExtData["📡 Data Sources"]
+        DL["DARTSLIVE<br/>card.dartslive.com"]
+        PX["PHOENIX<br/>stats API"]
+    end
+
+    subgraph Messaging["💬 Messaging"]
+        LINE["LINE Messaging API<br/>Webhook + Rich Menu"]
+    end
+
+    subgraph Payment["💳 Payment"]
+        Stripe["Stripe<br/>Subscription + Webhook"]
+    end
+
+    subgraph Cache["⚡ Cache"]
+        Redis["Upstash Redis<br/>Rate Limit"]
+    end
+
+    subgraph Monitor["📊 Monitoring"]
         Sentry["Sentry"]
     end
 
-    Client --> Vercel
-    SF --> Firebase
+    subgraph Affiliate["🛒 Affiliate（6 shops）"]
+        Shops["ダーツハイブ / エスダーツ<br/>MAXIM / TiTO<br/>楽天 / Amazon"]
+    end
+
+    Client -->|HTTPS| Edge
+    Edge --> SF
+    App -->|Client SDK| FS
+    App -->|Client SDK| Auth
+    App -->|Client SDK| ST
+    App -.->|購入リンク| Shops
+    SW -.->|Cache| App
+
+    Cron -->|日次バッチ| SF
     SF -->|Puppeteer| DL
-    SF -->|Webhook| Stripe
-    SF -->|Webhook| LINE
-    SF -->|Error tracking| Sentry
-    App --> Firebase
+    SF -->|API| PX
+    SF -->|JWT| Auth
+    SF -->|Read / Write| FS
+    SF -->|Webhook 署名検証| Stripe
+    SF -->|Webhook HMAC| LINE
+    SF -->|IP Rate Limit| Redis
+    SF -->|captureException| Sentry
+    OG -->|動的画像| Client
+
+    style Client fill:#1a1a2e,stroke:#16213e,color:#e0e0e0
+    style Vercel fill:#000,stroke:#333,color:#fff
+    style Firebase fill:#1a237e,stroke:#283593,color:#fff
+    style ExtData fill:#004d40,stroke:#00695c,color:#fff
+    style Messaging fill:#1b5e20,stroke:#2e7d32,color:#fff
+    style Payment fill:#4a148c,stroke:#6a1b9a,color:#fff
+    style Cache fill:#b71c1c,stroke:#c62828,color:#fff
+    style Monitor fill:#e65100,stroke:#ef6c00,color:#fff
+    style Affiliate fill:#33691e,stroke:#558b2f,color:#fff
 ```
 
-- **サーバーレスアーキテクチャ**: Vercel + Firebase による完全マネージド構成
+- **サーバーレスアーキテクチャ**: Vercel + Firebase + Upstash Redis（レートリミット）による完全マネージド構成
 - **JWT 認証**: NextAuth.js によるセッション管理、ロールベースアクセス制御（admin/pro/general）
-- **日次 Cron バッチ**: Vercel Cron (JST 10:00) でスタッツ自動取得 → XP付与 → 実績チェック → レポート配信 — 詳細は [docs/CRON.md](docs/CRON.md)
+- **日次 Cron バッチ**: Vercel Cron (JST 10:00) でスタッツ自動取得（DARTSLIVE Puppeteer / PHOENIX API 換算）→ XP付与 → 実績チェック → レポート配信 — 詳細は [docs/CRON.md](docs/CRON.md)
 - **独自レコメンドエンジン**: 重量(30)・径(25)・長さ(25)・カット(15)・ブランド(5)の100点スコアリング
 - **Stripe課金**: Checkout → Webhook → Firestore ロール更新のサーバーサイド完結フロー
 - **PWA + ネイティブ**: Serwist によるキャッシュ戦略 + Capacitor iOS 対応
