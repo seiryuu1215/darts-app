@@ -5,8 +5,8 @@
 | 項目           | 内容       |
 | -------------- | ---------- |
 | プロジェクト名 | Darts Lab  |
-| バージョン     | 3.1        |
-| 最終更新日     | 2026-03-01 |
+| バージョン     | 3.2        |
+| 最終更新日     | 2026-03-06 |
 
 ---
 
@@ -156,9 +156,7 @@
 │  └──────────────────────────────────────────────┘ │
 │                                                    │
 │ ■ チャート・分析セクション                         │
-│  BullStatsCard (D-BULL/S-BULL ドーナツ+バー)      │
 │  CountUpDeltaChart (±差分バーチャート)             │
-│  ConsistencyCard (COUNT-UP一貫性スコア)            │
 │  CountUpAnalysisCard (統計分析+分布グラフ)         │
 │  ScoreDistributionCard (スコア分布)                │
 │  ZeroOneAnalysisCard (01分析)                      │
@@ -169,16 +167,14 @@
 │  DailyHistoryChart (日別推移)                       │
 │  AwardTrendChart (アワード推移)                     │
 │  RecentGamesChart (ComposedChart + サマリー行)      │
-│  RatingTrendCard (AreaChart スパークライン)         │
-│  SessionComparisonCard (直近2セッション比較)       │
 │  GameMixCard (ゲームミックス分析)                   │
 │  ConditionCorrelationCard (コンディション相関)     │
 │  SkillRadarChart (PRO簡易5軸 + ベンチマーク)       │
 │  BestRecordsCard (自己ベスト記録)                   │
 │                                                    │
 │ ■ その他セクション                                 │
-│  RecentDaySummary (直近プレイ日)                   │
 │  AwardsTable (ブル以外のアワード)                  │
+│  RatingSimulatorCard (Rtシミュレーター)            │
 │  N01ImportCard (N01データ取り込み)                  │
 │  使用中ダーツ                                      │
 │  CSVエクスポート                                   │
@@ -636,9 +632,7 @@ RootLayout (app/layout.tsx)
     │   │   │   ├── SensorTrendCard (センサートレンド)
     │   │   │   ├── SpeedAccuracyCard (速度-精度分析)
     │   │   │   └── GameAveragesCard (ゲーム平均記録)
-    │   │   ├── BullStatsCard (D-BULL/S-BULL ドーナツ+バー)
     │   │   ├── CountUpDeltaChart (±差分バーチャート)
-    │   │   ├── ConsistencyCard (COUNT-UP一貫性スコア)
     │   │   ├── CountUpAnalysisCard (統計分析+分布グラフ)
     │   │   ├── ScoreDistributionCard (スコア分布)
     │   │   ├── ZeroOneAnalysisCard (01分析)
@@ -650,7 +644,6 @@ RootLayout (app/layout.tsx)
     │   │   ├── AwardTrendChart (アワード推移)
     │   │   ├── RecentGamesChart (ComposedChart)
     │   │   ├── BestRecordsCard (自己ベスト記録)
-    │   │   ├── RecentDaySummary (直近プレイ日)
     │   │   ├── AwardsTable (ブル以外のアワード)
     │   │   ├── N01ImportCard (N01データ取り込み)
     │   │   ├── PercentileChip (再利用可能な上位X%バッジ)
@@ -724,8 +717,6 @@ RootLayout (app/layout.tsx)
 | `DartboardHeatmap`            | ダーツボードヒートマップ       | `hitData`                                                                                                                                                           |
 | `SensorTrendCard`             | センサーデータ推移             | `sensorData`                                                                                                                                                        |
 | `GameAveragesCard`            | ゲーム平均記録一覧             | `averages`                                                                                                                                                          |
-| `RatingTrendCard`             | Rtトレンドスパークライン       | `periodRecords`, `currentRating`                                                                                                                                    |
-| `SessionComparisonCard`       | 直近2セッション比較            | `periodRecords`                                                                                                                                                     |
 | `CountUpAnalysisCard`         | CU統計分析+Rt期待値メトリクス  | `games`, `expectedCountUp?`                                                                                                                                         |
 | `RecentGamesChart`            | 直近ゲーム+サマリー行          | `games`, `gameChartCategory`, `onCategoryChange`, `expectedCountUp`, `dangerCountUp`, `excellentCountUp`                                                            |
 | `ShopCard`                    | ショップ情報カード             | `shop`, `isBookmarked`, `isVisited`, `tags`                                                                                                                         |

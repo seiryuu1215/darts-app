@@ -789,11 +789,11 @@ export default function PageFlowDiagram() {
           {[
             [
               'Rating分析',
-              'RatingHeroCard / TargetCard / SimulatorCard / MomentumCard / BenchmarkCard / TrendCard',
+              'RatingHeroCard / TargetCard / MomentumCard / BenchmarkCard / SimulatorCard',
             ],
             [
               'ゲーム統計',
-              'GameStatsCards / DetailedGameStats / BullStats / CountUp分析 / 01分析 / Consistency',
+              'GameStatsCards / DetailedGameStats / CountUp分析 / 01分析 / Cricket分析',
             ],
             [
               '可視化',

@@ -635,7 +635,6 @@ darts-app/
 │   │   ├── PeriodStatsPanel      #     期間タブ + サマリー
 │   │   ├── GameStatsCards        #     01/Cricket/CU カード（パーセンタイル付き）
 │   │   ├── DetailedGameStatsCard #     詳細ゲーム統計
-│   │   ├── BullStatsCard         #     ブル統計 + ドーナツ/バーチャート
 │   │   ├── CountUpDeltaChart     #     COUNT-UP ±差分バーチャート
 │   │   ├── CountUpAnalysisCard   #     COUNT-UP分析（Rt期待値メトリクス + 前後半トレンド）
 │   │   ├── CountUpDeepAnalysisCard #   COUNT-UP深掘り分析
@@ -650,14 +649,12 @@ darts-app/
 │   │   ├── DailyHistoryChart     #     日別履歴チャート
 │   │   ├── RollingTrendCard      #     ローリングトレンド
 │   │   ├── RecentGamesChart      #     直近ゲーム結果チャート + サマリー行（連続/最長/安定度）
-│   │   ├── RecentDaySummary      #     直近プレイ日サマリー
 │   │   ├── CalendarGrid          #     カレンダーグリッド
 │   │   ├── DayDetailPanel        #     日別詳細パネル
 │   │   ├── PlayerDnaCard         #     プレイヤーDNA分析
 │   │   ├── SkillRadarChart       #     スキルレーダー（詳細8軸 + 簡易5軸 / ベンチマーク比較）
 │   │   ├── DartboardHeatmap      #     ダーツボードヒートマップ
 │   │   ├── ScoreDistributionCard #     スコア分布
-│   │   ├── ConsistencyCard       #     安定性カード
 │   │   ├── PeriodComparisonCard  #     期間比較
 │   │   ├── GameAveragesCard      #     ゲーム平均
 │   │   ├── BestRecordsCard       #     ベスト記録
@@ -674,8 +671,6 @@ darts-app/
 │   │   ├── PercentileChip        #     上位X%バッジ（再利用可能）
 │   │   ├── PRSiteSection         #     おすすめブランドPRカード
 │   │   ├── StatsLoginDialog      #     DARTSLIVE ログインダイアログ
-│   │   ├── RatingTrendCard       #     レーティングトレンド（スパークライン + 回帰直線）
-│   │   ├── SessionComparisonCard #    セッション比較（直近2回のプレイ日比較）
 │   │   ├── AwardPaceSimpleCard  #     アワードペース予測（簡易版）
 │   │   ├── GameMixCard          #     ゲームミックス分析
 │   │   ├── ConditionCorrelationCard # コンディション×パフォーマンス相関

@@ -425,17 +425,14 @@ service cloud.firestore {
 ├── RatingHeroCard         ← 大きなRt表示 + フライト色 + パーセンタイル
 ├── PeriodStatsPanel       ← 今日/今週/今月/累計 タブ切り替え
 ├── GameStatsCards         ← 01/Cricket/CU の3カード
-├── BullStatsCard          ← ブル統計（ドーナツチャート + 推移）
 ├── CountUpDeltaChart      ← CUスコア±差分バー
 ├── RatingTargetCard       ← Rt目標分析（3シナリオ）
 ├── MonthlyTrendChart      ← 月間推移折れ線グラフ
 ├── RecentGamesChart       ← 直近ゲーム結果（ComposedChart + サマリー行）
 ├── SkillRadarChart        ← PRO簡易スキルレーダー（5軸 + ベンチマーク）
-├── RatingTrendCard        ← Rtトレンド（AreaChartスパークライン + 回帰直線）
 ├── AwardPaceSimpleCard    ← アワードペース予測（簡易版）
-├── RecentDaySummary       ← 直近プレイ日のサマリー
-├── SessionComparisonCard  ← 直近2セッション比較
 ├── AwardsTable            ← アワード一覧
+├── RatingSimulatorCard    ← Rtシミュレーター
 ├── Active Dart Display    ← 使用中セッティング
 ├── CSV Export             ← Pro専用エクスポート
 ├── Manual Input Link      ← 手動記録ページへのリンク
