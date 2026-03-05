@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAdmin, withErrorHandler } from '@/lib/api-middleware';
-import { sendLinePushMessage, buildDailyCarouselMessage } from '@/lib/line';
+import { buildDailyCarouselMessage } from '@/lib/line';
 import {
   buildRoleBasedDailyNotification,
   type DailyNotificationContext,
@@ -105,12 +105,32 @@ export const POST = withErrorHandler(
       return NextResponse.json({ success: false, message: '送信するデータがありません' });
     }
 
-    const sent = await sendLinePushMessage(lineUserId, messages);
+    // テスト用: エラー詳細付きで送信
+    const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'LINE_CHANNEL_ACCESS_TOKEN未設定' });
+    }
+
+    const payload = JSON.stringify({ to: lineUserId, messages });
+    const lineRes = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: payload,
+    });
+
+    const lineBody = await lineRes.text().catch(() => '');
+    const sent = lineRes.ok;
 
     return NextResponse.json({
       success: sent,
       bubbleCount: result.bubbles.length,
       imageCount: result.imageMessages?.length ?? 0,
+      lineStatus: lineRes.status,
+      lineError: sent ? undefined : lineBody,
+      payloadSize: `${(payload.length / 1024).toFixed(1)}KB`,
       message: sent
         ? `テスト通知を送信しました（${result.bubbles.length}バブル, ${result.imageMessages?.length ?? 0}画像）`
         : '送信に失敗しました',
