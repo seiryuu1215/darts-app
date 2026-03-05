@@ -153,8 +153,12 @@ export interface RoundBullStats {
   totalRounds: number;
   hatTrickCount: number; // 1ラウンド3 bulls
   lowTonCount: number; // 1ラウンド2 bulls
+  oneBullCount: number; // 1ラウンド1 bull
+  noBullCount: number; // 1ラウンド0 bulls
   hatTrickRate: number; // %
   lowTonRate: number; // %
+  oneBullRate: number; // %
+  noBullRate: number; // %
 }
 
 /** PLAY_LOGからラウンド別ブル数を分析（ロートン・ハットトリック率算出） */
@@ -162,6 +166,8 @@ export function analyzeRoundBulls(playLogs: string[]): RoundBullStats {
   let totalRounds = 0;
   let hatTrickCount = 0;
   let lowTonCount = 0;
+  let oneBullCount = 0;
+  let noBullCount = 0;
 
   for (const log of playLogs) {
     const darts = log.split(',').map((c) => c.trim());
@@ -177,6 +183,8 @@ export function analyzeRoundBulls(playLogs: string[]): RoundBullStats {
       totalRounds++;
       if (bullsInRound >= 3) hatTrickCount++;
       else if (bullsInRound === 2) lowTonCount++;
+      else if (bullsInRound === 1) oneBullCount++;
+      else noBullCount++;
     }
   }
 
@@ -184,8 +192,12 @@ export function analyzeRoundBulls(playLogs: string[]): RoundBullStats {
     totalRounds,
     hatTrickCount,
     lowTonCount,
+    oneBullCount,
+    noBullCount,
     hatTrickRate: totalRounds > 0 ? Math.round((hatTrickCount / totalRounds) * 1000) / 10 : 0,
     lowTonRate: totalRounds > 0 ? Math.round((lowTonCount / totalRounds) * 1000) / 10 : 0,
+    oneBullRate: totalRounds > 0 ? Math.round((oneBullCount / totalRounds) * 1000) / 10 : 0,
+    noBullRate: totalRounds > 0 ? Math.round((noBullCount / totalRounds) * 1000) / 10 : 0,
   };
 }
 

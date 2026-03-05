@@ -32,6 +32,7 @@ export const Standard: Story = {
     // 主要メトリクスラベルが表示されている
     await expect(canvas.getByText('ブル率')).toBeInTheDocument();
     await expect(canvas.getByText('DBull率')).toBeInTheDocument();
+    await expect(canvas.getByText('ワンブル率')).toBeInTheDocument();
     await expect(canvas.getByText('ロートン率')).toBeInTheDocument();
     await expect(canvas.getByText('ハット率')).toBeInTheDocument();
     await expect(canvas.getByText('平均スコア')).toBeInTheDocument();

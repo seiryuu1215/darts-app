@@ -2,10 +2,20 @@
 
 import { useMemo } from 'react';
 import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import { compareLastTwoSessions, extractQualifiedSessions } from '@/lib/countup-session-compare';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
 import { calc01Rating } from '@/lib/dartslive-rating';
+import { getBenchmarkByRating } from '@/lib/dartslive-reference';
 import { useChartTheme } from '@/lib/chart-theme';
 import MiniDartboardSvg from './MiniDartboardSvg';
 import type { CountUpPlay } from './countup-deep-shared';
@@ -215,8 +225,8 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
     const hm =
       prevLogs.length > 0 && currLogs.length > 0
         ? {
-            prev: computeSegmentFrequency(prevLogs, 'miss'),
-            current: computeSegmentFrequency(currLogs, 'miss'),
+            prev: computeSegmentFrequency(prevLogs, 'miss', { excludeOuterSingle: true }),
+            current: computeSegmentFrequency(currLogs, 'miss', { excludeOuterSingle: true }),
           }
         : null;
 
@@ -227,6 +237,9 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
 
   const { prev, current, deltas, insights } = comparison;
 
+  const currentRating = Math.floor(calc01Rating(current.avgScore / 8));
+  const benchmark = getBenchmarkByRating(currentRating);
+
   const metrics: {
     label: string;
     prev: string;
@@ -234,6 +247,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
     delta: number;
     unit: string;
     inverse?: boolean;
+    benchmarkLabel?: string;
   }[] = [
     {
       label: 'ブル率',
@@ -250,11 +264,20 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       unit: '%',
     },
     {
+      label: 'ワンブル率',
+      prev: `${prev.oneBullRate}%`,
+      curr: `${current.oneBullRate}%`,
+      delta: deltas.oneBullRate,
+      unit: '%',
+      benchmarkLabel: benchmark ? `Rt.${benchmark.rating}: ${benchmark.oneBullRate}%` : undefined,
+    },
+    {
       label: 'ロートン率',
       prev: `${prev.lowTonRate}%`,
       curr: `${current.lowTonRate}%`,
       delta: deltas.lowTonRate,
       unit: '%',
+      benchmarkLabel: benchmark ? `Rt.${benchmark.rating}: ${benchmark.lowTonRate}%` : undefined,
     },
     {
       label: 'ハット率',
@@ -262,6 +285,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       curr: `${current.hatTrickRate}%`,
       delta: deltas.hatTrickRate,
       unit: '%',
+      benchmarkLabel: benchmark ? `Rt.${benchmark.rating}: ${benchmark.hatTrickRate}%` : undefined,
     },
     {
       label: '平均スコア',
@@ -454,9 +478,19 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
             const deltaStr = `${m.delta > 0 ? '+' : ''}${!Number.isInteger(m.delta) ? m.delta.toFixed(1) : m.delta}${m.unit}`;
             return (
               <tr key={m.label}>
-                <td>{m.label}</td>
+                <td>
+                  {m.label}
+                  {m.benchmarkLabel && (
+                    <Box
+                      component="span"
+                      sx={{ display: 'block', fontSize: 9, color: '#888', mt: 0.2 }}
+                    >
+                      ({m.benchmarkLabel})
+                    </Box>
+                  )}
+                </td>
                 <td>{m.prev}</td>
-                <Box component="td" sx={{ fontWeight: 'bold', color }}>
+                <Box component="td" sx={{ fontWeight: 'bold' }}>
                   {m.curr}
                 </Box>
                 <Box component="td" sx={{ fontWeight: 'bold', color, fontSize: 11 }}>
@@ -482,11 +516,12 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
                   contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
                   formatter={(value) => [`${value}ゲーム`, '回数']}
                 />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar
                   dataKey="prev"
                   name="前回"
-                  fill="#43A047"
-                  fillOpacity={0.35}
+                  fill="#78909C"
+                  fillOpacity={0.6}
                   radius={[2, 2, 0, 0]}
                 />
                 <Bar dataKey="current" name="今回" fill="#43A047" radius={[2, 2, 0, 0]} />

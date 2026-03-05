@@ -27,6 +27,7 @@ export interface HeatmapData {
 export function computeSegmentFrequency(
   playLogs: string[],
   mode: 'all' | 'miss' = 'all',
+  options?: { excludeOuterSingle?: boolean },
 ): HeatmapData {
   const segments = new Map<SegmentId, number>();
   let totalDarts = 0;
@@ -56,6 +57,11 @@ export function computeSegmentFrequency(
         if (mode === 'miss') continue;
         const id = parsed.area === 'doubleBull' ? 'BB' : 'B';
         segments.set(id, (segments.get(id) ?? 0) + 1);
+        continue;
+      }
+
+      // excludeOuterSingle: missモードでアウターシングルをスキップ
+      if (mode === 'miss' && options?.excludeOuterSingle && parsed.area === 'outerSingle') {
         continue;
       }
 

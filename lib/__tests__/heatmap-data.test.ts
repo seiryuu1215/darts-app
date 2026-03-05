@@ -89,6 +89,27 @@ describe('computeSegmentFrequency', () => {
     const result = computeSegmentFrequency([]);
     expect(result.maxCount).toBeGreaterThanOrEqual(1);
   });
+
+  it('excludeOuterSingle: missモードでアウターシングルを除外', () => {
+    const result = computeSegmentFrequency(['BB,S20,I5,T3'], 'miss', {
+      excludeOuterSingle: true,
+    });
+    // S20はアウターシングルなので除外
+    expect(result.segments.has('S20')).toBe(false);
+    // I5はインナーシングルなので含む
+    expect(result.segments.get('I5')).toBe(1);
+    // T3はトリプルなので含む
+    expect(result.segments.get('T3')).toBe(1);
+  });
+
+  it('excludeOuterSingle: allモードでは効果なし', () => {
+    const result = computeSegmentFrequency(['S20,I5'], 'all', {
+      excludeOuterSingle: true,
+    });
+    // allモードではexcludeOuterSingleは無効
+    expect(result.segments.get('S20')).toBe(1);
+    expect(result.segments.get('I5')).toBe(1);
+  });
 });
 
 describe('getSegmentLabel', () => {

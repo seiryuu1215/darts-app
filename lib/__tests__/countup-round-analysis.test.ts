@@ -126,8 +126,12 @@ describe('analyzeRoundBulls', () => {
     expect(result.totalRounds).toBe(0);
     expect(result.hatTrickCount).toBe(0);
     expect(result.lowTonCount).toBe(0);
+    expect(result.oneBullCount).toBe(0);
+    expect(result.noBullCount).toBe(0);
     expect(result.hatTrickRate).toBe(0);
     expect(result.lowTonRate).toBe(0);
+    expect(result.oneBullRate).toBe(0);
+    expect(result.noBullRate).toBe(0);
   });
 
   it('ハットトリック（1ラウンド3ブル）を検出', () => {
@@ -159,11 +163,15 @@ describe('analyzeRoundBulls', () => {
     expect(result.lowTonCount).toBe(1); // log1 R2 (BB,B = 2 bulls)
   });
 
-  it('1ブルのみのラウンドはカウントされない', () => {
+  it('1ブルのみのラウンドはワンブルとしてカウント', () => {
     const log = 'BB,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
     const result = analyzeRoundBulls([log]);
     expect(result.hatTrickCount).toBe(0);
     expect(result.lowTonCount).toBe(0);
+    expect(result.oneBullCount).toBe(1); // R1のみ
+    expect(result.noBullCount).toBe(7); // R2-R8
+    expect(result.oneBullRate).toBeCloseTo(12.5, 1); // 1/8 * 100
+    expect(result.noBullRate).toBeCloseTo(87.5, 1); // 7/8 * 100
   });
 });
 

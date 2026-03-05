@@ -28,6 +28,8 @@ export interface CuSessionSummary {
   directionStrength: number; // 偏り強度
   lowTonRate: number; // ロートン率 (%)
   hatTrickRate: number; // ハットトリック率 (%)
+  oneBullRate: number; // ワンブル率 (%)
+  noBullRate: number; // ノーブル率 (%)
 }
 
 export interface CuSessionComparison {
@@ -43,6 +45,8 @@ export interface CuSessionComparison {
     speed: number;
     lowTonRate: number;
     hatTrickRate: number;
+    oneBullRate: number;
+    noBullRate: number;
   };
   insights: string[]; // 日本語インサイト
 }
@@ -132,6 +136,8 @@ export function summarizeSession(date: string, plays: CountUpPlayData[]): CuSess
     directionStrength: missResult?.directionStrength ?? 0,
     lowTonRate: bullStats.lowTonRate,
     hatTrickRate: bullStats.hatTrickRate,
+    oneBullRate: bullStats.oneBullRate,
+    noBullRate: bullStats.noBullRate,
   };
 }
 
@@ -159,6 +165,8 @@ export function compareLastTwoSessions(
     speed: Math.round((current.avgSpeed - prev.avgSpeed) * 10) / 10,
     lowTonRate: Math.round((current.lowTonRate - prev.lowTonRate) * 10) / 10,
     hatTrickRate: Math.round((current.hatTrickRate - prev.hatTrickRate) * 10) / 10,
+    oneBullRate: Math.round((current.oneBullRate - prev.oneBullRate) * 10) / 10,
+    noBullRate: Math.round((current.noBullRate - prev.noBullRate) * 10) / 10,
   };
 
   const insights = generateInsights(prev, current, deltas);
@@ -243,6 +251,16 @@ function generateInsights(
   // ハットトリック率変化
   if (deltas.hatTrickRate > 0.5) {
     insights.push(`ハットトリック率が${deltas.hatTrickRate}%向上。高精度ラウンドが増加。`);
+  }
+
+  // ロートン-ハット差変化
+  const prevGap = prev.lowTonRate - prev.hatTrickRate;
+  const currentGap = current.lowTonRate - current.hatTrickRate;
+  const gapDelta = currentGap - prevGap;
+  if (gapDelta <= -1) {
+    insights.push('ロートン-ハット差が縮小。ブル精度が安定方向へ。');
+  } else if (gapDelta >= 2) {
+    insights.push('ロートン-ハット差が拡大。3投目の精度維持を意識。');
   }
 
   // ミス方向変化

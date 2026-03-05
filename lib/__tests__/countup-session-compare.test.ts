@@ -64,14 +64,18 @@ describe('summarizeSession', () => {
     expect(summary.doubleBullRate).toBeGreaterThanOrEqual(0);
   });
 
-  it('lowTonRate/hatTrickRateが含まれる', () => {
+  it('lowTonRate/hatTrickRate/oneBullRate/noBullRateが含まれる', () => {
     const plays = makePlays('2025-03-01', 30);
     const summary = summarizeSession('2025-03-01', plays);
 
     expect(typeof summary.lowTonRate).toBe('number');
     expect(typeof summary.hatTrickRate).toBe('number');
+    expect(typeof summary.oneBullRate).toBe('number');
+    expect(typeof summary.noBullRate).toBe('number');
     expect(summary.lowTonRate).toBeGreaterThanOrEqual(0);
     expect(summary.hatTrickRate).toBeGreaterThanOrEqual(0);
+    expect(summary.oneBullRate).toBeGreaterThanOrEqual(0);
+    expect(summary.noBullRate).toBeGreaterThanOrEqual(0);
   });
 
   it('DL3センサーデータの平均が算出される', () => {
@@ -123,6 +127,8 @@ describe('compareLastTwoSessions', () => {
     expect(typeof result.deltas.bullRate).toBe('number');
     expect(typeof result.deltas.lowTonRate).toBe('number');
     expect(typeof result.deltas.hatTrickRate).toBe('number');
+    expect(typeof result.deltas.oneBullRate).toBe('number');
+    expect(typeof result.deltas.noBullRate).toBe('number');
   });
 
   it('insightsが生成される', () => {
