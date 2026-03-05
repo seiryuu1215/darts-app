@@ -57,7 +57,7 @@ export default function AffiliateButton({
             rel="noopener noreferrer"
             onClick={() => setAnchorEl(null)}
           >
-            <ListItemText>{link.label}で見る</ListItemText>
+            <ListItemText>{link.label}</ListItemText>
             <OpenInNewIcon sx={{ fontSize: 16, ml: 1, color: 'text.secondary' }} />
           </MenuItem>
         ))}

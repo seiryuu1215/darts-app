@@ -36,8 +36,8 @@ export default function AffiliateBanner({
         ),
         color: '#e74c3c',
       },
-      { label: '楽天', url: toRakutenSearchUrl(barrelName, config), color: '#bf0000' },
-      { label: 'Amazon', url: toAmazonSearchUrl(barrelName, config), color: '#ff9900' },
+      { label: '楽天で検索', url: toRakutenSearchUrl(barrelName, config), color: '#bf0000' },
+      { label: 'Amazonで検索', url: toAmazonSearchUrl(barrelName, config), color: '#ff9900' },
     ];
 
     return (

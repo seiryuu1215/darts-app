@@ -3,10 +3,12 @@ import type { BarrelProduct, ShopLink } from '@/types';
 export interface AffiliateConfig {
   rakutenAffiliateId: string;
   amazonAssociateTag: string;
-  /** 商品リンク用（素材020: 自由テキスト、a8ejpredirect対応） */
+  /** ダーツハイブ商品リンク用（素材020: 自由テキスト、a8ejpredirect対応） */
   a8MediaId: string;
-  /** 一般リンク用（素材014: ダーツハイブトップへの誘導） */
+  /** ダーツハイブ一般リンク用（素材014: トップへの誘導） */
   a8MediaIdGeneral: string;
+  /** 楽天市場A8素材（素材064: テキスト「楽天」） */
+  a8RakutenMat: string;
 }
 
 export function getAffiliateConfig(): AffiliateConfig {
@@ -15,6 +17,7 @@ export function getAffiliateConfig(): AffiliateConfig {
     amazonAssociateTag: process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? '',
     a8MediaId: process.env.NEXT_PUBLIC_A8_MEDIA_ID ?? '',
     a8MediaIdGeneral: process.env.NEXT_PUBLIC_A8_MEDIA_ID_GENERAL ?? '',
+    a8RakutenMat: process.env.NEXT_PUBLIC_A8_RAKUTEN_MAT ?? '',
   };
 }
 
@@ -31,12 +34,18 @@ export function toDartshiveGeneralUrl(config: AffiliateConfig): string {
   return `https://px.a8.net/svt/ejp?a8mat=${config.a8MediaIdGeneral}`;
 }
 
+/** 楽天市場検索URL（A8.net経由リダイレクト） */
 export function toRakutenSearchUrl(barrelName: string, config: AffiliateConfig): string {
   const query = encodeURIComponent(barrelName);
-  if (!config.rakutenAffiliateId) {
-    return `https://search.rakuten.co.jp/search/mall/${query}/`;
+  const searchUrl = `https://search.rakuten.co.jp/search/mall/${query}/`;
+
+  if (!config.a8RakutenMat || !config.rakutenAffiliateId) {
+    return searchUrl;
   }
-  return `https://hb.afl.rakuten.co.jp/hgc/${config.rakutenAffiliateId}/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F${query}%2F`;
+
+  // 楽天アフィリエイトURL → A8.netリダイレクトで二重トラッキング
+  const rakutenAffUrl = `https://hb.afl.rakuten.co.jp/hgc/${config.rakutenAffiliateId}/?pc=${encodeURIComponent(searchUrl)}&m=${encodeURIComponent(searchUrl)}`;
+  return `https://rpx.a8.net/svt/ejp?a8mat=${config.a8RakutenMat}&rakuten=y&a8ejpredirect=${encodeURIComponent(rakutenAffUrl)}`;
 }
 
 export function toAmazonSearchUrl(barrelName: string, config: AffiliateConfig): string {
@@ -54,17 +63,17 @@ export function getShopLinks(barrel: BarrelProduct, config?: AffiliateConfig): S
   return [
     {
       shop: 'dartshive',
-      label: 'ダーツハイブ',
+      label: 'ダーツハイブで見る',
       url: toDartshiveAffiliateUrl(barrel.productUrl, c),
     },
     {
       shop: 'rakuten',
-      label: '楽天',
+      label: '楽天で検索',
       url: toRakutenSearchUrl(searchName, c),
     },
     {
       shop: 'amazon',
-      label: 'Amazon',
+      label: 'Amazonで検索',
       url: toAmazonSearchUrl(searchName, c),
     },
   ];

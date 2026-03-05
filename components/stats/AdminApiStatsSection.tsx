@@ -38,6 +38,7 @@ import SpeedAccuracyCard from './SpeedAccuracyCard';
 import SessionFatigueCard from './SessionFatigueCard';
 import PracticeRecommendationsCard from './PracticeRecommendationsCard';
 import RatingBenchmarkCard from './RatingBenchmarkCard';
+import StatsCardBoundary from './StatsCardBoundary';
 import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
 import { analyzeSensor } from '@/lib/sensor-analysis';
 import { analyzeSession } from '@/lib/session-analysis';
@@ -494,7 +495,9 @@ export default function AdminApiStatsSection({
           onToggleCard={toggleCard}
         >
           {!hiddenCards.practice_recommendations && (
-            <PracticeRecommendationsCard input={recInput} />
+            <StatsCardBoundary name="練習レコメンド">
+              <PracticeRecommendationsCard input={recInput} />
+            </StatsCardBoundary>
           )}
         </CollapsibleSection>
       )}
@@ -514,21 +517,27 @@ export default function AdminApiStatsSection({
         onToggleCard={toggleCard}
       >
         {!hiddenCards.skill_radar && (
-          <SkillRadarChart
-            stats01={enrichedData?.stats01Detailed ?? null}
-            statsCricket={enrichedData?.statsCricketDetailed ?? null}
-            flight={flight}
-          />
+          <StatsCardBoundary name="スキルレーダー">
+            <SkillRadarChart
+              stats01={enrichedData?.stats01Detailed ?? null}
+              statsCricket={enrichedData?.statsCricketDetailed ?? null}
+              flight={flight}
+            />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.player_dna && (
-          <PlayerDnaCard
-            stats01={enrichedData?.stats01Detailed ?? null}
-            statsCricket={enrichedData?.statsCricketDetailed ?? null}
-            countupAvg={countupAvg}
-          />
+          <StatsCardBoundary name="プレイヤーDNA">
+            <PlayerDnaCard
+              stats01={enrichedData?.stats01Detailed ?? null}
+              statsCricket={enrichedData?.statsCricketDetailed ?? null}
+              countupAvg={countupAvg}
+            />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.performance_insights && enrichedData && (
-          <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
+          <StatsCardBoundary name="パフォーマンスインサイト">
+            <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
+          </StatsCardBoundary>
         )}
       </CollapsibleSection>
 
@@ -547,21 +556,27 @@ export default function AdminApiStatsSection({
         onToggleCard={toggleCard}
       >
         {!hiddenCards.detailed_game && (
-          <DetailedGameStatsCard
-            stats01={enrichedData?.stats01Detailed ?? null}
-            statsCricket={enrichedData?.statsCricketDetailed ?? null}
-          />
+          <StatsCardBoundary name="ゲーム詳細">
+            <DetailedGameStatsCard
+              stats01={enrichedData?.stats01Detailed ?? null}
+              statsCricket={enrichedData?.statsCricketDetailed ?? null}
+            />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.rating_benchmark && (
-          <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
+          <StatsCardBoundary name="レーティングベンチマーク">
+            <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.rating_simulator &&
           enrichedData?.stats01Detailed?.avg != null &&
           enrichedData?.statsCricketDetailed?.avg != null && (
-            <RatingSimulatorCard
-              currentPpd={enrichedData.stats01Detailed.avg}
-              currentMpr={enrichedData.statsCricketDetailed.avg}
-            />
+            <StatsCardBoundary name="レート予測シミュレーター">
+              <RatingSimulatorCard
+                currentPpd={enrichedData.stats01Detailed.avg}
+                currentMpr={enrichedData.statsCricketDetailed.avg}
+              />
+            </StatsCardBoundary>
           )}
       </CollapsibleSection>
 
@@ -579,22 +594,26 @@ export default function AdminApiStatsSection({
         onToggleCard={toggleCard}
       >
         {!hiddenCards.zeroone_deep && (
-          <ZeroOneDeepAnalysisCard
-            stats01Detailed={enrichedData?.stats01Detailed ?? null}
-            dailyHistory={dailyHistory}
-            dartoutList={dartoutList ?? null}
-            currentRating={currentRating}
-            statsCriAvg={enrichedData?.statsCricketDetailed?.avg ?? null}
-          />
+          <StatsCardBoundary name="01深掘り分析">
+            <ZeroOneDeepAnalysisCard
+              stats01Detailed={enrichedData?.stats01Detailed ?? null}
+              dailyHistory={dailyHistory}
+              dartoutList={dartoutList ?? null}
+              currentRating={currentRating}
+              statsCriAvg={enrichedData?.statsCricketDetailed?.avg ?? null}
+            />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.cricket_deep && (
-          <CricketDeepAnalysisCard
-            statsCricketDetailed={enrichedData?.statsCricketDetailed ?? null}
-            dailyHistory={dailyHistory}
-            bullRate={enrichedData?.stats01Detailed?.bullRate ?? null}
-            currentRating={currentRating}
-            stats01Avg={enrichedData?.stats01Detailed?.avg ?? null}
-          />
+          <StatsCardBoundary name="Cricket深掘り分析">
+            <CricketDeepAnalysisCard
+              statsCricketDetailed={enrichedData?.statsCricketDetailed ?? null}
+              dailyHistory={dailyHistory}
+              bullRate={enrichedData?.stats01Detailed?.bullRate ?? null}
+              currentRating={currentRating}
+              stats01Avg={enrichedData?.stats01Detailed?.avg ?? null}
+            />
+          </StatsCardBoundary>
         )}
       </CollapsibleSection>
 
@@ -614,16 +633,24 @@ export default function AdminApiStatsSection({
         onToggleCard={toggleCard}
       >
         {!hiddenCards.rolling_trend && dailyHistory.length >= 7 && (
-          <RollingTrendCard dailyHistory={dailyHistory} />
+          <StatsCardBoundary name="移動平均トレンド">
+            <RollingTrendCard dailyHistory={dailyHistory} />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.period_comparison && dailyHistory.length >= 4 && (
-          <PeriodComparisonCard dailyHistory={dailyHistory} />
+          <StatsCardBoundary name="期間比較">
+            <PeriodComparisonCard dailyHistory={dailyHistory} />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.streak_pattern && dailyHistory.length >= 5 && (
-          <StreakPatternCard dailyHistory={dailyHistory} />
+          <StatsCardBoundary name="連勝パターン">
+            <StreakPatternCard dailyHistory={dailyHistory} />
+          </StatsCardBoundary>
         )}
         {!hiddenCards.award_pace && awardList && awardList.length >= 2 && (
-          <AwardPaceCard awardList={awardList} />
+          <StatsCardBoundary name="アワードペース">
+            <AwardPaceCard awardList={awardList} />
+          </StatsCardBoundary>
         )}
       </CollapsibleSection>
 
@@ -643,17 +670,23 @@ export default function AdminApiStatsSection({
           onToggleCard={toggleCard}
         >
           {!hiddenCards.countup_deep && countupPlays && countupPlays.length > 0 && (
-            <CountUpDeepAnalysisCard
-              countupPlays={countupPlays}
-              stats01Detailed={enrichedData?.stats01Detailed}
-              bestRecords={enrichedData?.bestRecords}
-            />
+            <StatsCardBoundary name="COUNT-UP深掘り分析">
+              <CountUpDeepAnalysisCard
+                countupPlays={countupPlays}
+                stats01Detailed={enrichedData?.stats01Detailed}
+                bestRecords={enrichedData?.bestRecords}
+              />
+            </StatsCardBoundary>
           )}
           {!hiddenCards.dartboard_heatmap && countupPlays && countupPlays.length >= 24 && (
-            <DartboardHeatmap countupPlays={countupPlays} />
+            <StatsCardBoundary name="ダーツボードヒートマップ">
+              <DartboardHeatmap countupPlays={countupPlays} />
+            </StatsCardBoundary>
           )}
           {!hiddenCards.session_fatigue && countupPlays && countupPlays.length >= 10 && (
-            <SessionFatigueCard countupPlays={countupPlays} />
+            <StatsCardBoundary name="セッション疲労分析">
+              <SessionFatigueCard countupPlays={countupPlays} />
+            </StatsCardBoundary>
           )}
         </CollapsibleSection>
       )}
@@ -672,8 +705,16 @@ export default function AdminApiStatsSection({
           hiddenCards={hiddenCards}
           onToggleCard={toggleCard}
         >
-          {!hiddenCards.sensor_trend && <SensorTrendCard countupPlays={countupPlays} />}
-          {!hiddenCards.speed_accuracy && <SpeedAccuracyCard countupPlays={countupPlays} />}
+          {!hiddenCards.sensor_trend && (
+            <StatsCardBoundary name="センサー推移">
+              <SensorTrendCard countupPlays={countupPlays} />
+            </StatsCardBoundary>
+          )}
+          {!hiddenCards.speed_accuracy && (
+            <StatsCardBoundary name="スピード精度">
+              <SpeedAccuracyCard countupPlays={countupPlays} />
+            </StatsCardBoundary>
+          )}
         </CollapsibleSection>
       )}
     </Box>

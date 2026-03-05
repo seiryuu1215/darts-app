@@ -24,6 +24,7 @@ import ConditionCorrelationCard from './ConditionCorrelationCard';
 import RatingTrendCard from './RatingTrendCard';
 import SkillRadarChart from './SkillRadarChart';
 import SessionComparisonCard from './SessionComparisonCard';
+import StatsCardBoundary from './StatsCardBoundary';
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -144,107 +145,141 @@ export default function StatsPageContent({
   return (
     <>
       {/* 1. Rating Hero + Profile */}
-      <RatingHeroCard
-        rating={c.rating}
-        ratingPrev={prev?.rating ?? null}
-        flight={c.flight}
-        flightColor={flightColor}
-        streak={periodSummary?.streak ?? 0}
-        showStreak={periodTab === 'all'}
-        cardName={c.cardName}
-        cardImageUrl={c.cardImageUrl}
-        toorina={c.toorina}
-        homeShop={c.homeShop}
-        status={c.status}
-      />
+      <StatsCardBoundary name="レーティング">
+        <RatingHeroCard
+          rating={c.rating}
+          ratingPrev={prev?.rating ?? null}
+          flight={c.flight}
+          flightColor={flightColor}
+          streak={periodSummary?.streak ?? 0}
+          showStreak={periodTab === 'all'}
+          cardName={c.cardName}
+          cardImageUrl={c.cardImageUrl}
+          toorina={c.toorina}
+          homeShop={c.homeShop}
+          status={c.status}
+        />
+      </StatsCardBoundary>
 
       {/* 4. Game Stats Cards */}
-      <GameStatsCards
-        stats01Avg={c.stats01Avg}
-        stats01Best={c.stats01Best}
-        statsCriAvg={c.statsCriAvg}
-        statsCriBest={c.statsCriBest}
-        statsPraAvg={c.statsPraAvg}
-        statsPraBest={c.statsPraBest}
-        prev01Avg={prev?.stats01Avg ?? null}
-        prevCriAvg={prev?.statsCriAvg ?? null}
-        prevPraAvg={prev?.statsPraAvg ?? null}
-        expectedCountUp={expectedCountUp}
-      />
+      <StatsCardBoundary name="ゲームスタッツ">
+        <GameStatsCards
+          stats01Avg={c.stats01Avg}
+          stats01Best={c.stats01Best}
+          statsCriAvg={c.statsCriAvg}
+          statsCriBest={c.statsCriBest}
+          statsPraAvg={c.statsPraAvg}
+          statsPraBest={c.statsPraBest}
+          prev01Avg={prev?.stats01Avg ?? null}
+          prevCriAvg={prev?.statsCriAvg ?? null}
+          prevPraAvg={prev?.statsPraAvg ?? null}
+          expectedCountUp={expectedCountUp}
+        />
+      </StatsCardBoundary>
 
       {/* 5. Bull Stats */}
-      <BullStatsCard awards={c.awards} />
+      <StatsCardBoundary name="ブルスタッツ">
+        <BullStatsCard awards={c.awards} />
+      </StatsCardBoundary>
 
       {/* 6. COUNT-UP Delta */}
-      <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
+      <StatsCardBoundary name="COUNT-UPスコア推移">
+        <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
+      </StatsCardBoundary>
 
       {/* 6b. Consistency */}
-      <ConsistencyCard games={dlData.recentGames.games} />
+      <StatsCardBoundary name="安定度分析">
+        <ConsistencyCard games={dlData.recentGames.games} />
+      </StatsCardBoundary>
 
       {/* 6c. COUNT-UP Analysis */}
-      <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
+      <StatsCardBoundary name="COUNT-UP分析">
+        <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
+      </StatsCardBoundary>
 
       {/* 6d. 01 Analysis */}
-      <ZeroOneAnalysisCard games={dlData.recentGames.games} />
+      <StatsCardBoundary name="01分析">
+        <ZeroOneAnalysisCard games={dlData.recentGames.games} />
+      </StatsCardBoundary>
 
       {/* 6e. 01 Consistency */}
-      <ZeroOneConsistencyCard games={dlData.recentGames.games} />
+      <StatsCardBoundary name="01安定度">
+        <ZeroOneConsistencyCard games={dlData.recentGames.games} />
+      </StatsCardBoundary>
 
       {/* 6f. Condition × Performance Correlation */}
-      <ConditionCorrelationCard periodRecords={periodRecords} />
+      <StatsCardBoundary name="コンディション相関">
+        <ConditionCorrelationCard periodRecords={periodRecords} />
+      </StatsCardBoundary>
 
       {/* 6g. PRO Skill Radar */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
-        <SkillRadarChart
-          simpleMode
-          stats01Avg={c.stats01Avg}
-          statsCriAvg={c.statsCriAvg}
-          statsPraAvg={c.statsPraAvg}
-          dBullTotal={dBullTotal}
-          sBullTotal={sBullTotal}
-          countUpScores={countUpScores}
-          flight={c.flight || undefined}
-        />
+        <StatsCardBoundary name="スキルレーダー">
+          <SkillRadarChart
+            simpleMode
+            stats01Avg={c.stats01Avg}
+            statsCriAvg={c.statsCriAvg}
+            statsPraAvg={c.statsPraAvg}
+            dBullTotal={dBullTotal}
+            sBullTotal={sBullTotal}
+            countUpScores={countUpScores}
+            flight={c.flight || undefined}
+          />
+        </StatsCardBoundary>
       )}
 
       {/* 6h. Rating Trend */}
-      <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
+      <StatsCardBoundary name="レーティング推移">
+        <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
+      </StatsCardBoundary>
 
       {/* 7. Rating Target */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
-        <RatingTargetCard
-          stats01Avg={c.stats01Avg}
-          statsCriAvg={c.statsCriAvg}
-          flightColor={flightColor}
-        />
+        <StatsCardBoundary name="Rt目標">
+          <RatingTargetCard
+            stats01Avg={c.stats01Avg}
+            statsCriAvg={c.statsCriAvg}
+            flightColor={flightColor}
+          />
+        </StatsCardBoundary>
       )}
 
       {/* 8. Monthly Trend */}
-      <MonthlyTrendChart
-        monthly={dlData.monthly}
-        monthlyTab={monthlyTab}
-        onTabChange={onMonthlyTabChange}
-        flightColor={flightColor}
-      />
+      <StatsCardBoundary name="月間推移">
+        <MonthlyTrendChart
+          monthly={dlData.monthly}
+          monthlyTab={monthlyTab}
+          onTabChange={onMonthlyTabChange}
+          flightColor={flightColor}
+        />
+      </StatsCardBoundary>
 
       {/* 9. Recent Games */}
-      <RecentGamesChart
-        games={dlData.recentGames.games}
-        gameChartCategory={gameChartCategory}
-        onCategoryChange={onGameChartCategoryChange}
-        expectedCountUp={expectedCountUp}
-        dangerCountUp={dangerCountUp}
-        excellentCountUp={excellentCountUp}
-      />
+      <StatsCardBoundary name="最近のゲーム">
+        <RecentGamesChart
+          games={dlData.recentGames.games}
+          gameChartCategory={gameChartCategory}
+          onCategoryChange={onGameChartCategoryChange}
+          expectedCountUp={expectedCountUp}
+          dangerCountUp={dangerCountUp}
+          excellentCountUp={excellentCountUp}
+        />
+      </StatsCardBoundary>
 
       {/* 10. Recent Day Summary */}
-      <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
+      <StatsCardBoundary name="直近サマリー">
+        <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
+      </StatsCardBoundary>
 
       {/* 10b. Session Comparison */}
-      <SessionComparisonCard periodRecords={periodRecords} />
+      <StatsCardBoundary name="セッション比較">
+        <SessionComparisonCard periodRecords={periodRecords} />
+      </StatsCardBoundary>
 
       {/* 11. Awards Table */}
-      <AwardsTable awards={c.awards} />
+      <StatsCardBoundary name="アワード">
+        <AwardsTable awards={c.awards} />
+      </StatsCardBoundary>
 
       {/* 12. Active Dart */}
       {activeSoftDart && (
