@@ -77,13 +77,11 @@ function MiniMissBoard({
           'Z',
         ].join(' ');
 
-        // ラベル位置（方向名）
         const labelR = outerR * 0.52;
         const rad = ((angle - 90) * Math.PI) / 180;
         const tx = cx + labelR * Math.cos(rad);
         const ty = cy + labelR * Math.sin(rad);
 
-        // パーセンテージ位置（ラベルの少し外側）
         const pctR = outerR * 0.78;
         const px = cx + pctR * Math.cos(rad);
         const py = cy + pctR * Math.sin(rad);
@@ -141,24 +139,11 @@ function MiniMissBoard({
   );
 }
 
-/** メトリクスの差分色判定 */
-function diffColor(delta: number, inverse?: boolean): string {
-  if (Math.abs(delta) < 0.01) return 'text.secondary';
+/** 値の増減色 */
+function valColor(delta: number, inverse?: boolean): string | undefined {
+  if (Math.abs(delta) < 0.01) return undefined;
   const positive = inverse ? delta < 0 : delta > 0;
   return positive ? '#4caf50' : '#f44336';
-}
-
-/** 差分チップ */
-function DiffChip({ value, unit, inverse }: { value: number; unit: string; inverse?: boolean }) {
-  const color = diffColor(value, inverse);
-  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '→';
-  const display = `${value > 0 ? '+' : ''}${typeof value === 'number' && !Number.isInteger(value) ? value.toFixed(1) : value}${unit}`;
-
-  return (
-    <Typography component="span" sx={{ fontSize: 11, fontWeight: 'bold', color, ml: 0.5 }}>
-      {arrow} {display}
-    </Typography>
-  );
 }
 
 function formatDate(dateStr: string): string {
@@ -244,51 +229,51 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
 
   const metrics: {
     label: string;
-    prevVal: string;
-    currVal: string;
+    prev: string;
+    curr: string;
     delta: number;
     unit: string;
     inverse?: boolean;
   }[] = [
     {
       label: 'ブル率',
-      prevVal: `${prev.bullRate}%`,
-      currVal: `${current.bullRate}%`,
+      prev: `${prev.bullRate}%`,
+      curr: `${current.bullRate}%`,
       delta: deltas.bullRate,
       unit: '%',
     },
     {
       label: 'DBull率',
-      prevVal: `${prev.doubleBullRate}%`,
-      currVal: `${current.doubleBullRate}%`,
+      prev: `${prev.doubleBullRate}%`,
+      curr: `${current.doubleBullRate}%`,
       delta: Math.round((current.doubleBullRate - prev.doubleBullRate) * 10) / 10,
       unit: '%',
     },
     {
       label: 'ロートン率',
-      prevVal: `${prev.lowTonRate}%`,
-      currVal: `${current.lowTonRate}%`,
+      prev: `${prev.lowTonRate}%`,
+      curr: `${current.lowTonRate}%`,
       delta: deltas.lowTonRate,
       unit: '%',
     },
     {
       label: 'ハット率',
-      prevVal: `${prev.hatTrickRate}%`,
-      currVal: `${current.hatTrickRate}%`,
+      prev: `${prev.hatTrickRate}%`,
+      curr: `${current.hatTrickRate}%`,
       delta: deltas.hatTrickRate,
       unit: '%',
     },
     {
       label: '平均スコア',
-      prevVal: `${prev.avgScore}`,
-      currVal: `${current.avgScore}`,
+      prev: `${prev.avgScore}`,
+      curr: `${current.avgScore}`,
       delta: deltas.avgScore,
       unit: '',
     },
     {
       label: '安定度',
-      prevVal: `${prev.consistency}`,
-      currVal: `${current.consistency}`,
+      prev: `${prev.consistency}`,
+      curr: `${current.consistency}`,
       delta: deltas.consistency,
       unit: 'pt',
     },
@@ -297,8 +282,8 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
   if (prev.avgRadius > 0 || current.avgRadius > 0) {
     metrics.push({
       label: 'グルーピング',
-      prevVal: `${prev.avgRadius}mm`,
-      currVal: `${current.avgRadius}mm`,
+      prev: `${prev.avgRadius}mm`,
+      curr: `${current.avgRadius}mm`,
       delta: deltas.radius,
       unit: 'mm',
       inverse: true,
@@ -308,12 +293,15 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
   if (prev.avgSpeed > 0 || current.avgSpeed > 0) {
     metrics.push({
       label: 'スピード',
-      prevVal: `${prev.avgSpeed}km/h`,
-      currVal: `${current.avgSpeed}km/h`,
+      prev: `${prev.avgSpeed}`,
+      curr: `${current.avgSpeed}`,
       delta: deltas.speed,
       unit: 'km/h',
     });
   }
+
+  const prevDateLabel = formatDate(prev.date);
+  const currDateLabel = formatDate(current.date);
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -324,7 +312,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       {/* セッション日付ヘッダー */}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mb: 2 }}>
         <Chip
-          label={`${formatDate(prev.date)} (${prev.gameCount}G)`}
+          label={`${prevDateLabel} (${prev.gameCount}G)`}
           size="small"
           variant="outlined"
           sx={{ fontSize: 12 }}
@@ -333,7 +321,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
           vs
         </Typography>
         <Chip
-          label={`${formatDate(current.date)} (${current.gameCount}G)`}
+          label={`${currDateLabel} (${current.gameCount}G)`}
           size="small"
           color="primary"
           sx={{ fontSize: 12 }}
@@ -347,13 +335,13 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 0.5 }}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, mb: 0.5 }}>
-                {formatDate(prev.date)}
+                {prevDateLabel}
               </Typography>
               <MiniDartboardSvg heatmapData={heatmaps.prev} size={155} />
             </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, mb: 0.5 }}>
-                {formatDate(current.date)}
+                {currDateLabel}
               </Typography>
               <MiniDartboardSvg heatmapData={heatmaps.current} size={155} />
             </Box>
@@ -393,7 +381,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 1 }}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-                {formatDate(prev.date)}
+                {prevDateLabel}
               </Typography>
               <MiniMissBoard
                 directions={prev.missDirections}
@@ -406,7 +394,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
             </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-                {formatDate(current.date)}
+                {currDateLabel}
               </Typography>
               <MiniMissBoard
                 directions={current.missDirections}
@@ -424,39 +412,60 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       {/* メトリクス比較テーブル */}
       <SectionLabel>メトリクス比較</SectionLabel>
       <Box
+        component="table"
         sx={{
-          display: 'grid',
-          gridTemplateColumns: '80px 1fr auto 1fr',
-          gap: '4px 6px',
-          alignItems: 'center',
-          px: 0.5,
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: 13,
+          '& th, & td': {
+            py: 0.6,
+            px: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          },
+          '& th': {
+            fontWeight: 'bold',
+            fontSize: 11,
+            color: 'text.secondary',
+            textAlign: 'center',
+          },
+          '& td': {
+            textAlign: 'center',
+          },
+          '& td:first-of-type': {
+            textAlign: 'left',
+            color: 'text.secondary',
+            fontSize: 12,
+          },
         }}
       >
-        {metrics.map((m) => {
-          const color = diffColor(m.delta, m.inverse);
-          return (
-            <Box key={m.label} sx={{ display: 'contents' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                {m.label}
-              </Typography>
-              <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.6, fontSize: 13 }}>
-                {m.prevVal}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ textAlign: 'center', px: 0.5, opacity: 0.4, fontSize: 12 }}
-              >
-                →
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 13, color }}>
-                  {m.currVal}
-                </Typography>
-                <DiffChip value={m.delta} unit={m.unit} inverse={m.inverse} />
-              </Box>
-            </Box>
-          );
-        })}
+        <thead>
+          <tr>
+            <Box component="th" sx={{ textAlign: 'left !important', width: 80 }} />
+            <th>{prevDateLabel}</th>
+            <th>{currDateLabel}</th>
+            <th>差分</th>
+          </tr>
+        </thead>
+        <tbody>
+          {metrics.map((m) => {
+            const color = valColor(m.delta, m.inverse);
+            const arrow = m.delta > 0 ? '↑' : m.delta < 0 ? '↓' : '';
+            const deltaStr = `${m.delta > 0 ? '+' : ''}${!Number.isInteger(m.delta) ? m.delta.toFixed(1) : m.delta}${m.unit}`;
+            return (
+              <tr key={m.label}>
+                <td>{m.label}</td>
+                <td>{m.prev}</td>
+                <Box component="td" sx={{ fontWeight: 'bold', color }}>
+                  {m.curr}
+                </Box>
+                <Box component="td" sx={{ fontWeight: 'bold', color, fontSize: 11 }}>
+                  {arrow} {deltaStr}
+                </Box>
+              </tr>
+            );
+          })}
+        </tbody>
       </Box>
 
       {/* スコア分布比較 */}

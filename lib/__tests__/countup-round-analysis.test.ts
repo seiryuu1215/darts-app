@@ -4,6 +4,7 @@ import {
   computeRoundAverages,
   detectRoundPatterns,
   analyzeRounds,
+  analyzeRoundBulls,
   type RoundScore,
 } from '../countup-round-analysis';
 
@@ -116,6 +117,53 @@ describe('detectRoundPatterns', () => {
       minScore: avg - 10,
     }));
     expect(detectRoundPatterns(rounds).pattern).toBe('improving');
+  });
+});
+
+describe('analyzeRoundBulls', () => {
+  it('空配列では全て0', () => {
+    const result = analyzeRoundBulls([]);
+    expect(result.totalRounds).toBe(0);
+    expect(result.hatTrickCount).toBe(0);
+    expect(result.lowTonCount).toBe(0);
+    expect(result.hatTrickRate).toBe(0);
+    expect(result.lowTonRate).toBe(0);
+  });
+
+  it('ハットトリック（1ラウンド3ブル）を検出', () => {
+    // R1=BB,BB,BB (3 bulls = hat trick), R2-R8 はS1
+    const log = 'BB,BB,BB,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
+    const result = analyzeRoundBulls([log]);
+    expect(result.totalRounds).toBe(8);
+    expect(result.hatTrickCount).toBe(1);
+    expect(result.lowTonCount).toBe(0);
+    expect(result.hatTrickRate).toBeCloseTo(12.5, 1); // 1/8 * 100
+  });
+
+  it('ロートン（1ラウンド2ブル）を検出', () => {
+    // R1=BB,B,S1 (2 bulls = low ton), R2-R8 はS1
+    const log = 'BB,B,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
+    const result = analyzeRoundBulls([log]);
+    expect(result.totalRounds).toBe(8);
+    expect(result.hatTrickCount).toBe(0);
+    expect(result.lowTonCount).toBe(1);
+    expect(result.lowTonRate).toBeCloseTo(12.5, 1);
+  });
+
+  it('複数ゲームのラウンドを正しく集計', () => {
+    const log1 = 'BB,BB,BB,BB,B,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
+    const log2 = 'S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
+    const result = analyzeRoundBulls([log1, log2]);
+    expect(result.totalRounds).toBe(16); // 8*2
+    expect(result.hatTrickCount).toBe(1); // log1 R1
+    expect(result.lowTonCount).toBe(1); // log1 R2 (BB,B = 2 bulls)
+  });
+
+  it('1ブルのみのラウンドはカウントされない', () => {
+    const log = 'BB,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1,S1';
+    const result = analyzeRoundBulls([log]);
+    expect(result.hatTrickCount).toBe(0);
+    expect(result.lowTonCount).toBe(0);
   });
 });
 

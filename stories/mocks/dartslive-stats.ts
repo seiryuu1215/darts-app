@@ -502,26 +502,90 @@ export interface CountUpPlay {
   dl3Speed: number;
 }
 
+/** seeded pseudo-random（Storybook再現性のため） */
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
+}
+
+/** ダーツコード形式のplayLogを生成（24本カンマ区切り） */
+function generatePlayLog(rand: () => number): { log: string; score: number } {
+  const dartCodes: string[] = [];
+  const numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  let score = 0;
+
+  for (let i = 0; i < 24; i++) {
+    const r = rand();
+    let code: string;
+    let pts: number;
+
+    if (r < 0.08) {
+      // ダブルブル 8%
+      code = 'BB';
+      pts = 50;
+    } else if (r < 0.2) {
+      // シングルブル 12%
+      code = 'B';
+      pts = 25;
+    } else if (r < 0.25) {
+      // アウト 5%
+      code = 'O';
+      pts = 0;
+    } else if (r < 0.35) {
+      // トリプル 10%
+      const n = numbers[Math.floor(rand() * 20)];
+      code = `T${n}`;
+      pts = n * 3;
+    } else if (r < 0.42) {
+      // ダブル 7%
+      const n = numbers[Math.floor(rand() * 20)];
+      code = `D${n}`;
+      pts = n * 2;
+    } else if (r < 0.65) {
+      // アウターシングル 23%
+      const n = numbers[Math.floor(rand() * 20)];
+      code = `S${n}`;
+      pts = n;
+    } else {
+      // インナーシングル 35%
+      const n = numbers[Math.floor(rand() * 20)];
+      code = `I${n}`;
+      pts = n;
+    }
+
+    dartCodes.push(code);
+    score += pts;
+  }
+
+  return { log: dartCodes.join(','), score };
+}
+
+/** 2日分×35ゲーム = 70件のCountUpPlayを生成（SessionCompareCard対応） */
 function generateCountUpPlays(): CountUpPlay[] {
   const plays: CountUpPlay[] = [];
-  const baseDate = new Date('2025-12-01T18:00:00');
-  for (let i = 0; i < 20; i++) {
-    const d = new Date(baseDate.getTime() + i * 1000 * 60 * 15);
-    const score = Math.round(480 + Math.random() * 140);
-    const vx = +(Math.random() * 20 - 10).toFixed(1);
-    const vy = +(Math.random() * 16 - 6).toFixed(1);
-    const radius = +(20 + Math.random() * 25).toFixed(1);
-    const speed = +(10 + Math.random() * 6).toFixed(1);
-    plays.push({
-      time: d.toISOString(),
-      score,
-      playLog: `R1:${Math.round(score * 0.11)} R2:${Math.round(score * 0.14)} R3:${Math.round(score * 0.12)} R4:${Math.round(score * 0.13)} R5:${Math.round(score * 0.11)} R6:${Math.round(score * 0.13)} R7:${Math.round(score * 0.14)} R8:${Math.round(score * 0.12)}`,
-      dl3VectorX: vx,
-      dl3VectorY: vy,
-      dl3Radius: radius,
-      dl3Speed: speed,
-    });
+  const rand = seededRandom(42);
+  const days = ['2025-12-01', '2025-12-05'];
+
+  for (const day of days) {
+    for (let i = 0; i < 35; i++) {
+      const hour = 18 + Math.floor(i / 8);
+      const min = (i % 8) * 7;
+      const { log, score } = generatePlayLog(rand);
+      plays.push({
+        time: `${day} ${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:00`,
+        score,
+        playLog: log,
+        dl3VectorX: +(rand() * 20 - 10).toFixed(1),
+        dl3VectorY: +(rand() * 16 - 6).toFixed(1),
+        dl3Radius: +(20 + rand() * 25).toFixed(1),
+        dl3Speed: +(10 + rand() * 6).toFixed(1),
+      });
+    }
   }
+
   return plays;
 }
 
