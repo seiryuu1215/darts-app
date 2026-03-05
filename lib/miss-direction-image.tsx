@@ -22,40 +22,36 @@ function labelPos(angleDeg: number, r: number): { x: number; y: number } {
   return { x: Math.cos(rad) * r, y: Math.sin(rad) * r };
 }
 
-// SVG円弧パス生成
-function pieSlicePath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
-  if (endDeg - startDeg >= 359.99) {
-    // ほぼ全周 → 2つの半円で描画
-    const r1 = ((startDeg - 90) * Math.PI) / 180;
-    const r2 = ((startDeg + 180 - 90) * Math.PI) / 180;
-    const x1 = cx + Math.cos(r1) * r;
-    const y1 = cy + Math.sin(r1) * r;
-    const x2 = cx + Math.cos(r2) * r;
-    const y2 = cy + Math.sin(r2) * r;
-    return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} A ${r} ${r} 0 0 1 ${x1} ${y1} Z`;
-  }
-  const r1 = ((startDeg - 90) * Math.PI) / 180;
-  const r2 = ((endDeg - 90) * Math.PI) / 180;
-  const x1 = cx + Math.cos(r1) * r;
-  const y1 = cy + Math.sin(r1) * r;
-  const x2 = cx + Math.cos(r2) * r;
-  const y2 = cy + Math.sin(r2) * r;
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+/** レーダーバー（ウェッジ）のSVGパスを生成（画面のMissDirectionCardと同じ形状） */
+function wedgePath(
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+  angleDeg: number,
+  halfSpan: number,
+): string {
+  const sa = ((angleDeg - halfSpan - 90) * Math.PI) / 180;
+  const ea = ((angleDeg + halfSpan - 90) * Math.PI) / 180;
+  const x1 = cx + innerR * Math.cos(sa);
+  const y1 = cy + innerR * Math.sin(sa);
+  const x2 = cx + outerR * Math.cos(sa);
+  const y2 = cy + outerR * Math.sin(sa);
+  const x3 = cx + outerR * Math.cos(ea);
+  const y3 = cy + outerR * Math.sin(ea);
+  const x4 = cx + innerR * Math.cos(ea);
+  const y4 = cy + innerR * Math.sin(ea);
+  return [
+    `M ${x1} ${y1}`,
+    `L ${x2} ${y2}`,
+    `A ${outerR} ${outerR} 0 0 1 ${x3} ${y3}`,
+    `L ${x4} ${y4}`,
+    `A ${innerR} ${innerR} 0 0 0 ${x1} ${y1}`,
+    'Z',
+  ].join(' ');
 }
 
-const SLICE_COLORS = [
-  '#7B1FA2',
-  '#5C6BC0',
-  '#42A5F5',
-  '#26C6DA',
-  '#66BB6A',
-  '#FFA726',
-  '#EF5350',
-  '#AB47BC',
-];
-
-/** ミス方向分析画像を生成 (800×680, ダークテーマ, 円グラフ + ヒートマップ) */
+/** ミス方向分析画像を生成（画面のMissDirectionCardと同じデザイン） */
 export async function generateMissDirectionImage(
   result: MissDirectionResult,
   date: string,
@@ -63,12 +59,7 @@ export async function generateMissDirectionImage(
 ): Promise<Buffer> {
   const fonts = await loadNotoSansJPFonts();
 
-  // 8方向をパーセンテージ降順ソート
-  const sortedDirs = [...result.directions]
-    .filter((d) => d.count > 0)
-    .sort((a, b) => b.percentage - a.percentage);
-
-  const totalPct = sortedDirs.reduce((s, d) => s + d.percentage, 0);
+  const maxPct = Math.max(...result.directions.map((d) => d.percentage), 1);
   const topMiss = result.topMissNumbers.slice(0, 3);
 
   // ヒートマップTOP5セグメント
@@ -90,28 +81,11 @@ export async function generateMissDirectionImage(
   const hasHeatmap = top5Segments.length > 0;
   const imageHeight = hasHeatmap ? 680 : 600;
 
-  // 円グラフ用スライスデータ
+  // レーダーチャートの寸法（画面と同じ構造）
   const cx = 220;
-  const cy = 200;
-  const r = 150;
-  let cumAngle = 0;
-  const slices = sortedDirs.map((d, i) => {
-    const angle = totalPct > 0 ? (d.percentage / totalPct) * 360 : 0;
-    const startAngle = cumAngle;
-    cumAngle += angle;
-    const midAngle = startAngle + angle / 2;
-    return {
-      ...d,
-      startAngle,
-      endAngle: cumAngle,
-      midAngle,
-      color:
-        d.label === result.primaryDirection
-          ? '#7B1FA2'
-          : SLICE_COLORS[(i + 1) % SLICE_COLORS.length],
-      isPrimary: d.label === result.primaryDirection,
-    };
-  });
+  const cy = 210;
+  const outerR = 150;
+  const innerR = 45;
 
   const response = new ImageResponse(
     <div
@@ -120,7 +94,7 @@ export async function generateMissDirectionImage(
         height: `${imageHeight}px`,
         display: 'flex',
         flexDirection: 'column',
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        background: '#0f1923',
         color: '#fff',
         fontFamily: 'Noto Sans JP, sans-serif',
         padding: '20px 28px',
@@ -135,10 +109,9 @@ export async function generateMissDirectionImage(
           marginBottom: '2px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '24px' }}>🎯</span>
-          <span style={{ fontSize: '22px', fontWeight: 700, color: '#CE93D8' }}>ミス方向分析</span>
-        </div>
+        <span style={{ fontSize: '22px', fontWeight: 700, color: '#e0e0e0' }}>
+          ミス方向分析（ブル狙い）
+        </span>
         <span style={{ fontSize: '16px', color: '#aaa' }}>{result.totalDarts}本</span>
       </div>
 
@@ -148,101 +121,134 @@ export async function generateMissDirectionImage(
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '16px',
+          marginBottom: '12px',
         }}
       >
         <span style={{ fontSize: '15px', color: '#aaa' }}>{date}</span>
         <div style={{ display: 'flex', gap: '20px', fontSize: '16px' }}>
           <span style={{ color: '#e0e0e0' }}>
             ブル率{' '}
-            <span style={{ fontWeight: 700, color: '#4CAF50' }}>{result.bullRate.toFixed(1)}%</span>
+            <span style={{ fontWeight: 700, color: '#4caf50' }}>{result.bullRate.toFixed(1)}%</span>
           </span>
           <span style={{ color: '#e0e0e0' }}>
             Dブル率{' '}
-            <span style={{ fontWeight: 700, color: '#4CAF50' }}>
+            <span style={{ fontWeight: 700, color: '#4caf50' }}>
               {result.doubleBullRate.toFixed(1)}%
             </span>
           </span>
         </div>
       </div>
 
-      {/* メインエリア: 円グラフ + 凡例 */}
+      {/* メインエリア: レーダーチャート + 凡例 */}
       <div style={{ display: 'flex', flex: 1 }}>
-        {/* 円グラフ SVG + HTMLラベル */}
+        {/* レーダーチャート */}
         <div
           style={{
             display: 'flex',
             width: '440px',
-            height: '400px',
+            height: '420px',
             position: 'relative',
           }}
         >
-          <svg width="440" height="400" viewBox="0 0 440 400">
-            {/* 外周円（背景） */}
-            <circle cx={cx} cy={cy} r={r + 2} fill="none" stroke="#333" strokeWidth="1" />
+          <svg width="440" height="420" viewBox="0 0 440 420">
+            {/* 同心円ガイド */}
+            <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#333" strokeWidth="1" />
+            <circle cx={cx} cy={cy} r={outerR * 0.66} fill="none" stroke="#222" strokeWidth="0.5" />
+            <circle cx={cx} cy={cy} r={outerR * 0.33} fill="none" stroke="#222" strokeWidth="0.5" />
 
-            {/* スライス */}
-            {slices.map((s) => (
-              <path
-                key={s.label}
-                d={pieSlicePath(cx, cy, s.isPrimary ? r + 8 : r, s.startAngle, s.endAngle)}
-                fill={s.color}
-                stroke="#1a1a2e"
-                strokeWidth="2"
-              />
-            ))}
+            {/* 方向別ウェッジ（画面と同じレーダーバー） */}
+            {result.directions
+              .filter((d) => d.count > 0)
+              .map((d) => {
+                const angle = DIR_ANGLES[d.label];
+                if (angle == null) return null;
+                const intensity = d.percentage / maxPct;
+                const isPrimary = d.label === result.primaryDirection;
+                const barR = innerR + (outerR - innerR) * intensity;
+                const fillOpacity = 0.15 + intensity * 0.55;
+                return (
+                  <path
+                    key={d.label}
+                    d={wedgePath(cx, cy, innerR, barR, angle, 22.5)}
+                    fill={isPrimary ? '#f44336' : '#ef5350'}
+                    fillOpacity={fillOpacity}
+                    stroke={isPrimary ? '#f44336' : '#444'}
+                    strokeWidth={isPrimary ? 1.5 : 0.5}
+                  />
+                );
+              })}
 
-            {/* 中心円（ドーナツ風） */}
-            <circle cx={cx} cy={cy} r="55" fill="#1a1a2e" />
-            <circle cx={cx} cy={cy} r="55" fill="none" stroke="#333" strokeWidth="1" />
+            {/* 中心BULLサークル（画面と同じ緑） */}
+            <circle cx={cx} cy={cy} r={innerR} fill="rgba(76,175,80,0.25)" />
+            <circle cx={cx} cy={cy} r={innerR} fill="none" stroke="#4caf50" strokeWidth="2" />
           </svg>
 
-          {/* 中心テキスト: 主傾向（HTMLで描画） */}
+          {/* 中心テキスト: BULL率（HTMLで描画） */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               position: 'absolute',
-              left: `${cx - 50}px`,
-              top: `${cy - 20}px`,
-              width: '100px',
+              left: `${cx - 40}px`,
+              top: `${cy - 24}px`,
+              width: '80px',
               alignItems: 'center',
             }}
           >
-            <span style={{ fontSize: '20px', fontWeight: 700, color: '#CE93D8' }}>
-              {result.primaryDirection}
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#4caf50' }}>BULL</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: '#4caf50' }}>
+              {result.bullRate.toFixed(1)}%
             </span>
-            <span style={{ fontSize: '14px', color: '#aaa' }}>
-              {(result.directionStrength * 100).toFixed(0)}%
+            <span style={{ fontSize: '10px', color: '#888' }}>
+              BB:{result.doubleBullRate.toFixed(1)}%
             </span>
           </div>
 
-          {/* 8方向ラベル（HTMLで描画） */}
+          {/* 8方向ラベル + パーセンテージ（HTMLで描画） */}
           {Object.entries(DIR_ANGLES).map(([dir, angle]) => {
-            const pos = labelPos(angle, r + 35);
-            const hasData = sortedDirs.some((d) => d.label === dir);
+            const dirData = result.directions.find((d) => d.label === dir);
+            const isPrimary = dir === result.primaryDirection;
+            const midR = outerR * 0.58;
+            const pos = labelPos(angle, midR);
             return (
               <div
                 key={dir}
                 style={{
                   display: 'flex',
+                  flexDirection: 'column',
                   position: 'absolute',
-                  left: `${cx + pos.x - 20}px`,
-                  top: `${cy + pos.y - 5}px`,
-                  width: '40px',
-                  justifyContent: 'center',
-                  fontSize: '15px',
-                  color: hasData ? '#e0e0e0' : '#555',
-                  fontWeight: dir === result.primaryDirection ? 700 : 400,
+                  left: `${cx + pos.x - 24}px`,
+                  top: `${cy + pos.y - 16}px`,
+                  width: '48px',
+                  alignItems: 'center',
                 }}
               >
-                {dir}
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: isPrimary ? '#f44336' : '#aaa',
+                    fontWeight: isPrimary ? 700 : 400,
+                  }}
+                >
+                  {dir}
+                </span>
+                {dirData && dirData.count > 0 && (
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: isPrimary ? '#ff8a80' : '#ccc',
+                    }}
+                  >
+                    {dirData.percentage.toFixed(1)}%
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* 凡例 + TOP3 */}
+        {/* 右側: 主傾向 + TOP3ミスナンバー */}
         <div
           style={{
             display: 'flex',
@@ -250,49 +256,64 @@ export async function generateMissDirectionImage(
             flex: 1,
             paddingLeft: '16px',
             justifyContent: 'center',
-            gap: '8px',
+            gap: '12px',
           }}
         >
-          {/* 凡例 */}
-          {slices.map((s) => (
-            <div
-              key={s.label}
+          {/* 主傾向 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span style={{ fontSize: '14px', color: '#888' }}>主傾向</span>
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '16px',
+                fontSize: '20px',
+                fontWeight: 700,
+                color: result.directionStrength > 0.1 ? '#f44336' : '#ff9800',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '3px',
-                  background: s.color,
-                }}
-              />
-              <span
-                style={{
-                  color: s.isPrimary ? '#fff' : '#ccc',
-                  fontWeight: s.isPrimary ? 700 : 400,
-                  width: '40px',
-                }}
-              >
-                {s.label}
-              </span>
-              <span
-                style={{
-                  color: s.isPrimary ? '#CE93D8' : '#aaa',
-                  fontWeight: s.isPrimary ? 700 : 400,
-                }}
-              >
-                {s.percentage.toFixed(1)}%
-              </span>
-              {s.isPrimary && <span style={{ color: '#FFD54F', fontSize: '14px' }}>★</span>}
-            </div>
-          ))}
+              {result.directionStrength > 0.05 ? `${result.primaryDirection}方向` : 'ミス均等'}
+            </span>
+            <span style={{ fontSize: '14px', color: '#aaa' }}>
+              偏り強度: {(result.directionStrength * 100).toFixed(0)}%
+            </span>
+          </div>
+
+          {/* 方向別一覧（パーセンテージ降順） */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {[...result.directions]
+              .filter((d) => d.count > 0)
+              .sort((a, b) => b.percentage - a.percentage)
+              .map((d) => {
+                const isPrimary = d.label === result.primaryDirection;
+                return (
+                  <div
+                    key={d.label}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '15px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '36px',
+                        color: isPrimary ? '#f44336' : '#ccc',
+                        fontWeight: isPrimary ? 700 : 400,
+                      }}
+                    >
+                      {d.label}
+                    </span>
+                    <span
+                      style={{
+                        color: isPrimary ? '#ff8a80' : '#aaa',
+                        fontWeight: isPrimary ? 700 : 400,
+                      }}
+                    >
+                      {d.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
 
           {/* TOP3ミスナンバー */}
           {topMiss.length > 0 && (
@@ -300,7 +321,7 @@ export async function generateMissDirectionImage(
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                marginTop: '16px',
+                marginTop: '8px',
                 gap: '4px',
               }}
             >
@@ -310,7 +331,7 @@ export async function generateMissDirectionImage(
                   key={m.number}
                   style={{
                     fontSize: '16px',
-                    color: i === 0 ? '#FFB74D' : '#bbb',
+                    color: i === 0 ? '#ff9800' : '#bbb',
                     fontWeight: i === 0 ? 700 : 400,
                   }}
                 >
@@ -337,8 +358,8 @@ export async function generateMissDirectionImage(
             TOP5セグメント
           </span>
           {top5Segments.map((seg) => {
-            const maxPct = top5Segments[0].percentage * 1.1;
-            const barWidth = Math.max(4, (seg.percentage / maxPct) * 100);
+            const maxSegPct = top5Segments[0].percentage * 1.1;
+            const barWidth = Math.max(4, (seg.percentage / maxSegPct) * 100);
             return (
               <div
                 key={seg.label}
@@ -385,11 +406,11 @@ export async function generateMissDirectionImage(
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '6px',
+          marginTop: 'auto',
           justifyContent: 'flex-end',
         }}
       >
-        <span style={{ fontSize: '16px' }}>🎯</span>
         <span style={{ fontSize: '14px', fontWeight: 700, color: '#1976d2' }}>Darts Lab</span>
       </div>
     </div>,

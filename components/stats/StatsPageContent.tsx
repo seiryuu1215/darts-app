@@ -280,8 +280,8 @@ export default function StatsPageContent({
             stats01Avg={c.stats01Avg}
             statsCriAvg={c.statsCriAvg}
             statsPraAvg={c.statsPraAvg}
-            bullRate={radarBullStats?.bullRate}
-            noBullRate={radarBullStats?.noBullRate}
+            bullRate={radarBullStats?.bullRate ?? enrichedData?.stats01Detailed?.bullRate ?? null}
+            noBullRate={radarBullStats?.noBullRate ?? null}
             flight={c.flight || undefined}
           />
         </StatsCardBoundary>
