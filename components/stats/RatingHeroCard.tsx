@@ -130,6 +130,7 @@ export default function RatingHeroCard({
                         href={mapUrl}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label="Google Mapsで開く"
                         sx={{ p: 0 }}
                       >
                         <PlaceIcon sx={{ fontSize: 13, color: 'primary.main' }} />

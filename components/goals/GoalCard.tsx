@@ -61,7 +61,12 @@ export default function GoalCard({ goal, onDelete, onAchieve }: GoalCardProps) {
             />
           </Box>
           {onDelete && (
-            <IconButton size="small" onClick={() => onDelete(goal.id)} sx={{ p: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => onDelete(goal.id)}
+              aria-label="目標を削除"
+              sx={{ p: 0.5 }}
+            >
               <DeleteIcon fontSize="small" />
             </IconButton>
           )}

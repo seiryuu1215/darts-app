@@ -733,7 +733,11 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
                     {memo.createdAt?.toDate?.().toLocaleString('ja-JP') || ''}
                   </Typography>
                 </Box>
-                <IconButton size="small" onClick={() => handleDeleteMemo(memo.id!)}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteMemo(memo.id!)}
+                  aria-label="メモを削除"
+                >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Box>

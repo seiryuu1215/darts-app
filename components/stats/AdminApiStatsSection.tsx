@@ -197,6 +197,7 @@ function CollapsibleSection({
               e.stopPropagation();
               setAnchorEl(e.currentTarget);
             }}
+            aria-label="表示カード設定"
             sx={{ p: 0 }}
           >
             <TuneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />

@@ -184,7 +184,11 @@ const ShopCard = React.memo(function ShopCard({
               >
                 <DirectionsIcon fontSize="small" />
               </IconButton>
-              <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}>
+              <IconButton
+                size="small"
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                aria-label="メニュー"
+              >
                 <MoreVertIcon fontSize="small" />
               </IconButton>
             </Box>
