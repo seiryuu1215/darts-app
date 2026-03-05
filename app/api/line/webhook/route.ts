@@ -7,10 +7,26 @@ import {
   getConditionLabel,
   buildCompletionMessage,
   buildStatsFlexMessage,
+  buildDailyCarouselMessage,
+  buildMissDirectionFlexBubble,
+  buildHeatmapSummaryFlexBubble,
+  buildSessionComparisonFlexBubble,
+  buildRecommendationsFlexBubble,
+  buildRoundPatternFlexBubble,
+  buildTrendFlexBubble,
+  extractBubble,
+  type TrendBubbleInput,
 } from '@/lib/line';
 import { decrypt } from '@/lib/crypto';
 import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
+import type { CountUpPlayData } from '@/lib/dartslive-api';
 import type { ScrapedStats } from '@/lib/dartslive-scraper';
+import { analyzeMissDirection, calculateConsistency } from '@/lib/stats-math';
+import { computeSegmentFrequency } from '@/lib/heatmap-data';
+import { analyzeRounds } from '@/lib/countup-round-analysis';
+import { generateRecommendations, type RecommendationInput } from '@/lib/practice-recommendations';
+import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
+import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 
 export const maxDuration = 60;
 
@@ -26,9 +42,20 @@ async function getConversation(lineUserId: string) {
   const ref = adminDb.doc(`lineConversations/${lineUserId}`);
   const snap = await ref.get();
   if (!snap.exists)
-    return { state: 'idle' as const, pendingStats: null, condition: null, memo: null, pendingMemo: null };
+    return {
+      state: 'idle' as const,
+      pendingStats: null,
+      condition: null,
+      memo: null,
+      pendingMemo: null,
+    };
   return snap.data() as {
-    state: 'idle' | 'waiting_condition' | 'waiting_memo' | 'waiting_challenge' | 'waiting_practice_memo';
+    state:
+      | 'idle'
+      | 'waiting_condition'
+      | 'waiting_memo'
+      | 'waiting_challenge'
+      | 'waiting_practice_memo';
     pendingStats: Record<string, unknown> | null;
     condition: number | null;
     memo: string | null;
@@ -157,6 +184,12 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
           '📊 「取得」',
           '  → DARTSLIVEスタッツを今すぐ取得',
           '',
+          '🎯 「分析」',
+          '  → COUNT-UPデータの詳細分析',
+          '',
+          '📈 「トレンド」(Pro以上)',
+          '  → Ratingトレンド分析',
+          '',
           '📝 「メモ」',
           '  → 練習メモを保存（次回スタッツに紐づけ）',
           '',
@@ -167,6 +200,18 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
         ].join('\n'),
       },
     ]);
+    return;
+  }
+
+  // 「分析」コマンド: CUデータからオンデマンド分析（reply = プッシュ消費なし）
+  if (trimmed === '分析') {
+    await handleAnalysis(event.replyToken, lineUserId);
+    return;
+  }
+
+  // 「トレンド」コマンド: Rating トレンド分析（Pro以上限定、reply）
+  if (trimmed === 'トレンド') {
+    await handleTrend(event.replyToken, lineUserId);
     return;
   }
 
@@ -391,9 +436,7 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
     if (userData.role === 'admin') {
       // admin: DARTSLIVE API を優先使用（cronと同一パス）
       try {
-        const apiCacheDoc = await adminDb
-          .doc(`users/${user.id}/dartsliveApiCache/latest`)
-          .get();
+        const apiCacheDoc = await adminDb.doc(`users/${user.id}/dartsliveApiCache/latest`).get();
         const existingLastSync = apiCacheDoc.exists
           ? (apiCacheDoc.data()?.lastSyncAt?.toDate?.()?.toISOString() ?? null)
           : null;
@@ -518,8 +561,7 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
 
 /** Puppeteerでスタッツ取得（非admin / APIフォールバック共用） */
 async function fetchStatsByScraper(dlEmail: string, dlPassword: string): Promise<ScrapedStats> {
-  const { launchBrowser, createPage, login, scrapeStats } =
-    await import('@/lib/dartslive-scraper');
+  const { launchBrowser, createPage, login, scrapeStats } = await import('@/lib/dartslive-scraper');
 
   const browser = await launchBrowser();
   try {
@@ -601,4 +643,194 @@ async function handleLinkCode(replyToken: string, lineUserId: string, code: stri
       text: `アカウント連携が完了しました！\n${displayName} さん、こんにちは。\n\n毎朝10時にDARTSLIVEをチェックして、プレイがあればここに通知します。`,
     },
   ]);
+}
+
+/** 「分析」コマンド: キャッシュ済みCUデータからオンデマンド分析 */
+async function handleAnalysis(replyToken: string, lineUserId: string) {
+  const user = await findUserByLineId(lineUserId);
+  if (!user) {
+    await replyLineMessage(replyToken, [
+      { type: 'text', text: 'アカウントが連携されていません。' },
+    ]);
+    return;
+  }
+
+  try {
+    const cuCacheDoc = await adminDb.doc(`users/${user.id}/dartsliveApiCache/countupPlays`).get();
+
+    if (!cuCacheDoc.exists) {
+      await replyLineMessage(replyToken, [
+        { type: 'text', text: 'COUNT-UPデータがまだありません。プレイ後に自動で蓄積されます。' },
+      ]);
+      return;
+    }
+
+    const allPlays: CountUpPlayData[] = JSON.parse(cuCacheDoc.data()?.data ?? '[]');
+    if (allPlays.length === 0) {
+      await replyLineMessage(replyToken, [{ type: 'text', text: 'COUNT-UPデータがありません。' }]);
+      return;
+    }
+
+    const userRole = ((user as Record<string, unknown>).role as string) || 'general';
+
+    // 直近のプレイを取得（最新50ゲーム）
+    const recentPlays = allPlays.slice(-Math.min(allPlays.length, 50));
+    const playLogs = recentPlays.map((p) => p.playLog);
+
+    const bubbles: object[] = [];
+
+    // ミス方向分析（全ロール共通）
+    const missResult = analyzeMissDirection(playLogs);
+    if (missResult) {
+      bubbles.push(buildMissDirectionFlexBubble(missResult));
+    }
+
+    // セッション比較（Pro/Admin限定）
+    if (userRole === 'pro' || userRole === 'admin') {
+      const comparison = compareLastTwoSessions(allPlays, 30);
+      if (comparison) {
+        bubbles.push(buildSessionComparisonFlexBubble(comparison));
+      }
+    }
+
+    // ヒートマップ（Admin限定）
+    if (userRole === 'admin') {
+      const heatmap = computeSegmentFrequency(playLogs);
+      if (heatmap.totalDarts > 0) {
+        bubbles.push(buildHeatmapSummaryFlexBubble(heatmap));
+      }
+    }
+
+    // ラウンドパターン（Admin限定）
+    const roundAnalysis = analyzeRounds(playLogs);
+    if (userRole === 'admin' && roundAnalysis) {
+      bubbles.push(buildRoundPatternFlexBubble(roundAnalysis));
+    }
+
+    // レコメンデーション（全ロール共通）
+    const cuScores = recentPlays.map((p) => p.score);
+    const cuCon = calculateConsistency(cuScores);
+    const dl3Plays = recentPlays.filter(
+      (p) => p.dl3VectorX !== 0 || p.dl3VectorY !== 0 || p.dl3Radius !== 0,
+    );
+    const avgRadius =
+      dl3Plays.length > 0 ? dl3Plays.reduce((s, p) => s + p.dl3Radius, 0) / dl3Plays.length : null;
+
+    const recInput: RecommendationInput = {
+      ppd: null,
+      bullRate: missResult?.bullRate ?? null,
+      arrangeRate: null,
+      avgBust: null,
+      mpr: null,
+      tripleRate: null,
+      openCloseRate: null,
+      countupAvg: cuScores.length > 0 ? cuScores.reduce((a, b) => a + b, 0) / cuScores.length : 0,
+      countupConsistency: cuCon?.score ?? null,
+      primaryMissDirection: missResult?.primaryDirection ?? null,
+      directionStrength: missResult?.directionStrength ?? null,
+      avgRadius,
+      radiusImprovement: null,
+      avgSpeed: null,
+      optimalSessionLength: null,
+      peakGameNumber: null,
+      roundPattern: roundAnalysis?.pattern.pattern ?? null,
+      worstRound: roundAnalysis?.worstRound ?? null,
+    };
+
+    const maxRecs = userRole === 'admin' ? 3 : 2;
+    const recs = generateRecommendations(recInput);
+    if (recs.length > 0) {
+      bubbles.push(buildRecommendationsFlexBubble(recs, maxRecs));
+    }
+
+    if (bubbles.length === 0) {
+      await replyLineMessage(replyToken, [
+        { type: 'text', text: '分析に必要なデータが不足しています。' },
+      ]);
+      return;
+    }
+
+    const carouselMsg = buildDailyCarouselMessage(bubbles);
+    await replyLineMessage(replyToken, [carouselMsg]);
+  } catch (err) {
+    console.error('Analysis command error:', err);
+    await replyLineMessage(replyToken, [{ type: 'text', text: '分析中にエラーが発生しました。' }]);
+  }
+}
+
+/** 「トレンド」コマンド: Ratingトレンド分析（Pro以上限定） */
+async function handleTrend(replyToken: string, lineUserId: string) {
+  const user = await findUserByLineId(lineUserId);
+  if (!user) {
+    await replyLineMessage(replyToken, [
+      { type: 'text', text: 'アカウントが連携されていません。' },
+    ]);
+    return;
+  }
+
+  const userData = user as Record<string, unknown>;
+  const role = (userData.role as string) ?? 'general';
+  if (role !== 'pro' && role !== 'admin') {
+    await replyLineMessage(replyToken, [
+      { type: 'text', text: 'トレンド分析はProプラン以上の機能です。' },
+    ]);
+    return;
+  }
+
+  try {
+    const statsSnap = await adminDb
+      .collection(`users/${user.id}/dartsLiveStats`)
+      .orderBy('date', 'desc')
+      .limit(60)
+      .get();
+
+    if (statsSnap.size < 7) {
+      await replyLineMessage(replyToken, [
+        { type: 'text', text: 'トレンド分析には7日以上のデータが必要です。' },
+      ]);
+      return;
+    }
+
+    const dataPoints = statsSnap.docs
+      .map((doc) => {
+        const d = doc.data();
+        const dateVal = d.date?.toDate?.() ?? (d.date ? new Date(d.date) : null);
+        return {
+          date: dateVal ? dateVal.toISOString().split('T')[0] : doc.id,
+          value: d.rating as number | null,
+        };
+      })
+      .filter((d) => d.value != null)
+      .reverse();
+
+    if (dataPoints.length < 7) {
+      await replyLineMessage(replyToken, [
+        { type: 'text', text: 'Rating データが不足しています。' },
+      ]);
+      return;
+    }
+
+    const smaData = computeSMA(dataPoints);
+    const crosses = detectCrosses(smaData);
+    const trend = classifyTrend(smaData);
+    const latest = smaData[smaData.length - 1];
+
+    const input: TrendBubbleInput = {
+      metric: 'Rating',
+      currentValue: dataPoints[dataPoints.length - 1].value!,
+      trend,
+      sma7: latest?.sma7 ?? null,
+      sma30: latest?.sma30 ?? null,
+      recentCrosses: crosses.slice(-2),
+    };
+
+    const trendBubble = buildTrendFlexBubble(input);
+    const msg = buildDailyCarouselMessage([trendBubble]);
+    await replyLineMessage(replyToken, [msg]);
+  } catch (err) {
+    console.error('Trend command error:', err);
+    await replyLineMessage(replyToken, [
+      { type: 'text', text: 'トレンド分析中にエラーが発生しました。' },
+    ]);
+  }
 }

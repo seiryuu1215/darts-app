@@ -49,8 +49,8 @@ describe('computeAwardPace', () => {
 
   it('skips awards with zero total', () => {
     const list = [
-      { date: '2025-01', awards: { 'ZERO': 0 } },
-      { date: '2025-02', awards: { 'ZERO': 0 } },
+      { date: '2025-01', awards: { ZERO: 0 } },
+      { date: '2025-02', awards: { ZERO: 0 } },
     ];
     expect(computeAwardPace(list)).toHaveLength(0);
   });

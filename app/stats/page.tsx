@@ -140,7 +140,9 @@ export default function StatsPage() {
             {canDartslive && (
               <Button
                 variant={dlData ? 'outlined' : 'contained'}
-                startIcon={dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
+                startIcon={
+                  dlLoading ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />
+                }
                 onClick={() => setDlOpen(true)}
                 disabled={dlLoading}
                 size="small"

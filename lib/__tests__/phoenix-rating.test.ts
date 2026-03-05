@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  phoenixRatingFromPpd,
-  phoenixRatingFromMpr,
-  convertToPhoenix,
-} from '../phoenix-rating';
+import { phoenixRatingFromPpd, phoenixRatingFromMpr, convertToPhoenix } from '../phoenix-rating';
 
 describe('phoenixRatingFromPpd', () => {
   it('returns Rt.1 (N) for PPD 0', () => {

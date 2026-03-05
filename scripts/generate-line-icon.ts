@@ -53,10 +53,7 @@ async function generate() {
     </text>
   </svg>`;
 
-  const overlayBuf = await sharp(Buffer.from(overlaySvg))
-    .resize(SIZE, SIZE)
-    .png()
-    .toBuffer();
+  const overlayBuf = await sharp(Buffer.from(overlaySvg)).resize(SIZE, SIZE).png().toBuffer();
 
   // 合成
   const result = await sharp(iconPng)

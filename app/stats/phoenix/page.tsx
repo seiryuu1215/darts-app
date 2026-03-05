@@ -152,9 +152,7 @@ export default function PhoenixPage() {
   return (
     <Container maxWidth="md">
       <Box sx={{ mt: 3, p: { xs: 1, sm: 2 } }}>
-        <Breadcrumbs
-          items={[{ label: 'Stats', href: '/stats' }, { label: 'PHOENIX換算' }]}
-        />
+        <Breadcrumbs items={[{ label: 'Stats', href: '/stats' }, { label: 'PHOENIX換算' }]} />
 
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -352,7 +350,10 @@ function PhoenixStatsCard({ stats }: { stats: PxCachedStats }) {
               Rt.{stats.rating}
             </Typography>
             {stats.className && (
-              <Chip label={stats.className} sx={{ fontWeight: 'bold', fontSize: '1rem', mt: 0.5 }} />
+              <Chip
+                label={stats.className}
+                sx={{ fontWeight: 'bold', fontSize: '1rem', mt: 0.5 }}
+              />
             )}
           </Box>
         )}
@@ -403,13 +404,7 @@ function PhoenixStatsCard({ stats }: { stats: PxCachedStats }) {
 
 // ─── プラットフォーム比較テーブル ──────────
 
-function DeltaIndicator({
-  delta,
-  suffix,
-}: {
-  delta: number | null;
-  suffix: string;
-}) {
+function DeltaIndicator({ delta, suffix }: { delta: number | null; suffix: string }) {
   if (delta == null)
     return (
       <Typography variant="body2" color="text.secondary">

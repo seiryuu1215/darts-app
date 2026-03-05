@@ -266,8 +266,23 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
   const zeroOne = (rawUser.ZERO_ONE ?? {}) as Record<string, unknown>;
   const cricket = (rawUser.CRICKET ?? {}) as Record<string, unknown>;
 
+  // RATING は整数のみの場合がある → REF_VALUE 等の小数フィールドを優先
+  const ratingRaw = parseNum(rawUser.RATING);
+  const ratingRef =
+    parseNum(rawUser.REF_VALUE) ??
+    parseNum(rawUser.RATING_REF) ??
+    parseNum(rawUser.RATING_FULL) ??
+    parseNum(rawUser.Rt);
+  const ratingValue = ratingRef ?? ratingRaw;
+  if (ratingRaw != null && ratingRef == null && Number.isInteger(ratingRaw)) {
+    console.log(
+      `[DL-API] RATING=${ratingRaw} (整数のみ, 小数フィールド未検出). USER_DATA keys:`,
+      Object.keys(rawUser).join(', '),
+    );
+  }
+
   const userData: DlApiUserData = {
-    rating: parseNum(rawUser.RATING),
+    rating: ratingValue,
     maxRating: parseNum(rawUser.MAX_RATING),
     maxRatingDate: parseStr(rawUser.MAX_RATING_DATE),
     stats01Avg: parseNum(rawUser.STATS_01 ?? rawUser.BASE_STATS_01),
@@ -619,11 +634,20 @@ export async function dlApiDiffSync(
 export function mapApiToScrapedStats(result: DlApiFullSyncResult): ScrapedStats {
   const { userData, totalAward } = result.bundle;
 
+  // バンドルの rating が整数のみの場合、dailyHistory の最新エントリから小数付きを取得
+  let rating = userData.rating;
+  if (rating != null && Number.isInteger(rating) && result.dailyHistory.length > 0) {
+    const latest = result.dailyHistory[result.dailyHistory.length - 1];
+    if (latest.rating != null && !Number.isInteger(latest.rating)) {
+      rating = latest.rating;
+    }
+  }
+
   const getAward = (name: string) => totalAward[name] ?? { monthly: 0, total: 0 };
 
   return {
-    rating: userData.rating,
-    ratingInt: userData.rating != null ? Math.floor(userData.rating) : null,
+    rating,
+    ratingInt: rating != null ? Math.floor(rating) : null,
     stats01Avg: userData.stats01Avg,
     statsCriAvg: userData.statsCriAvg,
     dBullTotal: getAward('DOUBLE_BULL').total || getAward('D-BULL').total,

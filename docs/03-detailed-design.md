@@ -747,14 +747,14 @@ RootLayout (app/layout.tsx)
 
 **サマリー:**
 
-| レイヤー | 主要対策 |
-|---|---|
-| フロントエンド | React自動エスケープ、CSP nonce方式、CSRF保護 |
-| API | 認証ミドルウェア (`withAuth`/`withAdmin`)、Upstash Redis レートリミット |
-| Webhook | Stripe署名検証 + LINE HMAC-SHA256 timingSafeEqual |
-| DB | Firestoreルール（ロール昇格防止、フィールド制限）、Storage型制限+5MB |
-| DL連携 | メモリ一時利用 or AES-256-GCM暗号化、ブラウザ即時破棄 |
-| インフラ | セキュリティヘッダー7種、SSRF防止ホワイトリスト |
+| レイヤー       | 主要対策                                                                |
+| -------------- | ----------------------------------------------------------------------- |
+| フロントエンド | React自動エスケープ、CSP nonce方式、CSRF保護                            |
+| API            | 認証ミドルウェア (`withAuth`/`withAdmin`)、Upstash Redis レートリミット |
+| Webhook        | Stripe署名検証 + LINE HMAC-SHA256 timingSafeEqual                       |
+| DB             | Firestoreルール（ロール昇格防止、フィールド制限）、Storage型制限+5MB    |
+| DL連携         | メモリ一時利用 or AES-256-GCM暗号化、ブラウザ即時破棄                   |
+| インフラ       | セキュリティヘッダー7種、SSRF防止ホワイトリスト                         |
 
 ---
 

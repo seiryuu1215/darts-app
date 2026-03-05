@@ -838,13 +838,22 @@ export default function CountUpDeepAnalysisCard({
             </Typography>
 
             {/* スコア平均 */}
-            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+            >
               スコア平均
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.prev.avgScore}
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.current.avgScore}
             </Typography>
             <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -852,13 +861,22 @@ export default function CountUpDeepAnalysisCard({
             </Box>
 
             {/* 安定性 */}
-            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+            >
               安定性
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.prev.consistency}
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.current.consistency}
             </Typography>
             <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -866,13 +884,22 @@ export default function CountUpDeepAnalysisCard({
             </Box>
 
             {/* ブル率 */}
-            <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+            >
               ブル率
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.prev.bullRate}%
             </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+            >
               {sessionComparison.current.bullRate}%
             </Typography>
             <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -880,15 +907,25 @@ export default function CountUpDeepAnalysisCard({
             </Box>
 
             {/* 横ずれ(X) */}
-            {(sessionComparison.prev.avgVectorX !== 0 || sessionComparison.current.avgVectorX !== 0) && (
+            {(sessionComparison.prev.avgVectorX !== 0 ||
+              sessionComparison.current.avgVectorX !== 0) && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   横ずれ(X)
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.prev.avgVectorX}mm
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.current.avgVectorX}mm
                 </Typography>
                 <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -898,15 +935,25 @@ export default function CountUpDeepAnalysisCard({
             )}
 
             {/* 縦ずれ(Y) */}
-            {(sessionComparison.prev.avgVectorY !== 0 || sessionComparison.current.avgVectorY !== 0) && (
+            {(sessionComparison.prev.avgVectorY !== 0 ||
+              sessionComparison.current.avgVectorY !== 0) && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   縦ずれ(Y)
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.prev.avgVectorY}mm
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.current.avgVectorY}mm
                 </Typography>
                 <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -916,15 +963,25 @@ export default function CountUpDeepAnalysisCard({
             )}
 
             {/* レンジ(半径) */}
-            {(sessionComparison.prev.avgRadius !== 0 || sessionComparison.current.avgRadius !== 0) && (
+            {(sessionComparison.prev.avgRadius !== 0 ||
+              sessionComparison.current.avgRadius !== 0) && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   レンジ
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.prev.avgRadius}mm
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.current.avgRadius}mm
                 </Typography>
                 <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -934,15 +991,25 @@ export default function CountUpDeepAnalysisCard({
             )}
 
             {/* スピード */}
-            {(sessionComparison.prev.avgSpeed !== 0 || sessionComparison.current.avgSpeed !== 0) && (
+            {(sessionComparison.prev.avgSpeed !== 0 ||
+              sessionComparison.current.avgSpeed !== 0) && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   スピード
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.prev.avgSpeed}km/h
                 </Typography>
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}
+                >
                   {sessionComparison.current.avgSpeed}km/h
                 </Typography>
                 <Box sx={{ textAlign: 'center', py: 0.5, borderTop: '1px solid #222' }}>
@@ -959,9 +1026,13 @@ export default function CountUpDeepAnalysisCard({
                 <Alert
                   key={i}
                   severity={
-                    insight.includes('改善') || insight.includes('アップ') || insight.includes('近づ')
+                    insight.includes('改善') ||
+                    insight.includes('アップ') ||
+                    insight.includes('近づ')
                       ? 'success'
-                      : insight.includes('低下') || insight.includes('ダウン') || insight.includes('広が')
+                      : insight.includes('低下') ||
+                          insight.includes('ダウン') ||
+                          insight.includes('広が')
                         ? 'warning'
                         : 'info'
                   }

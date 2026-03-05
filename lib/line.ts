@@ -1,4 +1,11 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import type { MissDirectionResult } from './stats-math';
+import type { HeatmapData } from './heatmap-data';
+import { getSegmentLabel } from './heatmap-data';
+import type { CuSessionComparison } from './countup-session-compare';
+import type { PracticeRecommendation } from './practice-recommendations';
+import type { TrendResult, CrossSignal } from './stats-trend';
+import type { RoundAnalysis } from './countup-round-analysis';
 
 const LINE_API_BASE = 'https://api.line.me/v2/bot';
 
@@ -22,14 +29,21 @@ export async function sendLinePushMessage(
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) return false;
 
+  const payload = JSON.stringify({ to: lineUserId, messages });
   const res = await fetch(`${LINE_API_BASE}/message/push`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ to: lineUserId, messages }),
+    body: payload,
   });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error(
+      `[LINE Push] 送信失敗 (${res.status}): ${errBody.slice(0, 300)}, payload=${(payload.length / 1024).toFixed(1)}KB`,
+    );
+  }
   return res.ok;
 }
 
@@ -38,7 +52,7 @@ export async function replyLineMessage(replyToken: string, messages: object[]): 
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) return;
 
-  await fetch(`${LINE_API_BASE}/message/reply`, {
+  const res = await fetch(`${LINE_API_BASE}/message/reply`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,6 +60,10 @@ export async function replyLineMessage(replyToken: string, messages: object[]): 
     },
     body: JSON.stringify({ replyToken, messages }),
   });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error(`[LINE Reply] 送信失敗 (${res.status}): ${errBody.slice(0, 300)}`);
+  }
 }
 
 const CONDITION_LABELS: Record<number, string> = {
@@ -73,6 +91,14 @@ function getRatingColor(rating: number | null): string {
   if (rt >= 2) return '#4CAF50'; // C
   return '#808080'; // N
 }
+
+/** コンディション入力用 Quick Reply (★1〜★5) */
+export const CONDITION_QUICK_REPLY = {
+  items: [1, 2, 3, 4, 5].map((n) => ({
+    type: 'action',
+    action: { type: 'message', label: `★${n}`, text: `★${n}` },
+  })),
+};
 
 /** スタッツ通知用 Flex Message + Quick Reply (★1〜★5) */
 export function buildStatsFlexMessage(stats: {
@@ -126,11 +152,11 @@ export function buildStatsFlexMessage(stats: {
     }
   }
 
-  // Awards 差分セクション構築
+  // Awards 差分セクション構築（prevAwards がある場合のみ日次差分を表示）
   const awardsContents: object[] = [];
-  if (stats.awards) {
+  if (stats.awards && stats.prevAwards) {
     const a = stats.awards;
-    const pa = stats.prevAwards ?? {};
+    const pa = stats.prevAwards;
 
     type AwardKey =
       | 'hatTricks'
@@ -154,13 +180,11 @@ export function buildStatsFlexMessage(stats: {
       { label: 'S-BULL', key: 'sBull' },
     ];
 
-    // 差分計算: prevAwards がある場合は diff のみ、ない場合は累計値を表示
-    const hasPrev = stats.prevAwards != null;
     const awardItems = awardDefs
       .map((def) => {
         const current = a[def.key] ?? 0;
         const prev = pa[def.key] ?? 0;
-        const value = hasPrev ? current - prev : current;
+        const value = current - prev;
         return { label: def.label, value };
       })
       .filter((item) => item.value > 0);
@@ -192,7 +216,7 @@ export function buildStatsFlexMessage(stats: {
               { type: 'text', text: left.label, size: 'xxs', color: '#888888', flex: 3 },
               {
                 type: 'text',
-                text: hasPrev ? `+${left.value}` : String(left.value),
+                text: `+${left.value}`,
                 size: 'xxs',
                 color: '#333333',
                 flex: 1,
@@ -210,7 +234,7 @@ export function buildStatsFlexMessage(stats: {
               { type: 'text', text: right.label, size: 'xxs', color: '#888888', flex: 3 },
               {
                 type: 'text',
-                text: hasPrev ? `+${right.value}` : String(right.value),
+                text: `+${right.value}`,
                 size: 'xxs',
                 color: '#333333',
                 flex: 1,
@@ -324,16 +348,7 @@ export function buildStatsFlexMessage(stats: {
         ],
       },
     },
-    quickReply: {
-      items: [1, 2, 3, 4, 5].map((n) => ({
-        type: 'action',
-        action: {
-          type: 'message',
-          label: `★${n}`,
-          text: `★${n}`,
-        },
-      })),
-    },
+    quickReply: CONDITION_QUICK_REPLY,
   };
 }
 
@@ -977,4 +992,827 @@ export function buildCountUpFlexMessage(cu: CuNotifyStats): object {
       },
     },
   };
+}
+
+// ──────────────────────────────
+// ロール別リッチ通知 Flex Bubbles
+// ──────────────────────────────
+
+/** ヘッダーブロック生成ヘルパー */
+function buildBubbleHeader(title: string, subtitle: string, bgColor: string): object {
+  return {
+    type: 'box',
+    layout: 'vertical',
+    backgroundColor: bgColor,
+    paddingAll: '16px',
+    contents: [
+      { type: 'text', text: 'Darts Lab', color: '#ffffff', size: 'sm', weight: 'bold' },
+      { type: 'text', text: `${title} ${subtitle}`, color: '#ffffffcc', size: 'xs' },
+    ],
+  };
+}
+
+/** ミス方向分析 Flex Bubble (#7B1FA2 紫) */
+export function buildMissDirectionFlexBubble(result: MissDirectionResult): object {
+  const bodyContents: object[] = [];
+
+  // ブル率/ダブルブル率
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    spacing: 'md',
+    contents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [
+          { type: 'text', text: 'ブル率', size: 'xs', color: '#888888' },
+          {
+            type: 'text',
+            text: `${result.bullRate.toFixed(1)}%`,
+            size: 'lg',
+            weight: 'bold',
+          },
+        ],
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [
+          { type: 'text', text: 'D-BULL率', size: 'xs', color: '#888888' },
+          {
+            type: 'text',
+            text: `${result.doubleBullRate.toFixed(1)}%`,
+            size: 'lg',
+            weight: 'bold',
+          },
+        ],
+      },
+    ],
+  });
+
+  // 8方向コンパス
+  bodyContents.push({ type: 'separator', margin: 'md' });
+  bodyContents.push({
+    type: 'text',
+    text: '8方向ミス分布',
+    size: 'sm',
+    weight: 'bold',
+    margin: 'md',
+    color: '#555555',
+  });
+
+  for (const dir of result.directions) {
+    const isPrimary = dir.label === result.primaryDirection;
+    bodyContents.push({
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'sm',
+      contents: [
+        {
+          type: 'text',
+          text: isPrimary ? `★${dir.label}` : dir.label,
+          size: 'xxs',
+          color: isPrimary ? '#7B1FA2' : '#888888',
+          weight: isPrimary ? 'bold' : 'regular',
+          flex: 2,
+        },
+        {
+          type: 'text',
+          text: `${dir.percentage}%`,
+          size: 'xxs',
+          color: isPrimary ? '#7B1FA2' : '#333333',
+          weight: isPrimary ? 'bold' : 'regular',
+          flex: 1,
+          align: 'end',
+        },
+      ],
+    });
+  }
+
+  // 偏り強度
+  bodyContents.push({ type: 'separator', margin: 'md' });
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    margin: 'md',
+    contents: [
+      { type: 'text', text: '主傾向', size: 'xxs', color: '#888888', flex: 2 },
+      {
+        type: 'text',
+        text: `${result.primaryDirection} (${(result.directionStrength * 100).toFixed(0)}%)`,
+        size: 'xxs',
+        color: '#333333',
+        weight: 'bold',
+        flex: 2,
+        align: 'end',
+      },
+    ],
+  });
+
+  // TOP3 ミスナンバー
+  if (result.topMissNumbers.length > 0) {
+    bodyContents.push({
+      type: 'text',
+      text: 'トップミスナンバー',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+    for (const miss of result.topMissNumbers.slice(0, 3)) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: `${miss.number}`, size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: `${miss.count}回 (${miss.percentage.toFixed(1)}%)`,
+            size: 'xxs',
+            color: '#333333',
+            flex: 2,
+            align: 'end',
+          },
+        ],
+      });
+    }
+  }
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('ミス方向分析', '🎯', '#7B1FA2'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** ヒートマップサマリー Flex Bubble (#00695C ティール) */
+export function buildHeatmapSummaryFlexBubble(data: HeatmapData): object {
+  const bodyContents: object[] = [];
+
+  // BULL内訳
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    spacing: 'md',
+    contents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [
+          { type: 'text', text: 'D-BULL', size: 'xs', color: '#888888' },
+          { type: 'text', text: String(data.doubleBullCount), size: 'lg', weight: 'bold' },
+        ],
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [
+          { type: 'text', text: 'S-BULL', size: 'xs', color: '#888888' },
+          {
+            type: 'text',
+            text: String(data.bullCount - data.doubleBullCount),
+            size: 'lg',
+            weight: 'bold',
+          },
+        ],
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [
+          { type: 'text', text: 'OUT', size: 'xs', color: '#888888' },
+          { type: 'text', text: String(data.outCount), size: 'lg', weight: 'bold' },
+        ],
+      },
+    ],
+  });
+
+  // トップ10ヒットセグメント（横棒グラフ風）
+  bodyContents.push({ type: 'separator', margin: 'md' });
+  bodyContents.push({
+    type: 'text',
+    text: 'トップヒットセグメント',
+    size: 'sm',
+    weight: 'bold',
+    margin: 'md',
+    color: '#555555',
+  });
+
+  const sorted = [...data.segments.entries()].sort(([, a], [, b]) => b - a).slice(0, 10);
+  const topCount = sorted.length > 0 ? sorted[0][1] : 1;
+
+  for (const [segId, count] of sorted) {
+    const barFlex = Math.max(1, Math.round((count / topCount) * 8));
+    const emptyFlex = Math.max(1, 9 - barFlex);
+    const pct = data.totalDarts > 0 ? ((count / data.totalDarts) * 100).toFixed(1) : '0';
+
+    bodyContents.push({
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'sm',
+      contents: [
+        {
+          type: 'text',
+          text: getSegmentLabel(segId),
+          size: 'xxs',
+          color: '#888888',
+          flex: 2,
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          flex: 5,
+          contents: [
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: barFlex,
+              height: '12px',
+              backgroundColor: '#00695C',
+              cornerRadius: '2px',
+              contents: [],
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: emptyFlex,
+              contents: [],
+            },
+          ],
+        },
+        {
+          type: 'text',
+          text: `${pct}%`,
+          size: 'xxs',
+          color: '#333333',
+          flex: 2,
+          align: 'end',
+        },
+      ],
+    });
+  }
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('ヒートマップ', '🔥', '#00695C'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** セッション比較 Flex Bubble (#0277BD ライトブルー) */
+export function buildSessionComparisonFlexBubble(comparison: CuSessionComparison): object {
+  const { prev, current, deltas, insights } = comparison;
+
+  const bodyContents: object[] = [];
+
+  // 日付ラベル
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    contents: [
+      { type: 'text', text: `前回: ${prev.date}`, size: 'xxs', color: '#888888', flex: 1 },
+      {
+        type: 'text',
+        text: `今回: ${current.date}`,
+        size: 'xxs',
+        color: '#888888',
+        flex: 1,
+        align: 'end',
+      },
+    ],
+  });
+
+  // 2列比較行ヘルパー
+  const compRow = (label: string, prevVal: string, currVal: string, delta: number): object => {
+    const dSign = delta > 0 ? '+' : '';
+    const dColor = delta > 0 ? '#4CAF50' : delta < 0 ? '#E53935' : '#888888';
+    return {
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'sm',
+      contents: [
+        { type: 'text', text: label, size: 'xxs', color: '#888888', flex: 2 },
+        { type: 'text', text: prevVal, size: 'xxs', color: '#333333', flex: 2, align: 'center' },
+        {
+          type: 'text',
+          text: currVal,
+          size: 'xxs',
+          weight: 'bold',
+          color: '#333333',
+          flex: 2,
+          align: 'center',
+        },
+        {
+          type: 'text',
+          text: `${dSign}${delta.toFixed(1)}`,
+          size: 'xxs',
+          weight: 'bold',
+          color: dColor,
+          flex: 2,
+          align: 'end',
+        },
+      ],
+    };
+  };
+
+  // ヘッダー行
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    margin: 'md',
+    contents: [
+      { type: 'text', text: ' ', size: 'xxs', color: '#888888', flex: 2 },
+      {
+        type: 'text',
+        text: '前回',
+        size: 'xxs',
+        color: '#888888',
+        weight: 'bold',
+        flex: 2,
+        align: 'center',
+      },
+      {
+        type: 'text',
+        text: '今回',
+        size: 'xxs',
+        color: '#888888',
+        weight: 'bold',
+        flex: 2,
+        align: 'center',
+      },
+      {
+        type: 'text',
+        text: '差分',
+        size: 'xxs',
+        color: '#888888',
+        weight: 'bold',
+        flex: 2,
+        align: 'end',
+      },
+    ],
+  });
+
+  bodyContents.push(
+    compRow('平均', String(prev.avgScore), String(current.avgScore), deltas.avgScore),
+  );
+  bodyContents.push(
+    compRow('安定性', String(prev.consistency), String(current.consistency), deltas.consistency),
+  );
+  bodyContents.push(
+    compRow('ブル率', `${prev.bullRate}%`, `${current.bullRate}%`, deltas.bullRate),
+  );
+
+  // インサイト
+  if (insights.length > 0) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({
+      type: 'text',
+      text: 'インサイト',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+    for (const insight of insights.slice(0, 3)) {
+      bodyContents.push({
+        type: 'text',
+        text: `• ${insight}`,
+        size: 'xxs',
+        color: '#333333',
+        margin: 'sm',
+        wrap: true,
+      });
+    }
+  }
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('セッション比較', '📊', '#0277BD'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** 練習レコメンド Flex Bubble (#E65100 ディープオレンジ) */
+export function buildRecommendationsFlexBubble(
+  recs: PracticeRecommendation[],
+  max: number,
+): object {
+  const bodyContents: object[] = [];
+  const displayed = recs.slice(0, max);
+
+  for (let i = 0; i < displayed.length; i++) {
+    const rec = displayed[i];
+    if (i > 0) bodyContents.push({ type: 'separator', margin: 'md' });
+
+    const urgencyColor =
+      rec.urgency === 'high' ? '#E53935' : rec.urgency === 'medium' ? '#FF9800' : '#4CAF50';
+    const urgencyLabel = rec.urgency === 'high' ? '高' : rec.urgency === 'medium' ? '中' : '低';
+
+    bodyContents.push({
+      type: 'box',
+      layout: 'horizontal',
+      margin: i === 0 ? 'none' : 'md',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          width: '30px',
+          height: '20px',
+          backgroundColor: urgencyColor,
+          cornerRadius: '4px',
+          justifyContent: 'center',
+          alignItems: 'center',
+          contents: [
+            { type: 'text', text: urgencyLabel, size: 'xxs', color: '#ffffff', weight: 'bold' },
+          ],
+        },
+        {
+          type: 'text',
+          text: rec.title,
+          size: 'sm',
+          weight: 'bold',
+          color: '#333333',
+          flex: 1,
+          margin: 'sm',
+        },
+      ],
+    });
+
+    bodyContents.push({
+      type: 'text',
+      text: rec.drill,
+      size: 'xxs',
+      color: '#555555',
+      margin: 'sm',
+      wrap: true,
+    });
+  }
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('練習レコメンド', '💡', '#E65100'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** トレンド分析入力型 */
+export interface TrendBubbleInput {
+  metric: string;
+  currentValue: number;
+  trend: TrendResult;
+  sma7: number | null;
+  sma30: number | null;
+  recentCrosses: CrossSignal[];
+}
+
+/** トレンド分析 Flex Bubble (#1565C0 ダークブルー) */
+export function buildTrendFlexBubble(input: TrendBubbleInput): object {
+  const { metric, currentValue, trend, sma7, sma30, recentCrosses } = input;
+
+  const trendArrow = trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '→';
+  const bodyContents: object[] = [];
+
+  // 現在値 + トレンド
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    spacing: 'md',
+    contents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 2,
+        contents: [
+          { type: 'text', text: metric, size: 'xs', color: '#888888' },
+          { type: 'text', text: String(currentValue), size: 'xl', weight: 'bold' },
+        ],
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        contents: [
+          {
+            type: 'text',
+            text: trendArrow,
+            size: 'xxl',
+            weight: 'bold',
+            color: trend.color,
+          },
+        ],
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 2,
+        contents: [
+          { type: 'text', text: 'トレンド', size: 'xs', color: '#888888' },
+          {
+            type: 'text',
+            text: trend.label,
+            size: 'sm',
+            weight: 'bold',
+            color: trend.color,
+          },
+        ],
+      },
+    ],
+  });
+
+  // SMA比較
+  if (sma7 != null || sma30 != null) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({
+      type: 'text',
+      text: '移動平均',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+
+    if (sma7 != null) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: 'SMA 7日', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: sma7.toFixed(2),
+            size: 'xxs',
+            color: '#333333',
+            weight: 'bold',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+    if (sma30 != null) {
+      bodyContents.push({
+        type: 'box',
+        layout: 'horizontal',
+        margin: 'sm',
+        contents: [
+          { type: 'text', text: 'SMA 30日', size: 'xxs', color: '#888888', flex: 2 },
+          {
+            type: 'text',
+            text: sma30.toFixed(2),
+            size: 'xxs',
+            color: '#333333',
+            weight: 'bold',
+            flex: 1,
+            align: 'end',
+          },
+        ],
+      });
+    }
+  }
+
+  // クロスシグナル
+  if (recentCrosses.length > 0) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({
+      type: 'text',
+      text: 'シグナル',
+      size: 'sm',
+      weight: 'bold',
+      margin: 'md',
+      color: '#555555',
+    });
+    for (const cross of recentCrosses.slice(-2)) {
+      const icon = cross.type === 'golden' ? '🔼' : '🔽';
+      const label = cross.type === 'golden' ? 'ゴールデンクロス' : 'デッドクロス';
+      bodyContents.push({
+        type: 'text',
+        text: `${icon} ${cross.date} ${label}`,
+        size: 'xxs',
+        color: cross.type === 'golden' ? '#4CAF50' : '#E53935',
+        margin: 'sm',
+      });
+    }
+  }
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('トレンド分析', '📈', '#1565C0'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** ラウンドパターン分析 Flex Bubble (#558B2F オリーブグリーン) */
+export function buildRoundPatternFlexBubble(analysis: RoundAnalysis): object {
+  const bodyContents: object[] = [];
+
+  // パターンラベル
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    contents: [
+      {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: analysis.pattern.color,
+        cornerRadius: '4px',
+        paddingAll: '4px',
+        flex: 0,
+        contents: [
+          {
+            type: 'text',
+            text: analysis.pattern.label,
+            size: 'xs',
+            color: '#ffffff',
+            weight: 'bold',
+          },
+        ],
+      },
+      { type: 'filler' },
+    ],
+  });
+
+  bodyContents.push({
+    type: 'text',
+    text: analysis.pattern.description,
+    size: 'xxs',
+    color: '#555555',
+    margin: 'sm',
+    wrap: true,
+  });
+
+  // 8ラウンド棒グラフ
+  bodyContents.push({ type: 'separator', margin: 'md' });
+  bodyContents.push({
+    type: 'text',
+    text: 'ラウンド別平均スコア',
+    size: 'sm',
+    weight: 'bold',
+    margin: 'md',
+    color: '#555555',
+  });
+
+  const maxAvg = Math.max(...analysis.rounds.map((r) => r.avgScore), 1);
+  for (const round of analysis.rounds) {
+    const barFlex = Math.max(1, Math.round((round.avgScore / maxAvg) * 8));
+    const emptyFlex = Math.max(1, 9 - barFlex);
+    const isBest = round.round === analysis.bestRound;
+    const isWorst = round.round === analysis.worstRound;
+    const barColor = isBest ? '#4CAF50' : isWorst ? '#E53935' : '#558B2F';
+
+    bodyContents.push({
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'sm',
+      contents: [
+        {
+          type: 'text',
+          text: `R${round.round}`,
+          size: 'xxs',
+          color: '#888888',
+          flex: 1,
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          flex: 5,
+          contents: [
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: barFlex,
+              height: '12px',
+              backgroundColor: barColor,
+              cornerRadius: '2px',
+              contents: [],
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: emptyFlex,
+              contents: [],
+            },
+          ],
+        },
+        {
+          type: 'text',
+          text: String(round.avgScore),
+          size: 'xxs',
+          color: '#333333',
+          weight: isBest || isWorst ? 'bold' : 'regular',
+          flex: 2,
+          align: 'end',
+        },
+      ],
+    });
+  }
+
+  // ベスト/ワースト
+  bodyContents.push({ type: 'separator', margin: 'md' });
+  bodyContents.push({
+    type: 'box',
+    layout: 'horizontal',
+    margin: 'md',
+    contents: [
+      {
+        type: 'text',
+        text: `🏆 Best: R${analysis.bestRound}`,
+        size: 'xxs',
+        color: '#4CAF50',
+        flex: 1,
+      },
+      {
+        type: 'text',
+        text: `📉 Worst: R${analysis.worstRound}`,
+        size: 'xxs',
+        color: '#E53935',
+        flex: 1,
+        align: 'end',
+      },
+    ],
+  });
+
+  return {
+    type: 'bubble',
+    header: buildBubbleHeader('ラウンドパターン', '📋', '#558B2F'),
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
+/** Flex Message からバブル部分を抽出 */
+export function extractBubble(flexMessage: object): object | null {
+  const msg = flexMessage as Record<string, unknown>;
+  if (msg.type === 'bubble') return flexMessage;
+  if (msg.type === 'flex') {
+    const contents = msg.contents as Record<string, unknown> | undefined;
+    if (contents?.type === 'bubble') return contents as object;
+  }
+  return null;
+}
+
+/** 複数バブルをカルーセルFlexメッセージに組み立て */
+export function buildDailyCarouselMessage(
+  bubbles: object[],
+  quickReply?: object,
+): object {
+  if (bubbles.length === 0) {
+    return { type: 'text', text: 'データがありません。' };
+  }
+
+  const msg: Record<string, unknown> = {
+    type: 'flex',
+    altText: 'Darts Lab デイリーレポート',
+    contents:
+      bubbles.length === 1
+        ? bubbles[0]
+        : { type: 'carousel', contents: bubbles.slice(0, 12) },
+  };
+
+  if (quickReply) msg.quickReply = quickReply;
+  return msg;
 }

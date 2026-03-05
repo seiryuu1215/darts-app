@@ -119,10 +119,7 @@ export default function RecentGamesChart({
             <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
             <XAxis dataKey="game" fontSize={11} tick={{ fill: ct.text }} />
             <YAxis domain={['auto', 'auto']} fontSize={11} tick={{ fill: ct.text }} />
-            <Tooltip
-              contentStyle={ct.tooltipStyle}
-              labelFormatter={(v) => `Game ${v}`}
-            />
+            <Tooltip contentStyle={ct.tooltipStyle} labelFormatter={(v) => `Game ${v}`} />
             <Legend iconType="plainline" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
             <Bar dataKey="score" name="スコア" opacity={0.8} radius={[2, 2, 0, 0]}>
               {gameChartData.map((entry, i) => (

@@ -18,15 +18,15 @@
 
 **[設計図ビューア → https://portfolio-seiryuu.vercel.app/projects/darts-lab](https://portfolio-seiryuu.vercel.app/projects/darts-lab)**
 
-| 設計図 | 内容 |
-|---|---|
-| 📐 アーキテクチャ | Client → Vercel → Firebase → 外部サービスの全体構成 |
-| 🗄️ ER図 | Firestore 12コレクション + 11サブコレクション + リレーション |
-| 🔐 認証・課金 | NextAuth JWT フロー / Stripe Webhook / LINE連携 |
-| ⏰ Cronバッチ | 日次自動パイプライン（9ステップ + XPルール14種） |
-| 📱 画面遷移 | 30+ページ × ロール別アクセス制御 |
-| 🔄 API・データフロー | 25+ APIルート / セキュリティレイヤー |
-| 📋 要件・ペルソナ | 機能マップ / ペルソナ / 非機能要件 / 技術選定 |
+| 設計図               | 内容                                                         |
+| -------------------- | ------------------------------------------------------------ |
+| 📐 アーキテクチャ    | Client → Vercel → Firebase → 外部サービスの全体構成          |
+| 🗄️ ER図              | Firestore 12コレクション + 11サブコレクション + リレーション |
+| 🔐 認証・課金        | NextAuth JWT フロー / Stripe Webhook / LINE連携              |
+| ⏰ Cronバッチ        | 日次自動パイプライン（9ステップ + XPルール14種）             |
+| 📱 画面遷移          | 30+ページ × ロール別アクセス制御                             |
+| 🔄 API・データフロー | 25+ APIルート / セキュリティレイヤー                         |
+| 📋 要件・ペルソナ    | 機能マップ / ペルソナ / 非機能要件 / 技術選定                |
 
 > TSXソースは [`docs/diagrams/`](./diagrams/) に収録。
 
@@ -763,13 +763,13 @@ darts-app/
 
 ## v3.1 追加モジュール
 
-| モジュール | ファイル | 概要 |
-|---|---|---|
-| PHOENIXレーティング換算 | `lib/phoenix-rating.ts` | DARTSLIVE PPD/MPR → PHOENIX Rt.1〜30 変換テーブル |
-| COUNT-UPラウンド分析 | `lib/countup-round-analysis.ts` | ラウンド別平均・パターン検知（cold_start/fade_out/stable/peak_middle/improving） |
-| 練習レコメンドエンジン | `lib/practice-recommendations.ts` | Bull率・アレンジ率・安定性・ミス方向などから優先度付き推奨を生成 |
-| ヒートマップデータ | `lib/heatmap-data.ts` | PLAY_LOGからダーツボードセグメント別頻度を集計 |
-| ダートアウト分析 | `lib/dartout-analysis.ts` | フィニッシュスコア帯分布・ダブル使用傾向・クラッチ率分析 |
-| トレンド分析 | `lib/stats-trend.ts` | SMA計算・ゴールデン/デッドクロス検出・トレンド方向判定 |
-| アワード分析 | `lib/award-analysis.ts` | アワードペース・マイルストーン予測 |
-| セッション比較 | `lib/comparison.ts` | 2セッション間のスタッツ差分カラー表示 |
+| モジュール              | ファイル                          | 概要                                                                             |
+| ----------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| PHOENIXレーティング換算 | `lib/phoenix-rating.ts`           | DARTSLIVE PPD/MPR → PHOENIX Rt.1〜30 変換テーブル                                |
+| COUNT-UPラウンド分析    | `lib/countup-round-analysis.ts`   | ラウンド別平均・パターン検知（cold_start/fade_out/stable/peak_middle/improving） |
+| 練習レコメンドエンジン  | `lib/practice-recommendations.ts` | Bull率・アレンジ率・安定性・ミス方向などから優先度付き推奨を生成                 |
+| ヒートマップデータ      | `lib/heatmap-data.ts`             | PLAY_LOGからダーツボードセグメント別頻度を集計                                   |
+| ダートアウト分析        | `lib/dartout-analysis.ts`         | フィニッシュスコア帯分布・ダブル使用傾向・クラッチ率分析                         |
+| トレンド分析            | `lib/stats-trend.ts`              | SMA計算・ゴールデン/デッドクロス検出・トレンド方向判定                           |
+| アワード分析            | `lib/award-analysis.ts`           | アワードペース・マイルストーン予測                                               |
+| セッション比較          | `lib/comparison.ts`               | 2セッション間のスタッツ差分カラー表示                                            |

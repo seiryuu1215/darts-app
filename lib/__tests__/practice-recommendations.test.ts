@@ -90,9 +90,7 @@ describe('generateRecommendations', () => {
   });
 
   it('recommends round warmup for cold_start pattern', () => {
-    const recs = generateRecommendations(
-      makeInput({ roundPattern: 'cold_start', worstRound: 1 }),
-    );
+    const recs = generateRecommendations(makeInput({ roundPattern: 'cold_start', worstRound: 1 }));
     expect(recs.some((r) => r.id === 'round-warmup')).toBe(true);
   });
 

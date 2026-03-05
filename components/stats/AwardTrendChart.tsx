@@ -97,9 +97,7 @@ export default function AwardTrendChart({ awardList }: AwardTrendChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
           <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
           <YAxis fontSize={11} tick={{ fill: ct.text }} />
-          <Tooltip
-            contentStyle={ct.tooltipStyle}
-          />
+          <Tooltip contentStyle={ct.tooltipStyle} />
           <Area
             type="monotone"
             dataKey="value"

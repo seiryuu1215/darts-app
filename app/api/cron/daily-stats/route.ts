@@ -9,6 +9,8 @@ import {
   buildWeeklyReportFlexMessage,
   buildMonthlyReportFlexMessage,
   buildCountUpFlexMessage,
+  buildDailyCarouselMessage,
+  CONDITION_QUICK_REPLY,
 } from '@/lib/line';
 import type { CuNotifyStats } from '@/lib/line';
 import {
@@ -16,6 +18,10 @@ import {
   summarizeSession,
   extractQualifiedSessions,
 } from '@/lib/countup-session-compare';
+import {
+  buildRoleBasedDailyNotification,
+  type DailyNotificationContext,
+} from '@/lib/line-notification-builder';
 import type { CountUpPlayData } from '@/lib/dartslive-api';
 import { gatherPeriodReport } from '@/lib/report-data';
 import {
@@ -150,9 +156,7 @@ export async function GET(request: NextRequest) {
               const existingCuPlays: CountUpPlayData[] = cuCacheDoc.exists
                 ? (JSON.parse(cuCacheDoc.data()?.data ?? '[]') as CountUpPlayData[])
                 : [];
-              const existingKeys = new Set(
-                existingCuPlays.map((p) => `${p.time}_${p.score}`),
-              );
+              const existingKeys = new Set(existingCuPlays.map((p) => `${p.time}_${p.score}`));
               const newCuPlays = apiSyncResult.countupPlays.filter(
                 (p) => !existingKeys.has(`${p.time}_${p.score}`),
               );
@@ -363,43 +367,93 @@ export async function GET(request: NextRequest) {
               const dateStr = `${yesterday.getFullYear()}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${String(yesterday.getDate()).padStart(2, '0')}`;
 
               // LINE通知送信: カウントアップ30プレイ以上の日のみ（APIデータなしの場合は常に送信）
-              const shouldSendLineNotify = apiSyncResult
-                ? yesterdayCuPlayCount >= 30
-                : true;
+              const shouldSendLineNotify = apiSyncResult ? yesterdayCuPlayCount >= 30 : true;
 
               if (shouldSendLineNotify) {
-                const flexMsg = buildStatsFlexMessage({
-                  date: dateStr,
-                  rating: stats.rating,
-                  ppd: stats.stats01Avg,
-                  mpr: stats.statsCriAvg,
-                  prevRating: prevData?.rating ?? null,
-                  awards: {
-                    dBull: stats.dBullTotal,
-                    sBull: stats.sBullTotal,
-                    hatTricks: stats.hatTricksTotal,
-                    ton80: stats.ton80,
-                    lowTon: stats.lowTon,
-                    highTon: stats.highTon,
-                    threeInABed: stats.threeInABed,
-                    threeInABlack: stats.threeInABlack,
-                    whiteHorse: stats.whiteHorse,
+                // CUプレイデータを事前準備（カルーセル統合用）
+                let carouselAllCuPlays: CountUpPlayData[] = [];
+                let carouselYesterdayCuPlays: CountUpPlayData[] = [];
+
+                if (apiSyncResult && apiSyncResult.countupPlays.length > 0) {
+                  try {
+                    const cuCacheForCarousel = await adminDb
+                      .doc(`users/${userId}/dartsliveApiCache/countupPlays`)
+                      .get();
+                    const existingPlays: CountUpPlayData[] = cuCacheForCarousel.exists
+                      ? (JSON.parse(cuCacheForCarousel.data()?.data ?? '[]') as CountUpPlayData[])
+                      : [];
+                    const existingKeysSet = new Set(
+                      existingPlays.map((p) => `${p.time}_${p.score}`),
+                    );
+                    const freshPlays = apiSyncResult.countupPlays.filter(
+                      (p) => !existingKeysSet.has(`${p.time}_${p.score}`),
+                    );
+                    carouselAllCuPlays = [...existingPlays, ...freshPlays].sort((a, b) =>
+                      a.time.localeCompare(b.time),
+                    );
+
+                    const ydJSTForCU = new Date();
+                    ydJSTForCU.setHours(ydJSTForCU.getHours() + 9);
+                    ydJSTForCU.setDate(ydJSTForCU.getDate() - 1);
+                    const ydStrForCU = `${ydJSTForCU.getFullYear()}-${String(ydJSTForCU.getMonth() + 1).padStart(2, '0')}-${String(ydJSTForCU.getDate()).padStart(2, '0')}`;
+
+                    carouselYesterdayCuPlays = freshPlays.filter((p) => {
+                      const ds = p.time.replace(/\//g, '-').split(/[T _]/)[0];
+                      return ds === ydStrForCU;
+                    });
+                  } catch {
+                    // CUデータ取得失敗時はスタッツのみ送信
+                  }
+                }
+
+                // ロール別カルーセル構築（1プッシュに統合）
+                const userRole = (userData.role as 'admin' | 'pro' | 'general') || 'general';
+                const notifCtx: DailyNotificationContext = {
+                  userId,
+                  role: userRole,
+                  stats: {
+                    rating: stats.rating,
+                    ppd: stats.stats01Avg,
+                    mpr: stats.statsCriAvg,
+                    prevRating: prevData?.rating ?? null,
+                    dateStr,
+                    gamesPlayed,
+                    awards: {
+                      dBull: stats.dBullTotal,
+                      sBull: stats.sBullTotal,
+                      hatTricks: stats.hatTricksTotal,
+                      ton80: stats.ton80,
+                      lowTon: stats.lowTon,
+                      highTon: stats.highTon,
+                      threeInABed: stats.threeInABed,
+                      threeInABlack: stats.threeInABlack,
+                      whiteHorse: stats.whiteHorse,
+                    },
+                    prevAwards: prevData
+                      ? {
+                          dBull: prevData.bullStats?.dBull ?? 0,
+                          sBull: prevData.bullStats?.sBull ?? 0,
+                          hatTricks: prevData.hatTricks ?? 0,
+                          ton80: prevData.ton80 ?? 0,
+                          lowTon: prevData.lowTon ?? 0,
+                          highTon: prevData.highTon ?? 0,
+                          threeInABed: prevData.threeInABed ?? 0,
+                          threeInABlack: prevData.threeInABlack ?? 0,
+                          whiteHorse: prevData.whiteHorse ?? 0,
+                        }
+                      : undefined,
                   },
-                  prevAwards: prevData
-                    ? {
-                        dBull: prevData.bullStats?.dBull ?? 0,
-                        sBull: prevData.bullStats?.sBull ?? 0,
-                        hatTricks: prevData.hatTricks ?? 0,
-                        ton80: prevData.ton80 ?? 0,
-                        lowTon: prevData.lowTon ?? 0,
-                        highTon: prevData.highTon ?? 0,
-                        threeInABed: prevData.threeInABed ?? 0,
-                        threeInABlack: prevData.threeInABlack ?? 0,
-                        whiteHorse: prevData.whiteHorse ?? 0,
-                      }
-                    : undefined,
-                });
-                await sendLinePushMessage(lineUserId, [flexMsg]);
+                  allCuPlays: carouselAllCuPlays.length > 0 ? carouselAllCuPlays : undefined,
+                  yesterdayCuPlays:
+                    carouselYesterdayCuPlays.length > 0 ? carouselYesterdayCuPlays : undefined,
+                };
+
+                const dailyBubbles = await buildRoleBasedDailyNotification(notifCtx);
+                const carouselMsg = buildDailyCarouselMessage(
+                  dailyBubbles,
+                  CONDITION_QUICK_REPLY,
+                );
+                await sendLinePushMessage(lineUserId, [carouselMsg]);
 
                 // Push通知も送信
                 await sendPushToUser(userId, {
@@ -1078,10 +1132,9 @@ export async function GET(request: NextRequest) {
               }
             }
 
-            // COUNT-UP 通知: apiSyncResult がある場合、CUプレイを分析してLINE送信
+            // COUNT-UP プレイキャッシュ更新（カルーセル通知はすでに送信済み）
             if (apiSyncResult && apiSyncResult.countupPlays.length > 0) {
               try {
-                // Firestoreから既存のcountupPlaysを取得してマージ
                 const cuCacheDoc = await adminDb
                   .doc(`users/${userId}/dartsliveApiCache/countupPlays`)
                   .get();
@@ -1089,76 +1142,21 @@ export async function GET(request: NextRequest) {
                   ? (JSON.parse(cuCacheDoc.data()?.data ?? '[]') as CountUpPlayData[])
                   : [];
 
-                // 新しいプレイをマージ（重複排除）
                 const existingKeys = new Set(existingCuPlays.map((p) => `${p.time}_${p.score}`));
                 const newPlays = apiSyncResult.countupPlays.filter(
                   (p) => !existingKeys.has(`${p.time}_${p.score}`),
                 );
-                const allCuPlays = [...existingCuPlays, ...newPlays].sort(
-                  (a, b) => a.time.localeCompare(b.time),
+                const allCuPlays = [...existingCuPlays, ...newPlays].sort((a, b) =>
+                  a.time.localeCompare(b.time),
                 );
 
-                // countupPlaysキャッシュを保存
                 await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).set({
                   data: JSON.stringify(allCuPlays),
                   count: allCuPlays.length,
                   updatedAt: FieldValue.serverTimestamp(),
                 });
-
-                // 昨日のCUプレイを抽出
-                const yesterdayJST = new Date();
-                yesterdayJST.setHours(yesterdayJST.getHours() + 9);
-                yesterdayJST.setDate(yesterdayJST.getDate() - 1);
-                const yesterdayStr = `${yesterdayJST.getFullYear()}-${String(yesterdayJST.getMonth() + 1).padStart(2, '0')}-${String(yesterdayJST.getDate()).padStart(2, '0')}`;
-
-                const yesterdayCuPlays = newPlays.filter((p) => {
-                  const dateStr = p.time.replace(/\//g, '-').split(/[T _]/)[0];
-                  return dateStr === yesterdayStr;
-                });
-
-                if (yesterdayCuPlays.length > 0) {
-                  // 基本サマリーを算出
-                  const cuScores = yesterdayCuPlays.map((p) => p.score);
-                  const cuAvg = Math.round((cuScores.reduce((a, b) => a + b, 0) / cuScores.length) * 10) / 10;
-                  const cuMax = Math.max(...cuScores);
-
-                  // 安定性
-                  const { calculateConsistency } = await import('@/lib/stats-math');
-                  const cuCon = calculateConsistency(cuScores);
-
-                  // ブル率
-                  const { analyzeMissDirection } = await import('@/lib/stats-math');
-                  const cuMiss = analyzeMissDirection(yesterdayCuPlays.map((p) => p.playLog));
-
-                  const cuStats: CuNotifyStats = {
-                    date: yesterdayStr,
-                    gameCount: yesterdayCuPlays.length,
-                    avgScore: cuAvg,
-                    maxScore: cuMax,
-                    consistency: cuCon?.score ?? 0,
-                    bullRate: cuMiss?.bullRate ?? 0,
-                  };
-
-                  // 30G以上の場合は前回比較を追加
-                  if (yesterdayCuPlays.length >= 30) {
-                    const comparison = compareLastTwoSessions(allCuPlays, 30);
-                    if (comparison) {
-                      cuStats.prevAvgScore = comparison.prev.avgScore;
-                      cuStats.prevConsistency = comparison.prev.consistency;
-                      cuStats.prevBullRate = comparison.prev.bullRate;
-                      cuStats.currentMissDir = comparison.current.primaryMissDir;
-                      cuStats.prevMissDir = comparison.prev.primaryMissDir;
-                      cuStats.vectorXChange = comparison.deltas.vectorX;
-                      cuStats.vectorYChange = comparison.deltas.vectorY;
-                      cuStats.radiusChange = comparison.deltas.radius;
-                    }
-                  }
-
-                  const cuFlexMsg = buildCountUpFlexMessage(cuStats);
-                  await sendLinePushMessage(lineUserId, [cuFlexMsg]);
-                }
               } catch (cuErr) {
-                console.error(`CU notification error for user ${userId}:`, cuErr);
+                console.error(`CU cache update error for user ${userId}:`, cuErr);
               }
             }
           }

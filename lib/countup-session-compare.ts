@@ -3,11 +3,7 @@
  * 30ゲーム以上の日を「有効セッション」として抽出し、直近2セッションを比較する
  */
 
-import {
-  calculateConsistency,
-  analyzeMissDirection,
-  parsePlayTime,
-} from './stats-math';
+import { calculateConsistency, analyzeMissDirection, parsePlayTime } from './stats-math';
 
 import type { CountUpPlayData } from './dartslive-api';
 
@@ -19,13 +15,13 @@ export interface CuSessionSummary {
   avgScore: number;
   maxScore: number;
   minScore: number;
-  consistency: number;       // CV-based (0-100)
+  consistency: number; // CV-based (0-100)
   bullRate: number;
-  avgVectorX: number;        // 横ずれ平均 (mm)
-  avgVectorY: number;        // 縦ずれ平均 (mm)
-  avgRadius: number;         // グルーピング半径平均 (mm)
+  avgVectorX: number; // 横ずれ平均 (mm)
+  avgVectorY: number; // 縦ずれ平均 (mm)
+  avgRadius: number; // グルーピング半径平均 (mm)
   avgSpeed: number;
-  primaryMissDir: string;    // 主傾向方向
+  primaryMissDir: string; // 主傾向方向
   directionStrength: number; // 偏り強度
 }
 
@@ -36,12 +32,12 @@ export interface CuSessionComparison {
     avgScore: number;
     consistency: number;
     bullRate: number;
-    vectorX: number;    // 横ずれ変化
-    vectorY: number;    // 縦ずれ変化
-    radius: number;     // レンジ変化
+    vectorX: number; // 横ずれ変化
+    vectorY: number; // 縦ずれ変化
+    radius: number; // レンジ変化
     speed: number;
   };
-  insights: string[];   // 日本語インサイト
+  insights: string[]; // 日本語インサイト
 }
 
 // ─── ヘルパー ────────────────────────────────
@@ -80,17 +76,12 @@ export function extractQualifiedSessions(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, ps]) => ({
       date,
-      plays: ps.sort(
-        (a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime(),
-      ),
+      plays: ps.sort((a, b) => parsePlayTime(a.time).getTime() - parsePlayTime(b.time).getTime()),
     }));
 }
 
 /** セッション（1日分のプレイ）をサマリーに変換 */
-export function summarizeSession(
-  date: string,
-  plays: CountUpPlayData[],
-): CuSessionSummary {
+export function summarizeSession(date: string, plays: CountUpPlayData[]): CuSessionSummary {
   const scores = plays.map((p) => p.score);
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
   const con = calculateConsistency(scores);
@@ -170,14 +161,18 @@ function generateInsights(
   if (deltas.avgScore > 20) {
     insights.push(`平均スコアが${deltas.avgScore}点アップ。好調な練習日でした。`);
   } else if (deltas.avgScore < -20) {
-    insights.push(`平均スコアが${Math.abs(deltas.avgScore)}点ダウン。コンディションや環境の違いを確認。`);
+    insights.push(
+      `平均スコアが${Math.abs(deltas.avgScore)}点ダウン。コンディションや環境の違いを確認。`,
+    );
   }
 
   // 安定性変化
   if (deltas.consistency > 10) {
     insights.push(`安定性が${deltas.consistency}pt改善。ムラが減っています。`);
   } else if (deltas.consistency < -10) {
-    insights.push(`安定性が${Math.abs(deltas.consistency)}pt低下。集中力やフォームのばらつきに注意。`);
+    insights.push(
+      `安定性が${Math.abs(deltas.consistency)}pt低下。集中力やフォームのばらつきに注意。`,
+    );
   }
 
   // ブル率変化
@@ -191,9 +186,13 @@ function generateInsights(
   if (Math.abs(deltas.vectorX) > 2) {
     const dir = deltas.vectorX > 0 ? '右' : '左';
     if (Math.abs(current.avgVectorX) < Math.abs(prev.avgVectorX)) {
-      insights.push(`横ずれが中心に近づいています（${dir}方向に${Math.abs(deltas.vectorX)}mm変化）。`);
+      insights.push(
+        `横ずれが中心に近づいています（${dir}方向に${Math.abs(deltas.vectorX)}mm変化）。`,
+      );
     } else {
-      insights.push(`横ずれが${dir}方向に${Math.abs(deltas.vectorX)}mm広がっています。スタンス確認を。`);
+      insights.push(
+        `横ずれが${dir}方向に${Math.abs(deltas.vectorX)}mm広がっています。スタンス確認を。`,
+      );
     }
   }
 
@@ -201,9 +200,13 @@ function generateInsights(
   if (Math.abs(deltas.vectorY) > 2) {
     const dir = deltas.vectorY > 0 ? '下' : '上';
     if (Math.abs(current.avgVectorY) < Math.abs(prev.avgVectorY)) {
-      insights.push(`縦ずれが中心に近づいています（${dir}方向に${Math.abs(deltas.vectorY)}mm変化）。`);
+      insights.push(
+        `縦ずれが中心に近づいています（${dir}方向に${Math.abs(deltas.vectorY)}mm変化）。`,
+      );
     } else {
-      insights.push(`縦ずれが${dir}方向に${Math.abs(deltas.vectorY)}mm広がっています。リリース高さを確認。`);
+      insights.push(
+        `縦ずれが${dir}方向に${Math.abs(deltas.vectorY)}mm広がっています。リリース高さを確認。`,
+      );
     }
   }
 

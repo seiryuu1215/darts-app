@@ -189,7 +189,13 @@ const featureGroups: FeatureGroup[] = [
 ];
 
 function roleColor(r: string): string {
-  return r === 'pro' ? COLORS.pink : r === 'admin' ? COLORS.red : r === 'auth' ? COLORS.blue : COLORS.textDim;
+  return r === 'pro'
+    ? COLORS.pink
+    : r === 'admin'
+      ? COLORS.red
+      : r === 'auth'
+        ? COLORS.blue
+        : COLORS.textDim;
 }
 
 function roleLabel(r: string): string {
@@ -202,8 +208,18 @@ function FeatureMap() {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-        <span style={{ color: COLORS.text, fontSize: 12, fontWeight: 700 }}>📋 {total} Features</span>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          marginBottom: 16,
+        }}
+      >
+        <span style={{ color: COLORS.text, fontSize: 12, fontWeight: 700 }}>
+          📋 {total} Features
+        </span>
         {[
           { l: 'PUBLIC', c: COLORS.textDim },
           { l: 'AUTH', c: COLORS.blue },
@@ -225,7 +241,13 @@ function FeatureMap() {
           </span>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 12,
+        }}
+      >
         {featureGroups.map((g) => (
           <div
             key={g.id}
@@ -246,7 +268,9 @@ function FeatureMap() {
               <span style={{ color: g.color, fontSize: 12, fontWeight: 700 }}>
                 {g.icon} {g.label}
               </span>
-              <span style={{ color: COLORS.textDim, fontSize: 9, marginLeft: 8 }}>{g.features.length} features</span>
+              <span style={{ color: COLORS.textDim, fontSize: 9, marginLeft: 8 }}>
+                {g.features.length} features
+              </span>
             </div>
             <div style={{ padding: '8px 10px' }}>
               {g.features.map((f, i) => (
@@ -266,7 +290,9 @@ function FeatureMap() {
                 >
                   <span style={{ color: COLORS.text, fontSize: 9.5 }}>{f.name}</span>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    {f.note && <span style={{ color: COLORS.textDim, fontSize: 7.5 }}>{f.note}</span>}
+                    {f.note && (
+                      <span style={{ color: COLORS.textDim, fontSize: 7.5 }}>{f.note}</span>
+                    )}
                     <span
                       style={{
                         padding: '1px 5px',
@@ -364,7 +390,9 @@ function PersonaView() {
             }}
           >
             <div style={{ fontSize: 32 }}>{p.icon}</div>
-            <div style={{ color: p.color, fontSize: 16, fontWeight: 700, marginTop: 4 }}>{p.name}</div>
+            <div style={{ color: p.color, fontSize: 16, fontWeight: 700, marginTop: 4 }}>
+              {p.name}
+            </div>
             <div style={{ color: COLORS.textMuted, fontSize: 10 }}>
               {p.sub} ─ {p.rt} ─ 経験{p.exp}
             </div>
@@ -372,7 +400,13 @@ function PersonaView() {
           {/* Needs */}
           <div style={{ padding: '12px 16px' }}>
             <div
-              style={{ color: p.color, fontSize: 9, fontWeight: 700, marginBottom: 6, letterSpacing: '0.05em' }}
+              style={{
+                color: p.color,
+                fontSize: 9,
+                fontWeight: 700,
+                marginBottom: 6,
+                letterSpacing: '0.05em',
+              }}
             >
               NEEDS
             </div>
@@ -393,7 +427,13 @@ function PersonaView() {
           {/* Journey */}
           <div style={{ padding: '0 16px 12px' }}>
             <div
-              style={{ color: p.color, fontSize: 9, fontWeight: 700, marginBottom: 6, letterSpacing: '0.05em' }}
+              style={{
+                color: p.color,
+                fontSize: 9,
+                fontWeight: 700,
+                marginBottom: 6,
+                letterSpacing: '0.05em',
+              }}
             >
               USER JOURNEY
             </div>
@@ -427,7 +467,9 @@ function PersonaView() {
               borderTop: `1px solid ${p.color}15`,
             }}
           >
-            <div style={{ color: p.color, fontSize: 9, fontWeight: 700, marginBottom: 4 }}>KEY FEATURES</div>
+            <div style={{ color: p.color, fontSize: 9, fontWeight: 700, marginBottom: 4 }}>
+              KEY FEATURES
+            </div>
             <div style={{ color: COLORS.textMuted, fontSize: 9 }}>{p.keyFeatures.join(' · ')}</div>
           </div>
         </div>
@@ -461,7 +503,12 @@ const nfrCategories: NfrCategory[] = [
       { metric: 'FCP', value: '< 2秒', status: '✅', detail: 'Vercel CDN + Edge Network' },
       { metric: 'ページ遷移', value: 'CSR', status: '✅', detail: 'App Router Client Navigation' },
       { metric: '画像最適化', value: 'Next/Image', status: '✅', detail: 'Firebase Storage + CDN' },
-      { metric: 'オフラインキャッシュ', value: 'Serwist', status: '✅', detail: 'PWA Service Worker' },
+      {
+        metric: 'オフラインキャッシュ',
+        value: 'Serwist',
+        status: '✅',
+        detail: 'PWA Service Worker',
+      },
     ],
   },
   {
@@ -471,8 +518,18 @@ const nfrCategories: NfrCategory[] = [
     items: [
       { metric: '認証', value: 'JWT + Firebase', status: '✅', detail: 'NextAuth.js デュアル認証' },
       { metric: '認可', value: 'RBAC 3ロール', status: '✅', detail: 'admin / pro / general' },
-      { metric: 'レートリミット', value: '60 req/min', status: '✅', detail: 'Upstash Redis IP-based' },
-      { metric: 'Webhook検証', value: 'HMAC + 署名', status: '✅', detail: 'Stripe + LINE timingSafe' },
+      {
+        metric: 'レートリミット',
+        value: '60 req/min',
+        status: '✅',
+        detail: 'Upstash Redis IP-based',
+      },
+      {
+        metric: 'Webhook検証',
+        value: 'HMAC + 署名',
+        status: '✅',
+        detail: 'Stripe + LINE timingSafe',
+      },
       { metric: '暗号化', value: 'AES-256-GCM', status: '✅', detail: 'DL認証情報保護' },
       { metric: 'SSRF防止', value: 'ホワイトリスト', status: '✅', detail: 'OGP画像生成' },
       { metric: 'CSP', value: 'nonce方式', status: '✅', detail: 'セキュリティヘッダー7種' },
@@ -487,7 +544,12 @@ const nfrCategories: NfrCategory[] = [
       { metric: 'ホスティング', value: 'Vercel', status: '✅', detail: '自動スケーリング' },
       { metric: 'データベース', value: 'Firestore', status: '✅', detail: 'SLA 99.999%' },
       { metric: 'エラー監視', value: 'Sentry', status: '✅', detail: 'リアルタイム例外追跡' },
-      { metric: 'CI/CD', value: 'GitHub Actions', status: '✅', detail: 'lint + format + test + build' },
+      {
+        metric: 'CI/CD',
+        value: 'GitHub Actions',
+        status: '✅',
+        detail: 'lint + format + test + build',
+      },
     ],
   },
   {
@@ -516,7 +578,13 @@ const nfrCategories: NfrCategory[] = [
 
 function NfrDashboard() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: 12,
+      }}
+    >
       {nfrCategories.map((cat) => (
         <div
           key={cat.label}
@@ -553,7 +621,9 @@ function NfrDashboard() {
               >
                 <span style={{ fontSize: 11 }}>{item.status}</span>
                 <div>
-                  <div style={{ color: COLORS.text, fontSize: 9.5, fontWeight: 600 }}>{item.metric}</div>
+                  <div style={{ color: COLORS.text, fontSize: 9.5, fontWeight: 600 }}>
+                    {item.metric}
+                  </div>
                   <div style={{ color: COLORS.textDim, fontSize: 8 }}>{item.detail}</div>
                 </div>
                 <span
@@ -655,8 +725,12 @@ function TechMatrix() {
             }}
           >
             <div>
-              <span style={{ color: COLORS.textDim, fontSize: 9, fontWeight: 600 }}>{t.category}</span>
-              <span style={{ color: t.color, fontSize: 14, fontWeight: 700, marginLeft: 10 }}>{t.choice}</span>
+              <span style={{ color: COLORS.textDim, fontSize: 9, fontWeight: 600 }}>
+                {t.category}
+              </span>
+              <span style={{ color: t.color, fontSize: 14, fontWeight: 700, marginLeft: 10 }}>
+                {t.choice}
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {t.alternatives.map((a) => (
@@ -724,7 +798,9 @@ export default function RequirementsViz() {
         <h1 style={{ color: COLORS.text, fontSize: 24, fontWeight: 700, margin: 0 }}>
           <span style={{ color: COLORS.amber }}>📋</span> Darts Lab — Requirements Overview
         </h1>
-        <p style={{ color: COLORS.textDim, fontSize: 11, margin: '6px 0 0', letterSpacing: '0.1em' }}>
+        <p
+          style={{ color: COLORS.textDim, fontSize: 11, margin: '6px 0 0', letterSpacing: '0.1em' }}
+        >
           23 FEATURES · 3 USER ROLES · 9 CATEGORIES · FULL-STACK SERVERLESS
         </p>
       </div>
@@ -738,10 +814,30 @@ export default function RequirementsViz() {
           flexWrap: 'wrap',
         }}
       >
-        <Tab label="📋 機能マップ" active={tab === 'features'} onClick={() => setTab('features')} color={COLORS.green} />
-        <Tab label="👤 ペルソナ" active={tab === 'personas'} onClick={() => setTab('personas')} color={COLORS.blue} />
-        <Tab label="🛡️ 非機能要件" active={tab === 'nfr'} onClick={() => setTab('nfr')} color={COLORS.red} />
-        <Tab label="⚙️ 技術選定" active={tab === 'tech'} onClick={() => setTab('tech')} color={COLORS.purple} />
+        <Tab
+          label="📋 機能マップ"
+          active={tab === 'features'}
+          onClick={() => setTab('features')}
+          color={COLORS.green}
+        />
+        <Tab
+          label="👤 ペルソナ"
+          active={tab === 'personas'}
+          onClick={() => setTab('personas')}
+          color={COLORS.blue}
+        />
+        <Tab
+          label="🛡️ 非機能要件"
+          active={tab === 'nfr'}
+          onClick={() => setTab('nfr')}
+          color={COLORS.red}
+        />
+        <Tab
+          label="⚙️ 技術選定"
+          active={tab === 'tech'}
+          onClick={() => setTab('tech')}
+          color={COLORS.purple}
+        />
       </div>
 
       <div style={{ maxWidth: 920, margin: '0 auto' }}>

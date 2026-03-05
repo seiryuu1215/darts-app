@@ -47,9 +47,7 @@ export async function pxLogin(email: string, password: string): Promise<PxLoginR
 
   if (!res.ok) {
     const bodyText = await res.text().catch(() => '');
-    throw new Error(
-      `PX_LOGIN_FAILED: ${res.status} ${res.statusText} — ${bodyText.slice(0, 200)}`,
-    );
+    throw new Error(`PX_LOGIN_FAILED: ${res.status} ${res.statusText} — ${bodyText.slice(0, 200)}`);
   }
 
   const data = (await res.json()) as Record<string, unknown>;
