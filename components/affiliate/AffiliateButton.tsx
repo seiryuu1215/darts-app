@@ -55,7 +55,18 @@ export default function AffiliateButton({
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => setAnchorEl(null)}
+            onClick={() => {
+              setAnchorEl(null);
+              fetch('/api/affiliate/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  shop: link.shop,
+                  barrelBrand: barrel.brand,
+                  barrelName: barrel.name,
+                }),
+              }).catch(() => {});
+            }}
           >
             <ListItemText>{link.label}</ListItemText>
             <OpenInNewIcon sx={{ fontSize: 16, ml: 1, color: 'text.secondary' }} />
