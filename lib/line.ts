@@ -1916,7 +1916,6 @@ export function buildSensorSummaryFlexBubble(
 
   return {
     type: 'bubble',
-    size: 'kilo',
     header: {
       type: 'box',
       layout: 'vertical',
