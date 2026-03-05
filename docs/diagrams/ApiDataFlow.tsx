@@ -559,35 +559,29 @@ function DataFlowDiagram() {
         items={['lib/affiliate.ts', 'getShopLinks(barrel)']}
       />
 
-      <FlowArrow x1={390} y1={300} x2={440} y2={280} color={C.pink} />
       <FlowArrow x1={390} y1={300} x2={440} y2={300} color={C.pink} />
-      <FlowArrow x1={390} y1={300} x2={440} y2={320} color={C.pink} />
 
-      {['ダーツハイブ (A8)', 'エスダーツ', 'MAXIM', 'TiTO', '楽天', 'Amazon'].map((shop, i) => (
-        <g key={shop}>
-          <rect
-            x={440}
-            y={260 + i * 22}
-            width={130}
-            height={18}
-            rx={4}
-            fill={C.surface}
-            stroke={C.pink}
-            strokeWidth={0.5}
-          />
-          <text
-            x={505}
-            y={270 + i * 22}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={C.textMuted}
-            fontSize={8}
-            fontFamily="'JetBrains Mono',monospace"
-          >
-            {shop}
-          </text>
-        </g>
-      ))}
+      <rect
+        x={440}
+        y={291}
+        width={130}
+        height={18}
+        rx={4}
+        fill={C.surface}
+        stroke={C.pink}
+        strokeWidth={0.5}
+      />
+      <text
+        x={505}
+        y={301}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill={C.textMuted}
+        fontSize={8}
+        fontFamily="'JetBrains Mono',monospace"
+      >
+        ダーツハイブ (A8.net)
+      </text>
 
       <text
         x={650}

@@ -105,7 +105,7 @@ const featureGroups: FeatureGroup[] = [
       { name: '実寸シミュレーター', role: 'all' },
       { name: '診断クイズ (6問)', role: 'all' },
       { name: 'レコメンドエンジン', role: 'all', note: '100点スコアリング' },
-      { name: 'アフィリエイト (6ショップ)', role: 'all' },
+      { name: 'アフィリエイト (ダーツハイブ)', role: 'all' },
     ],
   },
   {

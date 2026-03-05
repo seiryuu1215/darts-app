@@ -499,9 +499,9 @@ LINE Messaging API を使用したアカウント連携と日次通知。
   │←── Pro有効化 ────│                    │
 ```
 
-### 6.5 アフィリエイト（6ショップ）
+### 6.5 アフィリエイト（ダーツハイブ）
 
-バレル商品から6つのショップへの購入リンクを生成する。
+バレル商品からダーツハイブへの購入リンクを生成する（A8.net経由）。
 詳細は [設計図ビューア「API・データフロー」タブ](https://portfolio-seiryuu.vercel.app/projects/darts-lab) を参照。
 
 ```
@@ -509,16 +509,11 @@ LINE Messaging API を使用したアカウント連携と日次通知。
     ↓
 AffiliateButton (ドロップダウン)
     ↓ getShopLinks(barrel)
-lib/affiliate.ts → 6ショップURL生成
-    ├── ダーツハイブ (A8.net経由)
-    ├── エスダーツ
-    ├── MAXIM
-    ├── TiTO
-    ├── 楽天市場 (アフィリエイトID付き)
-    └── Amazon (アソシエイトタグ付き)
+lib/affiliate.ts → ショップURL生成
+    └── ダーツハイブ (A8.net経由)
 ```
 
-- `lib/affiliate.ts` — `getShopLinks(barrel)` で6ショップのURLを生成
+- `lib/affiliate.ts` — `getShopLinks(barrel)` でショップURLを生成
 - `AffiliateButton.tsx` — ドロップダウンで購入先選択、`target="_blank"` + `rel="noopener noreferrer"`
 - `AffiliateBanner.tsx` — サイドバー等に表示するショップバナー
 

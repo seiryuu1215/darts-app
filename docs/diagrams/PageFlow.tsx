@@ -405,7 +405,7 @@ export default function PageFlowDiagram() {
             w={210}
             h={28}
             label="→ 外部ショップ"
-            path="アフィリエイト6店"
+            path="アフィリエイト"
             icon="🛒"
             color={C.amber}
           />
