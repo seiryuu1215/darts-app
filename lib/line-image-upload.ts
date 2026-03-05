@@ -4,7 +4,7 @@ import { adminStorage } from './firebase-admin';
  * 画像バッファを Firebase Storage にアップロードし、公開URLを返す
  */
 export async function uploadLineImage(buffer: Buffer, filePath: string): Promise<string> {
-  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!;
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!.trim();
   const bucket = adminStorage.bucket(bucketName);
   const file = bucket.file(filePath);
 
