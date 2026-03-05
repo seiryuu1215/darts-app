@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, within } from '@storybook/test';
+import { expect, within } from 'storybook/test';
 import SessionCompareCard from '@/components/stats/SessionCompareCard';
 import { MOCK_COUNTUP_PLAYS } from '../mocks/dartslive-stats';
 

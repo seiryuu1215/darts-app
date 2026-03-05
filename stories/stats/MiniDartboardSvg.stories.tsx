@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect } from '@storybook/test';
+import { expect } from 'storybook/test';
 import MiniDartboardSvg from '@/components/stats/MiniDartboardSvg';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
 import { MOCK_COUNTUP_PLAYS } from '../mocks/dartslive-stats';
