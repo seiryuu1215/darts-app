@@ -44,6 +44,7 @@ interface SimpleModeProps {
   statsCriAvg: number | null;
   statsPraAvg: number | null;
   hatTrickRate?: number | null;
+  lowTonRate?: number | null;
   countUpScores?: number[];
   flight?: string;
   stats01?: never;
@@ -150,7 +151,7 @@ function buildSimpleData(
   statsCriAvg: number | null,
   statsPraAvg: number | null,
   hatTrickRate: number | null | undefined,
-  countUpScores?: number[],
+  lowTonRate: number | null | undefined,
   flight?: string,
 ): RadarDataItem[] {
   const rt = getFlightRating(flight);
@@ -167,20 +168,10 @@ function buildSimpleData(
   const maxCri = nextMpr ?? 4.0;
   const maxCU = nextPpd != null ? nextPpd * 8 : 800;
   const maxHT = nextBench?.hatTrickRate ?? 60;
+  const maxLT = nextBench?.lowTonRate ?? 80;
 
-  // ハットトリック率
   const htRate = hatTrickRate ?? 0;
-
-  // 安定性 (CVベース)
-  let stability = 50;
-  if (countUpScores && countUpScores.length >= 3) {
-    const avg = countUpScores.reduce((a, b) => a + b, 0) / countUpScores.length;
-    const stdDev = Math.sqrt(
-      countUpScores.reduce((s, v) => s + (v - avg) ** 2, 0) / countUpScores.length,
-    );
-    const cv = avg > 0 ? stdDev / avg : 1;
-    stability = Math.max(0, Math.min(100, (1 - cv / 0.5) * 100));
-  }
+  const ltRate = lowTonRate ?? 0;
 
   return [
     {
@@ -202,15 +193,16 @@ function buildSimpleData(
       rawLabel: statsPraAvg != null ? `(${Math.round(statsPraAvg)})` : '',
     },
     {
-      axis: 'HT率',
+      axis: 'ハット率',
       value: normalize(htRate, 0, maxHT),
       benchmark: bench?.hatTrickRate != null ? normalize(bench.hatTrickRate, 0, maxHT) : undefined,
       rawLabel: hatTrickRate != null ? `(${htRate.toFixed(1)}%)` : '',
     },
     {
-      axis: '安定性',
-      value: stability,
-      rawLabel: `(${Math.round(stability)})`,
+      axis: 'ロートン率',
+      value: normalize(ltRate, 0, maxLT),
+      benchmark: bench?.lowTonRate != null ? normalize(bench.lowTonRate, 0, maxLT) : undefined,
+      rawLabel: lowTonRate != null ? `(${ltRate.toFixed(1)}%)` : '',
     },
   ];
 }
@@ -225,7 +217,7 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
         props.statsCriAvg,
         props.statsPraAvg,
         props.hatTrickRate,
-        props.countUpScores,
+        props.lowTonRate,
         props.flight,
       )
     : buildDetailedData(props.stats01, props.statsCricket, props.flight);

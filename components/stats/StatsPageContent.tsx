@@ -192,12 +192,14 @@ export default function StatsPageContent({
     () => dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores,
     [dlData.recentGames.games],
   );
-  const hatTrickRate = useMemo(() => {
+  const roundBulls = useMemo(() => {
     if (!countupPlays || countupPlays.length === 0) return null;
     const logs = countupPlays.map((p) => p.playLog).filter((l): l is string => !!l && l.length > 0);
     if (logs.length === 0) return null;
-    return analyzeRoundBulls(logs).hatTrickRate;
+    return analyzeRoundBulls(logs);
   }, [countupPlays]);
+  const hatTrickRate = roundBulls?.hatTrickRate ?? null;
+  const lowTonRate = roundBulls?.lowTonRate ?? null;
 
   // PracticeRecommendationsCard 用の lite 版入力（sensor系は全て null）
   const recInput = useMemo((): RecommendationInput | null => {
@@ -273,7 +275,7 @@ export default function StatsPageContent({
             statsCriAvg={c.statsCriAvg}
             statsPraAvg={c.statsPraAvg}
             hatTrickRate={hatTrickRate}
-            countUpScores={countUpScores}
+            lowTonRate={lowTonRate}
             flight={c.flight || undefined}
           />
         </StatsCardBoundary>
