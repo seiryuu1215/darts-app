@@ -168,7 +168,7 @@ export async function generateMissDirectionImage(
 
       {/* メインエリア: 円グラフ + 凡例 */}
       <div style={{ display: 'flex', flex: 1 }}>
-        {/* 円グラフ SVG */}
+        {/* 円グラフ SVG + HTMLラベル */}
         <div
           style={{
             display: 'flex',
@@ -195,41 +195,51 @@ export async function generateMissDirectionImage(
             {/* 中心円（ドーナツ風） */}
             <circle cx={cx} cy={cy} r="55" fill="#1a1a2e" />
             <circle cx={cx} cy={cy} r="55" fill="none" stroke="#333" strokeWidth="1" />
-
-            {/* 中心テキスト: 主傾向 */}
-            <text
-              x={cx}
-              y={cy - 8}
-              textAnchor="middle"
-              fill="#CE93D8"
-              fontSize="20"
-              fontWeight="bold"
-            >
-              {result.primaryDirection}
-            </text>
-            <text x={cx} y={cy + 18} textAnchor="middle" fill="#aaa" fontSize="14">
-              {(result.directionStrength * 100).toFixed(0)}%
-            </text>
-
-            {/* 8方向ラベル（外周） */}
-            {Object.entries(DIR_ANGLES).map(([dir, angle]) => {
-              const pos = labelPos(angle, r + 35);
-              const hasData = sortedDirs.some((d) => d.label === dir);
-              return (
-                <text
-                  key={dir}
-                  x={cx + pos.x}
-                  y={cy + pos.y + 5}
-                  textAnchor="middle"
-                  fill={hasData ? '#e0e0e0' : '#555'}
-                  fontSize="15"
-                  fontWeight={dir === result.primaryDirection ? 'bold' : 'normal'}
-                >
-                  {dir}
-                </text>
-              );
-            })}
           </svg>
+
+          {/* 中心テキスト: 主傾向（HTMLで描画） */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'absolute',
+              left: `${cx - 50}px`,
+              top: `${cy - 20}px`,
+              width: '100px',
+              alignItems: 'center',
+            }}
+          >
+            <span style={{ fontSize: '20px', fontWeight: 700, color: '#CE93D8' }}>
+              {result.primaryDirection}
+            </span>
+            <span style={{ fontSize: '14px', color: '#aaa' }}>
+              {(result.directionStrength * 100).toFixed(0)}%
+            </span>
+          </div>
+
+          {/* 8方向ラベル（HTMLで描画） */}
+          {Object.entries(DIR_ANGLES).map(([dir, angle]) => {
+            const pos = labelPos(angle, r + 35);
+            const hasData = sortedDirs.some((d) => d.label === dir);
+            return (
+              <div
+                key={dir}
+                style={{
+                  display: 'flex',
+                  position: 'absolute',
+                  left: `${cx + pos.x - 20}px`,
+                  top: `${cy + pos.y - 5}px`,
+                  width: '40px',
+                  justifyContent: 'center',
+                  fontSize: '15px',
+                  color: hasData ? '#e0e0e0' : '#555',
+                  fontWeight: dir === result.primaryDirection ? 700 : 400,
+                }}
+              >
+                {dir}
+              </div>
+            );
+          })}
         </div>
 
         {/* 凡例 + TOP3 */}
