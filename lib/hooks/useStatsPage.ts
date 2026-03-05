@@ -107,19 +107,6 @@ export interface DartoutItem {
   count: number;
 }
 
-export interface AwardEntry {
-  date: string;
-  awards: Record<string, number>;
-}
-
-export interface RecentPlay {
-  date: string;
-  gameId: string;
-  gameName: string;
-  score: number;
-  awards?: Record<string, number>;
-}
-
 interface DailyHistoryRecord {
   date: string;
   rating: number | null;
@@ -148,9 +135,10 @@ export function useStatsPage() {
   const [apiEnrichedData, setApiEnrichedData] = useState<EnrichedData | null>(null);
   const [apiDailyHistory, setApiDailyHistory] = useState<DailyHistoryRecord[]>([]);
   const [apiDartoutList, setApiDartoutList] = useState<DartoutItem[] | null>(null);
-  const [apiAwardList, setApiAwardList] = useState<AwardEntry[] | null>(null);
-  const [apiRecentPlays, setApiRecentPlays] = useState<RecentPlay[] | null>(null);
   const [apiCountupPlays, setApiCountupPlays] = useState<CountUpPlay[] | null>(null);
+
+  // Pro enriched data (from cached stats enrichedFields)
+  const [proEnrichedData, setProEnrichedData] = useState<EnrichedData | null>(null);
 
   // Period state
   const [periodTab, setPeriodTab] = useState<'latest' | 'week' | 'month' | 'all'>('all');
@@ -194,6 +182,7 @@ export function useStatsPage() {
           if (json.data) {
             setDlData(json.data);
             if (json.updatedAt) setDlUpdatedAt(json.updatedAt);
+            if (json.enrichedFields) setProEnrichedData(json.enrichedFields);
             if (json.data.recentGames?.games?.length > 0) {
               const games = json.data.recentGames.games;
               const countUp = games.find((g: { category: string }) => g.category === 'COUNT-UP');
@@ -247,8 +236,6 @@ export function useStatsPage() {
       setApiDailyHistory(json.records ?? []);
       setApiEnrichedData(json.enriched ?? null);
       setApiDartoutList(json.dartoutList ?? null);
-      setApiAwardList(json.awardList ?? null);
-      setApiRecentPlays(json.recentPlays ?? null);
       setApiCountupPlays(json.countupPlays ?? null);
     } catch {
       /* ignore */
@@ -340,10 +327,11 @@ export function useStatsPage() {
     apiEnrichedData,
     apiDailyHistory,
     apiDartoutList,
-    apiAwardList,
-    apiRecentPlays,
     apiCountupPlays,
     fetchAdminApiData,
+
+    // Pro enriched data
+    proEnrichedData,
 
     // Period
     periodTab,

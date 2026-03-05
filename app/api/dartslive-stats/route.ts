@@ -326,6 +326,15 @@ export const GET = withErrorHandler(
 
     const updatedAt = data?.updatedAt?.toDate?.()?.toISOString() || null;
 
+    // enrichedFields（admin API sync時に書き込み済み、未実行時は全て null）
+    const enrichedFields = {
+      maxRating: data?.maxRating ?? null,
+      maxRatingDate: data?.maxRatingDate ?? null,
+      stats01Detailed: data?.stats01Detailed ?? null,
+      statsCricketDetailed: data?.statsCricketDetailed ?? null,
+      bestRecords: data?.bestRecords ?? null,
+    };
+
     // フルデータがあればパースして返す
     if (data?.fullData) {
       const parsed = JSON.parse(data.fullData);
@@ -340,7 +349,7 @@ export const GET = withErrorHandler(
           scores: data.countUpScores,
         });
       }
-      return NextResponse.json({ data: parsed, cached: true, updatedAt });
+      return NextResponse.json({ data: parsed, cached: true, updatedAt, enrichedFields });
     }
 
     // フルデータがない場合はサマリーのみ返す
@@ -386,6 +395,7 @@ export const GET = withErrorHandler(
       cached: true,
       summaryOnly: true,
       updatedAt,
+      enrichedFields,
     });
   }),
   'Stats cache read error',

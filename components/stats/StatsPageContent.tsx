@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Box, Card, CardContent, CardMedia, Typography } from '@mui/material';
+import { Box, Card, CardContent, CardMedia, Typography, Divider } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
+import type { RecommendationInput } from '@/lib/practice-recommendations';
 
 import RatingHeroCard from './RatingHeroCard';
 import GameStatsCards from './GameStatsCards';
@@ -19,12 +21,16 @@ import AwardsTable from './AwardsTable';
 import ConsistencyCard from './ConsistencyCard';
 import CountUpAnalysisCard from './CountUpAnalysisCard';
 import ZeroOneAnalysisCard from './ZeroOneAnalysisCard';
-import ZeroOneConsistencyCard from './ZeroOneConsistencyCard';
 import ConditionCorrelationCard from './ConditionCorrelationCard';
 import RatingTrendCard from './RatingTrendCard';
 import SkillRadarChart from './SkillRadarChart';
 import SessionComparisonCard from './SessionComparisonCard';
+import RatingBenchmarkCard from './RatingBenchmarkCard';
 import StatsCardBoundary from './StatsCardBoundary';
+
+const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
+const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
+const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -93,7 +99,48 @@ interface DartsliveData {
   } | null;
 }
 
+interface EnrichedData {
+  maxRating: number | null;
+  maxRatingDate: string | null;
+  stats01Detailed: {
+    avg: number | null;
+    best: number | null;
+    winRate: number | null;
+    bullRate: number | null;
+    arrangeRate: number | null;
+    avgBust: number | null;
+    avg100: number | null;
+  } | null;
+  statsCricketDetailed: {
+    avg: number | null;
+    best: number | null;
+    winRate: number | null;
+    tripleRate: number | null;
+    openCloseRate: number | null;
+    avg100: number | null;
+  } | null;
+  bestRecords:
+    | { gameId: string; gameName: string; bestScore: number; bestDate: string | null }[]
+    | null;
+}
+
 type MonthlyTab = 'rating' | 'zeroOne' | 'cricket' | 'countUp';
+
+function TierDivider({ label }: { label: string }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 1.5 }}>
+      <Divider sx={{ flex: 1 }} />
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ fontWeight: 'bold', letterSpacing: 1 }}
+      >
+        {label}
+      </Typography>
+      <Divider sx={{ flex: 1 }} />
+    </Box>
+  );
+}
 
 export interface StatsPageContentProps {
   dlData: DartsliveData;
@@ -109,6 +156,8 @@ export interface StatsPageContentProps {
   gameChartCategory: string;
   onMonthlyTabChange: (tab: MonthlyTab) => void;
   onGameChartCategoryChange: (cat: string) => void;
+  enrichedData?: EnrichedData | null;
+  currentRating?: number | null;
 }
 
 export default function StatsPageContent({
@@ -125,6 +174,8 @@ export default function StatsPageContent({
   gameChartCategory,
   onMonthlyTabChange,
   onGameChartCategoryChange,
+  enrichedData,
+  currentRating,
 }: StatsPageContentProps) {
   const c = dlData.current;
   const prev = dlData.prev;
@@ -142,8 +193,38 @@ export default function StatsPageContent({
     [dlData.recentGames.games],
   );
 
+  // PracticeRecommendationsCard 用の lite 版入力（sensor系は全て null）
+  const recInput = useMemo((): RecommendationInput | null => {
+    if (!enrichedData) return null;
+    const s01 = enrichedData.stats01Detailed;
+    const sCri = enrichedData.statsCricketDetailed;
+    if (!s01 && !sCri) return null;
+    return {
+      ppd: s01?.avg ?? null,
+      bullRate: s01?.bullRate ?? null,
+      arrangeRate: s01?.arrangeRate ?? null,
+      avgBust: s01?.avgBust ?? null,
+      mpr: sCri?.avg ?? null,
+      tripleRate: sCri?.tripleRate ?? null,
+      openCloseRate: sCri?.openCloseRate ?? null,
+      countupAvg: null,
+      countupConsistency: null,
+      primaryMissDirection: null,
+      directionStrength: null,
+      avgRadius: null,
+      radiusImprovement: null,
+      avgSpeed: null,
+      optimalSessionLength: null,
+      peakGameNumber: null,
+      roundPattern: null,
+      worstRound: null,
+    };
+  }, [enrichedData]);
+
   return (
     <>
+      {/* ── ダッシュボード ── */}
+
       {/* 1. Rating Hero + Profile */}
       <StatsCardBoundary name="レーティング">
         <RatingHeroCard
@@ -161,7 +242,7 @@ export default function StatsPageContent({
         />
       </StatsCardBoundary>
 
-      {/* 4. Game Stats Cards */}
+      {/* 2. Game Stats Cards */}
       <StatsCardBoundary name="ゲームスタッツ">
         <GameStatsCards
           stats01Avg={c.stats01Avg}
@@ -177,42 +258,7 @@ export default function StatsPageContent({
         />
       </StatsCardBoundary>
 
-      {/* 5. Bull Stats */}
-      <StatsCardBoundary name="ブルスタッツ">
-        <BullStatsCard awards={c.awards} />
-      </StatsCardBoundary>
-
-      {/* 6. COUNT-UP Delta */}
-      <StatsCardBoundary name="COUNT-UPスコア推移">
-        <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
-      </StatsCardBoundary>
-
-      {/* 6b. Consistency */}
-      <StatsCardBoundary name="安定度分析">
-        <ConsistencyCard games={dlData.recentGames.games} />
-      </StatsCardBoundary>
-
-      {/* 6c. COUNT-UP Analysis */}
-      <StatsCardBoundary name="COUNT-UP分析">
-        <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
-      </StatsCardBoundary>
-
-      {/* 6d. 01 Analysis */}
-      <StatsCardBoundary name="01分析">
-        <ZeroOneAnalysisCard games={dlData.recentGames.games} />
-      </StatsCardBoundary>
-
-      {/* 6e. 01 Consistency */}
-      <StatsCardBoundary name="01安定度">
-        <ZeroOneConsistencyCard games={dlData.recentGames.games} />
-      </StatsCardBoundary>
-
-      {/* 6f. Condition × Performance Correlation */}
-      <StatsCardBoundary name="コンディション相関">
-        <ConditionCorrelationCard periodRecords={periodRecords} />
-      </StatsCardBoundary>
-
-      {/* 6g. PRO Skill Radar */}
+      {/* 3. Skill Radar (simple) */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
         <StatsCardBoundary name="スキルレーダー">
           <SkillRadarChart
@@ -228,12 +274,20 @@ export default function StatsPageContent({
         </StatsCardBoundary>
       )}
 
-      {/* 6h. Rating Trend */}
+      {/* ── レーティング ── */}
+      <TierDivider label="レーティング" />
+
+      {/* 4. Rating Benchmark */}
+      <StatsCardBoundary name="レーティングベンチマーク">
+        <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg ?? c.stats01Avg} />
+      </StatsCardBoundary>
+
+      {/* 5. Rating Trend */}
       <StatsCardBoundary name="レーティング推移">
         <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
       </StatsCardBoundary>
 
-      {/* 7. Rating Target */}
+      {/* 6. Rating Target */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
         <StatsCardBoundary name="Rt目標">
           <RatingTargetCard
@@ -244,7 +298,41 @@ export default function StatsPageContent({
         </StatsCardBoundary>
       )}
 
-      {/* 8. Monthly Trend */}
+      {/* 7. Rating Simulator */}
+      {(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg) != null &&
+        (enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg) != null && (
+          <StatsCardBoundary name="レート予測シミュレーター">
+            <RatingSimulatorCard
+              currentPpd={(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg)!}
+              currentMpr={(enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg)!}
+            />
+          </StatsCardBoundary>
+        )}
+
+      {/* ── ゲーム分析 ── */}
+      <TierDivider label="ゲーム分析" />
+
+      {/* 8. COUNT-UP Delta */}
+      <StatsCardBoundary name="COUNT-UPスコア推移">
+        <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
+      </StatsCardBoundary>
+
+      {/* 9. COUNT-UP Analysis */}
+      <StatsCardBoundary name="COUNT-UP分析">
+        <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
+      </StatsCardBoundary>
+
+      {/* 10. Consistency */}
+      <StatsCardBoundary name="安定度分析">
+        <ConsistencyCard games={dlData.recentGames.games} />
+      </StatsCardBoundary>
+
+      {/* 11. 01 Analysis */}
+      <StatsCardBoundary name="01分析">
+        <ZeroOneAnalysisCard games={dlData.recentGames.games} />
+      </StatsCardBoundary>
+
+      {/* 12. Monthly Trend */}
       <StatsCardBoundary name="月間推移">
         <MonthlyTrendChart
           monthly={dlData.monthly}
@@ -254,7 +342,24 @@ export default function StatsPageContent({
         />
       </StatsCardBoundary>
 
-      {/* 9. Recent Games */}
+      {/* ── インサイト ── */}
+      <TierDivider label="インサイト" />
+
+      {/* 13. Performance Insights */}
+      {enrichedData && (enrichedData.stats01Detailed || enrichedData.statsCricketDetailed) && (
+        <StatsCardBoundary name="パフォーマンスインサイト">
+          <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 14. Practice Recommendations */}
+      {recInput && (
+        <StatsCardBoundary name="練習レコメンド">
+          <PracticeRecommendationsCard input={recInput} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 15. Recent Games */}
       <StatsCardBoundary name="最近のゲーム">
         <RecentGamesChart
           games={dlData.recentGames.games}
@@ -266,22 +371,35 @@ export default function StatsPageContent({
         />
       </StatsCardBoundary>
 
-      {/* 10. Recent Day Summary */}
+      {/* ── その他 ── */}
+      <TierDivider label="その他" />
+
+      {/* 16. Recent Day Summary */}
       <StatsCardBoundary name="直近サマリー">
         <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
       </StatsCardBoundary>
 
-      {/* 10b. Session Comparison */}
+      {/* 17. Bull Stats */}
+      <StatsCardBoundary name="ブルスタッツ">
+        <BullStatsCard awards={c.awards} />
+      </StatsCardBoundary>
+
+      {/* 18. Session Comparison */}
       <StatsCardBoundary name="セッション比較">
         <SessionComparisonCard periodRecords={periodRecords} />
       </StatsCardBoundary>
 
-      {/* 11. Awards Table */}
+      {/* 19. Condition × Performance Correlation */}
+      <StatsCardBoundary name="コンディション相関">
+        <ConditionCorrelationCard periodRecords={periodRecords} />
+      </StatsCardBoundary>
+
+      {/* 20. Awards Table */}
       <StatsCardBoundary name="アワード">
         <AwardsTable awards={c.awards} />
       </StatsCardBoundary>
 
-      {/* 12. Active Dart */}
+      {/* 21. Active Dart */}
       {activeSoftDart && (
         <Card
           component={Link}

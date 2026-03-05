@@ -62,10 +62,9 @@ export default function StatsPage() {
     apiEnrichedData,
     apiDailyHistory,
     apiDartoutList,
-    apiAwardList,
-    apiRecentPlays,
     apiCountupPlays,
     fetchAdminApiData,
+    proEnrichedData,
     periodTab,
     periodSummary,
     periodRecords,
@@ -207,6 +206,8 @@ export default function StatsPage() {
             gameChartCategory={gameChartCategory}
             onMonthlyTabChange={setMonthlyTab}
             onGameChartCategoryChange={setGameChartCategory}
+            enrichedData={proEnrichedData}
+            currentRating={c?.rating}
           />
         )}
 
@@ -217,10 +218,7 @@ export default function StatsPage() {
             enrichedData={apiEnrichedData}
             onSyncComplete={fetchAdminApiData}
             dartoutList={apiDartoutList}
-            awardList={apiAwardList}
-            recentPlays={apiRecentPlays}
             countupPlays={apiCountupPlays}
-            flight={c?.flight}
           />
         )}
 

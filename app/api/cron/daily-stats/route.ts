@@ -449,10 +449,7 @@ export async function GET(request: NextRequest) {
                 };
 
                 const dailyBubbles = await buildRoleBasedDailyNotification(notifCtx);
-                const carouselMsg = buildDailyCarouselMessage(
-                  dailyBubbles,
-                  CONDITION_QUICK_REPLY,
-                );
+                const carouselMsg = buildDailyCarouselMessage(dailyBubbles, CONDITION_QUICK_REPLY);
                 await sendLinePushMessage(lineUserId, [carouselMsg]);
 
                 // Push通知も送信

@@ -22,32 +22,17 @@ import dynamic from 'next/dynamic';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 
 // 軽量カード — 静的import
-import SkillRadarChart from './SkillRadarChart';
 import DetailedGameStatsCard from './DetailedGameStatsCard';
-import RatingBenchmarkCard from './RatingBenchmarkCard';
 
 // 重量カード — dynamic import（初期バンドルから除外）
 const PlayerDnaCard = dynamic(() => import('./PlayerDnaCard'));
-const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
-const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
-const RollingTrendCard = dynamic(() => import('./RollingTrendCard'));
-const StreakPatternCard = dynamic(() => import('./StreakPatternCard'));
-const PeriodComparisonCard = dynamic(() => import('./PeriodComparisonCard'));
-const AwardPaceCard = dynamic(() => import('./AwardPaceCard'));
 const CountUpDeepAnalysisCard = dynamic(() => import('./CountUpDeepAnalysisCard'));
 const ZeroOneDeepAnalysisCard = dynamic(() => import('./ZeroOneDeepAnalysisCard'));
 const CricketDeepAnalysisCard = dynamic(() => import('./CricketDeepAnalysisCard'));
 const DartboardHeatmap = dynamic(() => import('./DartboardHeatmap'));
 const SensorTrendCard = dynamic(() => import('./SensorTrendCard'));
-const SpeedAccuracyCard = dynamic(() => import('./SpeedAccuracyCard'));
 const SessionFatigueCard = dynamic(() => import('./SessionFatigueCard'));
-const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
 import StatsCardBoundary from './StatsCardBoundary';
-import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
-import { analyzeSensor } from '@/lib/sensor-analysis';
-import { analyzeSession } from '@/lib/session-analysis';
-import { analyzeRounds } from '@/lib/countup-round-analysis';
-import type { RecommendationInput } from '@/lib/practice-recommendations';
 
 interface DailyRecord {
   date: string;
@@ -90,28 +75,12 @@ interface DartoutItem {
   count: number;
 }
 
-interface AwardEntry {
-  date: string;
-  awards: Record<string, number>;
-}
-
-interface RecentPlay {
-  date: string;
-  gameId: string;
-  gameName: string;
-  score: number;
-  awards?: Record<string, number>;
-}
-
 interface AdminApiStatsSectionProps {
   dailyHistory: DailyRecord[];
   enrichedData: EnrichedData | null;
   onSyncComplete: () => void;
   dartoutList?: DartoutItem[] | null;
-  awardList?: AwardEntry[] | null;
-  recentPlays?: RecentPlay[] | null;
   countupPlays?: CountUpPlay[] | null;
-  flight?: string;
 }
 
 const STORAGE_KEY = 'stats_collapsed_sections';
@@ -279,10 +248,7 @@ export default function AdminApiStatsSection({
   enrichedData,
   onSyncComplete,
   dartoutList,
-  awardList,
-  recentPlays,
   countupPlays,
-  flight,
 }: AdminApiStatsSectionProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -349,87 +315,6 @@ export default function AdminApiStatsSection({
     return scores.reduce((a, b) => a + b, 0) / scores.length;
   }, [countupPlays]);
 
-  // 練習レコメンデーション用の入力データ構築
-  const recInput = useMemo((): RecommendationInput | null => {
-    if (!enrichedData) return null;
-    const s01 = enrichedData.stats01Detailed;
-    const sCri = enrichedData.statsCricketDetailed;
-
-    // COUNT-UPの安定度
-    let countupConsistency: number | null = null;
-    if (countupPlays && countupPlays.length >= 3) {
-      const consistency = calculateConsistency(countupPlays.map((p) => p.score));
-      countupConsistency = consistency?.score ?? null;
-    }
-
-    // ミス方向
-    let primaryMissDirection: string | null = null;
-    let directionStrength: number | null = null;
-    if (countupPlays && countupPlays.length > 0) {
-      const missResult = analyzeMissDirection(countupPlays.map((p) => p.playLog));
-      if (missResult) {
-        primaryMissDirection = missResult.primaryDirection;
-        directionStrength = missResult.directionStrength;
-      }
-    }
-
-    // センサー
-    let avgRadius: number | null = null;
-    let radiusImprovement: number | null = null;
-    let avgSpeed: number | null = null;
-    if (countupPlays && countupPlays.length >= 10) {
-      const sensor = analyzeSensor(countupPlays);
-      if (sensor) {
-        avgRadius = sensor.overallStats.avgRadius;
-        radiusImprovement = sensor.overallStats.radiusImprovement;
-        avgSpeed = sensor.overallStats.avgSpeed;
-      }
-    }
-
-    // セッション
-    let optimalSessionLength: number | null = null;
-    let peakGameNumber: number | null = null;
-    if (countupPlays && countupPlays.length >= 10) {
-      const session = analyzeSession(countupPlays);
-      if (session) {
-        optimalSessionLength = session.optimalLength.optimalLength;
-        peakGameNumber = session.optimalLength.peakGameNumber;
-      }
-    }
-
-    // ラウンド
-    let roundPattern: string | null = null;
-    let worstRound: number | null = null;
-    if (countupPlays && countupPlays.length >= 5) {
-      const rounds = analyzeRounds(countupPlays.map((p) => p.playLog));
-      if (rounds) {
-        roundPattern = rounds.pattern.pattern;
-        worstRound = rounds.worstRound;
-      }
-    }
-
-    return {
-      ppd: s01?.avg ?? null,
-      bullRate: s01?.bullRate ?? null,
-      arrangeRate: s01?.arrangeRate ?? null,
-      avgBust: s01?.avgBust ?? null,
-      mpr: sCri?.avg ?? null,
-      tripleRate: sCri?.tripleRate ?? null,
-      openCloseRate: sCri?.openCloseRate ?? null,
-      countupAvg,
-      countupConsistency,
-      primaryMissDirection,
-      directionStrength,
-      avgRadius,
-      radiusImprovement,
-      avgSpeed,
-      optimalSessionLength,
-      peakGameNumber,
-      roundPattern,
-      worstRound,
-    };
-  }, [enrichedData, countupPlays, countupAvg]);
-
   return (
     <Box sx={{ mt: 3 }}>
       {/* ヘッダー */}
@@ -488,74 +373,15 @@ export default function AdminApiStatsSection({
         </Typography>
       )}
 
-      {/* AI分析 */}
-      {recInput && (
-        <CollapsibleSection
-          id="ai"
-          label="AI分析"
-          collapsed={!!collapsed.ai}
-          onToggle={toggleSection}
-          cards={[{ id: 'practice_recommendations', label: 'レコメンド' }]}
-          hiddenCards={hiddenCards}
-          onToggleCard={toggleCard}
-        >
-          {!hiddenCards.practice_recommendations && (
-            <StatsCardBoundary name="練習レコメンド">
-              <PracticeRecommendationsCard input={recInput} />
-            </StatsCardBoundary>
-          )}
-        </CollapsibleSection>
-      )}
-
-      {/* スキル分析 */}
-      <CollapsibleSection
-        id="skill"
-        label="スキル分析"
-        collapsed={!!collapsed.skill}
-        onToggle={toggleSection}
-        cards={[
-          { id: 'skill_radar', label: 'スキルレーダー' },
-          { id: 'player_dna', label: 'プレイヤーDNA' },
-          { id: 'performance_insights', label: 'インサイト' },
-        ]}
-        hiddenCards={hiddenCards}
-        onToggleCard={toggleCard}
-      >
-        {!hiddenCards.skill_radar && (
-          <StatsCardBoundary name="スキルレーダー">
-            <SkillRadarChart
-              stats01={enrichedData?.stats01Detailed ?? null}
-              statsCricket={enrichedData?.statsCricketDetailed ?? null}
-              flight={flight}
-            />
-          </StatsCardBoundary>
-        )}
-        {!hiddenCards.player_dna && (
-          <StatsCardBoundary name="プレイヤーDNA">
-            <PlayerDnaCard
-              stats01={enrichedData?.stats01Detailed ?? null}
-              statsCricket={enrichedData?.statsCricketDetailed ?? null}
-              countupAvg={countupAvg}
-            />
-          </StatsCardBoundary>
-        )}
-        {!hiddenCards.performance_insights && enrichedData && (
-          <StatsCardBoundary name="パフォーマンスインサイト">
-            <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
-          </StatsCardBoundary>
-        )}
-      </CollapsibleSection>
-
-      {/* ゲーム詳細 */}
+      {/* ゲーム詳細分析 */}
       <CollapsibleSection
         id="game_detail"
-        label="ゲーム詳細"
+        label="ゲーム詳細分析"
         collapsed={!!collapsed.game_detail}
         onToggle={toggleSection}
         cards={[
           { id: 'detailed_game', label: 'ゲーム詳細' },
-          { id: 'rating_benchmark', label: 'ベンチマーク' },
-          { id: 'rating_simulator', label: 'レート予測' },
+          { id: 'player_dna', label: 'プレイヤーDNA' },
         ]}
         hiddenCards={hiddenCards}
         onToggleCard={toggleCard}
@@ -568,21 +394,15 @@ export default function AdminApiStatsSection({
             />
           </StatsCardBoundary>
         )}
-        {!hiddenCards.rating_benchmark && (
-          <StatsCardBoundary name="レーティングベンチマーク">
-            <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg} />
+        {!hiddenCards.player_dna && (
+          <StatsCardBoundary name="プレイヤーDNA">
+            <PlayerDnaCard
+              stats01={enrichedData?.stats01Detailed ?? null}
+              statsCricket={enrichedData?.statsCricketDetailed ?? null}
+              countupAvg={countupAvg}
+            />
           </StatsCardBoundary>
         )}
-        {!hiddenCards.rating_simulator &&
-          enrichedData?.stats01Detailed?.avg != null &&
-          enrichedData?.statsCricketDetailed?.avg != null && (
-            <StatsCardBoundary name="レート予測シミュレーター">
-              <RatingSimulatorCard
-                currentPpd={enrichedData.stats01Detailed.avg}
-                currentMpr={enrichedData.statsCricketDetailed.avg}
-              />
-            </StatsCardBoundary>
-          )}
       </CollapsibleSection>
 
       {/* ゲーム別深掘り */}
@@ -592,12 +412,23 @@ export default function AdminApiStatsSection({
         collapsed={!!collapsed.game_deep}
         onToggle={toggleSection}
         cards={[
+          { id: 'countup_deep', label: 'COUNT-UP深掘り' },
           { id: 'zeroone_deep', label: '01深掘り' },
           { id: 'cricket_deep', label: 'Cricket深掘り' },
+          { id: 'dartboard_heatmap', label: 'ヒートマップ' },
         ]}
         hiddenCards={hiddenCards}
         onToggleCard={toggleCard}
       >
+        {!hiddenCards.countup_deep && countupPlays && countupPlays.length > 0 && (
+          <StatsCardBoundary name="COUNT-UP深掘り分析">
+            <CountUpDeepAnalysisCard
+              countupPlays={countupPlays}
+              stats01Detailed={enrichedData?.stats01Detailed}
+              bestRecords={enrichedData?.bestRecords}
+            />
+          </StatsCardBoundary>
+        )}
         {!hiddenCards.zeroone_deep && (
           <StatsCardBoundary name="01深掘り分析">
             <ZeroOneDeepAnalysisCard
@@ -620,92 +451,23 @@ export default function AdminApiStatsSection({
             />
           </StatsCardBoundary>
         )}
-      </CollapsibleSection>
-
-      {/* 推移・履歴 */}
-      <CollapsibleSection
-        id="trend"
-        label="推移・履歴"
-        collapsed={!!collapsed.trend}
-        onToggle={toggleSection}
-        cards={[
-          { id: 'rolling_trend', label: '移動平均' },
-          { id: 'period_comparison', label: '期間比較' },
-          { id: 'streak_pattern', label: '連勝パターン' },
-          { id: 'award_pace', label: 'アワードペース' },
-        ]}
-        hiddenCards={hiddenCards}
-        onToggleCard={toggleCard}
-      >
-        {!hiddenCards.rolling_trend && dailyHistory.length >= 7 && (
-          <StatsCardBoundary name="移動平均トレンド">
-            <RollingTrendCard dailyHistory={dailyHistory} />
-          </StatsCardBoundary>
-        )}
-        {!hiddenCards.period_comparison && dailyHistory.length >= 4 && (
-          <StatsCardBoundary name="期間比較">
-            <PeriodComparisonCard dailyHistory={dailyHistory} />
-          </StatsCardBoundary>
-        )}
-        {!hiddenCards.streak_pattern && dailyHistory.length >= 5 && (
-          <StatsCardBoundary name="連勝パターン">
-            <StreakPatternCard dailyHistory={dailyHistory} />
-          </StatsCardBoundary>
-        )}
-        {!hiddenCards.award_pace && awardList && awardList.length >= 2 && (
-          <StatsCardBoundary name="アワードペース">
-            <AwardPaceCard awardList={awardList} />
+        {!hiddenCards.dartboard_heatmap && countupPlays && countupPlays.length >= 24 && (
+          <StatsCardBoundary name="ダーツボードヒートマップ">
+            <DartboardHeatmap countupPlays={countupPlays} />
           </StatsCardBoundary>
         )}
       </CollapsibleSection>
 
-      {/* ゲーム分析 */}
-      {(recentPlays?.length || countupPlays?.length) && (
-        <CollapsibleSection
-          id="game_analysis"
-          label="ゲーム分析"
-          collapsed={!!collapsed.game_analysis}
-          onToggle={toggleSection}
-          cards={[
-            { id: 'countup_deep', label: 'COUNT-UP深掘り' },
-            { id: 'dartboard_heatmap', label: 'ヒートマップ' },
-            { id: 'session_fatigue', label: 'セッション疲労' },
-          ]}
-          hiddenCards={hiddenCards}
-          onToggleCard={toggleCard}
-        >
-          {!hiddenCards.countup_deep && countupPlays && countupPlays.length > 0 && (
-            <StatsCardBoundary name="COUNT-UP深掘り分析">
-              <CountUpDeepAnalysisCard
-                countupPlays={countupPlays}
-                stats01Detailed={enrichedData?.stats01Detailed}
-                bestRecords={enrichedData?.bestRecords}
-              />
-            </StatsCardBoundary>
-          )}
-          {!hiddenCards.dartboard_heatmap && countupPlays && countupPlays.length >= 24 && (
-            <StatsCardBoundary name="ダーツボードヒートマップ">
-              <DartboardHeatmap countupPlays={countupPlays} />
-            </StatsCardBoundary>
-          )}
-          {!hiddenCards.session_fatigue && countupPlays && countupPlays.length >= 10 && (
-            <StatsCardBoundary name="セッション疲労分析">
-              <SessionFatigueCard countupPlays={countupPlays} />
-            </StatsCardBoundary>
-          )}
-        </CollapsibleSection>
-      )}
-
-      {/* センサー分析 */}
+      {/* センサー・セッション */}
       {countupPlays && countupPlays.length >= 10 && (
         <CollapsibleSection
           id="sensor"
-          label="センサー分析"
+          label="センサー・セッション"
           collapsed={!!collapsed.sensor}
           onToggle={toggleSection}
           cards={[
             { id: 'sensor_trend', label: 'センサー推移' },
-            { id: 'speed_accuracy', label: 'スピード精度' },
+            { id: 'session_fatigue', label: 'セッション疲労' },
           ]}
           hiddenCards={hiddenCards}
           onToggleCard={toggleCard}
@@ -715,9 +477,9 @@ export default function AdminApiStatsSection({
               <SensorTrendCard countupPlays={countupPlays} />
             </StatsCardBoundary>
           )}
-          {!hiddenCards.speed_accuracy && (
-            <StatsCardBoundary name="スピード精度">
-              <SpeedAccuracyCard countupPlays={countupPlays} />
+          {!hiddenCards.session_fatigue && (
+            <StatsCardBoundary name="セッション疲労分析">
+              <SessionFatigueCard countupPlays={countupPlays} />
             </StatsCardBoundary>
           )}
         </CollapsibleSection>

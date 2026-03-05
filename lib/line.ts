@@ -1784,6 +1784,156 @@ export function buildRoundPatternFlexBubble(analysis: RoundAnalysis): object {
   };
 }
 
+/** センサー分析サマリー（ミス方向 + ヒートマップ + ラウンドパターンを1バブルに統合） */
+export function buildSensorSummaryFlexBubble(
+  missResult: MissDirectionResult | null,
+  heatmapData: HeatmapData | null,
+  roundAnalysis: RoundAnalysis | null,
+): object {
+  const bodyContents: object[] = [];
+
+  // ミス方向セクション
+  if (missResult) {
+    bodyContents.push(
+      {
+        type: 'text',
+        text: 'ミス方向',
+        size: 'xs',
+        color: '#aaaaaa',
+        weight: 'bold',
+      },
+      {
+        type: 'text',
+        text: `主傾向: ${missResult.primaryDirection}（強度 ${Math.round(missResult.directionStrength * 100)}%）`,
+        size: 'sm',
+        color: '#ffffff',
+        wrap: true,
+      },
+    );
+  }
+
+  // ヒートマップセクション
+  if (heatmapData && heatmapData.totalDarts > 0) {
+    const sorted = [...heatmapData.segments.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    if (sorted.length > 0) {
+      if (bodyContents.length > 0) {
+        bodyContents.push({ type: 'separator', color: '#444444', margin: 'md' });
+      }
+      bodyContents.push({
+        type: 'text',
+        text: 'TOP5セグメント',
+        size: 'xs',
+        color: '#aaaaaa',
+        weight: 'bold',
+        margin: 'md',
+      });
+
+      const barItems: object[] = sorted.map(([segId, count]) => {
+        const pct = Math.round((count / heatmapData.totalDarts) * 100);
+        return {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: getSegmentLabel(segId), size: 'xxs', color: '#ffffff', flex: 2 },
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: 5,
+              contents: [
+                {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [],
+                  backgroundColor: '#7B1FA2',
+                  width: `${Math.max(pct, 5)}%`,
+                  height: '8px',
+                  cornerRadius: '4px',
+                },
+              ],
+              backgroundColor: '#333333',
+              height: '8px',
+              cornerRadius: '4px',
+            },
+            {
+              type: 'text',
+              text: `${pct}%`,
+              size: 'xxs',
+              color: '#aaaaaa',
+              flex: 1,
+              align: 'end',
+            },
+          ],
+          spacing: 'sm',
+          margin: 'xs',
+        };
+      });
+      bodyContents.push(...barItems);
+    }
+  }
+
+  // ラウンドパターンセクション
+  if (roundAnalysis) {
+    if (bodyContents.length > 0) {
+      bodyContents.push({ type: 'separator', color: '#444444', margin: 'md' });
+    }
+    bodyContents.push(
+      {
+        type: 'text',
+        text: 'ラウンドパターン',
+        size: 'xs',
+        color: '#aaaaaa',
+        weight: 'bold',
+        margin: 'md',
+      },
+      {
+        type: 'text',
+        text: `${roundAnalysis.pattern.label}　Best R${roundAnalysis.bestRound} / Worst R${roundAnalysis.worstRound}`,
+        size: 'sm',
+        color: '#ffffff',
+        wrap: true,
+      },
+    );
+  }
+
+  if (bodyContents.length === 0) {
+    bodyContents.push({
+      type: 'text',
+      text: 'データなし',
+      size: 'sm',
+      color: '#888888',
+    });
+  }
+
+  return {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: 'センサー分析',
+          size: 'sm',
+          weight: 'bold',
+          color: '#ffffff',
+        },
+      ],
+      backgroundColor: '#7B1FA2',
+      paddingAll: '12px',
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#1a1a2e',
+      paddingAll: '16px',
+      spacing: 'sm',
+      contents: bodyContents,
+    },
+  };
+}
+
 /** Flex Message からバブル部分を抽出 */
 export function extractBubble(flexMessage: object): object | null {
   const msg = flexMessage as Record<string, unknown>;
@@ -1796,10 +1946,7 @@ export function extractBubble(flexMessage: object): object | null {
 }
 
 /** 複数バブルをカルーセルFlexメッセージに組み立て */
-export function buildDailyCarouselMessage(
-  bubbles: object[],
-  quickReply?: object,
-): object {
+export function buildDailyCarouselMessage(bubbles: object[], quickReply?: object): object {
   if (bubbles.length === 0) {
     return { type: 'text', text: 'データがありません。' };
   }
@@ -1808,9 +1955,7 @@ export function buildDailyCarouselMessage(
     type: 'flex',
     altText: 'Darts Lab デイリーレポート',
     contents:
-      bubbles.length === 1
-        ? bubbles[0]
-        : { type: 'carousel', contents: bubbles.slice(0, 12) },
+      bubbles.length === 1 ? bubbles[0] : { type: 'carousel', contents: bubbles.slice(0, 12) },
   };
 
   if (quickReply) msg.quickReply = quickReply;

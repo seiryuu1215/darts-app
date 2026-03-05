@@ -10,12 +10,10 @@ import type { CountUpPlayData } from '@/lib/dartslive-api';
 import {
   buildStatsFlexMessage,
   buildCountUpFlexMessage,
-  buildMissDirectionFlexBubble,
-  buildHeatmapSummaryFlexBubble,
   buildSessionComparisonFlexBubble,
   buildRecommendationsFlexBubble,
   buildTrendFlexBubble,
-  buildRoundPatternFlexBubble,
+  buildSensorSummaryFlexBubble,
   extractBubble,
   type CuNotifyStats,
   type TrendBubbleInput,
@@ -92,8 +90,7 @@ export async function buildRoleBasedDailyNotification(
 
   // 共通分析結果を事前計算（重複計算を回避）
   const missResult = cuPlays.length > 0 ? analyzeMissDirection(playLogs) : null;
-  const sessionComparison =
-    allPlays.length > 0 ? compareLastTwoSessions(allPlays, 30) : null;
+  const sessionComparison = allPlays.length > 0 ? compareLastTwoSessions(allPlays, 30) : null;
   const roundAnalysis = cuPlays.length >= 5 ? analyzeRounds(playLogs) : null;
 
   if (cuPlays.length > 0) {
@@ -157,33 +154,19 @@ export async function buildRoleBasedDailyNotification(
     }
   }
 
-  // ── Admin専用: ミス方向分析 ──
-  if (ctx.role === 'admin' && missResult) {
-    try {
-      bubbles.push(buildMissDirectionFlexBubble(missResult));
-    } catch (e) {
-      console.error('Miss direction error:', e);
-    }
-  }
-
-  // ── Admin専用: ヒートマップサマリー ──
+  // ── Admin専用: センサー分析サマリー（ミス方向 + ヒートマップ + ラウンドパターンを1バブルに統合）──
   if (ctx.role === 'admin' && cuPlays.length > 0) {
     try {
       const heatmap = computeSegmentFrequency(playLogs);
-      if (heatmap.totalDarts > 0) {
-        bubbles.push(buildHeatmapSummaryFlexBubble(heatmap));
-      }
+      bubbles.push(
+        buildSensorSummaryFlexBubble(
+          missResult,
+          heatmap.totalDarts > 0 ? heatmap : null,
+          roundAnalysis,
+        ),
+      );
     } catch (e) {
-      console.error('Heatmap error:', e);
-    }
-  }
-
-  // ── Admin専用: ラウンドパターン分析 ──
-  if (ctx.role === 'admin' && roundAnalysis) {
-    try {
-      bubbles.push(buildRoundPatternFlexBubble(roundAnalysis));
-    } catch (e) {
-      console.error('Round pattern error:', e);
+      console.error('Sensor summary error:', e);
     }
   }
 
@@ -280,6 +263,5 @@ function buildRecBubble(
   const recs = generateRecommendations(recInput);
   if (recs.length === 0) return null;
 
-  const max = ctx.role === 'admin' ? 3 : 2;
-  return buildRecommendationsFlexBubble(recs, max);
+  return buildRecommendationsFlexBubble(recs, 3);
 }
