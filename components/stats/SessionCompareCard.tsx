@@ -5,7 +5,6 @@ import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { compareLastTwoSessions, extractQualifiedSessions } from '@/lib/countup-session-compare';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
-import { buildRatingBands } from '@/lib/stats-math';
 import { calc01Rating } from '@/lib/dartslive-rating';
 import { useChartTheme } from '@/lib/chart-theme';
 import MiniDartboardSvg from './MiniDartboardSvg';
@@ -15,7 +14,9 @@ interface SessionCompareCardProps {
   countupPlays: CountUpPlay[];
 }
 
-/** 簡易ミス方向ボード (小型) */
+// ─── サブコンポーネント ───────────────────────────
+
+/** 簡易ミス方向ボード */
 function MiniMissBoard({
   directions,
   bullRate,
@@ -26,11 +27,11 @@ function MiniMissBoard({
   primaryDir: string;
 }) {
   const maxPct = Math.max(...directions.map((d) => d.percentage), 1);
-  const size = 160;
+  const size = 180;
   const cx = size / 2;
   const cy = size / 2;
-  const outerR = size / 2 - 8;
-  const innerR = 24;
+  const outerR = size / 2 - 12;
+  const innerR = 28;
 
   const dirAngles: Record<string, number> = {
     上: 0,
@@ -76,11 +77,16 @@ function MiniMissBoard({
           'Z',
         ].join(' ');
 
-        // ラベル位置
-        const midR = outerR * 0.6;
+        // ラベル位置（方向名）
+        const labelR = outerR * 0.52;
         const rad = ((angle - 90) * Math.PI) / 180;
-        const tx = cx + midR * Math.cos(rad);
-        const ty = cy + midR * Math.sin(rad);
+        const tx = cx + labelR * Math.cos(rad);
+        const ty = cy + labelR * Math.sin(rad);
+
+        // パーセンテージ位置（ラベルの少し外側）
+        const pctR = outerR * 0.78;
+        const px = cx + pctR * Math.cos(rad);
+        const py = cy + pctR * Math.sin(rad);
 
         return (
           <g key={d.direction}>
@@ -97,10 +103,22 @@ function MiniMissBoard({
               textAnchor="middle"
               dominantBaseline="central"
               fill={isPrimary ? '#f44336' : '#999'}
-              fontSize="8"
+              fontSize="9"
               fontWeight={isPrimary ? 'bold' : 'normal'}
             >
               {d.direction}
+            </text>
+            <text
+              x={px}
+              y={py}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={isPrimary ? '#f44336' : '#777'}
+              fontSize="8"
+              fontWeight={isPrimary ? 'bold' : 'normal'}
+              opacity={intensity > 0.1 ? 1 : 0.5}
+            >
+              {d.percentage.toFixed(1)}%
             </text>
           </g>
         );
@@ -113,20 +131,26 @@ function MiniMissBoard({
         stroke="#4caf50"
         strokeWidth="1.5"
       />
-      <text x={cx} y={cy - 3} textAnchor="middle" fill="#4caf50" fontSize="10" fontWeight="bold">
+      <text x={cx} y={cy - 3} textAnchor="middle" fill="#4caf50" fontSize="11" fontWeight="bold">
         {bullRate}%
       </text>
-      <text x={cx} y={cy + 9} textAnchor="middle" fill="#888" fontSize="7">
+      <text x={cx} y={cy + 10} textAnchor="middle" fill="#888" fontSize="8">
         BULL
       </text>
     </svg>
   );
 }
 
+/** メトリクスの差分色判定 */
+function diffColor(delta: number, inverse?: boolean): string {
+  if (Math.abs(delta) < 0.01) return 'text.secondary';
+  const positive = inverse ? delta < 0 : delta > 0;
+  return positive ? '#4caf50' : '#f44336';
+}
+
 /** 差分チップ */
 function DiffChip({ value, unit, inverse }: { value: number; unit: string; inverse?: boolean }) {
-  const positive = inverse ? value < 0 : value > 0;
-  const color = Math.abs(value) < 0.01 ? '#888' : positive ? '#4caf50' : '#f44336';
+  const color = diffColor(value, inverse);
   const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '→';
   const display = `${value > 0 ? '+' : ''}${typeof value === 'number' && !Number.isInteger(value) ? value.toFixed(1) : value}${unit}`;
 
@@ -142,6 +166,20 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
 }
 
+/** セクションタイトル */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Typography
+      variant="subtitle2"
+      sx={{ fontWeight: 'bold', color: '#aaa', mt: 2.5, mb: 1, fontSize: 12 }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+// ─── メイン ────────────────────────────────────
+
 export default function SessionCompareCard({ countupPlays }: SessionCompareCardProps) {
   const ct = useChartTheme();
 
@@ -155,24 +193,46 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
     const prevSession = allSessions[allSessions.length - 2];
     const currSession = allSessions[allSessions.length - 1];
 
-    // バンドデータ
+    // スコア分布（±3 rating bands + 端を「以下」「以上」表記）
     const prevScores = prevSession.plays.map((p) => p.score);
     const currScores = currSession.plays.map((p) => p.score);
-    const centerRt = calc01Rating(comp.current.avgScore / 8);
-    const prevBands = buildRatingBands(prevScores, centerRt, (s) => s / 8, calc01Rating);
-    const currBands = buildRatingBands(currScores, centerRt, (s) => s / 8, calc01Rating);
-    const bd = prevBands.map((pb, i) => ({
-      label: pb.label,
-      prev: pb.count,
-      current: currBands[i]?.count ?? 0,
-    }));
+    const centerRt = Math.floor(calc01Rating(comp.current.avgScore / 8));
+    const minRt = Math.max(1, centerRt - 3);
+    const maxRt = centerRt + 3;
 
-    // ヒートマップ
+    const bandMap = new Map<number, { prev: number; current: number }>();
+    for (let rt = minRt; rt <= maxRt; rt++) {
+      bandMap.set(rt, { prev: 0, current: 0 });
+    }
+
+    for (const score of prevScores) {
+      const rt = Math.min(maxRt, Math.max(minRt, Math.floor(calc01Rating(score / 8))));
+      const entry = bandMap.get(rt)!;
+      entry.prev++;
+    }
+    for (const score of currScores) {
+      const rt = Math.min(maxRt, Math.max(minRt, Math.floor(calc01Rating(score / 8))));
+      const entry = bandMap.get(rt)!;
+      entry.current++;
+    }
+
+    const bd = Array.from(bandMap.entries()).map(([rt, counts]) => {
+      let label: string;
+      if (rt === minRt) label = `Rt.${rt}以下`;
+      else if (rt === maxRt) label = `Rt.${rt}以上`;
+      else label = `Rt.${rt}`;
+      return { label, ...counts };
+    });
+
+    // ヒートマップ（ミスのみ）
     const prevLogs = prevSession.plays.map((p) => p.playLog).filter((l) => l && l.length > 0);
     const currLogs = currSession.plays.map((p) => p.playLog).filter((l) => l && l.length > 0);
     const hm =
       prevLogs.length > 0 && currLogs.length > 0
-        ? { prev: computeSegmentFrequency(prevLogs), current: computeSegmentFrequency(currLogs) }
+        ? {
+            prev: computeSegmentFrequency(prevLogs, 'miss'),
+            current: computeSegmentFrequency(currLogs, 'miss'),
+          }
         : null;
 
     return { comparison: comp, bandData: bd, heatmaps: hm };
@@ -280,24 +340,22 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
         />
       </Box>
 
-      {/* ヒートマップ並列比較 */}
+      {/* ミスヒートマップ並列比較 */}
       {heatmaps && (
         <>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa', mb: 1 }}>
-            ヒートマップ
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+          <SectionLabel>ミスヒートマップ</SectionLabel>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 0.5 }}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, mb: 0.5 }}>
                 {formatDate(prev.date)}
               </Typography>
-              <MiniDartboardSvg heatmapData={heatmaps.prev} size={140} />
+              <MiniDartboardSvg heatmapData={heatmaps.prev} size={155} />
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, mb: 0.5 }}>
                 {formatDate(current.date)}
               </Typography>
-              <MiniDartboardSvg heatmapData={heatmaps.current} size={140} />
+              <MiniDartboardSvg heatmapData={heatmaps.current} size={155} />
             </Box>
           </Box>
           <Box
@@ -306,7 +364,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
               alignItems: 'center',
               justifyContent: 'center',
               gap: 0.5,
-              mb: 1.5,
+              mb: 1,
             }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -314,7 +372,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
             </Typography>
             <Box
               sx={{
-                width: 100,
+                width: 120,
                 height: 8,
                 borderRadius: 4,
                 background:
@@ -330,84 +388,86 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
 
       {/* ミス方向ボード並列比較 */}
       {prev.missDirections.length > 0 && current.missDirections.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 1 }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-              {formatDate(prev.date)}
-            </Typography>
-            <MiniMissBoard
-              directions={prev.missDirections}
-              bullRate={prev.bullRate}
-              primaryDir={prev.primaryMissDir}
-            />
-            <Typography variant="caption" color="text.secondary">
-              主傾向: {prev.primaryMissDir}
-            </Typography>
+        <>
+          <SectionLabel>ミス方向</SectionLabel>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                {formatDate(prev.date)}
+              </Typography>
+              <MiniMissBoard
+                directions={prev.missDirections}
+                bullRate={prev.bullRate}
+                primaryDir={prev.primaryMissDir}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                主傾向: <b>{prev.primaryMissDir}</b>
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                {formatDate(current.date)}
+              </Typography>
+              <MiniMissBoard
+                directions={current.missDirections}
+                bullRate={current.bullRate}
+                primaryDir={current.primaryMissDir}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                主傾向: <b>{current.primaryMissDir}</b>
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-              {formatDate(current.date)}
-            </Typography>
-            <MiniMissBoard
-              directions={current.missDirections}
-              bullRate={current.bullRate}
-              primaryDir={current.primaryMissDir}
-            />
-            <Typography variant="caption" color="text.secondary">
-              主傾向: {current.primaryMissDir}
-            </Typography>
-          </Box>
-        </Box>
+        </>
       )}
 
       {/* メトリクス比較テーブル */}
-      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa', mt: 2, mb: 1 }}>
-        メトリクス比較
-      </Typography>
+      <SectionLabel>メトリクス比較</SectionLabel>
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr auto auto auto',
-          gap: 0.5,
+          gridTemplateColumns: '80px 1fr auto 1fr',
+          gap: '4px 6px',
           alignItems: 'center',
-          px: 1,
+          px: 0.5,
         }}
       >
-        {metrics.map((m) => (
-          <Box key={m.label} sx={{ display: 'contents' }}>
-            <Typography variant="caption" color="text.secondary">
-              {m.label}
-            </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.7 }}>
-              {m.prevVal}
-            </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'center', px: 0.5 }}>
-              →
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                {m.currVal}
+        {metrics.map((m) => {
+          const color = diffColor(m.delta, m.inverse);
+          return (
+            <Box key={m.label} sx={{ display: 'contents' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                {m.label}
               </Typography>
-              <DiffChip value={m.delta} unit={m.unit} inverse={m.inverse} />
+              <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.6, fontSize: 13 }}>
+                {m.prevVal}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ textAlign: 'center', px: 0.5, opacity: 0.4, fontSize: 12 }}
+              >
+                →
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 13, color }}>
+                  {m.currVal}
+                </Typography>
+                <DiffChip value={m.delta} unit={m.unit} inverse={m.inverse} />
+              </Box>
             </Box>
-          </Box>
-        ))}
+          );
+        })}
       </Box>
 
-      {/* レーティングバンド重ね棒グラフ */}
+      {/* スコア分布比較 */}
       {bandData.length > 0 && (
         <>
-          <Typography
-            variant="subtitle2"
-            sx={{ fontWeight: 'bold', color: '#aaa', mt: 2.5, mb: 1 }}
-          >
-            スコア分布比較 (rating bands)
-          </Typography>
+          <SectionLabel>スコア分布比較</SectionLabel>
           <Box sx={{ width: '100%', height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bandData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: ct.text }} />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: ct.text }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: ct.text }} />
                 <Tooltip
                   contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
@@ -430,9 +490,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       {/* インサイト */}
       {insights.length > 0 && (
         <>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa', mt: 2, mb: 1 }}>
-            インサイト
-          </Typography>
+          <SectionLabel>インサイト</SectionLabel>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {insights.map((text, i) => (
               <Alert
