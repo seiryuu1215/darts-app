@@ -13,6 +13,7 @@
     "test:unit": "vitest run --project unit",
     "test:storybook": "vitest run --project storybook",
     "test:watch": "vitest",
+    "test:e2e": "npx playwright test",
     "scrape:ranking": "tsx scripts/scrape-ranking.ts",
     "scrape:barrels": "tsx scripts/scrape-barrels2.ts",
     "scrape:shops": "tsx scripts/add-multi-line-shops.ts",
