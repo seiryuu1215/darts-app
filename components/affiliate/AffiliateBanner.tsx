@@ -4,6 +4,7 @@ import { Box, Typography, Button, Paper, Chip } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   toDartshiveAffiliateUrl,
+  toDartshiveGeneralUrl,
   toRakutenSearchUrl,
   toAmazonSearchUrl,
   getAffiliateConfig,
@@ -87,7 +88,7 @@ export default function AffiliateBanner({
     {
       label: 'ダーツハイブ',
       desc: '品揃え豊富',
-      url: toDartshiveAffiliateUrl('https://www.dartshive.jp/', config),
+      url: toDartshiveGeneralUrl(config),
     },
     {
       label: '楽天市場',

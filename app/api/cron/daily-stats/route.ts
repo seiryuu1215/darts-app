@@ -140,6 +140,38 @@ export async function GET(request: NextRequest) {
             }
           }
 
+          // カウントアップのプレイ数を事前チェック（日時通知の送信条件に使用）
+          let yesterdayCuPlayCount = 0;
+          if (apiSyncResult && apiSyncResult.countupPlays.length > 0) {
+            try {
+              const cuCacheDoc = await adminDb
+                .doc(`users/${userId}/dartsliveApiCache/countupPlays`)
+                .get();
+              const existingCuPlays: CountUpPlayData[] = cuCacheDoc.exists
+                ? (JSON.parse(cuCacheDoc.data()?.data ?? '[]') as CountUpPlayData[])
+                : [];
+              const existingKeys = new Set(
+                existingCuPlays.map((p) => `${p.time}_${p.score}`),
+              );
+              const newCuPlays = apiSyncResult.countupPlays.filter(
+                (p) => !existingKeys.has(`${p.time}_${p.score}`),
+              );
+              const allCuPlays = [...existingCuPlays, ...newCuPlays];
+
+              const ydJST = new Date();
+              ydJST.setHours(ydJST.getHours() + 9);
+              ydJST.setDate(ydJST.getDate() - 1);
+              const ydStr = `${ydJST.getFullYear()}-${String(ydJST.getMonth() + 1).padStart(2, '0')}-${String(ydJST.getDate()).padStart(2, '0')}`;
+
+              yesterdayCuPlayCount = allCuPlays.filter((p) => {
+                const dateStr = p.time.replace(/\//g, '-').split(/[T _]/)[0];
+                return dateStr === ydStr;
+              }).length;
+            } catch {
+              yesterdayCuPlayCount = 0;
+            }
+          }
+
           {
             // 前回キャッシュと比較
             const cacheRef = adminDb.doc(`users/${userId}/dartsliveCache/latest`);
@@ -330,72 +362,80 @@ export async function GET(request: NextRequest) {
               yesterday.setDate(yesterday.getDate() - 1);
               const dateStr = `${yesterday.getFullYear()}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${String(yesterday.getDate()).padStart(2, '0')}`;
 
-              // LINE通知送信（前回キャッシュとの差分表示）
-              const flexMsg = buildStatsFlexMessage({
-                date: dateStr,
-                rating: stats.rating,
-                ppd: stats.stats01Avg,
-                mpr: stats.statsCriAvg,
-                prevRating: prevData?.rating ?? null,
-                awards: {
-                  dBull: stats.dBullTotal,
-                  sBull: stats.sBullTotal,
-                  hatTricks: stats.hatTricksTotal,
-                  ton80: stats.ton80,
-                  lowTon: stats.lowTon,
-                  highTon: stats.highTon,
-                  threeInABed: stats.threeInABed,
-                  threeInABlack: stats.threeInABlack,
-                  whiteHorse: stats.whiteHorse,
-                },
-                prevAwards: prevData
-                  ? {
-                      dBull: prevData.bullStats?.dBull ?? 0,
-                      sBull: prevData.bullStats?.sBull ?? 0,
-                      hatTricks: prevData.hatTricks ?? 0,
-                      ton80: prevData.ton80 ?? 0,
-                      lowTon: prevData.lowTon ?? 0,
-                      highTon: prevData.highTon ?? 0,
-                      threeInABed: prevData.threeInABed ?? 0,
-                      threeInABlack: prevData.threeInABlack ?? 0,
-                      whiteHorse: prevData.whiteHorse ?? 0,
-                    }
-                  : undefined,
-              });
-              await sendLinePushMessage(lineUserId, [flexMsg]);
+              // LINE通知送信: カウントアップ30プレイ以上の日のみ（APIデータなしの場合は常に送信）
+              const shouldSendLineNotify = apiSyncResult
+                ? yesterdayCuPlayCount >= 30
+                : true;
 
-              // Push通知も送信
-              await sendPushToUser(userId, {
-                title: 'スタッツ更新',
-                body: `Rating: ${stats.rating != null ? stats.rating.toFixed(2) : '-'} / 01: ${stats.stats01Avg ?? '-'} / Cri: ${stats.statsCriAvg ?? '-'}`,
-                url: '/stats',
-              }).catch(() => {});
-
-              // 会話状態を waiting_condition にセット
-              await adminDb.doc(`lineConversations/${lineUserId}`).set({
-                state: 'waiting_condition',
-                pendingStats: {
+              if (shouldSendLineNotify) {
+                const flexMsg = buildStatsFlexMessage({
                   date: dateStr,
                   rating: stats.rating,
                   ppd: stats.stats01Avg,
                   mpr: stats.statsCriAvg,
-                  avg01: stats.stats01Avg,
-                  dBullTotal: stats.dBullTotal,
-                  sBullTotal: stats.sBullTotal,
-                  ton80: stats.ton80,
-                  lowTon: stats.lowTon,
-                  highTon: stats.highTon,
-                  threeInABed: stats.threeInABed,
-                  threeInABlack: stats.threeInABlack,
-                  whiteHorse: stats.whiteHorse,
-                  hatTricksTotal: stats.hatTricksTotal,
-                },
-                condition: null,
-                memo: null,
-                updatedAt: FieldValue.serverTimestamp(),
-              });
+                  prevRating: prevData?.rating ?? null,
+                  awards: {
+                    dBull: stats.dBullTotal,
+                    sBull: stats.sBullTotal,
+                    hatTricks: stats.hatTricksTotal,
+                    ton80: stats.ton80,
+                    lowTon: stats.lowTon,
+                    highTon: stats.highTon,
+                    threeInABed: stats.threeInABed,
+                    threeInABlack: stats.threeInABlack,
+                    whiteHorse: stats.whiteHorse,
+                  },
+                  prevAwards: prevData
+                    ? {
+                        dBull: prevData.bullStats?.dBull ?? 0,
+                        sBull: prevData.bullStats?.sBull ?? 0,
+                        hatTricks: prevData.hatTricks ?? 0,
+                        ton80: prevData.ton80 ?? 0,
+                        lowTon: prevData.lowTon ?? 0,
+                        highTon: prevData.highTon ?? 0,
+                        threeInABed: prevData.threeInABed ?? 0,
+                        threeInABlack: prevData.threeInABlack ?? 0,
+                        whiteHorse: prevData.whiteHorse ?? 0,
+                      }
+                    : undefined,
+                });
+                await sendLinePushMessage(lineUserId, [flexMsg]);
 
-              results.push({ userId, status: 'notified' });
+                // Push通知も送信
+                await sendPushToUser(userId, {
+                  title: 'スタッツ更新',
+                  body: `Rating: ${stats.rating != null ? stats.rating.toFixed(2) : '-'} / 01: ${stats.stats01Avg ?? '-'} / Cri: ${stats.statsCriAvg ?? '-'}`,
+                  url: '/stats',
+                }).catch(() => {});
+
+                // 会話状態を waiting_condition にセット
+                await adminDb.doc(`lineConversations/${lineUserId}`).set({
+                  state: 'waiting_condition',
+                  pendingStats: {
+                    date: dateStr,
+                    rating: stats.rating,
+                    ppd: stats.stats01Avg,
+                    mpr: stats.statsCriAvg,
+                    avg01: stats.stats01Avg,
+                    dBullTotal: stats.dBullTotal,
+                    sBullTotal: stats.sBullTotal,
+                    ton80: stats.ton80,
+                    lowTon: stats.lowTon,
+                    highTon: stats.highTon,
+                    threeInABed: stats.threeInABed,
+                    threeInABlack: stats.threeInABlack,
+                    whiteHorse: stats.whiteHorse,
+                    hatTricksTotal: stats.hatTricksTotal,
+                  },
+                  condition: null,
+                  memo: null,
+                  updatedAt: FieldValue.serverTimestamp(),
+                });
+
+                results.push({ userId, status: 'notified' });
+              } else {
+                results.push({ userId, status: 'skipped_cu_under_30' });
+              }
             }
 
             // XP自動付与: 前回/今回スタッツ差分からXPを算出

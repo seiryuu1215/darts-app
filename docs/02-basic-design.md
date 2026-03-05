@@ -5,7 +5,7 @@
 | 項目           | 内容       |
 | -------------- | ---------- |
 | プロジェクト名 | Darts Lab  |
-| バージョン     | 3.0        |
+| バージョン     | 3.1        |
 | 作成日         | 2025-02-09 |
 | 最終更新日     | 2026-03-01 |
 
@@ -758,3 +758,18 @@ darts-app/
 ├── docs/                         # ドキュメント
 └── public/                       # 静的アセット
 ```
+
+---
+
+## v3.1 追加モジュール
+
+| モジュール | ファイル | 概要 |
+|---|---|---|
+| PHOENIXレーティング換算 | `lib/phoenix-rating.ts` | DARTSLIVE PPD/MPR → PHOENIX Rt.1〜30 変換テーブル |
+| COUNT-UPラウンド分析 | `lib/countup-round-analysis.ts` | ラウンド別平均・パターン検知（cold_start/fade_out/stable/peak_middle/improving） |
+| 練習レコメンドエンジン | `lib/practice-recommendations.ts` | Bull率・アレンジ率・安定性・ミス方向などから優先度付き推奨を生成 |
+| ヒートマップデータ | `lib/heatmap-data.ts` | PLAY_LOGからダーツボードセグメント別頻度を集計 |
+| ダートアウト分析 | `lib/dartout-analysis.ts` | フィニッシュスコア帯分布・ダブル使用傾向・クラッチ率分析 |
+| トレンド分析 | `lib/stats-trend.ts` | SMA計算・ゴールデン/デッドクロス検出・トレンド方向判定 |
+| アワード分析 | `lib/award-analysis.ts` | アワードペース・マイルストーン予測 |
+| セッション比較 | `lib/comparison.ts` | 2セッション間のスタッツ差分カラー表示 |

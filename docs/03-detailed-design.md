@@ -5,7 +5,7 @@
 | 項目           | 内容       |
 | -------------- | ---------- |
 | プロジェクト名 | Darts Lab  |
-| バージョン     | 3.0        |
+| バージョン     | 3.1        |
 | 最終更新日     | 2026-03-01 |
 
 ---
@@ -776,3 +776,39 @@ RootLayout (app/layout.tsx)
 - ユーザー向けメッセージは日本語で簡潔に
 - 技術的詳細はサーバーログ（`console.error`）に出力
 - セキュリティ上、スタックトレースはクライアントに返さない
+
+---
+
+## 8. v3.1 追加設計
+
+### 8.1 PHOENIXレーティング換算 (`lib/phoenix-rating.ts`)
+
+DARTSLIVEの100%スタッツからPHOENIXレーティングを換算する。
+
+- **テーブルルックアップ方式**: Rt.1〜30の30段階、各段階にPPD/MPR下限値を定義
+- `phoenixRatingFromPpd(ppd)` → `{ rating, class }`
+- `phoenixRatingFromMpr(mpr)` → `{ rating, class }`
+- `convertToPhoenix(ppd100, mpr100)` → 01/Cricket個別Rt + 総合Rt + クラス
+
+### 8.2 COUNT-UPセッション比較分析 (`lib/countup-round-analysis.ts`)
+
+- PLAY_LOG（24本カンマ区切り）を8ラウンド×3本に分割
+- 複数ゲームのラウンド別平均を算出
+- パターン検知: 序盤/中盤/終盤の平均を比較し、5種類（cold_start/fade_out/stable/peak_middle/improving）に分類
+
+### 8.3 LINE COUNT-UP通知
+
+- Flex Messageテンプレートでスコア変動・練習メモを配信
+- 週次/月次レポート自動配信
+
+### 8.4 センサー分析
+
+- 8方向ベクトル分析（`analyzeMissDirection`）: PLAY_LOGからミス方向の偏りを検出
+- 加重平均ベクトルで主傾向方向・強度を算出
+- `simulateBullImprovement`: ブル率改善がスコアに与える影響をシミュレーション
+
+### 8.5 練習レコメンドエンジン (`lib/practice-recommendations.ts`)
+
+- 入力: Bull率・アレンジ率・MPR・安定度・ミス方向・グルーピング半径・ラウンドパターンなど
+- 出力: 最大5件の優先度付きレコメンデーション
+- 各レコメンドにカテゴリ・緊急度・練習メニュー・期待効果を付与
