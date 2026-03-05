@@ -13,7 +13,6 @@ import {
   type Stats01Detailed,
   type BestRecord,
 } from './countup-deep-shared';
-import CuComparisonSection from './CuComparisonSection';
 import CuScoreBandsSection from './CuScoreBandsSection';
 import CuMissAnalysisSection from './CuMissAnalysisSection';
 import CuSpeedAnalysisSection from './CuSpeedAnalysisSection';
@@ -118,8 +117,6 @@ export default function CountUpDeepAnalysisCard({
       </Box>
 
       <PeriodSelector period={period} onChange={setPeriod} counts={sortedPlays} />
-
-      <CuComparisonSection sortedPlays={sortedPlays} period={period} />
 
       <CuScoreBandsSection
         filtered={filtered}

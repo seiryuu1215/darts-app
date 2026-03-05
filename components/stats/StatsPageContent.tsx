@@ -319,21 +319,7 @@ export default function StatsPageContent({
       {/* ── ゲーム分析 ── */}
       <TierDivider label="ゲーム分析" />
 
-      {/* 8. DartboardHeatmap */}
-      {countupPlays && countupPlays.length >= 24 && (
-        <StatsCardBoundary name="ダーツボードヒートマップ">
-          <DartboardHeatmap countupPlays={countupPlays} />
-        </StatsCardBoundary>
-      )}
-
-      {/* 9. MissDirectionCard */}
-      {countupPlays && countupPlays.length > 0 && (
-        <StatsCardBoundary name="ミス方向分析">
-          <MissDirectionCard countupPlays={countupPlays} />
-        </StatsCardBoundary>
-      )}
-
-      {/* 10. Session Compare */}
+      {/* 8. Session Compare */}
       {countupPlays && countupPlays.length > 0 && (
         <StatsCardBoundary name="練習日比較">
           <SessionCompareCard countupPlays={countupPlays} />
@@ -411,7 +397,21 @@ export default function StatsPageContent({
       {/* ── その他 ── */}
       <TierDivider label="その他" />
 
-      {/* 16. Recent Day Summary */}
+      {/* DartboardHeatmap（全期間ヒートマップ） */}
+      {countupPlays && countupPlays.length >= 24 && (
+        <StatsCardBoundary name="ダーツボードヒートマップ">
+          <DartboardHeatmap countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* MissDirectionCard（全データミス方向） */}
+      {countupPlays && countupPlays.length > 0 && (
+        <StatsCardBoundary name="ミス方向分析">
+          <MissDirectionCard countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* Recent Day Summary */}
       <StatsCardBoundary name="直近サマリー">
         <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
       </StatsCardBoundary>
