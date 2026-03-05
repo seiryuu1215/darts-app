@@ -13,8 +13,8 @@ function formatDelta(value: number, suffix = '', decimals = 1): string {
 function deltaColor(value: number, invert = false): string {
   const positive = invert ? value < 0 : value > 0;
   const negative = invert ? value > 0 : value < 0;
-  if (positive) return '#4CAF50';
-  if (negative) return '#E53935';
+  if (positive) return '#4ade80';
+  if (negative) return '#f87171';
   return '#888';
 }
 
@@ -32,6 +32,7 @@ interface MetricRow {
   suffix: string;
   decimals: number;
   invert?: boolean;
+  category?: string;
 }
 
 export interface SessionComparisonImageOptions {
@@ -68,95 +69,127 @@ export async function generateSessionComparisonImage(
   const nextRt = rating != null ? Math.floor(rating) + 1 : null;
   const nextBm = nextRt != null ? getBenchmarkByRating(nextRt) : null;
 
-  const metrics: MetricRow[] = [
+  // カテゴリ別メトリクス
+  const sections: { category: string; rows: MetricRow[] }[] = [
     {
-      label: '平均スコア',
-      prev: prev.avgScore.toFixed(1),
-      current: current.avgScore.toFixed(1),
-      delta: deltas.avgScore,
-      suffix: '',
-      decimals: 1,
+      category: 'スコア',
+      rows: [
+        {
+          label: '平均スコア',
+          prev: prev.avgScore.toFixed(1),
+          current: current.avgScore.toFixed(1),
+          delta: deltas.avgScore,
+          suffix: '',
+          decimals: 1,
+        },
+        {
+          label: '最高スコア',
+          prev: prev.maxScore.toString(),
+          current: current.maxScore.toString(),
+          delta: deltaMaxScore,
+          suffix: '',
+          decimals: 0,
+        },
+        {
+          label: '安定度',
+          prev: prev.consistency.toFixed(1),
+          current: current.consistency.toFixed(1),
+          delta: deltas.consistency,
+          suffix: '',
+          decimals: 1,
+        },
+      ],
     },
     {
-      label: '最高スコア',
-      prev: prev.maxScore.toString(),
-      current: current.maxScore.toString(),
-      delta: deltaMaxScore,
-      suffix: '',
-      decimals: 0,
+      category: 'ブル',
+      rows: [
+        {
+          label: 'ブル率',
+          prev: prev.bullRate.toFixed(1),
+          current: current.bullRate.toFixed(1),
+          delta: deltas.bullRate,
+          suffix: '%',
+          decimals: 1,
+        },
+        {
+          label: 'Dブル率',
+          prev: prev.doubleBullRate.toFixed(1),
+          current: current.doubleBullRate.toFixed(1),
+          delta: deltaDoubleBullRate,
+          suffix: '%',
+          decimals: 1,
+        },
+        {
+          label: 'ワンブル率',
+          prev: prev.oneBullRate.toFixed(1),
+          current: current.oneBullRate.toFixed(1),
+          delta: deltas.oneBullRate,
+          suffix: '%',
+          decimals: 1,
+        },
+      ],
     },
     {
-      label: '安定度',
-      prev: prev.consistency.toFixed(1),
-      current: current.consistency.toFixed(1),
-      delta: deltas.consistency,
-      suffix: '',
-      decimals: 1,
+      category: 'パターン',
+      rows: [
+        {
+          label: 'ロートン率',
+          prev: prev.lowTonRate.toFixed(1),
+          current: current.lowTonRate.toFixed(1),
+          delta: deltas.lowTonRate,
+          suffix: '%',
+          decimals: 1,
+        },
+        {
+          label: 'ハット率',
+          prev: prev.hatTrickRate.toFixed(1),
+          current: current.hatTrickRate.toFixed(1),
+          delta: deltas.hatTrickRate,
+          suffix: '%',
+          decimals: 1,
+        },
+      ],
     },
     {
-      label: 'ブル率',
-      prev: prev.bullRate.toFixed(1),
-      current: current.bullRate.toFixed(1),
-      delta: deltas.bullRate,
-      suffix: '%',
-      decimals: 1,
-    },
-    {
-      label: 'Dブル率',
-      prev: prev.doubleBullRate.toFixed(1),
-      current: current.doubleBullRate.toFixed(1),
-      delta: deltaDoubleBullRate,
-      suffix: '%',
-      decimals: 1,
-    },
-    {
-      label: 'ワンブル率',
-      prev: prev.oneBullRate.toFixed(1),
-      current: current.oneBullRate.toFixed(1),
-      delta: deltas.oneBullRate,
-      suffix: '%',
-      decimals: 1,
-    },
-    {
-      label: 'ロートン率',
-      prev: prev.lowTonRate.toFixed(1),
-      current: current.lowTonRate.toFixed(1),
-      delta: deltas.lowTonRate,
-      suffix: '%',
-      decimals: 1,
-    },
-    {
-      label: 'ハット率',
-      prev: prev.hatTrickRate.toFixed(1),
-      current: current.hatTrickRate.toFixed(1),
-      delta: deltas.hatTrickRate,
-      suffix: '%',
-      decimals: 1,
-    },
-    {
-      label: 'グルーピング',
-      prev: `${prev.avgRadius.toFixed(1)}mm`,
-      current: `${current.avgRadius.toFixed(1)}mm`,
-      delta: deltaAvgRadius,
-      suffix: 'mm',
-      decimals: 1,
-      invert: true,
+      category: 'センサー',
+      rows: [
+        {
+          label: 'グルーピング',
+          prev: `${prev.avgRadius.toFixed(1)}mm`,
+          current: `${current.avgRadius.toFixed(1)}mm`,
+          delta: deltaAvgRadius,
+          suffix: 'mm',
+          decimals: 1,
+          invert: true,
+        },
+      ],
     },
   ];
 
+  // ミス傾向行
+  const hasMissDir = current.primaryMissDir !== '-' || prev.primaryMissDir !== '-';
+
   const displayInsights = insights.slice(0, 3);
+
+  // 高さ計算: ヘッダー(80) + 日付(30) + テーブルヘッダー(36) + セクション + ミス傾向(52) + インサイト + フッター(36)
+  const totalRows = sections.reduce((s, sec) => s + sec.rows.length, 0);
+  const sectionDividers = sections.length - 1;
+  const tableHeight = totalRows * 52 + sectionDividers * 1 + sections.length * 28;
+  const insightHeight = displayInsights.length > 0 ? 16 + displayInsights.length * 30 : 0;
+  const missHeight = hasMissDir ? 52 : 0;
+  const imageHeight = 80 + 30 + 36 + tableHeight + missHeight + insightHeight + 44;
 
   const response = new ImageResponse(
     <div
       style={{
         width: '800px',
-        height: '680px',
+        height: `${imageHeight}px`,
         display: 'flex',
         flexDirection: 'column',
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        background: '#0f1923',
         color: '#fff',
         fontFamily: 'Noto Sans JP, sans-serif',
-        padding: '14px 20px',
+        padding: '16px 24px',
       }}
     >
       {/* ヘッダー + レーティング */}
@@ -165,12 +198,11 @@ export async function generateSessionComparisonImage(
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '0px',
+          marginBottom: '4px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '26px' }}>📊</span>
-          <span style={{ fontSize: '26px', fontWeight: 700, color: '#90caf9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '32px', fontWeight: 700, color: '#e0e0e0' }}>
             セッション比較
           </span>
         </div>
@@ -193,10 +225,10 @@ export async function generateSessionComparisonImage(
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '6px',
+          marginBottom: '8px',
         }}
       >
-        <div style={{ display: 'flex', fontSize: '17px', color: '#aaa', gap: '8px' }}>
+        <div style={{ display: 'flex', fontSize: '18px', color: '#aaa', gap: '8px' }}>
           <span>
             {prev.date} ({prev.gameCount}G)
           </span>
@@ -206,7 +238,7 @@ export async function generateSessionComparisonImage(
           </span>
         </div>
         {nextBm && (
-          <span style={{ fontSize: '15px', color: '#78909C' }}>
+          <span style={{ fontSize: '16px', color: '#78909C' }}>
             次 Rt.{nextRt} {nextBm.flight} (PPD {nextBm.ppdMin}+)
           </span>
         )}
@@ -218,73 +250,125 @@ export async function generateSessionComparisonImage(
           display: 'flex',
           fontSize: '16px',
           color: '#888',
-          borderBottom: '1px solid #444',
-          paddingBottom: '4px',
+          borderBottom: '1px solid #333',
+          paddingBottom: '6px',
           marginBottom: '0px',
         }}
       >
-        <span style={{ width: '180px' }}></span>
-        <span style={{ width: '160px', textAlign: 'right' }}>前回</span>
-        <span style={{ width: '160px', textAlign: 'right' }}>今回</span>
-        <span style={{ width: '160px', textAlign: 'right' }}>差分</span>
+        <span style={{ width: '40%' }}></span>
+        <span style={{ width: '20%', textAlign: 'right' }}>前回</span>
+        <span style={{ width: '20%', textAlign: 'right' }}>今回</span>
+        <span style={{ width: '20%', textAlign: 'right' }}>差分</span>
       </div>
 
-      {/* メトリクス行 */}
-      {metrics.map((m) => (
+      {/* セクション別メトリクス */}
+      {sections.map((section, si) => (
         <div
-          key={m.label}
+          key={section.category}
           style={{
             display: 'flex',
-            fontSize: '20px',
-            padding: '5px 0',
-            borderBottom: '1px solid #1e2a45',
-            alignItems: 'center',
+            flexDirection: 'column',
+            borderBottom: si < sections.length - 1 ? '1px solid #1e2a3a' : 'none',
           }}
         >
-          <span style={{ width: '180px', fontWeight: 700, color: '#e0e0e0' }}>{m.label}</span>
-          <span style={{ width: '160px', textAlign: 'right', color: '#bbb' }}>
-            {m.prev}
-            {m.suffix && !m.prev.includes(m.suffix) ? m.suffix : ''}
-          </span>
-          <span style={{ width: '160px', textAlign: 'right', color: '#fff', fontWeight: 700 }}>
-            {m.current}
-            {m.suffix && !m.current.includes(m.suffix) ? m.suffix : ''}
-          </span>
-          <span
+          {/* カテゴリラベル */}
+          <div
             style={{
-              width: '160px',
-              textAlign: 'right',
-              fontWeight: 700,
-              color: deltaColor(m.delta, m.invert),
+              display: 'flex',
+              fontSize: '16px',
+              color: '#60a5fa',
+              padding: '6px 0 2px 0',
             }}
           >
-            {formatDelta(m.delta, m.suffix === 'mm' ? 'mm' : m.suffix, m.decimals)}
-          </span>
+            {section.category}
+          </div>
+
+          {/* 各行 */}
+          {section.rows.map((m) => (
+            <div
+              key={m.label}
+              style={{
+                display: 'flex',
+                minHeight: '52px',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ width: '40%', fontSize: '20px', color: '#e0e0e0' }}>{m.label}</span>
+              <span
+                style={{
+                  width: '20%',
+                  textAlign: 'right',
+                  fontSize: '22px',
+                  fontWeight: 600,
+                  color: '#bbb',
+                }}
+              >
+                {m.prev}
+                {m.suffix && !m.prev.includes(m.suffix) ? m.suffix : ''}
+              </span>
+              <span
+                style={{
+                  width: '20%',
+                  textAlign: 'right',
+                  fontSize: '22px',
+                  fontWeight: 600,
+                  color: '#fff',
+                }}
+              >
+                {m.current}
+                {m.suffix && !m.current.includes(m.suffix) ? m.suffix : ''}
+              </span>
+              <span
+                style={{
+                  width: '20%',
+                  textAlign: 'right',
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  color: deltaColor(m.delta, m.invert),
+                }}
+              >
+                {formatDelta(m.delta, m.suffix === 'mm' ? 'mm' : m.suffix, m.decimals)}
+              </span>
+            </div>
+          ))}
         </div>
       ))}
 
       {/* ミス傾向行 */}
-      <div
-        style={{
-          display: 'flex',
-          fontSize: '20px',
-          padding: '5px 0',
-          alignItems: 'center',
-        }}
-      >
-        <span style={{ width: '180px', fontWeight: 700, color: '#e0e0e0' }}>ミス傾向</span>
-        <span style={{ width: '160px', textAlign: 'right', color: '#bbb' }}>{missDirPrevText}</span>
-        <span
+      {hasMissDir && (
+        <div
           style={{
-            width: '320px',
-            textAlign: 'right',
-            color: missDirChanged ? '#FFB74D' : '#bbb',
-            fontWeight: missDirChanged ? 700 : 400,
+            display: 'flex',
+            minHeight: '52px',
+            alignItems: 'center',
+            borderTop: '1px solid #1e2a3a',
           }}
         >
-          {missDirText}
-        </span>
-      </div>
+          <span style={{ width: '40%', fontSize: '20px', color: '#e0e0e0' }}>ミス傾向</span>
+          <span
+            style={{
+              width: '20%',
+              textAlign: 'right',
+              fontSize: '22px',
+              fontWeight: 600,
+              color: '#bbb',
+            }}
+          >
+            {missDirPrevText}
+          </span>
+          <span
+            style={{
+              width: '40%',
+              textAlign: 'right',
+              fontSize: '22px',
+              fontWeight: missDirChanged ? 700 : 600,
+              color: missDirChanged ? '#FFB74D' : '#bbb',
+            }}
+          >
+            {missDirText}
+          </span>
+        </div>
+      )}
 
       {/* インサイト */}
       {displayInsights.length > 0 && (
@@ -292,8 +376,8 @@ export async function generateSessionComparisonImage(
           style={{
             display: 'flex',
             flexDirection: 'column',
-            marginTop: '4px',
-            gap: '2px',
+            marginTop: '8px',
+            gap: '6px',
           }}
         >
           {displayInsights.map((insight, i) => (
@@ -301,9 +385,10 @@ export async function generateSessionComparisonImage(
               key={i}
               style={{
                 display: 'flex',
-                fontSize: '16px',
+                fontSize: '17px',
                 color: '#90caf9',
-                gap: '6px',
+                gap: '8px',
+                lineHeight: '1.5',
               }}
             >
               <span>•</span>
@@ -323,13 +408,12 @@ export async function generateSessionComparisonImage(
           justifyContent: 'flex-end',
         }}
       >
-        <span style={{ fontSize: '14px' }}>🎯</span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1976d2' }}>Darts Lab</span>
+        <span style={{ fontSize: '20px', fontWeight: 700, color: '#1976d2' }}>Darts Lab</span>
       </div>
     </div>,
     {
       width: 800,
-      height: 680,
+      height: imageHeight,
       fonts: [
         { name: 'Noto Sans JP', data: fonts.regular, weight: 400 as const },
         { name: 'Noto Sans JP', data: fonts.bold, weight: 700 as const },

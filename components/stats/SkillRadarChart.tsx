@@ -85,12 +85,19 @@ function buildDetailedData(
   const benchPpd = rt != null ? ppdForRating(rt) : null;
   const benchMpr = rt != null ? mprForRating(rt) : null;
 
+  // 次のレーティングのベンチマークを最大値として使う
+  const nextRt = rt != null ? rt + 1 : null;
+  const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
+  const nextMpr = nextRt != null ? mprForRating(nextRt) : null;
+  const max01 = nextPpd ?? 80;
+  const maxCri = nextMpr ?? 4.0;
+
   return [
     {
       axis: '01 Avg',
-      value: normalize(stats01?.avg, 20, 80),
-      benchmark: benchPpd != null ? normalize(benchPpd, 20, 80) : undefined,
-      rawLabel: `(${formatRaw(stats01?.avg, '')}/80)`,
+      value: normalize(stats01?.avg, 20, max01),
+      benchmark: benchPpd != null ? normalize(benchPpd, 20, max01) : undefined,
+      rawLabel: `(${formatRaw(stats01?.avg, '')}/${max01.toFixed(0)})`,
     },
     {
       axis: '01 勝率',
@@ -112,9 +119,9 @@ function buildDetailedData(
     },
     {
       axis: 'Cri Avg',
-      value: normalize(statsCricket?.avg, 0.5, 4.0),
-      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, 4.0) : undefined,
-      rawLabel: `(${formatRaw(statsCricket?.avg, '')}/4.0)`,
+      value: normalize(statsCricket?.avg, 0.5, maxCri),
+      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, maxCri) : undefined,
+      rawLabel: `(${formatRaw(statsCricket?.avg, '')}/${maxCri.toFixed(1)})`,
     },
     {
       axis: 'Cri 勝率',
@@ -151,7 +158,17 @@ function buildSimpleData(
   const benchPpd = rt != null ? ppdForRating(rt) : null;
   const benchMpr = rt != null ? mprForRating(rt) : null;
 
-  // ハットトリック率 (0-60%レンジで正規化)
+  // 次のレーティングのベンチマークを最大値として使う
+  const nextRt = rt != null ? rt + 1 : null;
+  const nextBench = nextRt != null ? RATING_BENCHMARKS.find((b) => b.rating === nextRt) : null;
+  const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
+  const nextMpr = nextRt != null ? mprForRating(nextRt) : null;
+  const max01 = nextPpd ?? 80;
+  const maxCri = nextMpr ?? 4.0;
+  const maxCU = nextPpd != null ? nextPpd * 8 : 800;
+  const maxHT = nextBench?.hatTrickRate ?? 60;
+
+  // ハットトリック率
   const htRate = hatTrickRate ?? 0;
 
   // 安定性 (CVベース)
@@ -168,26 +185,26 @@ function buildSimpleData(
   return [
     {
       axis: '01 Avg',
-      value: normalize(stats01Avg, 20, 80),
-      benchmark: benchPpd != null ? normalize(benchPpd, 20, 80) : undefined,
+      value: normalize(stats01Avg, 20, max01),
+      benchmark: benchPpd != null ? normalize(benchPpd, 20, max01) : undefined,
       rawLabel: stats01Avg != null ? `(${stats01Avg.toFixed(1)})` : '',
     },
     {
       axis: 'Cricket Avg',
-      value: normalize(statsCriAvg, 0.5, 4.0),
-      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, 4.0) : undefined,
+      value: normalize(statsCriAvg, 0.5, maxCri),
+      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, maxCri) : undefined,
       rawLabel: statsCriAvg != null ? `(${statsCriAvg.toFixed(2)})` : '',
     },
     {
       axis: 'COUNT-UP',
-      value: normalize(statsPraAvg, 200, 800),
-      benchmark: benchPpd != null ? normalize(benchPpd * 8, 200, 800) : undefined,
+      value: normalize(statsPraAvg, 200, maxCU),
+      benchmark: benchPpd != null ? normalize(benchPpd * 8, 200, maxCU) : undefined,
       rawLabel: statsPraAvg != null ? `(${Math.round(statsPraAvg)})` : '',
     },
     {
       axis: 'HT率',
-      value: normalize(htRate, 0, 60),
-      benchmark: bench?.hatTrickRate != null ? normalize(bench.hatTrickRate, 0, 60) : undefined,
+      value: normalize(htRate, 0, maxHT),
+      benchmark: bench?.hatTrickRate != null ? normalize(bench.hatTrickRate, 0, maxHT) : undefined,
       rawLabel: hatTrickRate != null ? `(${htRate.toFixed(1)}%)` : '',
     },
     {

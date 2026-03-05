@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og';
 import type { MissDirectionResult } from './stats-math';
+import type { HeatmapData } from './heatmap-data';
+import { getSegmentLabel } from './heatmap-data';
 import { loadNotoSansJPFonts } from './image-fonts';
 
 // 8方向の角度マッピング（上=0°から時計回り）
@@ -53,10 +55,11 @@ const SLICE_COLORS = [
   '#AB47BC',
 ];
 
-/** ミス方向分析画像を生成 (800×600, ダークテーマ, 円グラフ) */
+/** ミス方向分析画像を生成 (800×680, ダークテーマ, 円グラフ + ヒートマップ) */
 export async function generateMissDirectionImage(
   result: MissDirectionResult,
   date: string,
+  heatmapData?: HeatmapData | null,
 ): Promise<Buffer> {
   const fonts = await loadNotoSansJPFonts();
 
@@ -67,6 +70,25 @@ export async function generateMissDirectionImage(
 
   const totalPct = sortedDirs.reduce((s, d) => s + d.percentage, 0);
   const topMiss = result.topMissNumbers.slice(0, 3);
+
+  // ヒートマップTOP5セグメント
+  const top5Segments: { label: string; count: number; percentage: number }[] = [];
+  if (heatmapData && heatmapData.totalDarts > 0) {
+    const entries = Array.from(heatmapData.segments.entries())
+      .filter(([id]) => id !== 'BB' && id !== 'B' && id !== 'OUT')
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    for (const [id, count] of entries) {
+      top5Segments.push({
+        label: getSegmentLabel(id),
+        count,
+        percentage: (count / heatmapData.totalDarts) * 100,
+      });
+    }
+  }
+
+  const hasHeatmap = top5Segments.length > 0;
+  const imageHeight = hasHeatmap ? 680 : 600;
 
   // 円グラフ用スライスデータ
   const cx = 220;
@@ -95,7 +117,7 @@ export async function generateMissDirectionImage(
     <div
       style={{
         width: '800px',
-        height: '600px',
+        height: `${imageHeight}px`,
         display: 'flex',
         flexDirection: 'column',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
@@ -290,6 +312,64 @@ export async function generateMissDirectionImage(
         </div>
       </div>
 
+      {/* ヒートマップ TOP5セグメント */}
+      {hasHeatmap && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            marginTop: '4px',
+            padding: '0 4px',
+          }}
+        >
+          <span style={{ fontSize: '14px', color: '#888', marginBottom: '2px' }}>
+            TOP5セグメント
+          </span>
+          {top5Segments.map((seg) => {
+            const maxPct = top5Segments[0].percentage * 1.1;
+            const barWidth = Math.max(4, (seg.percentage / maxPct) * 100);
+            return (
+              <div
+                key={seg.label}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '14px',
+                }}
+              >
+                <span style={{ width: '48px', color: '#ccc', textAlign: 'right' }}>
+                  {seg.label}
+                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    width: '460px',
+                    height: '10px',
+                    background: '#333',
+                    borderRadius: '3px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: `${barWidth}%`,
+                      height: '10px',
+                      background: '#42A5F5',
+                      borderRadius: '3px',
+                    }}
+                  />
+                </div>
+                <span style={{ color: '#aaa', width: '80px' }}>
+                  {seg.percentage.toFixed(1)}% ({seg.count})
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* フッター */}
       <div
         style={{
@@ -305,7 +385,7 @@ export async function generateMissDirectionImage(
     </div>,
     {
       width: 800,
-      height: 600,
+      height: imageHeight,
       fonts: [
         { name: 'Noto Sans JP', data: fonts.regular, weight: 400 as const },
         { name: 'Noto Sans JP', data: fonts.bold, weight: 700 as const },

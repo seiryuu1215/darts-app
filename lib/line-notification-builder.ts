@@ -195,7 +195,8 @@ export async function buildRoleBasedDailyNotification(
   // ── Pro/Admin: ミス方向画像 ──
   if (isPro && missResult) {
     try {
-      const buf = await generateMissDirectionImage(missResult, ctx.stats.dateStr);
+      const heatmap = cuPlays.length > 0 ? computeSegmentFrequency(playLogs) : null;
+      const buf = await generateMissDirectionImage(missResult, ctx.stats.dateStr, heatmap);
       const safeDateStr = ctx.stats.dateStr.replace(/[[\]\s]/g, '').replace(/\//g, '-');
       const imagePath = `images/line-miss/${ctx.userId}/${safeDateStr}.png`;
       const imageUrl = await uploadLineImage(buf, imagePath);

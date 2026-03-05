@@ -15,6 +15,7 @@ import {
   buildRoundPatternFlexBubble,
   buildTrendFlexBubble,
   extractBubble,
+  CONDITION_QUICK_REPLY,
   type TrendBubbleInput,
 } from '@/lib/line';
 import { decrypt } from '@/lib/crypto';
@@ -216,6 +217,21 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
   if (trimmed === 'トレンド') {
     await handleTrend(event.replyToken, lineUserId);
     return;
+  }
+
+  // 「調子を記録」コマンド: ★1〜★5のクイックリプライを表示
+  if (trimmed === '調子を記録') {
+    const conv = await getConversation(lineUserId);
+    if (conv.state === 'waiting_condition') {
+      await replyLineMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: '今日の調子を選んでください！\n★1 絶不調 / ★2 不調 / ★3 普通 / ★4 好調 / ★5 絶好調',
+          quickReply: CONDITION_QUICK_REPLY,
+        },
+      ]);
+      return;
+    }
   }
 
   // 会話状態に応じた処理
@@ -693,7 +709,8 @@ async function handleAnalysis(replyToken: string, lineUserId: string) {
           const now = new Date();
           now.setHours(now.getHours() + 9);
           const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-          const buf = await generateMissDirectionImage(missResult, dateStr);
+          const heatmap = computeSegmentFrequency(playLogs);
+          const buf = await generateMissDirectionImage(missResult, dateStr, heatmap);
           const imagePath = `images/line-miss/${user.id}/${dateStr.replace(/\//g, '-')}.png`;
           const imageUrl = await uploadLineImage(buf, imagePath);
           imageMessages.push({

@@ -347,7 +347,7 @@ export function buildStatsFlexMessage(stats: {
             backgroundColor: '#1976d2',
             action: {
               type: 'message',
-              text: '★3',
+              text: '調子を記録',
             },
             contents: [
               {
@@ -360,7 +360,7 @@ export function buildStatsFlexMessage(stats: {
               },
               {
                 type: 'text',
-                text: 'タップして記録する',
+                text: 'タップして★1〜★5を選択',
                 size: 'xs',
                 color: '#ffffffcc',
                 align: 'center',
