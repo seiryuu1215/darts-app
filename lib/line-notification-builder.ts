@@ -11,18 +11,13 @@ import {
   buildStatsFlexMessage,
   buildCountUpFlexMessage,
   buildSessionComparisonFlexBubble,
-  buildRecommendationsFlexBubble,
-  buildTrendFlexBubble,
   buildSensorSummaryFlexBubble,
   extractBubble,
   type CuNotifyStats,
-  type TrendBubbleInput,
 } from '@/lib/line';
-import { analyzeMissDirection, type MissDirectionResult } from '@/lib/stats-math';
+import { analyzeMissDirection } from '@/lib/stats-math';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
-import { analyzeRounds, type RoundAnalysis } from '@/lib/countup-round-analysis';
-import { generateRecommendations, type RecommendationInput } from '@/lib/practice-recommendations';
-import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
+import { analyzeRounds } from '@/lib/countup-round-analysis';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import { calculateConsistency } from '@/lib/stats-math';
 import { generateSessionComparisonImage } from './session-comparison-image';
@@ -78,6 +73,7 @@ export async function buildRoleBasedDailyNotification(
 ): Promise<DailyNotificationResult> {
   const bubbles: object[] = [];
   const imageMessages: object[] = [];
+  const isPro = ctx.role === 'pro' || ctx.role === 'admin';
 
   // ── 全ロール共通: スタッツバブル ──
   const statsFlex = buildStatsFlexMessage({
@@ -119,7 +115,7 @@ export async function buildRoleBasedDailyNotification(
     };
 
     // 30G以上なら前回比較を追加（Pro/Adminは画像で比較データを送るのでスキップ）
-    if (cuPlays.length >= 30 && sessionComparison && ctx.role !== 'pro' && ctx.role !== 'admin') {
+    if (cuPlays.length >= 30 && sessionComparison && !isPro) {
       cuStats.prevAvgScore = sessionComparison.prev.avgScore;
       cuStats.prevConsistency = sessionComparison.prev.consistency;
       cuStats.prevBullRate = sessionComparison.prev.bullRate;
@@ -135,10 +131,29 @@ export async function buildRoleBasedDailyNotification(
     if (cuBubble) bubbles.push(cuBubble);
   }
 
-  // ── Pro/Admin: セッション比較（画像 primary、失敗時 Flex fallback）──
-  if ((ctx.role === 'pro' || ctx.role === 'admin') && sessionComparison) {
+  // ── Pro/Admin: センサー分析サマリー（バブル3番目に配置）──
+  if (isPro && cuPlays.length > 0) {
     try {
-      const imageBuffer = await generateSessionComparisonImage(sessionComparison);
+      const heatmap = computeSegmentFrequency(playLogs);
+      bubbles.push(
+        buildSensorSummaryFlexBubble(
+          missResult,
+          heatmap.totalDarts > 0 ? heatmap : null,
+          roundAnalysis,
+        ),
+      );
+    } catch (e) {
+      console.error('Sensor summary error:', e);
+    }
+  }
+
+  // ── Pro/Admin: セッション比較（画像 primary、失敗時 Flex fallback）──
+  if (isPro && sessionComparison) {
+    try {
+      const imageBuffer = await generateSessionComparisonImage(sessionComparison, {
+        rating: ctx.stats.rating,
+        prevRating: ctx.stats.prevRating,
+      });
       const dateStr = sessionComparison.current.date;
       const imagePath = `images/line-session/${ctx.userId}/${dateStr}.png`;
       const imageUrl = await uploadLineImage(imageBuffer, imagePath);
@@ -158,10 +173,9 @@ export async function buildRoleBasedDailyNotification(
   }
 
   // ── Pro/Admin: ミス方向画像 ──
-  if ((ctx.role === 'pro' || ctx.role === 'admin') && missResult) {
+  if (isPro && missResult) {
     try {
       const buf = await generateMissDirectionImage(missResult, ctx.stats.dateStr);
-      // dateStr にスラッシュや特殊文字が含まれうるのでサニタイズ
       const safeDateStr = ctx.stats.dateStr.replace(/[[\]\s]/g, '').replace(/\//g, '-');
       const imagePath = `images/line-miss/${ctx.userId}/${safeDateStr}.png`;
       const imageUrl = await uploadLineImage(buf, imagePath);
@@ -175,137 +189,8 @@ export async function buildRoleBasedDailyNotification(
     }
   }
 
-  // ── Pro/Admin: トレンド分析 ──
-  if (ctx.role === 'pro' || ctx.role === 'admin') {
-    try {
-      const trendBubble = await buildTrendBubbleFromFirestore(ctx.userId, ctx.stats.rating);
-      if (trendBubble) bubbles.push(trendBubble);
-    } catch (e) {
-      console.error('Trend analysis error:', e);
-    }
-  }
-
-  // ── Pro/Admin: 練習レコメンド ──
-  if (ctx.role === 'pro' || ctx.role === 'admin') {
-    try {
-      const recBubble = buildRecBubble(ctx, missResult, roundAnalysis);
-      if (recBubble) bubbles.push(recBubble);
-    } catch (e) {
-      console.error('Recommendations error:', e);
-    }
-  }
-
-  // ── Admin専用: センサー分析サマリー（ミス方向 + ヒートマップ + ラウンドパターンを1バブルに統合）──
-  if (ctx.role === 'admin' && cuPlays.length > 0) {
-    try {
-      const heatmap = computeSegmentFrequency(playLogs);
-      bubbles.push(
-        buildSensorSummaryFlexBubble(
-          missResult,
-          heatmap.totalDarts > 0 ? heatmap : null,
-          roundAnalysis,
-        ),
-      );
-    } catch (e) {
-      console.error('Sensor summary error:', e);
-    }
-  }
-
   return {
     bubbles,
     ...(imageMessages.length > 0 ? { imageMessages } : {}),
   };
-}
-
-/** Firestoreスタッツ履歴からトレンドバブルを構築 */
-async function buildTrendBubbleFromFirestore(
-  userId: string,
-  currentRating: number | null,
-): Promise<object | null> {
-  if (currentRating == null) return null;
-
-  const statsSnap = await adminDb
-    .collection(`users/${userId}/dartsLiveStats`)
-    .orderBy('date', 'desc')
-    .limit(60)
-    .get();
-
-  if (statsSnap.size < 7) return null;
-
-  const dataPoints = statsSnap.docs
-    .map((doc) => {
-      const d = doc.data();
-      const dateVal = d.date?.toDate?.() ?? (d.date ? new Date(d.date) : null);
-      return {
-        date: dateVal ? dateVal.toISOString().split('T')[0] : doc.id,
-        value: d.rating as number | null,
-      };
-    })
-    .filter((d) => d.value != null)
-    .reverse();
-
-  if (dataPoints.length < 7) return null;
-
-  const smaData = computeSMA(dataPoints);
-  const crosses = detectCrosses(smaData);
-  const trend = classifyTrend(smaData);
-
-  const latest = smaData[smaData.length - 1];
-
-  const input: TrendBubbleInput = {
-    metric: 'Rating',
-    currentValue: currentRating,
-    trend,
-    sma7: latest?.sma7 ?? null,
-    sma30: latest?.sma30 ?? null,
-    recentCrosses: crosses.slice(-2),
-  };
-
-  return buildTrendFlexBubble(input);
-}
-
-/** レコメンデーションバブルを構築 */
-function buildRecBubble(
-  ctx: DailyNotificationContext,
-  missResult: MissDirectionResult | null,
-  roundAnalysis: RoundAnalysis | null,
-): object | null {
-  const cuPlays = ctx.yesterdayCuPlays ?? [];
-  if (cuPlays.length === 0) return null;
-
-  const cuScores = cuPlays.map((p) => p.score);
-  const cuCon = calculateConsistency(cuScores);
-
-  // DL3 センサーデータ
-  const dl3Plays = cuPlays.filter(
-    (p) => p.dl3VectorX !== 0 || p.dl3VectorY !== 0 || p.dl3Radius !== 0,
-  );
-  const avgRadius =
-    dl3Plays.length > 0 ? dl3Plays.reduce((s, p) => s + p.dl3Radius, 0) / dl3Plays.length : null;
-
-  const recInput: RecommendationInput = {
-    ppd: ctx.stats.ppd,
-    bullRate: missResult?.bullRate ?? null,
-    arrangeRate: null,
-    avgBust: null,
-    mpr: ctx.stats.mpr,
-    tripleRate: null,
-    openCloseRate: null,
-    countupAvg: cuScores.reduce((a, b) => a + b, 0) / cuScores.length,
-    countupConsistency: cuCon?.score ?? null,
-    primaryMissDirection: missResult?.primaryDirection ?? null,
-    directionStrength: missResult?.directionStrength ?? null,
-    avgRadius,
-    radiusImprovement: null,
-    avgSpeed: null,
-    optimalSessionLength: null,
-    peakGameNumber: null,
-    roundPattern: roundAnalysis?.pattern.pattern ?? null,
-    worstRound: roundAnalysis?.worstRound ?? null,
-  };
-
-  const recs = generateRecommendations(recInput);
-  if (recs.length === 0) return null;
-
-  return buildRecommendationsFlexBubble(recs, 3);
 }

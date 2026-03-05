@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import type { CuSessionComparison } from './countup-session-compare';
 import { loadNotoSansJPFonts } from './image-fonts';
+import { getBenchmarkByRating } from './dartslive-reference';
 
 /** 差分値のフォーマット（+/-表記） */
 function formatDelta(value: number, suffix = '', decimals = 1): string {
@@ -17,6 +18,12 @@ function deltaColor(value: number, invert = false): string {
   return '#888';
 }
 
+/** Rating整数からフライト名を取得 */
+function getFlightLabel(rating: number): string {
+  const bm = getBenchmarkByRating(Math.floor(rating));
+  return bm ? bm.flight : '';
+}
+
 interface MetricRow {
   label: string;
   prev: string;
@@ -25,16 +32,20 @@ interface MetricRow {
   suffix: string;
   decimals: number;
   invert?: boolean;
-  group?: string;
+}
+
+export interface SessionComparisonImageOptions {
+  rating?: number | null;
+  prevRating?: number | null;
 }
 
 export async function generateSessionComparisonImage(
   comparison: CuSessionComparison,
+  options?: SessionComparisonImageOptions,
 ): Promise<Buffer> {
   const fonts = await loadNotoSansJPFonts();
   const { prev, current, deltas, insights } = comparison;
 
-  // maxScore / doubleBullRate deltas are not in the type — compute inline
   const deltaMaxScore = current.maxScore - prev.maxScore;
   const deltaDoubleBullRate = Math.round((current.doubleBullRate - prev.doubleBullRate) * 10) / 10;
   const deltaAvgRadius = Math.round((current.avgRadius - prev.avgRadius) * 10) / 10;
@@ -51,10 +62,14 @@ export async function generateSessionComparisonImage(
       : '-';
   const missDirPrevText = prev.primaryMissDir !== '-' ? prev.primaryMissDir : '-';
 
+  // レーティング情報
+  const rating = options?.rating;
+  const prevRt = options?.prevRating;
+  const nextRt = rating != null ? Math.floor(rating) + 1 : null;
+  const nextBm = nextRt != null ? getBenchmarkByRating(nextRt) : null;
+
   const metrics: MetricRow[] = [
-    // スコアグループ
     {
-      group: 'スコア',
       label: '平均スコア',
       prev: prev.avgScore.toFixed(1),
       current: current.avgScore.toFixed(1),
@@ -78,9 +93,7 @@ export async function generateSessionComparisonImage(
       suffix: '',
       decimals: 1,
     },
-    // ブルグループ
     {
-      group: 'ブル',
       label: 'ブル率',
       prev: prev.bullRate.toFixed(1),
       current: current.bullRate.toFixed(1),
@@ -104,9 +117,7 @@ export async function generateSessionComparisonImage(
       suffix: '%',
       decimals: 1,
     },
-    // パターングループ
     {
-      group: 'パターン',
       label: 'ロートン率',
       prev: prev.lowTonRate.toFixed(1),
       current: current.lowTonRate.toFixed(1),
@@ -122,9 +133,7 @@ export async function generateSessionComparisonImage(
       suffix: '%',
       decimals: 1,
     },
-    // センサーグループ
     {
-      group: 'センサー',
       label: 'グルーピング',
       prev: `${prev.avgRadius.toFixed(1)}mm`,
       current: `${current.avgRadius.toFixed(1)}mm`,
@@ -141,63 +150,83 @@ export async function generateSessionComparisonImage(
     <div
       style={{
         width: '800px',
-        height: '630px',
+        height: '680px',
         display: 'flex',
         flexDirection: 'column',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
         color: '#fff',
         fontFamily: 'Noto Sans JP, sans-serif',
-        padding: '24px 32px',
+        padding: '20px 28px',
       }}
     >
-      {/* ヘッダー */}
+      {/* ヘッダー + レーティング */}
       <div
         style={{
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '10px',
-          marginBottom: '4px',
+          marginBottom: '2px',
         }}
       >
-        <span style={{ fontSize: '22px' }}>📊</span>
-        <span style={{ fontSize: '20px', fontWeight: 700, color: '#90caf9' }}>セッション比較</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '24px' }}>📊</span>
+          <span style={{ fontSize: '22px', fontWeight: 700, color: '#90caf9' }}>
+            セッション比較
+          </span>
+        </div>
+        {rating != null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {prevRt != null && (
+              <span style={{ fontSize: '15px', color: '#888' }}>Rt.{prevRt.toFixed(2)}</span>
+            )}
+            {prevRt != null && <span style={{ fontSize: '15px', color: '#666' }}>→</span>}
+            <span style={{ fontSize: '18px', fontWeight: 700, color: '#FFD54F' }}>
+              Rt.{rating.toFixed(2)} {getFlightLabel(rating)}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* 日付行（ゲーム数付き） */}
+      {/* 日付行 + 次の基準値 */}
       <div
         style={{
           display: 'flex',
-          fontSize: '13px',
-          color: '#aaa',
-          marginBottom: '12px',
-          gap: '8px',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '10px',
         }}
       >
-        <span>
-          {prev.date} ({prev.gameCount}G)
-        </span>
-        <span>→</span>
-        <span>
-          {current.date} ({current.gameCount}G)
-        </span>
+        <div style={{ display: 'flex', fontSize: '15px', color: '#aaa', gap: '8px' }}>
+          <span>
+            {prev.date} ({prev.gameCount}G)
+          </span>
+          <span>→</span>
+          <span>
+            {current.date} ({current.gameCount}G)
+          </span>
+        </div>
+        {nextBm && (
+          <span style={{ fontSize: '13px', color: '#78909C' }}>
+            次 Rt.{nextRt} {nextBm.flight} (PPD {nextBm.ppdMin}+)
+          </span>
+        )}
       </div>
 
       {/* テーブルヘッダー */}
       <div
         style={{
           display: 'flex',
-          fontSize: '12px',
+          fontSize: '14px',
           color: '#888',
-          borderBottom: '1px solid #333',
-          paddingBottom: '4px',
+          borderBottom: '1px solid #444',
+          paddingBottom: '5px',
           marginBottom: '2px',
         }}
       >
-        <span style={{ width: '40px' }}></span>
-        <span style={{ width: '130px' }}></span>
-        <span style={{ width: '130px', textAlign: 'right' }}>前回</span>
-        <span style={{ width: '130px', textAlign: 'right' }}>今回</span>
-        <span style={{ width: '130px', textAlign: 'right' }}>差分</span>
+        <span style={{ width: '160px' }}></span>
+        <span style={{ width: '140px', textAlign: 'right' }}>前回</span>
+        <span style={{ width: '140px', textAlign: 'right' }}>今回</span>
+        <span style={{ width: '140px', textAlign: 'right' }}>差分</span>
       </div>
 
       {/* メトリクス行 */}
@@ -206,37 +235,24 @@ export async function generateSessionComparisonImage(
           key={m.label}
           style={{
             display: 'flex',
-            fontSize: '14px',
-            padding: '5px 0',
-            borderBottom: '1px solid #1a1a2e',
+            fontSize: '17px',
+            padding: '6px 0',
+            borderBottom: '1px solid #1e2a45',
             alignItems: 'center',
           }}
         >
-          {/* グループラベル */}
-          <span
-            style={{
-              width: '40px',
-              fontSize: '10px',
-              color: '#5C6BC0',
-              fontWeight: 700,
-            }}
-          >
-            {m.group ?? ''}
-          </span>
-          <span style={{ width: '130px', fontWeight: 700, color: '#e0e0e0', fontSize: '14px' }}>
-            {m.label}
-          </span>
-          <span style={{ width: '130px', textAlign: 'right', color: '#bbb' }}>
+          <span style={{ width: '160px', fontWeight: 700, color: '#e0e0e0' }}>{m.label}</span>
+          <span style={{ width: '140px', textAlign: 'right', color: '#bbb' }}>
             {m.prev}
             {m.suffix && !m.prev.includes(m.suffix) ? m.suffix : ''}
           </span>
-          <span style={{ width: '130px', textAlign: 'right', color: '#fff', fontWeight: 700 }}>
+          <span style={{ width: '140px', textAlign: 'right', color: '#fff', fontWeight: 700 }}>
             {m.current}
             {m.suffix && !m.current.includes(m.suffix) ? m.suffix : ''}
           </span>
           <span
             style={{
-              width: '130px',
+              width: '140px',
               textAlign: 'right',
               fontWeight: 700,
               color: deltaColor(m.delta, m.invert),
@@ -247,24 +263,20 @@ export async function generateSessionComparisonImage(
         </div>
       ))}
 
-      {/* ミス傾向行（特殊: テキスト比較） */}
+      {/* ミス傾向行 */}
       <div
         style={{
           display: 'flex',
-          fontSize: '14px',
-          padding: '5px 0',
-          borderBottom: '1px solid #1a1a2e',
+          fontSize: '17px',
+          padding: '6px 0',
           alignItems: 'center',
         }}
       >
-        <span style={{ width: '40px', fontSize: '10px', color: '#5C6BC0', fontWeight: 700 }}></span>
-        <span style={{ width: '130px', fontWeight: 700, color: '#e0e0e0', fontSize: '14px' }}>
-          ミス傾向
-        </span>
-        <span style={{ width: '130px', textAlign: 'right', color: '#bbb' }}>{missDirPrevText}</span>
+        <span style={{ width: '160px', fontWeight: 700, color: '#e0e0e0' }}>ミス傾向</span>
+        <span style={{ width: '140px', textAlign: 'right', color: '#bbb' }}>{missDirPrevText}</span>
         <span
           style={{
-            width: '260px',
+            width: '280px',
             textAlign: 'right',
             color: missDirChanged ? '#FFB74D' : '#bbb',
             fontWeight: missDirChanged ? 700 : 400,
@@ -280,7 +292,7 @@ export async function generateSessionComparisonImage(
           style={{
             display: 'flex',
             flexDirection: 'column',
-            marginTop: '10px',
+            marginTop: '8px',
             gap: '3px',
           }}
         >
@@ -289,7 +301,7 @@ export async function generateSessionComparisonImage(
               key={i}
               style={{
                 display: 'flex',
-                fontSize: '12px',
+                fontSize: '14px',
                 color: '#90caf9',
                 gap: '6px',
               }}
@@ -312,12 +324,12 @@ export async function generateSessionComparisonImage(
         }}
       >
         <span style={{ fontSize: '16px' }}>🎯</span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1976d2' }}>Darts Lab</span>
+        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1976d2' }}>Darts Lab</span>
       </div>
     </div>,
     {
       width: 800,
-      height: 630,
+      height: 680,
       fonts: [
         { name: 'Noto Sans JP', data: fonts.regular, weight: 400 as const },
         { name: 'Noto Sans JP', data: fonts.bold, weight: 700 as const },

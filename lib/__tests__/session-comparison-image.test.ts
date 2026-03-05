@@ -22,6 +22,15 @@ vi.mock('../image-fonts', () => ({
   }),
 }));
 
+// dartslive-reference をモック
+vi.mock('../dartslive-reference', () => ({
+  getBenchmarkByRating: (rating: number) => ({
+    rating,
+    flight: rating >= 8 ? 'BB' : 'B',
+    ppdMin: rating * 5 + 30,
+  }),
+}));
+
 import { generateSessionComparisonImage } from '../session-comparison-image';
 import type { CuSessionComparison } from '../countup-session-compare';
 
@@ -108,6 +117,15 @@ describe('generateSessionComparisonImage', () => {
     const comparison = makeComparison();
     comparison.insights = [];
     const buffer = await generateSessionComparisonImage(comparison);
+    expect(buffer).toBeInstanceOf(Buffer);
+  });
+
+  it('レーティング情報付きでもエラーにならない', async () => {
+    const comparison = makeComparison();
+    const buffer = await generateSessionComparisonImage(comparison, {
+      rating: 8.5,
+      prevRating: 8.3,
+    });
     expect(buffer).toBeInstanceOf(Buffer);
   });
 });
