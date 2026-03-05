@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { RecommendationInput } from '@/lib/practice-recommendations';
+import type { CountUpPlay } from './countup-deep-shared';
 
 import RatingHeroCard from './RatingHeroCard';
 import GameStatsCards from './GameStatsCards';
@@ -21,6 +22,7 @@ import AwardsTable from './AwardsTable';
 import ConsistencyCard from './ConsistencyCard';
 import CountUpAnalysisCard from './CountUpAnalysisCard';
 import ZeroOneAnalysisCard from './ZeroOneAnalysisCard';
+import CricketAnalysisCard from './CricketAnalysisCard';
 import ConditionCorrelationCard from './ConditionCorrelationCard';
 import RatingTrendCard from './RatingTrendCard';
 import SkillRadarChart from './SkillRadarChart';
@@ -28,6 +30,9 @@ import SessionComparisonCard from './SessionComparisonCard';
 import RatingBenchmarkCard from './RatingBenchmarkCard';
 import StatsCardBoundary from './StatsCardBoundary';
 
+const DartboardHeatmap = dynamic(() => import('./DartboardHeatmap'));
+const MissDirectionCard = dynamic(() => import('./MissDirectionCard'));
+const SessionCompareCard = dynamic(() => import('./SessionCompareCard'));
 const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
 const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
 const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
@@ -158,6 +163,7 @@ export interface StatsPageContentProps {
   onGameChartCategoryChange: (cat: string) => void;
   enrichedData?: EnrichedData | null;
   currentRating?: number | null;
+  countupPlays?: CountUpPlay[] | null;
 }
 
 export default function StatsPageContent({
@@ -176,6 +182,7 @@ export default function StatsPageContent({
   onGameChartCategoryChange,
   enrichedData,
   currentRating,
+  countupPlays,
 }: StatsPageContentProps) {
   const c = dlData.current;
   const prev = dlData.prev;
@@ -312,27 +319,50 @@ export default function StatsPageContent({
       {/* ── ゲーム分析 ── */}
       <TierDivider label="ゲーム分析" />
 
-      {/* 8. COUNT-UP Delta */}
+      {/* 8. DartboardHeatmap */}
+      {countupPlays && countupPlays.length >= 24 && (
+        <StatsCardBoundary name="ダーツボードヒートマップ">
+          <DartboardHeatmap countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 9. MissDirectionCard */}
+      {countupPlays && countupPlays.length > 0 && (
+        <StatsCardBoundary name="ミス方向分析">
+          <MissDirectionCard countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 10. COUNT-UP Delta */}
       <StatsCardBoundary name="COUNT-UPスコア推移">
         <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
       </StatsCardBoundary>
 
-      {/* 9. COUNT-UP Analysis */}
+      {/* 11. COUNT-UP Analysis */}
       <StatsCardBoundary name="COUNT-UP分析">
-        <CountUpAnalysisCard games={dlData.recentGames.games} expectedCountUp={expectedCountUp} />
+        <CountUpAnalysisCard
+          games={dlData.recentGames.games}
+          expectedCountUp={expectedCountUp}
+          currentRating={currentRating}
+        />
       </StatsCardBoundary>
 
-      {/* 10. Consistency */}
+      {/* 12. 01 Analysis */}
+      <StatsCardBoundary name="01分析">
+        <ZeroOneAnalysisCard games={dlData.recentGames.games} currentRating={currentRating} />
+      </StatsCardBoundary>
+
+      {/* 13. Cricket Analysis */}
+      <StatsCardBoundary name="Cricket分析">
+        <CricketAnalysisCard games={dlData.recentGames.games} currentRating={currentRating} />
+      </StatsCardBoundary>
+
+      {/* 14. Consistency */}
       <StatsCardBoundary name="安定度分析">
         <ConsistencyCard games={dlData.recentGames.games} />
       </StatsCardBoundary>
 
-      {/* 11. 01 Analysis */}
-      <StatsCardBoundary name="01分析">
-        <ZeroOneAnalysisCard games={dlData.recentGames.games} />
-      </StatsCardBoundary>
-
-      {/* 12. Monthly Trend */}
+      {/* 15. Monthly Trend */}
       <StatsCardBoundary name="月間推移">
         <MonthlyTrendChart
           monthly={dlData.monthly}
@@ -345,21 +375,28 @@ export default function StatsPageContent({
       {/* ── インサイト ── */}
       <TierDivider label="インサイト" />
 
-      {/* 13. Performance Insights */}
+      {/* 16. Performance Insights */}
       {enrichedData && (enrichedData.stats01Detailed || enrichedData.statsCricketDetailed) && (
         <StatsCardBoundary name="パフォーマンスインサイト">
           <PerformanceInsightsCard enrichedData={enrichedData} currentRating={currentRating} />
         </StatsCardBoundary>
       )}
 
-      {/* 14. Practice Recommendations */}
+      {/* 17. Session Compare */}
+      {countupPlays && countupPlays.length > 0 && (
+        <StatsCardBoundary name="練習日比較">
+          <SessionCompareCard countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 18. Practice Recommendations */}
       {recInput && (
         <StatsCardBoundary name="練習レコメンド">
           <PracticeRecommendationsCard input={recInput} />
         </StatsCardBoundary>
       )}
 
-      {/* 15. Recent Games */}
+      {/* 19. Recent Games */}
       <StatsCardBoundary name="最近のゲーム">
         <RecentGamesChart
           games={dlData.recentGames.games}

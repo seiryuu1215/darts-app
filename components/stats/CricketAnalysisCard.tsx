@@ -1,6 +1,6 @@
 'use client';
 
-import { Paper, Box, Typography, Chip } from '@mui/material';
+import { Paper, Box, Typography } from '@mui/material';
 import {
   BarChart,
   Bar,
@@ -11,12 +11,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { COLOR_01 } from '@/lib/dartslive-colors';
+import { COLOR_CRICKET } from '@/lib/dartslive-colors';
 import { computeStats, buildRatingBands } from '@/lib/stats-math';
-import { calc01Rating } from '@/lib/dartslive-rating';
+import { calcCriRating } from '@/lib/dartslive-rating';
 import { useChartTheme } from '@/lib/chart-theme';
 
-interface ZeroOneAnalysisCardProps {
+interface CricketAnalysisCardProps {
   games: { category: string; scores: number[] }[];
   currentRating?: number | null;
 }
@@ -24,43 +24,36 @@ interface ZeroOneAnalysisCardProps {
 const MAX_GAMES = 30;
 const COLOR_CURRENT = '#FF9800';
 
-function is01Category(cat: string): boolean {
-  return /^\d{3}$/.test(cat) && cat.endsWith('01');
+function isCricketCategory(cat: string): boolean {
+  return cat === 'STANDARD CRICKET';
 }
 
-export default function ZeroOneAnalysisCard({ games, currentRating }: ZeroOneAnalysisCardProps) {
+export default function CricketAnalysisCard({ games, currentRating }: CricketAnalysisCardProps) {
   const ct = useChartTheme();
-  const zeroOneGames = games?.filter((g) => is01Category(g.category)) ?? [];
-  if (zeroOneGames.length === 0) return null;
+  const cricketGames = games?.filter((g) => isCricketCategory(g.category)) ?? [];
+  if (cricketGames.length === 0) return null;
 
-  // 全01バリアントのスコアを統合
-  const allScores = zeroOneGames.flatMap((g) => g.scores);
+  const allScores = cricketGames.flatMap((g) => g.scores);
   if (allScores.length < 3) return null;
 
   const recentScores = allScores.slice(-MAX_GAMES);
   const { avg, max, min, median } = computeStats(recentScores);
 
-  // バリアント内訳
-  const variantCounts = zeroOneGames.map((g) => ({
-    category: g.category,
-    count: g.scores.length,
-  }));
-
-  // レーティングバンド
-  const centerRt = currentRating ?? calc01Rating(avg);
-  const bands = buildRatingBands(recentScores, centerRt, (s) => s, calc01Rating);
+  // レーティングバンド（MPRベース）
+  const centerRt = currentRating ?? calcCriRating(avg);
+  const bands = buildRatingBands(recentScores, centerRt, (s) => s, calcCriRating);
 
   const summaryItems = [
-    { label: '平均', value: Math.round(avg) },
-    { label: '最高', value: max },
-    { label: '最低', value: min },
-    { label: '中央値', value: Math.round(median) },
+    { label: '平均MPR', value: avg.toFixed(2) },
+    { label: '最高', value: max.toFixed(2) },
+    { label: '最低', value: min.toFixed(2) },
+    { label: '中央値', value: median.toFixed(2) },
   ];
 
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1.5 }}>
-        01 統計分析
+        Cricket 統計分析
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
@@ -77,18 +70,6 @@ export default function ZeroOneAnalysisCard({ games, currentRating }: ZeroOneAna
               {item.value}
             </Typography>
           </Paper>
-        ))}
-      </Box>
-
-      {/* バリアント内訳 */}
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
-        {variantCounts.map((v) => (
-          <Chip
-            key={v.category}
-            label={`${v.category}: ${v.count}ゲーム`}
-            size="small"
-            sx={{ bgcolor: `${COLOR_01}18`, color: COLOR_01, fontWeight: 'bold', fontSize: 11 }}
-          />
         ))}
       </Box>
 
@@ -109,7 +90,7 @@ export default function ZeroOneAnalysisCard({ games, currentRating }: ZeroOneAna
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {bands.map((b, i) => (
-                    <Cell key={i} fill={b.isCurrent ? COLOR_CURRENT : COLOR_01} />
+                    <Cell key={i} fill={b.isCurrent ? COLOR_CURRENT : COLOR_CRICKET} />
                   ))}
                 </Bar>
               </BarChart>

@@ -17,6 +17,8 @@ export interface CuSessionSummary {
   minScore: number;
   consistency: number; // CV-based (0-100)
   bullRate: number;
+  doubleBullRate: number; // DBull率
+  missDirections: { direction: string; percentage: number }[]; // 8方向分布
   avgVectorX: number; // 横ずれ平均 (mm)
   avgVectorY: number; // 縦ずれ平均 (mm)
   avgRadius: number; // グルーピング半径平均 (mm)
@@ -102,6 +104,10 @@ export function summarizeSession(date: string, plays: CountUpPlayData[]): CuSess
     minScore: Math.min(...scores),
     consistency: con?.score ?? 0,
     bullRate: missResult?.bullRate ?? 0,
+    doubleBullRate: missResult?.doubleBullRate ?? 0,
+    missDirections: missResult
+      ? missResult.directions.map((d) => ({ direction: d.label, percentage: d.percentage }))
+      : [],
     avgVectorX: hasDl3
       ? Math.round((dl3Plays.reduce((s, p) => s + p.dl3VectorX, 0) / dl3Plays.length) * 10) / 10
       : 0,

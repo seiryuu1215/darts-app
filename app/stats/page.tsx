@@ -208,6 +208,7 @@ export default function StatsPage() {
             onGameChartCategoryChange={setGameChartCategory}
             enrichedData={proEnrichedData}
             currentRating={c?.rating}
+            countupPlays={apiCountupPlays}
           />
         )}
 

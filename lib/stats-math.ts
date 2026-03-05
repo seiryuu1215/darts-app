@@ -299,6 +299,45 @@ export function analyzeMissDirection(
   };
 }
 
+// ─── レーティング棒グラフ用バンド生成 ────────────────────
+
+/**
+ * スコア配列をレーティング別バンドに分類
+ * @param scores     ゲームスコア配列
+ * @param centerRt   現在のレーティング（中心）
+ * @param scoreToStat スコア→統計値変換 (CU: s/8, 01: そのまま, Cricket: そのまま)
+ * @param statToRating 統計値→レーティング変換 (calc01Rating or calcCriRating)
+ * @returns 7バンド (centerRt ±3) の配列
+ */
+export function buildRatingBands(
+  scores: number[],
+  centerRt: number,
+  scoreToStat: (score: number) => number,
+  statToRating: (stat: number) => number,
+): { label: string; count: number; isCurrent: boolean }[] {
+  if (scores.length === 0) return [];
+
+  const currentRtInt = Math.floor(centerRt);
+  const minRt = Math.max(1, currentRtInt - 3);
+  const maxRt = currentRtInt + 3;
+
+  const bands: { label: string; count: number; isCurrent: boolean }[] = [];
+  for (let rt = minRt; rt <= maxRt; rt++) {
+    bands.push({ label: `Rt${rt}`, count: 0, isCurrent: rt === currentRtInt });
+  }
+
+  for (const score of scores) {
+    const stat = scoreToStat(score);
+    const rt = Math.floor(statToRating(stat));
+    const idx = rt - minRt;
+    if (idx >= 0 && idx < bands.length) {
+      bands[idx].count++;
+    }
+  }
+
+  return bands;
+}
+
 /** DARTSLIVE API の TIME 文字列 ("YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DD_HH:mm:ss") を安全にパース */
 export function parsePlayTime(time: string): Date {
   return new Date(time.replace(/ |_/, 'T'));

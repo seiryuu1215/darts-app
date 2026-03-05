@@ -7,18 +7,12 @@ import {
   BarChart,
   Bar,
   Cell,
-  LineChart,
-  Line,
-  ComposedChart,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  ReferenceLine,
-  ReferenceDot,
 } from 'recharts';
 import { calc01Rating, calcCriRating, ppdForRating } from '@/lib/dartslive-rating';
-import { evaluateBullRate, RATING_BENCHMARKS } from '@/lib/dartslive-reference';
 import { getPercentile, getPercentileColor } from '@/lib/dartslive-percentile';
 import { COLOR_01 } from '@/lib/dartslive-colors';
 import { getFlightColor } from '@/lib/dartslive-colors';
@@ -39,15 +33,6 @@ interface Stats01Detailed {
   avg100: number | null;
 }
 
-interface DailyRecord {
-  date: string;
-  rating: number | null;
-  stats01Avg: number | null;
-  statsCriAvg: number | null;
-  stats01Avg100?: number | null;
-  statsCriAvg100?: number | null;
-}
-
 interface DartoutItem {
   score: number;
   count: number;
@@ -55,7 +40,12 @@ interface DartoutItem {
 
 interface ZeroOneDeepAnalysisCardProps {
   stats01Detailed: Stats01Detailed | null;
-  dailyHistory: DailyRecord[];
+  dailyHistory: {
+    date: string;
+    rating: number | null;
+    stats01Avg: number | null;
+    statsCriAvg: number | null;
+  }[];
   dartoutList: DartoutItem[] | null;
   currentRating: number | null;
   statsCriAvg: number | null;
@@ -69,7 +59,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** フライト名を返す */
 function getFlightName(rt: number): string {
   if (rt >= 14) return 'SA';
   if (rt >= 12) return 'AA';
@@ -83,57 +72,30 @@ function getFlightName(rt: number): string {
 
 export default function ZeroOneDeepAnalysisCard({
   stats01Detailed,
-  dailyHistory,
   dartoutList,
   currentRating,
   statsCriAvg,
 }: ZeroOneDeepAnalysisCardProps) {
   const ppd = stats01Detailed?.avg ?? null;
-  const ppd100 = stats01Detailed?.avg100 ?? null;
-  const bullRate = stats01Detailed?.bullRate ?? null;
   const winRate = stats01Detailed?.winRate ?? null;
   const arrangeRate = stats01Detailed?.arrangeRate ?? null;
   const avgBust = stats01Detailed?.avgBust ?? null;
 
-  // 01個別レーティング
   const rt01 = useMemo(() => (ppd != null ? calc01Rating(ppd) : null), [ppd]);
   const rtCri = useMemo(
     () => (statsCriAvg != null ? calcCriRating(statsCriAvg) : null),
     [statsCriAvg],
   );
-
-  // PPDパーセンタイル
   const ppdPercentile = useMemo(() => (ppd != null ? getPercentile('ppd', ppd) : null), [ppd]);
 
-  // Bull率ベンチマーク
-  const bullEval = useMemo(
-    () => (ppd != null && bullRate != null ? evaluateBullRate(ppd, bullRate) : null),
-    [ppd, bullRate],
-  );
-
-  // Bull率/トリプル率ベンチマークチャートデータ
-  const bullBenchmarkData = useMemo(() => {
-    return RATING_BENCHMARKS.filter((b) => b.rating >= 4 && b.rating <= 14).map((b) => ({
-      rating: `Rt${b.rating}`,
-      ratingNum: b.rating,
-      bullRate: b.bullRatePerThrow,
-      tripleRate: Math.max(0, b.bullRatePerThrow - 25),
-    }));
-  }, []);
-
-  // ダーツアウト分析
   const dartoutAnalysis = useMemo(
     () => (dartoutList && dartoutList.length > 0 ? analyzeDartout(dartoutList) : null),
     [dartoutList],
   );
-
-  // フィニッシュスコア帯
   const finishRanges = useMemo(
     () => (dartoutList && dartoutList.length > 0 ? classifyFinishRange(dartoutList) : []),
     [dartoutList],
   );
-
-  // TOP10フィニッシュ
   const topFinishes = useMemo(
     () =>
       dartoutList && dartoutList.length > 0
@@ -142,21 +104,6 @@ export default function ZeroOneDeepAnalysisCard({
     [dartoutList],
   );
 
-  // PPD推移データ（直近90日）
-  const trendData = useMemo(() => {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    return dailyHistory
-      .filter((d) => d.stats01Avg != null && new Date(d.date) >= cutoff)
-      .map((d) => ({
-        date: new Date(d.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
-        ppd: d.stats01Avg,
-        ppd100: d.stats01Avg100 ?? null,
-      }))
-      .reverse();
-  }, [dailyHistory]);
-
-  // 次のRtに必要なPPD
   const nextRtTarget = useMemo(() => {
     if (rt01 == null) return null;
     const nextRt = Math.floor(rt01) + 1;
@@ -168,31 +115,9 @@ export default function ZeroOneDeepAnalysisCard({
   if (!stats01Detailed || ppd == null) return null;
 
   const rt01Flight = rt01 != null ? getFlightName(rt01) : 'N';
-  const estimatedTripleRate = bullRate != null ? Math.max(0, bullRate - 25) : null;
-
-  // 80/100ギャップ評価
-  const ppdGap = ppd100 != null ? Math.abs(ppd - ppd100) : null;
-  const gapLabel =
-    ppdGap != null ? (ppdGap <= 2 ? '安定' : ppdGap <= 5 ? 'やや波あり' : '差が大きい') : null;
-  const gapColor =
-    ppdGap != null ? (ppdGap <= 2 ? '#4caf50' : ppdGap <= 5 ? '#ff9800' : '#f44336') : '#888';
 
   // インサイト生成
   const insights: { severity: 'success' | 'warning' | 'info'; text: string }[] = [];
-
-  if (bullEval) {
-    if (bullEval.diff >= 1) {
-      insights.push({
-        severity: 'success',
-        text: `Bull率${bullRate}%はRt期待値(${bullEval.expected}%)を上回っています（${bullEval.evaluation}）`,
-      });
-    } else if (bullEval.diff < -2) {
-      insights.push({
-        severity: 'warning',
-        text: `Bull率${bullRate}%はRt期待値(${bullEval.expected}%)より低めです。Bull練習で伸びしろがあります`,
-      });
-    }
-  }
 
   if (arrangeRate != null && avgBust != null) {
     if (arrangeRate >= 30) {
@@ -220,13 +145,6 @@ export default function ZeroOneDeepAnalysisCard({
         text: `ダブルフィニッシュ${dartoutAnalysis.typeBreakdown.doubleRate}%でバランスの良いフィニッシュパターン`,
       });
     }
-  }
-
-  if (ppdGap != null && ppdGap > 5) {
-    insights.push({
-      severity: 'warning',
-      text: `80%平均と100%平均の差が${ppdGap.toFixed(1)}。波の大きさが課題かもしれません`,
-    });
   }
 
   return (
@@ -307,7 +225,6 @@ export default function ZeroOneDeepAnalysisCard({
         <>
           <SectionTitle>レーティング貢献分析</SectionTitle>
           <Box sx={{ mb: 1 }}>
-            {/* 水平バーチャート */}
             {[
               { label: '01 Rt', value: rt01, color: COLOR_01 },
               { label: 'Cri Rt', value: rtCri, color: '#1E88E5' },
@@ -364,145 +281,11 @@ export default function ZeroOneDeepAnalysisCard({
         </>
       )}
 
-      {/* 80% vs 100% PPD 比較 */}
-      {ppd100 != null && (
-        <>
-          <SectionTitle>80% vs 100% PPD 比較</SectionTitle>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 0.5 }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                80%平均 (PPD)
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {ppd.toFixed(2)}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                100%平均
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {ppd100.toFixed(2)}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                差分
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold', color: gapColor }}>
-                {ppdGap?.toFixed(1)} ({gapLabel})
-              </Typography>
-            </Box>
-          </Box>
-        </>
-      )}
-
-      {/* Bull率ベンチマーク */}
-      {bullRate != null && bullEval && (
-        <>
-          <SectionTitle>Bull率ベンチマーク</SectionTitle>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1 }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Bull率
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {bullRate}%
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Rt期待値
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {bullEval.expected}%
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                差
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontWeight: 'bold',
-                  color: bullEval.diff >= 0 ? '#4caf50' : '#f44336',
-                }}
-              >
-                {bullEval.diff >= 0 ? '+' : ''}
-                {bullEval.diff.toFixed(1)}%
-              </Typography>
-            </Box>
-            {estimatedTripleRate != null && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  推定トリプル率
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
-                  {estimatedTripleRate.toFixed(1)}%
-                </Typography>
-              </Box>
-            )}
-          </Box>
-
-          {/* Bull率/トリプル率チャート */}
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={bullBenchmarkData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="rating" fontSize={10} tick={{ fill: ct.text }} />
-              <YAxis fontSize={11} tick={{ fill: ct.text }} unit="%" />
-              <Tooltip contentStyle={ct.tooltipStyle} />
-              <Line
-                type="monotone"
-                dataKey="bullRate"
-                name="Bull率基準"
-                stroke="#4caf50"
-                strokeWidth={2}
-                dot={{ r: 2 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="tripleRate"
-                name="トリプル率推定"
-                stroke="#ff9800"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ r: 2 }}
-              />
-              {currentRating != null && bullRate != null && (
-                <ReferenceDot
-                  x={`Rt${Math.min(14, Math.max(4, Math.round(currentRating)))}`}
-                  y={bullRate}
-                  r={6}
-                  fill={COLOR_01}
-                  stroke="#fff"
-                  strokeWidth={2}
-                />
-              )}
-              {currentRating != null && estimatedTripleRate != null && (
-                <ReferenceDot
-                  x={`Rt${Math.min(14, Math.max(4, Math.round(currentRating)))}`}
-                  y={estimatedTripleRate}
-                  r={5}
-                  fill="#ff9800"
-                  stroke="#fff"
-                  strokeWidth={2}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            ※ トリプル率推定 = max(0, Bull率 - 25%)
-          </Typography>
-        </>
-      )}
-
       {/* ダーツアウト分析 */}
       {dartoutAnalysis && (
         <>
           <SectionTitle>ダーツアウト分析</SectionTitle>
 
-          {/* メトリクスサマリー */}
           <Box
             sx={{
               display: 'grid',
@@ -548,34 +331,6 @@ export default function ZeroOneDeepAnalysisCard({
               </Typography>
             </Box>
           </Box>
-
-          {/* フィニッシュスコア帯分布 */}
-          {finishRanges.length > 0 && (
-            <>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mb: 0.5, display: 'block' }}
-              >
-                フィニッシュスコア帯分布
-              </Typography>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={finishRanges}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                  <XAxis dataKey="label" fontSize={10} tick={{ fill: ct.text }} />
-                  <YAxis fontSize={11} tick={{ fill: ct.text }} />
-                  <Tooltip
-                    contentStyle={ct.tooltipStyle}
-                    formatter={(v: number | undefined) => [
-                      `${v ?? 0}回 (${(((v ?? 0) / dartoutAnalysis.totalFinishes) * 100).toFixed(1)}%)`,
-                      '回数',
-                    ]}
-                  />
-                  <Bar dataKey="count" name="回数" radius={[4, 4, 0, 0]} fill={COLOR_01} />
-                </BarChart>
-              </ResponsiveContainer>
-            </>
-          )}
 
           {/* TOP10フィニッシュ */}
           {topFinishes.length > 0 && (
@@ -651,53 +406,6 @@ export default function ZeroOneDeepAnalysisCard({
               </Box>
             ))}
           </Box>
-        </>
-      )}
-
-      {/* PPD推移チャート */}
-      {trendData.length > 1 && (
-        <>
-          <SectionTitle>PPD推移（直近90日）</SectionTitle>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="date" fontSize={10} tick={{ fill: ct.text }} />
-              <YAxis
-                fontSize={11}
-                tick={{ fill: ct.text }}
-                domain={['dataMin - 5', 'dataMax + 5']}
-              />
-              <Tooltip contentStyle={ct.tooltipStyle} />
-              {ppd != null && (
-                <ReferenceLine
-                  y={ppd}
-                  stroke="#ff9800"
-                  strokeDasharray="5 5"
-                  label={{ value: `平均 ${ppd.toFixed(1)}`, fill: '#ff9800', fontSize: 10 }}
-                />
-              )}
-              <Line
-                type="monotone"
-                dataKey="ppd"
-                name="80%平均"
-                stroke={COLOR_01}
-                strokeWidth={2}
-                dot={{ r: 2, fill: COLOR_01 }}
-                connectNulls
-              />
-              <Line
-                type="monotone"
-                dataKey="ppd100"
-                name="100%平均"
-                stroke={COLOR_01}
-                strokeWidth={1.5}
-                strokeDasharray="5 5"
-                dot={false}
-                connectNulls
-                opacity={0.5}
-              />
-            </LineChart>
-          </ResponsiveContainer>
         </>
       )}
 

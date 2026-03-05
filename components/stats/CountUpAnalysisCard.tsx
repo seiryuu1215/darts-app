@@ -1,26 +1,41 @@
 'use client';
 
 import { Paper, Box, Typography } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
-import { computeStats, buildHistogram } from '@/lib/stats-math';
+import { computeStats, buildRatingBands } from '@/lib/stats-math';
+import { calc01Rating } from '@/lib/dartslive-rating';
 import { useChartTheme } from '@/lib/chart-theme';
 
 interface CountUpAnalysisCardProps {
   games: { category: string; scores: number[] }[];
   expectedCountUp?: number | null;
+  currentRating?: number | null;
 }
 
 const MAX_GAMES = 30;
+const COLOR_CURRENT = '#FF9800';
 
-export default function CountUpAnalysisCard({ games, expectedCountUp }: CountUpAnalysisCardProps) {
+export default function CountUpAnalysisCard({
+  games,
+  expectedCountUp,
+  currentRating,
+}: CountUpAnalysisCardProps) {
   const ct = useChartTheme();
   const countUpGame = games?.find((g) => g.category === 'COUNT-UP');
   if (!countUpGame || countUpGame.scores.length < 3) return null;
 
   const recentScores = countUpGame.scores.slice(-MAX_GAMES);
   const { avg, max, min, median } = computeStats(recentScores);
-  const histogram = buildHistogram(recentScores, 100);
 
   // Rt期待値以上の割合
   const aboveExpectedPct =
@@ -37,6 +52,10 @@ export default function CountUpAnalysisCard({ games, expectedCountUp }: CountUpA
   const trendDiff = secondHalfAvg - firstHalfAvg;
   const trendArrow = trendDiff > 10 ? '↑' : trendDiff < -10 ? '↓' : '→';
   const trendColor = trendDiff > 10 ? '#4caf50' : trendDiff < -10 ? '#f44336' : '#888';
+
+  // レーティングバンド
+  const centerRt = currentRating ?? calc01Rating(avg / 8);
+  const bands = buildRatingBands(recentScores, centerRt, (s) => s / 8, calc01Rating);
 
   const summaryItems: { label: string; value: string; color?: string }[] = [
     { label: '平均', value: `${Math.round(avg)}` },
@@ -85,23 +104,31 @@ export default function CountUpAnalysisCard({ games, expectedCountUp }: CountUpA
         ))}
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-        スコア分布（直近{recentScores.length}ゲーム・100点刻み）
-      </Typography>
-      <Box sx={{ width: '100%', height: 200 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={histogram} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
-            <XAxis dataKey="range" tick={{ fontSize: 11, fill: ct.text }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: ct.text }} />
-            <Tooltip
-              formatter={(value) => [`${value}ゲーム`, '回数']}
-              contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
-            />
-            <Bar dataKey="count" fill={COLOR_COUNTUP} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Box>
+      {bands.length > 0 && (
+        <>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            レーティング別分布（直近{recentScores.length}ゲーム）
+          </Typography>
+          <Box sx={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={bands} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: ct.text }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: ct.text }} />
+                <Tooltip
+                  formatter={(value) => [`${value}ゲーム`, '回数']}
+                  contentStyle={{ ...ct.tooltipStyle, fontSize: 12 }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {bands.map((b, i) => (
+                    <Cell key={i} fill={b.isCurrent ? COLOR_CURRENT : COLOR_COUNTUP} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
+        </>
+      )}
     </Paper>
   );
 }
