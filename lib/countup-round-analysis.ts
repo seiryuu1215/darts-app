@@ -148,6 +148,47 @@ export function detectRoundPatterns(rounds: RoundScore[]): RoundPatternResult {
   };
 }
 
+/** ラウンド別ブル統計 */
+export interface RoundBullStats {
+  totalRounds: number;
+  hatTrickCount: number; // 1ラウンド3 bulls
+  lowTonCount: number; // 1ラウンド2 bulls
+  hatTrickRate: number; // %
+  lowTonRate: number; // %
+}
+
+/** PLAY_LOGからラウンド別ブル数を分析（ロートン・ハットトリック率算出） */
+export function analyzeRoundBulls(playLogs: string[]): RoundBullStats {
+  let totalRounds = 0;
+  let hatTrickCount = 0;
+  let lowTonCount = 0;
+
+  for (const log of playLogs) {
+    const darts = log.split(',').map((c) => c.trim());
+    for (let r = 0; r < 8; r++) {
+      let bullsInRound = 0;
+      for (let d = 0; d < 3; d++) {
+        const idx = r * 3 + d;
+        if (idx < darts.length) {
+          const parsed = parseDartCode(darts[idx]);
+          if (parsed?.isBull) bullsInRound++;
+        }
+      }
+      totalRounds++;
+      if (bullsInRound >= 3) hatTrickCount++;
+      else if (bullsInRound === 2) lowTonCount++;
+    }
+  }
+
+  return {
+    totalRounds,
+    hatTrickCount,
+    lowTonCount,
+    hatTrickRate: totalRounds > 0 ? Math.round((hatTrickCount / totalRounds) * 1000) / 10 : 0,
+    lowTonRate: totalRounds > 0 ? Math.round((lowTonCount / totalRounds) * 1000) / 10 : 0,
+  };
+}
+
 /** ラウンド分析統合実行 */
 export function analyzeRounds(playLogs: string[]): RoundAnalysis | null {
   if (playLogs.length < 5) return null;

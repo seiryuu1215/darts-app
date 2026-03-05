@@ -4,6 +4,7 @@
  */
 
 import { calculateConsistency, analyzeMissDirection, parsePlayTime } from './stats-math';
+import { analyzeRoundBulls } from './countup-round-analysis';
 
 import type { CountUpPlayData } from './dartslive-api';
 
@@ -25,6 +26,8 @@ export interface CuSessionSummary {
   avgSpeed: number;
   primaryMissDir: string; // 主傾向方向
   directionStrength: number; // 偏り強度
+  lowTonRate: number; // ロートン率 (%)
+  hatTrickRate: number; // ハットトリック率 (%)
 }
 
 export interface CuSessionComparison {
@@ -38,6 +41,8 @@ export interface CuSessionComparison {
     vectorY: number; // 縦ずれ変化
     radius: number; // レンジ変化
     speed: number;
+    lowTonRate: number;
+    hatTrickRate: number;
   };
   insights: string[]; // 日本語インサイト
 }
@@ -88,7 +93,10 @@ export function summarizeSession(date: string, plays: CountUpPlayData[]): CuSess
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
   const con = calculateConsistency(scores);
 
-  const missResult = analyzeMissDirection(plays.map((p) => p.playLog));
+  const playLogs = plays.map((p) => p.playLog).filter((l) => l && l.length > 0);
+  const missResult = analyzeMissDirection(playLogs);
+
+  const bullStats = analyzeRoundBulls(playLogs);
 
   // DL3センサーデータ（0以外のもの）
   const dl3Plays = plays.filter(
@@ -122,6 +130,8 @@ export function summarizeSession(date: string, plays: CountUpPlayData[]): CuSess
       : 0,
     primaryMissDir: missResult?.primaryDirection ?? '-',
     directionStrength: missResult?.directionStrength ?? 0,
+    lowTonRate: bullStats.lowTonRate,
+    hatTrickRate: bullStats.hatTrickRate,
   };
 }
 
@@ -147,6 +157,8 @@ export function compareLastTwoSessions(
     vectorY: Math.round((current.avgVectorY - prev.avgVectorY) * 10) / 10,
     radius: Math.round((current.avgRadius - prev.avgRadius) * 10) / 10,
     speed: Math.round((current.avgSpeed - prev.avgSpeed) * 10) / 10,
+    lowTonRate: Math.round((current.lowTonRate - prev.lowTonRate) * 10) / 10,
+    hatTrickRate: Math.round((current.hatTrickRate - prev.hatTrickRate) * 10) / 10,
   };
 
   const insights = generateInsights(prev, current, deltas);
@@ -221,6 +233,16 @@ function generateInsights(
     insights.push(`グルーピングが${Math.abs(deltas.radius)}mm改善。リリースが安定しています。`);
   } else if (deltas.radius > 1) {
     insights.push(`グルーピングが${deltas.radius}mm広がっています。フォームの安定を意識。`);
+  }
+
+  // ロートン率変化
+  if (deltas.lowTonRate > 1) {
+    insights.push(`ロートン率が${deltas.lowTonRate}%向上。ブルへの集中力が上がっています。`);
+  }
+
+  // ハットトリック率変化
+  if (deltas.hatTrickRate > 0.5) {
+    insights.push(`ハットトリック率が${deltas.hatTrickRate}%向上。高精度ラウンドが増加。`);
   }
 
   // ミス方向変化

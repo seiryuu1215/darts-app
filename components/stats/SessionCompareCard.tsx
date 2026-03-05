@@ -3,15 +3,12 @@
 import { useMemo } from 'react';
 import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import {
-  compareLastTwoSessions,
-  extractQualifiedSessions,
-  summarizeSession,
-} from '@/lib/countup-session-compare';
-import type { CuSessionSummary, CuSessionComparison } from '@/lib/countup-session-compare';
+import { compareLastTwoSessions, extractQualifiedSessions } from '@/lib/countup-session-compare';
+import { computeSegmentFrequency } from '@/lib/heatmap-data';
 import { buildRatingBands } from '@/lib/stats-math';
 import { calc01Rating } from '@/lib/dartslive-rating';
 import { useChartTheme } from '@/lib/chart-theme';
+import MiniDartboardSvg from './MiniDartboardSvg';
 import type { CountUpPlay } from './countup-deep-shared';
 
 interface SessionCompareCardProps {
@@ -148,27 +145,38 @@ function formatDate(dateStr: string): string {
 export default function SessionCompareCard({ countupPlays }: SessionCompareCardProps) {
   const ct = useChartTheme();
 
-  const comparison = useMemo(() => compareLastTwoSessions(countupPlays, 30), [countupPlays]);
+  const { comparison, bandData, heatmaps } = useMemo(() => {
+    const comp = compareLastTwoSessions(countupPlays, 30);
+    if (!comp) return { comparison: null, bandData: [], heatmaps: null };
 
-  // レーティングバンド比較データ
-  const bandData = useMemo(() => {
-    if (!comparison) return [];
-    const sessions = extractQualifiedSessions(countupPlays, 30);
-    if (sessions.length < 2) return [];
+    const allSessions = extractQualifiedSessions(countupPlays, 30);
+    if (allSessions.length < 2) return { comparison: comp, bandData: [], heatmaps: null };
 
-    const prevScores = sessions[sessions.length - 2].plays.map((p) => p.score);
-    const currScores = sessions[sessions.length - 1].plays.map((p) => p.score);
-    const centerRt = calc01Rating(comparison.current.avgScore / 8);
+    const prevSession = allSessions[allSessions.length - 2];
+    const currSession = allSessions[allSessions.length - 1];
 
+    // バンドデータ
+    const prevScores = prevSession.plays.map((p) => p.score);
+    const currScores = currSession.plays.map((p) => p.score);
+    const centerRt = calc01Rating(comp.current.avgScore / 8);
     const prevBands = buildRatingBands(prevScores, centerRt, (s) => s / 8, calc01Rating);
     const currBands = buildRatingBands(currScores, centerRt, (s) => s / 8, calc01Rating);
-
-    return prevBands.map((pb, i) => ({
+    const bd = prevBands.map((pb, i) => ({
       label: pb.label,
       prev: pb.count,
       current: currBands[i]?.count ?? 0,
     }));
-  }, [comparison, countupPlays]);
+
+    // ヒートマップ
+    const prevLogs = prevSession.plays.map((p) => p.playLog).filter((l) => l && l.length > 0);
+    const currLogs = currSession.plays.map((p) => p.playLog).filter((l) => l && l.length > 0);
+    const hm =
+      prevLogs.length > 0 && currLogs.length > 0
+        ? { prev: computeSegmentFrequency(prevLogs), current: computeSegmentFrequency(currLogs) }
+        : null;
+
+    return { comparison: comp, bandData: bd, heatmaps: hm };
+  }, [countupPlays]);
 
   if (!comparison) return null;
 
@@ -194,6 +202,20 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
       prevVal: `${prev.doubleBullRate}%`,
       currVal: `${current.doubleBullRate}%`,
       delta: Math.round((current.doubleBullRate - prev.doubleBullRate) * 10) / 10,
+      unit: '%',
+    },
+    {
+      label: 'ロートン率',
+      prevVal: `${prev.lowTonRate}%`,
+      currVal: `${current.lowTonRate}%`,
+      delta: deltas.lowTonRate,
+      unit: '%',
+    },
+    {
+      label: 'ハット率',
+      prevVal: `${prev.hatTrickRate}%`,
+      currVal: `${current.hatTrickRate}%`,
+      delta: deltas.hatTrickRate,
       unit: '%',
     },
     {
@@ -257,6 +279,54 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
           sx={{ fontSize: 12 }}
         />
       </Box>
+
+      {/* ヒートマップ並列比較 */}
+      {heatmaps && (
+        <>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa', mb: 1 }}>
+            ヒートマップ
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                {formatDate(prev.date)}
+              </Typography>
+              <MiniDartboardSvg heatmapData={heatmaps.prev} size={140} />
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                {formatDate(current.date)}
+              </Typography>
+              <MiniDartboardSvg heatmapData={heatmaps.current} size={140} />
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              mb: 1.5,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+              少
+            </Typography>
+            <Box
+              sx={{
+                width: 100,
+                height: 8,
+                borderRadius: 4,
+                background:
+                  'linear-gradient(to right, rgb(30,80,180), rgb(255,200,20), rgb(255,30,0))',
+              }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
+              多
+            </Typography>
+          </Box>
+        </>
+      )}
 
       {/* ミス方向ボード並列比較 */}
       {prev.missDirections.length > 0 && current.missDirections.length > 0 && (
@@ -367,7 +437,11 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
             {insights.map((text, i) => (
               <Alert
                 key={i}
-                severity={text.includes('改善') || text.includes('アップ') ? 'success' : 'info'}
+                severity={
+                  text.includes('改善') || text.includes('アップ') || text.includes('向上')
+                    ? 'success'
+                    : 'info'
+                }
                 sx={{ py: 0, '& .MuiAlert-message': { fontSize: 12 } }}
               >
                 {text}

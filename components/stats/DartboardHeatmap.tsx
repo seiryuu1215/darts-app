@@ -4,6 +4,19 @@ import { useMemo, useState } from 'react';
 import { Paper, Typography, Box, ToggleButton, ToggleButtonGroup, Chip } from '@mui/material';
 import { computeSegmentFrequency, getHeatIntensity } from '@/lib/heatmap-data';
 import type { HeatmapData } from '@/lib/heatmap-data';
+import {
+  BOARD_ORDER,
+  R_DOUBLE_OUTER,
+  R_DOUBLE_INNER,
+  R_OUTER_SINGLE_INNER,
+  R_TRIPLE_OUTER,
+  R_TRIPLE_INNER,
+  R_INNER_SINGLE_INNER,
+  R_BULL,
+  R_DBULL,
+  arcPath,
+  heatColor,
+} from '@/lib/dartboard-svg-utils';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
 import { parsePlayTime } from '@/lib/stats-math';
 
@@ -43,79 +56,9 @@ function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] 
   return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
 }
 
-/** ダーツボードの数字配置（12時=20、時計回り） */
-const BOARD_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-
 const SIZE = 300;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-
-// 半径定義（ダーツボードの各リング）
-const R_DOUBLE_OUTER = 140;
-const R_DOUBLE_INNER = 130;
-const R_OUTER_SINGLE_INNER = 82;
-const R_TRIPLE_OUTER = 82;
-const R_TRIPLE_INNER = 72;
-const R_INNER_SINGLE_INNER = 18;
-const R_BULL = 18;
-const R_DBULL = 8;
-
-/** 扇形のSVGパスを生成 */
-function arcPath(
-  cx: number,
-  cy: number,
-  innerR: number,
-  outerR: number,
-  startAngle: number,
-  endAngle: number,
-): string {
-  const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
-  const sa = toRad(startAngle);
-  const ea = toRad(endAngle);
-
-  const x1 = cx + innerR * Math.cos(sa);
-  const y1 = cy + innerR * Math.sin(sa);
-  const x2 = cx + outerR * Math.cos(sa);
-  const y2 = cy + outerR * Math.sin(sa);
-  const x3 = cx + outerR * Math.cos(ea);
-  const y3 = cy + outerR * Math.sin(ea);
-  const x4 = cx + innerR * Math.cos(ea);
-  const y4 = cy + innerR * Math.sin(ea);
-
-  return [
-    `M ${x1} ${y1}`,
-    `L ${x2} ${y2}`,
-    `A ${outerR} ${outerR} 0 0 1 ${x3} ${y3}`,
-    `L ${x4} ${y4}`,
-    `A ${innerR} ${innerR} 0 0 0 ${x1} ${y1}`,
-    'Z',
-  ].join(' ');
-}
-
-/** ヒートマップ色（赤系グラデーション） */
-function heatColor(intensity: number): string {
-  if (intensity <= 0) return 'transparent';
-  // 低→青, 中→黄, 高→赤
-  if (intensity < 0.33) {
-    const t = intensity / 0.33;
-    const r = Math.round(30 + t * 50);
-    const g = Math.round(80 + t * 120);
-    const b = Math.round(180 - t * 80);
-    return `rgb(${r},${g},${b})`;
-  }
-  if (intensity < 0.66) {
-    const t = (intensity - 0.33) / 0.33;
-    const r = Math.round(80 + t * 175);
-    const g = Math.round(200 - t * 50);
-    const b = Math.round(100 - t * 80);
-    return `rgb(${r},${g},${b})`;
-  }
-  const t = (intensity - 0.66) / 0.34;
-  const r = Math.round(255);
-  const g = Math.round(150 - t * 120);
-  const b = Math.round(20 - t * 20);
-  return `rgb(${r},${g},${b})`;
-}
 
 /** 各数字のセグメントを描画 */
 function NumberSegments({

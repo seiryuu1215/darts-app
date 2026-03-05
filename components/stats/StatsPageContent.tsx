@@ -333,7 +333,14 @@ export default function StatsPageContent({
         </StatsCardBoundary>
       )}
 
-      {/* 10. COUNT-UP Delta */}
+      {/* 10. Session Compare */}
+      {countupPlays && countupPlays.length > 0 && (
+        <StatsCardBoundary name="練習日比較">
+          <SessionCompareCard countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* 11. COUNT-UP Delta */}
       <StatsCardBoundary name="COUNT-UPスコア推移">
         <CountUpDeltaChart games={dlData.recentGames.games} avgScore={c.statsPraAvg} />
       </StatsCardBoundary>
@@ -382,14 +389,7 @@ export default function StatsPageContent({
         </StatsCardBoundary>
       )}
 
-      {/* 17. Session Compare */}
-      {countupPlays && countupPlays.length > 0 && (
-        <StatsCardBoundary name="練習日比較">
-          <SessionCompareCard countupPlays={countupPlays} />
-        </StatsCardBoundary>
-      )}
-
-      {/* 18. Practice Recommendations */}
+      {/* 17. Practice Recommendations */}
       {recInput && (
         <StatsCardBoundary name="練習レコメンド">
           <PracticeRecommendationsCard input={recInput} />
