@@ -750,6 +750,13 @@ export interface CuNotifyStats {
   maxScore: number;
   consistency: number;
   bullRate: number;
+  // ブル・ロートン・ハットトリック実数
+  bullCount?: number;
+  totalDarts?: number;
+  lowTonCount?: number;
+  lowTonRate?: number;
+  hatTrickCount?: number;
+  hatTrickRate?: number;
   // 前回比較（前回有効セッションとの差分）
   prevAvgScore?: number | null;
   prevConsistency?: number | null;
@@ -816,7 +823,7 @@ export function buildCountUpFlexMessage(cu: CuNotifyStats): object {
         },
       ],
     },
-    // ブル率
+    // ブル率 + ブル数
     {
       type: 'box',
       layout: 'horizontal',
@@ -825,10 +832,47 @@ export function buildCountUpFlexMessage(cu: CuNotifyStats): object {
         { type: 'text', text: 'ブル率', size: 'xs', color: '#888888', flex: 2 },
         {
           type: 'text',
-          text: `${cu.bullRate}%`,
+          text:
+            cu.bullCount != null && cu.totalDarts != null
+              ? `${cu.bullRate}%（${cu.bullCount}/${cu.totalDarts}本）`
+              : `${cu.bullRate}%`,
           size: 'sm',
           weight: 'bold',
-          flex: 1,
+          flex: 3,
+          align: 'end',
+        },
+      ],
+    },
+    // ロートン
+    {
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'xs',
+      contents: [
+        { type: 'text', text: 'ロートン', size: 'xs', color: '#888888', flex: 2 },
+        {
+          type: 'text',
+          text: cu.lowTonCount != null ? `${cu.lowTonRate}%（${cu.lowTonCount}回）` : '-',
+          size: 'sm',
+          weight: 'bold',
+          flex: 3,
+          align: 'end',
+        },
+      ],
+    },
+    // ハットトリック
+    {
+      type: 'box',
+      layout: 'horizontal',
+      margin: 'xs',
+      contents: [
+        { type: 'text', text: 'ハット', size: 'xs', color: '#888888', flex: 2 },
+        {
+          type: 'text',
+          text: cu.hatTrickCount != null ? `${cu.hatTrickRate}%（${cu.hatTrickCount}回）` : '-',
+          size: 'sm',
+          weight: 'bold',
+          flex: 3,
           align: 'end',
         },
       ],
@@ -1861,8 +1905,15 @@ export function buildSensorSummaryFlexBubble(
         margin: 'md',
       });
 
+      // バーの最大幅を最大値+10%にスケーリング（差分を見やすくする）
+      const maxPct = Math.max(
+        ...sorted.map(([, c]) => Math.round((c / heatmapData.totalDarts) * 100)),
+      );
+      const barScale = maxPct + 10;
+
       const barItems: object[] = sorted.map(([segId, count]) => {
         const pct = Math.round((count / heatmapData.totalDarts) * 100);
+        const barWidth = Math.max(Math.round((pct / barScale) * 100), 5);
         return {
           type: 'box',
           layout: 'horizontal',
@@ -1878,7 +1929,7 @@ export function buildSensorSummaryFlexBubble(
                   layout: 'vertical',
                   contents: [],
                   backgroundColor: '#7B1FA2',
-                  width: `${Math.max(pct, 5)}%`,
+                  width: `${barWidth}%`,
                   height: '8px',
                   cornerRadius: '4px',
                 },

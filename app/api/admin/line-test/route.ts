@@ -75,6 +75,8 @@ export const POST = withErrorHandler(
         ppd: cacheData.stats01Avg ?? null,
         mpr: cacheData.statsCriAvg ?? null,
         prevRating: cacheData.prevRating ?? null,
+        prevPpd: cacheData.prevStats01Avg ?? null,
+        prevMpr: cacheData.prevStatsCriAvg ?? null,
         dateStr,
         awards: {
           dBull: cacheData.bullStats?.dBull ?? 0,

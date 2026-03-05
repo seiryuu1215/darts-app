@@ -17,8 +17,9 @@ import {
 } from '@/lib/line';
 import { analyzeMissDirection } from '@/lib/stats-math';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
-import { analyzeRounds } from '@/lib/countup-round-analysis';
+import { analyzeRounds, analyzeRoundBulls } from '@/lib/countup-round-analysis';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
+import { calcRating } from '@/lib/dartslive-rating';
 import { calculateConsistency } from '@/lib/stats-math';
 import { generateSessionComparisonImage } from './session-comparison-image';
 import { generateMissDirectionImage } from './miss-direction-image';
@@ -32,6 +33,8 @@ export interface DailyNotificationContext {
     ppd: number | null;
     mpr: number | null;
     prevRating?: number | null;
+    prevPpd?: number | null;
+    prevMpr?: number | null;
     dateStr: string;
     gamesPlayed?: number | null;
     awards?: {
@@ -75,6 +78,16 @@ export async function buildRoleBasedDailyNotification(
   const imageMessages: object[] = [];
   const isPro = ctx.role === 'pro' || ctx.role === 'admin';
 
+  // レーティング小数を PPD+MPR から再計算（APIは整数しか返さない場合がある）
+  const decimalRating =
+    ctx.stats.ppd != null && ctx.stats.mpr != null
+      ? Math.round(calcRating(ctx.stats.ppd, ctx.stats.mpr) * 100) / 100
+      : ctx.stats.rating;
+  const prevDecimalRating =
+    ctx.stats.prevPpd != null && ctx.stats.prevMpr != null
+      ? Math.round(calcRating(ctx.stats.prevPpd, ctx.stats.prevMpr) * 100) / 100
+      : (ctx.stats.prevRating ?? null);
+
   // ── 全ロール共通: スタッツバブル ──
   const statsFlex = buildStatsFlexMessage({
     date: ctx.stats.dateStr,
@@ -104,6 +117,7 @@ export async function buildRoleBasedDailyNotification(
     const cuAvg = Math.round((cuScores.reduce((a, b) => a + b, 0) / cuScores.length) * 10) / 10;
     const cuMax = Math.max(...cuScores);
     const cuCon = calculateConsistency(cuScores);
+    const roundBulls = analyzeRoundBulls(playLogs);
 
     const cuStats: CuNotifyStats = {
       date: ctx.stats.dateStr,
@@ -112,6 +126,12 @@ export async function buildRoleBasedDailyNotification(
       maxScore: cuMax,
       consistency: cuCon?.score ?? 0,
       bullRate: missResult?.bullRate ?? 0,
+      bullCount: missResult?.bullCount ?? 0,
+      totalDarts: missResult?.totalDarts ?? 0,
+      lowTonCount: roundBulls.lowTonCount,
+      lowTonRate: roundBulls.lowTonRate,
+      hatTrickCount: roundBulls.hatTrickCount,
+      hatTrickRate: roundBulls.hatTrickRate,
     };
 
     // 30G以上なら前回比較を追加（Pro/Adminは画像で比較データを送るのでスキップ）
@@ -151,8 +171,8 @@ export async function buildRoleBasedDailyNotification(
   if (isPro && sessionComparison) {
     try {
       const imageBuffer = await generateSessionComparisonImage(sessionComparison, {
-        rating: ctx.stats.rating,
-        prevRating: ctx.stats.prevRating,
+        rating: decimalRating,
+        prevRating: prevDecimalRating,
       });
       const dateStr = sessionComparison.current.date;
       const imagePath = `images/line-session/${ctx.userId}/${dateStr}.png`;

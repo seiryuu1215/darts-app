@@ -416,6 +416,8 @@ export async function GET(request: NextRequest) {
                     ppd: stats.stats01Avg,
                     mpr: stats.statsCriAvg,
                     prevRating: prevData?.rating ?? null,
+                    prevPpd: prevData?.stats01Avg ?? null,
+                    prevMpr: prevData?.statsCriAvg ?? null,
                     dateStr,
                     gamesPlayed,
                     awards: {
