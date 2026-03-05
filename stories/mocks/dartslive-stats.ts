@@ -349,6 +349,184 @@ export const MOCK_UNLOCKED_ACHIEVEMENTS = [
   'level_10',
 ];
 
+// --- EnrichedData（PerformanceInsightsCard, StatsPageContent用） ---
+export interface EnrichedData {
+  maxRating: number | null;
+  maxRatingDate: string | null;
+  stats01Detailed: {
+    avg: number | null;
+    best: number | null;
+    winRate: number | null;
+    bullRate: number | null;
+    arrangeRate: number | null;
+    avgBust: number | null;
+    avg100: number | null;
+  } | null;
+  statsCricketDetailed: {
+    avg: number | null;
+    best: number | null;
+    winRate: number | null;
+    tripleRate: number | null;
+    openCloseRate: number | null;
+    avg100: number | null;
+  } | null;
+  bestRecords:
+    | { gameId: string; gameName: string; bestScore: number; bestDate: string | null }[]
+    | null;
+}
+
+export const MOCK_ENRICHED_DATA: EnrichedData = {
+  maxRating: 8.52,
+  maxRatingDate: '2025-12-15',
+  stats01Detailed: {
+    avg: 65.21,
+    best: 72.45,
+    winRate: 58,
+    bullRate: 42,
+    arrangeRate: 35,
+    avgBust: 2.1,
+    avg100: 63.8,
+  },
+  statsCricketDetailed: {
+    avg: 2.31,
+    best: 2.89,
+    winRate: 52,
+    tripleRate: 38,
+    openCloseRate: 65,
+    avg100: 2.25,
+  },
+  bestRecords: [
+    { gameId: 'COUNTUP', gameName: 'COUNT-UP', bestScore: 612, bestDate: '2025-12-10' },
+    { gameId: '501', gameName: '501', bestScore: 72.45, bestDate: '2025-11-28' },
+  ],
+};
+
+export const MOCK_SA_ENRICHED_DATA: EnrichedData = {
+  maxRating: 14.55,
+  maxRatingDate: '2025-11-20',
+  stats01Detailed: {
+    avg: 89.45,
+    best: 96.12,
+    winRate: 72,
+    bullRate: 58,
+    arrangeRate: 48,
+    avgBust: 1.2,
+    avg100: 87.3,
+  },
+  statsCricketDetailed: {
+    avg: 3.82,
+    best: 4.35,
+    winRate: 68,
+    tripleRate: 52,
+    openCloseRate: 78,
+    avg100: 3.75,
+  },
+  bestRecords: [
+    { gameId: 'COUNTUP', gameName: 'COUNT-UP', bestScore: 842, bestDate: '2025-11-15' },
+    { gameId: '501', gameName: '501', bestScore: 96.12, bestDate: '2025-11-20' },
+  ],
+};
+
+// --- RecommendationInput（PracticeRecommendationsCard用） ---
+export interface RecommendationInput {
+  ppd: number | null;
+  bullRate: number | null;
+  arrangeRate: number | null;
+  avgBust: number | null;
+  mpr: number | null;
+  tripleRate: number | null;
+  openCloseRate: number | null;
+  countupAvg: number | null;
+  countupConsistency: number | null;
+  primaryMissDirection: string | null;
+  directionStrength: number | null;
+  avgRadius: number | null;
+  radiusImprovement: number | null;
+  avgSpeed: number | null;
+  optimalSessionLength: number | null;
+  peakGameNumber: number | null;
+  roundPattern: string | null;
+  worstRound: number | null;
+}
+
+export const MOCK_REC_INPUT: RecommendationInput = {
+  ppd: 65.21,
+  bullRate: 42,
+  arrangeRate: 35,
+  avgBust: 2.1,
+  mpr: 2.31,
+  tripleRate: 38,
+  openCloseRate: 65,
+  countupAvg: 521,
+  countupConsistency: 72,
+  primaryMissDirection: '右下',
+  directionStrength: 0.45,
+  avgRadius: 28.5,
+  radiusImprovement: -8,
+  avgSpeed: 12.3,
+  optimalSessionLength: 18,
+  peakGameNumber: 6,
+  roundPattern: 'slow_start',
+  worstRound: 1,
+};
+
+export const MOCK_REC_INPUT_LITE: RecommendationInput = {
+  ppd: 65.21,
+  bullRate: 42,
+  arrangeRate: 35,
+  avgBust: 2.1,
+  mpr: 2.31,
+  tripleRate: 38,
+  openCloseRate: 65,
+  countupAvg: null,
+  countupConsistency: null,
+  primaryMissDirection: null,
+  directionStrength: null,
+  avgRadius: null,
+  radiusImprovement: null,
+  avgSpeed: null,
+  optimalSessionLength: null,
+  peakGameNumber: null,
+  roundPattern: null,
+  worstRound: null,
+};
+
+// --- CountUpPlay[]（SensorTrendCard用、20件、DL3センサー値付き） ---
+export interface CountUpPlay {
+  time: string;
+  score: number;
+  playLog: string;
+  dl3VectorX: number;
+  dl3VectorY: number;
+  dl3Radius: number;
+  dl3Speed: number;
+}
+
+function generateCountUpPlays(): CountUpPlay[] {
+  const plays: CountUpPlay[] = [];
+  const baseDate = new Date('2025-12-01T18:00:00');
+  for (let i = 0; i < 20; i++) {
+    const d = new Date(baseDate.getTime() + i * 1000 * 60 * 15);
+    const score = Math.round(480 + Math.random() * 140);
+    const vx = +(Math.random() * 20 - 10).toFixed(1);
+    const vy = +(Math.random() * 16 - 6).toFixed(1);
+    const radius = +(20 + Math.random() * 25).toFixed(1);
+    const speed = +(10 + Math.random() * 6).toFixed(1);
+    plays.push({
+      time: d.toISOString(),
+      score,
+      playLog: `R1:${Math.round(score * 0.11)} R2:${Math.round(score * 0.14)} R3:${Math.round(score * 0.12)} R4:${Math.round(score * 0.13)} R5:${Math.round(score * 0.11)} R6:${Math.round(score * 0.13)} R7:${Math.round(score * 0.14)} R8:${Math.round(score * 0.12)}`,
+      dl3VectorX: vx,
+      dl3VectorY: vy,
+      dl3Radius: radius,
+      dl3Speed: speed,
+    });
+  }
+  return plays;
+}
+
+export const MOCK_COUNTUP_PLAYS: CountUpPlay[] = generateCountUpPlays();
+
 export const MOCK_XP_HISTORY = [
   {
     id: 'xp_1',

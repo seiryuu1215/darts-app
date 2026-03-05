@@ -21,16 +21,19 @@ import {
   MOCK_ACHIEVEMENT_SNAPSHOT,
   MOCK_UNLOCKED_ACHIEVEMENTS,
   MOCK_XP_HISTORY,
+  MOCK_ENRICHED_DATA,
+  MOCK_SA_ENRICHED_DATA,
 } from '../mocks/dartslive-stats';
-import type { DartsliveData } from '../mocks/dartslive-stats';
+import type { DartsliveData, EnrichedData } from '../mocks/dartslive-stats';
 import type { AchievementSnapshot } from '@/lib/progression/xp-engine';
 
 interface FullStatsPageProps {
   dlData: DartsliveData;
   variant: 'connected' | 'empty' | 'paywall';
+  enrichedData?: EnrichedData | null;
 }
 
-function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
+function FullStatsPage({ dlData, variant, enrichedData }: FullStatsPageProps) {
   const periodTab = 'all' as const;
   const [monthlyTab, setMonthlyTab] = useState<'rating' | 'zeroOne' | 'cricket' | 'countUp'>(
     'rating',
@@ -125,6 +128,8 @@ function FullStatsPage({ dlData, variant }: FullStatsPageProps) {
             gameChartCategory={gameChartCategory}
             onMonthlyTabChange={setMonthlyTab}
             onGameChartCategoryChange={setGameChartCategory}
+            enrichedData={enrichedData}
+            currentRating={dlData.current.rating}
           />
         )}
 
@@ -225,15 +230,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const BBFlight: Story = {
-  args: { dlData: MOCK_DARTSLIVE_DATA, variant: 'connected' },
+  args: { dlData: MOCK_DARTSLIVE_DATA, variant: 'connected', enrichedData: MOCK_ENRICHED_DATA },
 };
 
 export const SAFlight: Story = {
-  args: { dlData: MOCK_SA_FLIGHT_DATA, variant: 'connected' },
+  args: { dlData: MOCK_SA_FLIGHT_DATA, variant: 'connected', enrichedData: MOCK_SA_ENRICHED_DATA },
 };
 
 export const CFlight: Story = {
-  args: { dlData: MOCK_C_FLIGHT_DATA, variant: 'connected' },
+  args: { dlData: MOCK_C_FLIGHT_DATA, variant: 'connected', enrichedData: null },
 };
 
 export const EmptyState: Story = {
