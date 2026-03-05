@@ -195,6 +195,93 @@ describe('analyzeMissDirection', () => {
     const result = analyzeMissDirection(['BB,S20,I20'], { excludeOuterSingle: true });
     expect(result!.totalDarts).toBe(2); // S20 excluded
   });
+
+  it('8方向の分布を正しく返す', () => {
+    const result = analyzeMissDirection(['S20,S1,S5,S12']);
+    expect(result).not.toBeNull();
+    expect(result!.directions).toHaveLength(8);
+    // 各方向にlabel, count, percentage, numbersがある
+    for (const d of result!.directions) {
+      expect(d).toHaveProperty('label');
+      expect(d).toHaveProperty('count');
+      expect(d).toHaveProperty('percentage');
+      expect(d).toHaveProperty('numbers');
+    }
+  });
+
+  it('percentageの合計が100%になる', () => {
+    const result = analyzeMissDirection(['S20,S1,S18,S5,S12,S3,S7,S16']);
+    expect(result).not.toBeNull();
+    const totalPct = result!.directions.reduce((sum, d) => sum + d.percentage, 0);
+    expect(totalPct).toBeCloseTo(100, 0);
+  });
+
+  it('primaryDirectionが最も多い方向を示す', () => {
+    // S20(0°=上), S1(18°=上), S18(36°=右上) → 上方向に偏る
+    const result = analyzeMissDirection(['S20,S20,S20,S20,S1,S1,S1,S18']);
+    expect(result).not.toBeNull();
+    expect(result!.primaryDirection).toBe('上');
+  });
+
+  it('directionStrengthが0-1の範囲', () => {
+    const result = analyzeMissDirection(['S20,S1,S5,S12']);
+    expect(result).not.toBeNull();
+    expect(result!.directionStrength).toBeGreaterThanOrEqual(0);
+    expect(result!.directionStrength).toBeLessThanOrEqual(1);
+  });
+
+  it('均等分布でdirectionStrengthが低い', () => {
+    // 全方向に均等 → strengthが低い
+    const allNumbers = 'S20,S1,S18,S4,S13,S6,S10,S15,S2,S17,S3,S19,S7,S16,S8,S11,S14,S9,S12,S5';
+    const result = analyzeMissDirection([allNumbers]);
+    expect(result).not.toBeNull();
+    expect(result!.directionStrength).toBeLessThan(0.3);
+  });
+
+  it('topMissNumbersが最大5件で降順', () => {
+    const result = analyzeMissDirection(['S20,S20,S20,S1,S1,S5,S12,S3,S7']);
+    expect(result).not.toBeNull();
+    expect(result!.topMissNumbers.length).toBeLessThanOrEqual(5);
+    expect(result!.topMissNumbers[0].number).toBe(20); // 最頻出
+    expect(result!.topMissNumbers[0].count).toBe(3);
+    // 降順確認
+    for (let i = 1; i < result!.topMissNumbers.length; i++) {
+      expect(result!.topMissNumbers[i].count).toBeLessThanOrEqual(
+        result!.topMissNumbers[i - 1].count,
+      );
+    }
+  });
+
+  it('bullRate/doubleBullRateがパーセンテージで計算される', () => {
+    // 10 darts: 3 BB + 2 B + 5 miss
+    const result = analyzeMissDirection(['BB,BB,BB,B,B,S20,S1,I5,T3,D10']);
+    expect(result).not.toBeNull();
+    expect(result!.bullRate).toBeCloseTo(50, 0); // 5/10 * 100
+    expect(result!.doubleBullRate).toBeCloseTo(30, 0); // 3/10 * 100
+  });
+
+  it('missCountがbullとout以外のダーツ数', () => {
+    const result = analyzeMissDirection(['BB,B,O,S20,I5,T3']);
+    expect(result).not.toBeNull();
+    expect(result!.missCount).toBe(3); // S20, I5, T3
+  });
+
+  it('複数ログを跨いで正しく集計', () => {
+    const result = analyzeMissDirection(['BB,S20,S1', 'BB,S20,S5']);
+    expect(result).not.toBeNull();
+    expect(result!.totalDarts).toBe(6);
+    expect(result!.bullCount).toBe(2);
+    expect(result!.missCount).toBe(4);
+    const s20 = result!.topMissNumbers.find((n) => n.number === 20);
+    expect(s20?.count).toBe(2);
+  });
+
+  it('avgVectorがx,yプロパティを持つ', () => {
+    const result = analyzeMissDirection(['S20,S1']);
+    expect(result).not.toBeNull();
+    expect(result!.avgVector).toHaveProperty('x');
+    expect(result!.avgVector).toHaveProperty('y');
+  });
 });
 
 describe('parsePlayTime', () => {

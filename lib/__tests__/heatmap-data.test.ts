@@ -42,6 +42,53 @@ describe('computeSegmentFrequency', () => {
     const result = computeSegmentFrequency(['T20,T20,T20,S1']);
     expect(result.maxCount).toBe(3); // T20 appears 3 times
   });
+
+  it('defaults to all mode when mode not specified', () => {
+    const result = computeSegmentFrequency(['BB,S20,O']);
+    expect(result.segments.has('BB')).toBe(true);
+    expect(result.segments.has('OUT')).toBe(true);
+    expect(result.segments.has('S20')).toBe(true);
+  });
+
+  it('missモードでもbullCount/outCountは正しく集計', () => {
+    const result = computeSegmentFrequency(['BB,BB,B,O,O,S20,I5'], 'miss');
+    expect(result.bullCount).toBe(3);
+    expect(result.doubleBullCount).toBe(2);
+    expect(result.outCount).toBe(2);
+    expect(result.totalDarts).toBe(7);
+    // segmentsにはミスのみ
+    expect(result.segments.size).toBe(2); // S20, I5
+  });
+
+  it('PO（パンチアウト）をOUTとして処理', () => {
+    const result = computeSegmentFrequency(['PO,S1']);
+    expect(result.outCount).toBe(1);
+    expect(result.totalDarts).toBe(2);
+  });
+
+  it('不正なダーツコードをスキップ', () => {
+    const result = computeSegmentFrequency(['BB,XYZ,S20']);
+    expect(result.totalDarts).toBe(2); // XYZはスキップ
+    expect(result.segments.size).toBe(2);
+  });
+
+  it('全エリアタイプを正しくプレフィックス分類', () => {
+    const result = computeSegmentFrequency(['T20,D20,S20,I20']);
+    expect(result.segments.get('T20')).toBe(1);
+    expect(result.segments.get('D20')).toBe(1);
+    expect(result.segments.get('S20')).toBe(1);
+    expect(result.segments.get('I20')).toBe(1);
+  });
+
+  it('空文字列ログを安全に処理', () => {
+    const result = computeSegmentFrequency(['']);
+    expect(result.totalDarts).toBe(0);
+  });
+
+  it('maxCountは空segmentsでも1以上', () => {
+    const result = computeSegmentFrequency([]);
+    expect(result.maxCount).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('getSegmentLabel', () => {
