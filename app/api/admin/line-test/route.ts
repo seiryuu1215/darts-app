@@ -124,10 +124,16 @@ export const POST = withErrorHandler(
     const lineBody = await lineRes.text().catch(() => '');
     const sent = lineRes.ok;
 
+    // デバッグ: 画像URLを抽出
+    const imageUrls = (result.imageMessages ?? []).map(
+      (m) => (m as Record<string, unknown>).originalContentUrl,
+    );
+
     return NextResponse.json({
       success: sent,
       bubbleCount: result.bubbles.length,
       imageCount: result.imageMessages?.length ?? 0,
+      imageUrls,
       lineStatus: lineRes.status,
       lineError: sent ? undefined : lineBody,
       payloadSize: `${(payload.length / 1024).toFixed(1)}KB`,
