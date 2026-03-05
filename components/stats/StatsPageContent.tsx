@@ -161,7 +161,6 @@ export interface StatsPageContentProps {
   enrichedData?: EnrichedData | null;
   currentRating?: number | null;
   countupPlays?: CountUpPlay[] | null;
-  isAdminApi?: boolean;
 }
 
 export default function StatsPageContent({
@@ -181,7 +180,6 @@ export default function StatsPageContent({
   enrichedData,
   currentRating,
   countupPlays,
-  isAdminApi,
 }: StatsPageContentProps) {
   const c = dlData.current;
   const prev = dlData.prev;
@@ -232,42 +230,38 @@ export default function StatsPageContent({
     <>
       {/* ── ダッシュボード ── */}
 
-      {/* 1. Rating Hero + Profile — admin時は非表示 */}
-      {!isAdminApi && (
-        <StatsCardBoundary name="レーティング">
-          <RatingHeroCard
-            rating={c.rating}
-            ratingPrev={prev?.rating ?? null}
-            flight={c.flight}
-            flightColor={flightColor}
-            streak={periodSummary?.streak ?? 0}
-            showStreak={periodTab === 'all'}
-            cardName={c.cardName}
-            cardImageUrl={c.cardImageUrl}
-            toorina={c.toorina}
-            homeShop={c.homeShop}
-            status={c.status}
-          />
-        </StatsCardBoundary>
-      )}
+      {/* 1. Rating Hero + Profile */}
+      <StatsCardBoundary name="レーティング">
+        <RatingHeroCard
+          rating={c.rating}
+          ratingPrev={prev?.rating ?? null}
+          flight={c.flight}
+          flightColor={flightColor}
+          streak={periodSummary?.streak ?? 0}
+          showStreak={periodTab === 'all'}
+          cardName={c.cardName}
+          cardImageUrl={c.cardImageUrl}
+          toorina={c.toorina}
+          homeShop={c.homeShop}
+          status={c.status}
+        />
+      </StatsCardBoundary>
 
-      {/* 2. Game Stats Cards — admin時は非表示 */}
-      {!isAdminApi && (
-        <StatsCardBoundary name="ゲームスタッツ">
-          <GameStatsCards
-            stats01Avg={c.stats01Avg}
-            stats01Best={c.stats01Best}
-            statsCriAvg={c.statsCriAvg}
-            statsCriBest={c.statsCriBest}
-            statsPraAvg={c.statsPraAvg}
-            statsPraBest={c.statsPraBest}
-            prev01Avg={prev?.stats01Avg ?? null}
-            prevCriAvg={prev?.statsCriAvg ?? null}
-            prevPraAvg={prev?.statsPraAvg ?? null}
-            expectedCountUp={expectedCountUp}
-          />
-        </StatsCardBoundary>
-      )}
+      {/* 2. Game Stats Cards */}
+      <StatsCardBoundary name="ゲームスタッツ">
+        <GameStatsCards
+          stats01Avg={c.stats01Avg}
+          stats01Best={c.stats01Best}
+          statsCriAvg={c.statsCriAvg}
+          statsCriBest={c.statsCriBest}
+          statsPraAvg={c.statsPraAvg}
+          statsPraBest={c.statsPraBest}
+          prev01Avg={prev?.stats01Avg ?? null}
+          prevCriAvg={prev?.statsCriAvg ?? null}
+          prevPraAvg={prev?.statsPraAvg ?? null}
+          expectedCountUp={expectedCountUp}
+        />
+      </StatsCardBoundary>
 
       {/* 3. Skill Radar (simple) */}
       {c.stats01Avg != null && c.statsCriAvg != null && (

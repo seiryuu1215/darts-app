@@ -209,7 +209,6 @@ export default function StatsPage() {
             enrichedData={proEnrichedData}
             currentRating={c?.rating}
             countupPlays={apiCountupPlays}
-            isAdminApi={isAdminApi}
           />
         )}
 
