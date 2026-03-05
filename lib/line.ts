@@ -1380,6 +1380,15 @@ export function buildSessionComparisonFlexBubble(comparison: CuSessionComparison
   bodyContents.push(
     compRow('ブル率', `${prev.bullRate}%`, `${current.bullRate}%`, deltas.bullRate),
   );
+  bodyContents.push(
+    compRow('ワンブル', `${prev.oneBullRate}%`, `${current.oneBullRate}%`, deltas.oneBullRate),
+  );
+  bodyContents.push(
+    compRow('ロートン', `${prev.lowTonRate}%`, `${current.lowTonRate}%`, deltas.lowTonRate),
+  );
+  bodyContents.push(
+    compRow('ハット', `${prev.hatTrickRate}%`, `${current.hatTrickRate}%`, deltas.hatTrickRate),
+  );
 
   // インサイト
   if (insights.length > 0) {
