@@ -14,6 +14,14 @@ vi.mock('next/og', () => ({
   },
 }));
 
+// フォント読み込みをモック
+vi.mock('../image-fonts', () => ({
+  loadNotoSansJPFonts: async () => ({
+    regular: new ArrayBuffer(8),
+    bold: new ArrayBuffer(8),
+  }),
+}));
+
 import { generateSessionComparisonImage } from '../session-comparison-image';
 import type { CuSessionComparison } from '../countup-session-compare';
 

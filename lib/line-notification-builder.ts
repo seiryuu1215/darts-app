@@ -26,6 +26,7 @@ import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import { calculateConsistency } from '@/lib/stats-math';
 import { generateSessionComparisonImage } from './session-comparison-image';
+import { generateMissDirectionImage } from './miss-direction-image';
 import { uploadLineImage } from './line-image-upload';
 
 export interface DailyNotificationContext {
@@ -117,8 +118,8 @@ export async function buildRoleBasedDailyNotification(
       bullRate: missResult?.bullRate ?? 0,
     };
 
-    // 30G以上なら前回比較を追加
-    if (cuPlays.length >= 30 && sessionComparison) {
+    // 30G以上なら前回比較を追加（Pro/Adminは画像で比較データを送るのでスキップ）
+    if (cuPlays.length >= 30 && sessionComparison && ctx.role !== 'pro' && ctx.role !== 'admin') {
       cuStats.prevAvgScore = sessionComparison.prev.avgScore;
       cuStats.prevConsistency = sessionComparison.prev.consistency;
       cuStats.prevBullRate = sessionComparison.prev.bullRate;
@@ -134,15 +135,8 @@ export async function buildRoleBasedDailyNotification(
     if (cuBubble) bubbles.push(cuBubble);
   }
 
-  // ── Pro/Admin: セッション比較 ──
+  // ── Pro/Admin: セッション比較（画像 primary、失敗時 Flex fallback）──
   if ((ctx.role === 'pro' || ctx.role === 'admin') && sessionComparison) {
-    try {
-      bubbles.push(buildSessionComparisonFlexBubble(sessionComparison));
-    } catch (e) {
-      console.error('Session comparison bubble error:', e);
-    }
-
-    // 画像送信（失敗してもFlex Bubbleは送信済み）
     try {
       const imageBuffer = await generateSessionComparisonImage(sessionComparison);
       const dateStr = sessionComparison.current.date;
@@ -154,7 +148,28 @@ export async function buildRoleBasedDailyNotification(
         previewImageUrl: imageUrl,
       });
     } catch (e) {
-      console.error('Session comparison image error:', e);
+      console.error('Session comparison image error, flex fallback:', e);
+      try {
+        bubbles.push(buildSessionComparisonFlexBubble(sessionComparison));
+      } catch (e2) {
+        console.error('Session comparison flex fallback error:', e2);
+      }
+    }
+  }
+
+  // ── Pro/Admin: ミス方向画像 ──
+  if ((ctx.role === 'pro' || ctx.role === 'admin') && missResult) {
+    try {
+      const buf = await generateMissDirectionImage(missResult, ctx.stats.dateStr);
+      const imagePath = `images/line-miss/${ctx.userId}/${ctx.stats.dateStr}.png`;
+      const imageUrl = await uploadLineImage(buf, imagePath);
+      imageMessages.push({
+        type: 'image',
+        originalContentUrl: imageUrl,
+        previewImageUrl: imageUrl,
+      });
+    } catch (e) {
+      console.error('Miss direction image error:', e);
     }
   }
 

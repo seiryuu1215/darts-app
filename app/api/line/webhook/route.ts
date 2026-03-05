@@ -28,6 +28,7 @@ import { generateRecommendations, type RecommendationInput } from '@/lib/practic
 import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import { generateSessionComparisonImage } from '@/lib/session-comparison-image';
+import { generateMissDirectionImage } from '@/lib/miss-direction-image';
 import { uploadLineImage } from '@/lib/line-image-upload';
 
 export const maxDuration = 60;
@@ -680,33 +681,54 @@ async function handleAnalysis(replyToken: string, lineUserId: string) {
     const playLogs = recentPlays.map((p) => p.playLog);
 
     const bubbles: object[] = [];
+    const imageMessages: object[] = [];
+    const isPro = userRole === 'pro' || userRole === 'admin';
 
-    // ミス方向分析（全ロール共通）
+    // ミス方向分析
     const missResult = analyzeMissDirection(playLogs);
     if (missResult) {
-      bubbles.push(buildMissDirectionFlexBubble(missResult));
+      if (isPro) {
+        // Pro/Admin: 画像（失敗時 Flex fallback）
+        try {
+          const now = new Date();
+          now.setHours(now.getHours() + 9);
+          const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+          const buf = await generateMissDirectionImage(missResult, dateStr);
+          const imagePath = `images/line-miss/${user.id}/${dateStr.replace(/\//g, '-')}.png`;
+          const imageUrl = await uploadLineImage(buf, imagePath);
+          imageMessages.push({
+            type: 'image',
+            originalContentUrl: imageUrl,
+            previewImageUrl: imageUrl,
+          });
+        } catch (e) {
+          console.error('Miss direction image error, flex fallback:', e);
+          bubbles.push(buildMissDirectionFlexBubble(missResult));
+        }
+      } else {
+        // General: Flex Bubble（従来通り）
+        bubbles.push(buildMissDirectionFlexBubble(missResult));
+      }
     }
 
     // セッション比較（Pro/Admin限定）
-    let sessionImageMsg: object | null = null;
-    if (userRole === 'pro' || userRole === 'admin') {
+    if (isPro) {
       const comparison = compareLastTwoSessions(allPlays, 30);
       if (comparison) {
-        bubbles.push(buildSessionComparisonFlexBubble(comparison));
-
-        // 画像生成（失敗してもFlex Bubbleは送信済み）
+        // 画像 primary、失敗時 Flex fallback
         try {
           const imageBuffer = await generateSessionComparisonImage(comparison);
           const dateStr = comparison.current.date;
           const imagePath = `images/line-session/${user.id}/${dateStr}.png`;
           const imageUrl = await uploadLineImage(imageBuffer, imagePath);
-          sessionImageMsg = {
+          imageMessages.push({
             type: 'image',
             originalContentUrl: imageUrl,
             previewImageUrl: imageUrl,
-          };
+          });
         } catch (e) {
-          console.error('Session comparison image error:', e);
+          console.error('Session comparison image error, flex fallback:', e);
+          bubbles.push(buildSessionComparisonFlexBubble(comparison));
         }
       }
     }
@@ -761,18 +783,18 @@ async function handleAnalysis(replyToken: string, lineUserId: string) {
       bubbles.push(buildRecommendationsFlexBubble(recs, maxRecs));
     }
 
-    if (bubbles.length === 0) {
+    if (bubbles.length === 0 && imageMessages.length === 0) {
       await replyLineMessage(replyToken, [
         { type: 'text', text: '分析に必要なデータが不足しています。' },
       ]);
       return;
     }
 
-    const carouselMsg = buildDailyCarouselMessage(bubbles);
-    const replyMessages: object[] = [carouselMsg];
-    if (sessionImageMsg) {
-      replyMessages.push(sessionImageMsg);
+    const replyMessages: object[] = [];
+    if (bubbles.length > 0) {
+      replyMessages.push(buildDailyCarouselMessage(bubbles));
     }
+    replyMessages.push(...imageMessages);
     await replyLineMessage(replyToken, replyMessages);
   } catch (err) {
     console.error('Analysis command error:', err);
