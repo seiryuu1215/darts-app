@@ -9,6 +9,7 @@ import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { RecommendationInput } from '@/lib/practice-recommendations';
 import { analyzeRoundBulls } from '@/lib/countup-round-analysis';
+import { analyzeMissDirection } from '@/lib/stats-math';
 import type { CountUpPlay } from './countup-deep-shared';
 
 import RatingHeroCard from './RatingHeroCard';
@@ -192,14 +193,19 @@ export default function StatsPageContent({
     () => dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores,
     [dlData.recentGames.games],
   );
-  const roundBulls = useMemo(() => {
+  // 直近30Gのブル率・ノーブル率（スキルレーダー用）
+  const radarBullStats = useMemo(() => {
     if (!countupPlays || countupPlays.length === 0) return null;
-    const logs = countupPlays.map((p) => p.playLog).filter((l): l is string => !!l && l.length > 0);
+    const recent30 = countupPlays.slice(-30);
+    const logs = recent30.map((p) => p.playLog).filter((l): l is string => !!l && l.length > 0);
     if (logs.length === 0) return null;
-    return analyzeRoundBulls(logs);
+    const roundBulls = analyzeRoundBulls(logs);
+    const missDir = analyzeMissDirection(logs);
+    return {
+      bullRate: missDir?.bullRate ?? null,
+      noBullRate: roundBulls.noBullRate,
+    };
   }, [countupPlays]);
-  const hatTrickRate = roundBulls?.hatTrickRate ?? null;
-  const lowTonRate = roundBulls?.lowTonRate ?? null;
 
   // PracticeRecommendationsCard 用の lite 版入力（sensor系は全て null）
   const recInput = useMemo((): RecommendationInput | null => {
@@ -274,8 +280,8 @@ export default function StatsPageContent({
             stats01Avg={c.stats01Avg}
             statsCriAvg={c.statsCriAvg}
             statsPraAvg={c.statsPraAvg}
-            hatTrickRate={hatTrickRate}
-            lowTonRate={lowTonRate}
+            bullRate={radarBullStats?.bullRate}
+            noBullRate={radarBullStats?.noBullRate}
             flight={c.flight || undefined}
           />
         </StatsCardBoundary>

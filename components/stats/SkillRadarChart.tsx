@@ -43,9 +43,8 @@ interface SimpleModeProps {
   stats01Avg: number | null;
   statsCriAvg: number | null;
   statsPraAvg: number | null;
-  hatTrickRate?: number | null;
-  lowTonRate?: number | null;
-  countUpScores?: number[];
+  bullRate?: number | null;
+  noBullRate?: number | null;
   flight?: string;
   stats01?: never;
   statsCricket?: never;
@@ -82,12 +81,10 @@ function buildDetailedData(
   flight?: string,
 ): RadarDataItem[] {
   const rt = getFlightRating(flight);
-  const bench = rt != null ? RATING_BENCHMARKS.find((b) => b.rating === rt) : null;
-  const benchPpd = rt != null ? ppdForRating(rt) : null;
-  const benchMpr = rt != null ? mprForRating(rt) : null;
 
-  // 次のレーティングのベンチマークを最大値として使う
+  // 次のレーティング(Rt+1)のベンチマークを最大値＆基準線として使う
   const nextRt = rt != null ? rt + 1 : null;
+  const nextBench = nextRt != null ? RATING_BENCHMARKS.find((b) => b.rating === nextRt) : null;
   const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
   const nextMpr = nextRt != null ? mprForRating(nextRt) : null;
   const max01 = nextPpd ?? 80;
@@ -97,7 +94,7 @@ function buildDetailedData(
     {
       axis: '01 Avg',
       value: normalize(stats01?.avg, 20, max01),
-      benchmark: benchPpd != null ? normalize(benchPpd, 20, max01) : undefined,
+      benchmark: nextPpd != null ? normalize(nextPpd, 20, max01) : undefined,
       rawLabel: `(${formatRaw(stats01?.avg, '')}/${max01.toFixed(0)})`,
     },
     {
@@ -109,19 +106,19 @@ function buildDetailedData(
     {
       axis: 'Bull率',
       value: stats01?.bullRate ?? 0,
-      benchmark: bench?.bullRatePerThrow,
+      benchmark: nextBench?.bullRatePerThrow,
       rawLabel: `(${formatRaw(stats01?.bullRate, '%')})`,
     },
     {
       axis: 'アレンジ率',
       value: stats01?.arrangeRate ?? 0,
-      benchmark: rt != null ? Math.min(100, rt * 3.5) : undefined,
+      benchmark: nextRt != null ? Math.min(100, nextRt * 3.5) : undefined,
       rawLabel: `(${formatRaw(stats01?.arrangeRate, '%')})`,
     },
     {
       axis: 'Cri Avg',
       value: normalize(statsCricket?.avg, 0.5, maxCri),
-      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, maxCri) : undefined,
+      benchmark: nextMpr != null ? normalize(nextMpr, 0.5, maxCri) : undefined,
       rawLabel: `(${formatRaw(statsCricket?.avg, '')}/${maxCri.toFixed(1)})`,
     },
     {
@@ -134,13 +131,15 @@ function buildDetailedData(
       axis: 'トリプル率',
       value: Math.max(0, (stats01?.bullRate ?? 0) - 25),
       benchmark:
-        bench?.bullRatePerThrow != null ? Math.max(0, bench.bullRatePerThrow - 25) : undefined,
+        nextBench?.bullRatePerThrow != null
+          ? Math.max(0, nextBench.bullRatePerThrow - 25)
+          : undefined,
       rawLabel: `(推定${Math.max(0, (stats01?.bullRate ?? 0) - 25).toFixed(1)}% / 実${formatRaw(statsCricket?.tripleRate, '%')})`,
     },
     {
       axis: 'Open-Close',
       value: statsCricket?.openCloseRate ?? 0,
-      benchmark: rt != null ? Math.min(100, rt * 3.5) : undefined,
+      benchmark: nextRt != null ? Math.min(100, nextRt * 3.5) : undefined,
       rawLabel: `(${formatRaw(statsCricket?.openCloseRate, '%')})`,
     },
   ];
@@ -150,16 +149,13 @@ function buildSimpleData(
   stats01Avg: number | null,
   statsCriAvg: number | null,
   statsPraAvg: number | null,
-  hatTrickRate: number | null | undefined,
-  lowTonRate: number | null | undefined,
+  bullRate: number | null | undefined,
+  noBullRate: number | null | undefined,
   flight?: string,
 ): RadarDataItem[] {
   const rt = getFlightRating(flight);
-  const bench = rt != null ? RATING_BENCHMARKS.find((b) => b.rating === rt) : null;
-  const benchPpd = rt != null ? ppdForRating(rt) : null;
-  const benchMpr = rt != null ? mprForRating(rt) : null;
 
-  // 次のレーティングのベンチマークを最大値として使う
+  // 次のレーティング(Rt+1)のベンチマークを最大値＆基準線として使う
   const nextRt = rt != null ? rt + 1 : null;
   const nextBench = nextRt != null ? RATING_BENCHMARKS.find((b) => b.rating === nextRt) : null;
   const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
@@ -167,42 +163,50 @@ function buildSimpleData(
   const max01 = nextPpd ?? 80;
   const maxCri = nextMpr ?? 4.0;
   const maxCU = nextPpd != null ? nextPpd * 8 : 800;
-  const maxHT = nextBench?.hatTrickRate ?? 60;
-  const maxLT = nextBench?.lowTonRate ?? 80;
+  const maxBull = nextBench?.bullRatePerThrow ?? 40;
+  // ノーブル率: 低い方が優秀 → max = 100(最悪値), min = nextBenchのnoBullRate(目標値)
+  const minNoBull = nextBench?.noBullRate ?? 30;
 
-  const htRate = hatTrickRate ?? 0;
-  const ltRate = lowTonRate ?? 0;
+  const br = bullRate ?? 0;
+  const nbr = noBullRate ?? 0;
 
   return [
     {
       axis: '01 Avg',
       value: normalize(stats01Avg, 20, max01),
-      benchmark: benchPpd != null ? normalize(benchPpd, 20, max01) : undefined,
+      benchmark: nextPpd != null ? normalize(nextPpd, 20, max01) : undefined,
       rawLabel: stats01Avg != null ? `(${stats01Avg.toFixed(1)})` : '',
     },
     {
       axis: 'Cricket Avg',
       value: normalize(statsCriAvg, 0.5, maxCri),
-      benchmark: benchMpr != null ? normalize(benchMpr, 0.5, maxCri) : undefined,
+      benchmark: nextMpr != null ? normalize(nextMpr, 0.5, maxCri) : undefined,
       rawLabel: statsCriAvg != null ? `(${statsCriAvg.toFixed(2)})` : '',
     },
     {
       axis: 'COUNT-UP',
       value: normalize(statsPraAvg, 200, maxCU),
-      benchmark: benchPpd != null ? normalize(benchPpd * 8, 200, maxCU) : undefined,
+      benchmark: nextPpd != null ? normalize(nextPpd * 8, 200, maxCU) : undefined,
       rawLabel: statsPraAvg != null ? `(${Math.round(statsPraAvg)})` : '',
     },
     {
-      axis: 'ハット率',
-      value: normalize(htRate, 0, maxHT),
-      benchmark: bench?.hatTrickRate != null ? normalize(bench.hatTrickRate, 0, maxHT) : undefined,
-      rawLabel: hatTrickRate != null ? `(${htRate.toFixed(1)}%)` : '',
+      axis: 'ブル率',
+      value: normalize(br, 0, maxBull),
+      benchmark:
+        nextBench?.bullRatePerThrow != null
+          ? normalize(nextBench.bullRatePerThrow, 0, maxBull)
+          : undefined,
+      rawLabel: bullRate != null ? `(${br.toFixed(1)}%)` : '',
     },
     {
-      axis: 'ロートン率',
-      value: normalize(ltRate, 0, maxLT),
-      benchmark: bench?.lowTonRate != null ? normalize(bench.lowTonRate, 0, maxLT) : undefined,
-      rawLabel: lowTonRate != null ? `(${ltRate.toFixed(1)}%)` : '',
+      axis: 'ノーブル率',
+      // ノーブル率は低い方が良い → 反転正規化 (100からの距離)
+      value: normalize(100 - nbr, 0, 100 - minNoBull),
+      benchmark:
+        nextBench?.noBullRate != null
+          ? normalize(100 - nextBench.noBullRate, 0, 100 - minNoBull)
+          : undefined,
+      rawLabel: noBullRate != null ? `(${nbr.toFixed(1)}%)` : '',
     },
   ];
 }
@@ -216,8 +220,8 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
         props.stats01Avg,
         props.statsCriAvg,
         props.statsPraAvg,
-        props.hatTrickRate,
-        props.lowTonRate,
+        props.bullRate,
+        props.noBullRate,
         props.flight,
       )
     : buildDetailedData(props.stats01, props.statsCricket, props.flight);
