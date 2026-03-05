@@ -25,6 +25,8 @@ import { generateRecommendations, type RecommendationInput } from '@/lib/practic
 import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import { calculateConsistency } from '@/lib/stats-math';
+import { generateSessionComparisonImage } from './session-comparison-image';
+import { uploadLineImage } from './line-image-upload';
 
 export interface DailyNotificationContext {
   userId: string;
@@ -63,11 +65,18 @@ export interface DailyNotificationContext {
   yesterdayCuPlays?: CountUpPlayData[];
 }
 
+/** ロール別デイリー通知の結果 */
+export interface DailyNotificationResult {
+  bubbles: object[];
+  imageMessages?: object[];
+}
+
 /** ロール別デイリー通知のバブル配列を構築 */
 export async function buildRoleBasedDailyNotification(
   ctx: DailyNotificationContext,
-): Promise<object[]> {
+): Promise<DailyNotificationResult> {
   const bubbles: object[] = [];
+  const imageMessages: object[] = [];
 
   // ── 全ロール共通: スタッツバブル ──
   const statsFlex = buildStatsFlexMessage({
@@ -130,7 +139,22 @@ export async function buildRoleBasedDailyNotification(
     try {
       bubbles.push(buildSessionComparisonFlexBubble(sessionComparison));
     } catch (e) {
-      console.error('Session comparison error:', e);
+      console.error('Session comparison bubble error:', e);
+    }
+
+    // 画像送信（失敗してもFlex Bubbleは送信済み）
+    try {
+      const imageBuffer = await generateSessionComparisonImage(sessionComparison);
+      const dateStr = sessionComparison.current.date;
+      const imagePath = `images/line-session/${ctx.userId}/${dateStr}.png`;
+      const imageUrl = await uploadLineImage(imageBuffer, imagePath);
+      imageMessages.push({
+        type: 'image',
+        originalContentUrl: imageUrl,
+        previewImageUrl: imageUrl,
+      });
+    } catch (e) {
+      console.error('Session comparison image error:', e);
     }
   }
 
@@ -170,7 +194,10 @@ export async function buildRoleBasedDailyNotification(
     }
   }
 
-  return bubbles;
+  return {
+    bubbles,
+    ...(imageMessages.length > 0 ? { imageMessages } : {}),
+  };
 }
 
 /** Firestoreスタッツ履歴からトレンドバブルを構築 */

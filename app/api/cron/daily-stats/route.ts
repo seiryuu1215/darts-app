@@ -448,9 +448,16 @@ export async function GET(request: NextRequest) {
                     carouselYesterdayCuPlays.length > 0 ? carouselYesterdayCuPlays : undefined,
                 };
 
-                const dailyBubbles = await buildRoleBasedDailyNotification(notifCtx);
-                const carouselMsg = buildDailyCarouselMessage(dailyBubbles, CONDITION_QUICK_REPLY);
-                await sendLinePushMessage(lineUserId, [carouselMsg]);
+                const dailyResult = await buildRoleBasedDailyNotification(notifCtx);
+                const carouselMsg = buildDailyCarouselMessage(
+                  dailyResult.bubbles,
+                  CONDITION_QUICK_REPLY,
+                );
+                const messages: object[] = [carouselMsg];
+                if (dailyResult.imageMessages) {
+                  messages.push(...dailyResult.imageMessages);
+                }
+                await sendLinePushMessage(lineUserId, messages);
 
                 // Push通知も送信
                 await sendPushToUser(userId, {

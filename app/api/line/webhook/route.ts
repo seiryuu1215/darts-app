@@ -27,6 +27,8 @@ import { analyzeRounds } from '@/lib/countup-round-analysis';
 import { generateRecommendations, type RecommendationInput } from '@/lib/practice-recommendations';
 import { computeSMA, detectCrosses, classifyTrend } from '@/lib/stats-trend';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
+import { generateSessionComparisonImage } from '@/lib/session-comparison-image';
+import { uploadLineImage } from '@/lib/line-image-upload';
 
 export const maxDuration = 60;
 
@@ -686,10 +688,26 @@ async function handleAnalysis(replyToken: string, lineUserId: string) {
     }
 
     // セッション比較（Pro/Admin限定）
+    let sessionImageMsg: object | null = null;
     if (userRole === 'pro' || userRole === 'admin') {
       const comparison = compareLastTwoSessions(allPlays, 30);
       if (comparison) {
         bubbles.push(buildSessionComparisonFlexBubble(comparison));
+
+        // 画像生成（失敗してもFlex Bubbleは送信済み）
+        try {
+          const imageBuffer = await generateSessionComparisonImage(comparison);
+          const dateStr = comparison.current.date;
+          const imagePath = `images/line-session/${user.id}/${dateStr}.png`;
+          const imageUrl = await uploadLineImage(imageBuffer, imagePath);
+          sessionImageMsg = {
+            type: 'image',
+            originalContentUrl: imageUrl,
+            previewImageUrl: imageUrl,
+          };
+        } catch (e) {
+          console.error('Session comparison image error:', e);
+        }
       }
     }
 
@@ -751,7 +769,11 @@ async function handleAnalysis(replyToken: string, lineUserId: string) {
     }
 
     const carouselMsg = buildDailyCarouselMessage(bubbles);
-    await replyLineMessage(replyToken, [carouselMsg]);
+    const replyMessages: object[] = [carouselMsg];
+    if (sessionImageMsg) {
+      replyMessages.push(sessionImageMsg);
+    }
+    await replyLineMessage(replyToken, replyMessages);
   } catch (err) {
     console.error('Analysis command error:', err);
     await replyLineMessage(replyToken, [{ type: 'text', text: '分析中にエラーが発生しました。' }]);

@@ -159,15 +159,20 @@ async function main() {
   };
 
   console.log('\nカルーセル構築中...');
-  const bubbles = await buildRoleBasedDailyNotification(notifCtx);
-  console.log(`生成バブル数: ${bubbles.length}`);
+  const result = await buildRoleBasedDailyNotification(notifCtx);
+  console.log(`生成バブル数: ${result.bubbles.length}`);
 
-  const carouselMsg = buildDailyCarouselMessage(bubbles);
+  const carouselMsg = buildDailyCarouselMessage(result.bubbles);
+  const lineMessages: object[] = [carouselMsg];
+  if (result.imageMessages) {
+    lineMessages.push(...result.imageMessages);
+    console.log(`画像メッセージ数: ${result.imageMessages.length}`);
+  }
   console.log('\nLINEに送信中...');
 
   // デバッグ用: LINE APIに直接リクエストしてエラー詳細を確認
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  const payload = JSON.stringify({ to: lineUserId, messages: [carouselMsg] });
+  const payload = JSON.stringify({ to: lineUserId, messages: lineMessages });
   console.log(`ペイロードサイズ: ${(payload.length / 1024).toFixed(1)} KB`);
 
   const res = await fetch('https://api.line.me/v2/bot/message/push', {
@@ -180,7 +185,7 @@ async function main() {
   });
 
   if (res.ok) {
-    console.log(`\n✅ テスト通知を送信しました！（${bubbles.length}バブル）`);
+    console.log(`\n✅ テスト通知を送信しました！（${result.bubbles.length}バブル）`);
   } else {
     const errText = await res.text();
     console.error(`\n❌ 送信失敗 (${res.status}):`, errText);

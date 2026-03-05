@@ -92,14 +92,20 @@ export const POST = withErrorHandler(
       yesterdayCuPlays: yesterdayCuPlays.length > 0 ? yesterdayCuPlays : undefined,
     };
 
-    const bubbles = await buildRoleBasedDailyNotification(notifCtx);
-    const carouselMsg = buildDailyCarouselMessage(bubbles);
-    const sent = await sendLinePushMessage(lineUserId, [carouselMsg]);
+    const result = await buildRoleBasedDailyNotification(notifCtx);
+    const carouselMsg = buildDailyCarouselMessage(result.bubbles);
+    const messages: object[] = [carouselMsg];
+    if (result.imageMessages) {
+      messages.push(...result.imageMessages);
+    }
+    const sent = await sendLinePushMessage(lineUserId, messages);
 
     return NextResponse.json({
       success: sent,
-      bubbleCount: bubbles.length,
-      message: sent ? `テスト通知を送信しました（${bubbles.length}バブル）` : '送信に失敗しました',
+      bubbleCount: result.bubbles.length,
+      message: sent
+        ? `テスト通知を送信しました（${result.bubbles.length}バブル）`
+        : '送信に失敗しました',
     });
   }),
   'admin/line-test',
