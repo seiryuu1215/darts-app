@@ -161,7 +161,9 @@ export async function buildRoleBasedDailyNotification(
   if ((ctx.role === 'pro' || ctx.role === 'admin') && missResult) {
     try {
       const buf = await generateMissDirectionImage(missResult, ctx.stats.dateStr);
-      const imagePath = `images/line-miss/${ctx.userId}/${ctx.stats.dateStr}.png`;
+      // dateStr にスラッシュや特殊文字が含まれうるのでサニタイズ
+      const safeDateStr = ctx.stats.dateStr.replace(/[[\]\s]/g, '').replace(/\//g, '-');
+      const imagePath = `images/line-miss/${ctx.userId}/${safeDateStr}.png`;
       const imageUrl = await uploadLineImage(buf, imagePath);
       imageMessages.push({
         type: 'image',

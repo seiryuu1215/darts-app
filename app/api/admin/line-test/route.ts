@@ -8,7 +8,7 @@ import {
 } from '@/lib/line-notification-builder';
 import type { CountUpPlayData } from '@/lib/dartslive-api';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export const POST = withErrorHandler(
   withAdmin(async (_req: NextRequest, ctx) => {
@@ -93,18 +93,26 @@ export const POST = withErrorHandler(
     };
 
     const result = await buildRoleBasedDailyNotification(notifCtx);
-    const carouselMsg = buildDailyCarouselMessage(result.bubbles);
-    const messages: object[] = [carouselMsg];
+    const messages: object[] = [];
+    if (result.bubbles.length > 0) {
+      messages.push(buildDailyCarouselMessage(result.bubbles));
+    }
     if (result.imageMessages) {
       messages.push(...result.imageMessages);
     }
+
+    if (messages.length === 0) {
+      return NextResponse.json({ success: false, message: '送信するデータがありません' });
+    }
+
     const sent = await sendLinePushMessage(lineUserId, messages);
 
     return NextResponse.json({
       success: sent,
       bubbleCount: result.bubbles.length,
+      imageCount: result.imageMessages?.length ?? 0,
       message: sent
-        ? `テスト通知を送信しました（${result.bubbles.length}バブル）`
+        ? `テスト通知を送信しました（${result.bubbles.length}バブル, ${result.imageMessages?.length ?? 0}画像）`
         : '送信に失敗しました',
     });
   }),
