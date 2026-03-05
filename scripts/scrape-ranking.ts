@@ -33,16 +33,24 @@ interface RankedBarrel {
   price: string;
 }
 
-async function main() {
-  console.log('ダーツハイブ バレルランキング取得中...');
+type RankingPeriod = 'weekly' | 'monthly' | 'all';
 
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+/** 期間別のダーツハイブURL */
+const PERIOD_URLS: Record<RankingPeriod, string> = {
+  weekly:
+    'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&salesperiod=7&fq.category=010&fq.status=0&fq.discontinued=0',
+  monthly:
+    'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&salesperiod=30&fq.category=010&fq.status=0&fq.discontinued=0',
+  all: 'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&fq.category=010&fq.status=0&fq.discontinued=0',
+};
 
-  // 売上順でソート
-  const url =
-    'https://www.dartshive.jp/shopbrand/010/?sort=salescount%20desc&fq.category=010&fq.status=0&fq.discontinued=0';
+/** 1ページからランキングデータをスクレイプ */
+async function scrapePeriod(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>['newPage']>>,
+  period: RankingPeriod,
+): Promise<RankedBarrel[]> {
+  const url = PERIOD_URLS[period];
+  console.log(`\n[${period}] スクレイプ中... ${url}`);
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
   const items = await page.evaluate(() => {
@@ -78,36 +86,52 @@ async function main() {
     return results;
   });
 
-  console.log(`${items.length}件の商品を取得`);
+  console.log(`[${period}] ${items.length}件の商品を取得`);
+  return items.slice(0, 20).map((item, i) => ({ rank: i + 1, ...item }));
+}
 
-  // 上位20件を保存
-  const ranking: RankedBarrel[] = items.slice(0, 20).map((item, i) => ({
-    rank: i + 1,
-    ...item,
-  }));
+async function main() {
+  console.log('ダーツハイブ バレルランキング取得中...');
+
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+  const periods: RankingPeriod[] = ['weekly', 'monthly', 'all'];
+  const allRankings: { period: RankingPeriod; items: RankedBarrel[] }[] = [];
+
+  for (const period of periods) {
+    const items = await scrapePeriod(page, period);
+    allRankings.push({ period, items });
+  }
 
   // 既存ランキングを削除して新しいものに置換
   const snapshot = await db.collection('barrelRanking').get();
   const batch = db.batch();
   snapshot.docs.forEach((doc) => batch.delete(doc.ref));
 
-  ranking.forEach((item) => {
-    const docRef = db.collection('barrelRanking').doc(`rank_${item.rank}`);
-    batch.set(docRef, {
-      ...item,
-      source: 'dartshive',
-      updatedAt: Timestamp.now(),
+  for (const { period, items } of allRankings) {
+    items.forEach((item) => {
+      const docRef = db.collection('barrelRanking').doc(`${period}_rank_${item.rank}`);
+      batch.set(docRef, {
+        ...item,
+        period,
+        source: 'dartshive',
+        updatedAt: Timestamp.now(),
+      });
     });
-  });
+  }
 
   await batch.commit();
 
-  ranking.forEach((item) => {
-    console.log(`  ${item.rank}. ${item.name}`);
-  });
+  for (const { period, items } of allRankings) {
+    console.log(`\n--- ${period} ---`);
+    items.forEach((item) => console.log(`  ${item.rank}. ${item.name}`));
+  }
 
   await browser.close();
-  console.log(`\n完了！${ranking.length}件のランキングを保存`);
+  const total = allRankings.reduce((s, r) => s + r.items.length, 0);
+  console.log(`\n完了！合計${total}件のランキングを保存`);
 }
 
 main().catch((e) => {

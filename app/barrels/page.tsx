@@ -38,7 +38,7 @@ import RecommendIcon from '@mui/icons-material/AutoAwesome';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Link from 'next/link';
-import { collection, getDocs, query, orderBy, limit, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
@@ -59,6 +59,7 @@ interface RankedBarrel {
   imageUrl: string | null;
   productUrl: string;
   price: string;
+  period?: string;
 }
 
 export default function BarrelsPage() {
@@ -105,19 +106,38 @@ export default function BarrelsPage() {
       }
     };
     fetchBarrels();
+  }, []);
 
-    // ランキング取得
+  // ランキング取得（タブ切替時に再取得）
+  useEffect(() => {
     const fetchRanking = async () => {
       try {
-        const rq = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(20));
+        const rq = query(
+          collection(db, 'barrelRanking'),
+          where('period', '==', rankingTab),
+          orderBy('rank', 'asc'),
+          limit(20),
+        );
         const snapshot = await getDocs(rq);
-        setRanking(snapshot.docs.map((d) => d.data() as RankedBarrel));
+        const data = snapshot.docs.map((d) => d.data() as RankedBarrel);
+        // period付きデータがなければフォールバック（旧データ互換）
+        if (data.length === 0) {
+          const fallback = query(
+            collection(db, 'barrelRanking'),
+            orderBy('rank', 'asc'),
+            limit(20),
+          );
+          const fbSnap = await getDocs(fallback);
+          setRanking(fbSnap.docs.map((d) => d.data() as RankedBarrel));
+        } else {
+          setRanking(data);
+        }
       } catch {
         // ランキングデータがない場合は無視
       }
     };
     fetchRanking();
-  }, []);
+  }, [rankingTab]);
 
   // ログインユーザーの自分のダーツを取得（おすすめ用）+ ブックマーク一括取得
   useEffect(() => {
