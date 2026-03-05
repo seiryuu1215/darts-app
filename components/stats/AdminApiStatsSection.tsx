@@ -18,26 +18,30 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TuneIcon from '@mui/icons-material/Tune';
-import SkillRadarChart from './SkillRadarChart';
-import PlayerDnaCard from './PlayerDnaCard';
-import PerformanceInsightsCard from './PerformanceInsightsCard';
-import DetailedGameStatsCard from './DetailedGameStatsCard';
-
-import RatingSimulatorCard from './RatingSimulatorCard';
-import RollingTrendCard from './RollingTrendCard';
-import StreakPatternCard from './StreakPatternCard';
-import PeriodComparisonCard from './PeriodComparisonCard';
-import AwardPaceCard from './AwardPaceCard';
-import CountUpDeepAnalysisCard from './CountUpDeepAnalysisCard';
+import dynamic from 'next/dynamic';
 import type { CountUpPlay } from './CountUpDeepAnalysisCard';
-import ZeroOneDeepAnalysisCard from './ZeroOneDeepAnalysisCard';
-import CricketDeepAnalysisCard from './CricketDeepAnalysisCard';
-import DartboardHeatmap from './DartboardHeatmap';
-import SensorTrendCard from './SensorTrendCard';
-import SpeedAccuracyCard from './SpeedAccuracyCard';
-import SessionFatigueCard from './SessionFatigueCard';
-import PracticeRecommendationsCard from './PracticeRecommendationsCard';
+
+// 軽量カード — 静的import
+import SkillRadarChart from './SkillRadarChart';
+import DetailedGameStatsCard from './DetailedGameStatsCard';
 import RatingBenchmarkCard from './RatingBenchmarkCard';
+
+// 重量カード — dynamic import（初期バンドルから除外）
+const PlayerDnaCard = dynamic(() => import('./PlayerDnaCard'));
+const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
+const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
+const RollingTrendCard = dynamic(() => import('./RollingTrendCard'));
+const StreakPatternCard = dynamic(() => import('./StreakPatternCard'));
+const PeriodComparisonCard = dynamic(() => import('./PeriodComparisonCard'));
+const AwardPaceCard = dynamic(() => import('./AwardPaceCard'));
+const CountUpDeepAnalysisCard = dynamic(() => import('./CountUpDeepAnalysisCard'));
+const ZeroOneDeepAnalysisCard = dynamic(() => import('./ZeroOneDeepAnalysisCard'));
+const CricketDeepAnalysisCard = dynamic(() => import('./CricketDeepAnalysisCard'));
+const DartboardHeatmap = dynamic(() => import('./DartboardHeatmap'));
+const SensorTrendCard = dynamic(() => import('./SensorTrendCard'));
+const SpeedAccuracyCard = dynamic(() => import('./SpeedAccuracyCard'));
+const SessionFatigueCard = dynamic(() => import('./SessionFatigueCard'));
+const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
 import StatsCardBoundary from './StatsCardBoundary';
 import { calculateConsistency, analyzeMissDirection } from '@/lib/stats-math';
 import { analyzeSensor } from '@/lib/sensor-analysis';
