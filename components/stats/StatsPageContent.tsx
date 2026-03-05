@@ -14,21 +14,16 @@ import type { CountUpPlay } from './countup-deep-shared';
 
 import RatingHeroCard from './RatingHeroCard';
 import GameStatsCards from './GameStatsCards';
-import BullStatsCard from './BullStatsCard';
 import CountUpDeltaChart from './CountUpDeltaChart';
 import RatingTargetCard from './RatingTargetCard';
 import MonthlyTrendChart from './MonthlyTrendChart';
 import RecentGamesChart from './RecentGamesChart';
-import RecentDaySummary from './RecentDaySummary';
 import AwardsTable from './AwardsTable';
-import ConsistencyCard from './ConsistencyCard';
 import CountUpAnalysisCard from './CountUpAnalysisCard';
 import ZeroOneAnalysisCard from './ZeroOneAnalysisCard';
 import CricketAnalysisCard from './CricketAnalysisCard';
 import ConditionCorrelationCard from './ConditionCorrelationCard';
-import RatingTrendCard from './RatingTrendCard';
 import SkillRadarChart from './SkillRadarChart';
-import SessionComparisonCard from './SessionComparisonCard';
 import RatingBenchmarkCard from './RatingBenchmarkCard';
 import StatsCardBoundary from './StatsCardBoundary';
 
@@ -166,6 +161,7 @@ export interface StatsPageContentProps {
   enrichedData?: EnrichedData | null;
   currentRating?: number | null;
   countupPlays?: CountUpPlay[] | null;
+  isAdminApi?: boolean;
 }
 
 export default function StatsPageContent({
@@ -185,14 +181,11 @@ export default function StatsPageContent({
   enrichedData,
   currentRating,
   countupPlays,
+  isAdminApi,
 }: StatsPageContentProps) {
   const c = dlData.current;
   const prev = dlData.prev;
 
-  const countUpScores = useMemo(
-    () => dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores,
-    [dlData.recentGames.games],
-  );
   // 直近30Gのブル率・ノーブル率（スキルレーダー用）
   const radarBullStats = useMemo(() => {
     if (!countupPlays || countupPlays.length === 0) return null;
@@ -239,38 +232,42 @@ export default function StatsPageContent({
     <>
       {/* ── ダッシュボード ── */}
 
-      {/* 1. Rating Hero + Profile */}
-      <StatsCardBoundary name="レーティング">
-        <RatingHeroCard
-          rating={c.rating}
-          ratingPrev={prev?.rating ?? null}
-          flight={c.flight}
-          flightColor={flightColor}
-          streak={periodSummary?.streak ?? 0}
-          showStreak={periodTab === 'all'}
-          cardName={c.cardName}
-          cardImageUrl={c.cardImageUrl}
-          toorina={c.toorina}
-          homeShop={c.homeShop}
-          status={c.status}
-        />
-      </StatsCardBoundary>
+      {/* 1. Rating Hero + Profile — admin時は非表示 */}
+      {!isAdminApi && (
+        <StatsCardBoundary name="レーティング">
+          <RatingHeroCard
+            rating={c.rating}
+            ratingPrev={prev?.rating ?? null}
+            flight={c.flight}
+            flightColor={flightColor}
+            streak={periodSummary?.streak ?? 0}
+            showStreak={periodTab === 'all'}
+            cardName={c.cardName}
+            cardImageUrl={c.cardImageUrl}
+            toorina={c.toorina}
+            homeShop={c.homeShop}
+            status={c.status}
+          />
+        </StatsCardBoundary>
+      )}
 
-      {/* 2. Game Stats Cards */}
-      <StatsCardBoundary name="ゲームスタッツ">
-        <GameStatsCards
-          stats01Avg={c.stats01Avg}
-          stats01Best={c.stats01Best}
-          statsCriAvg={c.statsCriAvg}
-          statsCriBest={c.statsCriBest}
-          statsPraAvg={c.statsPraAvg}
-          statsPraBest={c.statsPraBest}
-          prev01Avg={prev?.stats01Avg ?? null}
-          prevCriAvg={prev?.statsCriAvg ?? null}
-          prevPraAvg={prev?.statsPraAvg ?? null}
-          expectedCountUp={expectedCountUp}
-        />
-      </StatsCardBoundary>
+      {/* 2. Game Stats Cards — admin時は非表示 */}
+      {!isAdminApi && (
+        <StatsCardBoundary name="ゲームスタッツ">
+          <GameStatsCards
+            stats01Avg={c.stats01Avg}
+            stats01Best={c.stats01Best}
+            statsCriAvg={c.statsCriAvg}
+            statsCriBest={c.statsCriBest}
+            statsPraAvg={c.statsPraAvg}
+            statsPraBest={c.statsPraBest}
+            prev01Avg={prev?.stats01Avg ?? null}
+            prevCriAvg={prev?.statsCriAvg ?? null}
+            prevPraAvg={prev?.statsPraAvg ?? null}
+            expectedCountUp={expectedCountUp}
+          />
+        </StatsCardBoundary>
+      )}
 
       {/* 3. Skill Radar (simple) */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
@@ -295,12 +292,7 @@ export default function StatsPageContent({
         <RatingBenchmarkCard currentPpd={enrichedData?.stats01Detailed?.avg ?? c.stats01Avg} />
       </StatsCardBoundary>
 
-      {/* 5. Rating Trend */}
-      <StatsCardBoundary name="レーティング推移">
-        <RatingTrendCard periodRecords={periodRecords} currentRating={c.rating} />
-      </StatsCardBoundary>
-
-      {/* 6. Rating Target */}
+      {/* 5. Rating Target */}
       {c.stats01Avg != null && c.statsCriAvg != null && (
         <StatsCardBoundary name="Rt目標">
           <RatingTargetCard
@@ -310,17 +302,6 @@ export default function StatsPageContent({
           />
         </StatsCardBoundary>
       )}
-
-      {/* 7. Rating Simulator */}
-      {(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg) != null &&
-        (enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg) != null && (
-          <StatsCardBoundary name="レート予測シミュレーター">
-            <RatingSimulatorCard
-              currentPpd={(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg)!}
-              currentMpr={(enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg)!}
-            />
-          </StatsCardBoundary>
-        )}
 
       {/* ── ゲーム分析 ── */}
       <TierDivider label="ゲーム分析" />
@@ -356,12 +337,7 @@ export default function StatsPageContent({
         <CricketAnalysisCard games={dlData.recentGames.games} currentRating={currentRating} />
       </StatsCardBoundary>
 
-      {/* 14. Consistency */}
-      <StatsCardBoundary name="安定度分析">
-        <ConsistencyCard games={dlData.recentGames.games} />
-      </StatsCardBoundary>
-
-      {/* 15. Monthly Trend */}
+      {/* 14. Monthly Trend */}
       <StatsCardBoundary name="月間推移">
         <MonthlyTrendChart
           monthly={dlData.monthly}
@@ -417,32 +393,28 @@ export default function StatsPageContent({
         </StatsCardBoundary>
       )}
 
-      {/* Recent Day Summary */}
-      <StatsCardBoundary name="直近サマリー">
-        <RecentDaySummary dayStats={dlData.recentGames.dayStats} shops={dlData.recentGames.shops} />
-      </StatsCardBoundary>
-
-      {/* 17. Bull Stats */}
-      <StatsCardBoundary name="ブルスタッツ">
-        <BullStatsCard awards={c.awards} />
-      </StatsCardBoundary>
-
-      {/* 18. Session Comparison */}
-      <StatsCardBoundary name="セッション比較">
-        <SessionComparisonCard periodRecords={periodRecords} />
-      </StatsCardBoundary>
-
-      {/* 19. Condition × Performance Correlation */}
+      {/* Condition × Performance Correlation */}
       <StatsCardBoundary name="コンディション相関">
         <ConditionCorrelationCard periodRecords={periodRecords} />
       </StatsCardBoundary>
 
-      {/* 20. Awards Table */}
+      {/* Awards Table */}
       <StatsCardBoundary name="アワード">
         <AwardsTable awards={c.awards} />
       </StatsCardBoundary>
 
-      {/* 21. Active Dart */}
+      {/* Rating Simulator（最下部） */}
+      {(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg) != null &&
+        (enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg) != null && (
+          <StatsCardBoundary name="レート予測シミュレーター">
+            <RatingSimulatorCard
+              currentPpd={(enrichedData?.stats01Detailed?.avg ?? c.stats01Avg)!}
+              currentMpr={(enrichedData?.statsCricketDetailed?.avg ?? c.statsCriAvg)!}
+            />
+          </StatsCardBoundary>
+        )}
+
+      {/* Active Dart */}
       {activeSoftDart && (
         <Card
           component={Link}
