@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import type { Dart } from '@/types';
 import { COLOR_COUNTUP } from '@/lib/dartslive-colors';
 import type { RecommendationInput } from '@/lib/practice-recommendations';
+import { analyzeRoundBulls } from '@/lib/countup-round-analysis';
 import type { CountUpPlay } from './countup-deep-shared';
 
 import RatingHeroCard from './RatingHeroCard';
@@ -187,18 +188,16 @@ export default function StatsPageContent({
   const c = dlData.current;
   const prev = dlData.prev;
 
-  const dBullTotal = useMemo(
-    () => periodRecords.reduce((s, r) => s + (r.dBull ?? 0), 0) || null,
-    [periodRecords],
-  );
-  const sBullTotal = useMemo(
-    () => periodRecords.reduce((s, r) => s + (r.sBull ?? 0), 0) || null,
-    [periodRecords],
-  );
   const countUpScores = useMemo(
     () => dlData.recentGames.games.find((g) => g.category === 'COUNT-UP')?.scores,
     [dlData.recentGames.games],
   );
+  const hatTrickRate = useMemo(() => {
+    if (!countupPlays || countupPlays.length === 0) return null;
+    const logs = countupPlays.map((p) => p.playLog).filter((l): l is string => !!l && l.length > 0);
+    if (logs.length === 0) return null;
+    return analyzeRoundBulls(logs).hatTrickRate;
+  }, [countupPlays]);
 
   // PracticeRecommendationsCard 用の lite 版入力（sensor系は全て null）
   const recInput = useMemo((): RecommendationInput | null => {
@@ -273,8 +272,7 @@ export default function StatsPageContent({
             stats01Avg={c.stats01Avg}
             statsCriAvg={c.statsCriAvg}
             statsPraAvg={c.statsPraAvg}
-            dBullTotal={dBullTotal}
-            sBullTotal={sBullTotal}
+            hatTrickRate={hatTrickRate}
             countUpScores={countUpScores}
             flight={c.flight || undefined}
           />

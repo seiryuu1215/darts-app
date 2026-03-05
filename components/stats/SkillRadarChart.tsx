@@ -34,8 +34,7 @@ interface DetailedModeProps {
   stats01Avg?: never;
   statsCriAvg?: never;
   statsPraAvg?: never;
-  dBullTotal?: never;
-  sBullTotal?: never;
+  hatTrickRate?: never;
   countUpScores?: never;
 }
 
@@ -44,8 +43,7 @@ interface SimpleModeProps {
   stats01Avg: number | null;
   statsCriAvg: number | null;
   statsPraAvg: number | null;
-  dBullTotal: number | null;
-  sBullTotal: number | null;
+  hatTrickRate?: number | null;
   countUpScores?: number[];
   flight?: string;
   stats01?: never;
@@ -144,18 +142,17 @@ function buildSimpleData(
   stats01Avg: number | null,
   statsCriAvg: number | null,
   statsPraAvg: number | null,
-  dBullTotal: number | null,
-  sBullTotal: number | null,
+  hatTrickRate: number | null | undefined,
   countUpScores?: number[],
   flight?: string,
 ): RadarDataItem[] {
   const rt = getFlightRating(flight);
+  const bench = rt != null ? RATING_BENCHMARKS.find((b) => b.rating === rt) : null;
   const benchPpd = rt != null ? ppdForRating(rt) : null;
   const benchMpr = rt != null ? mprForRating(rt) : null;
 
-  // D-Bull率
-  const totalBulls = (dBullTotal ?? 0) + (sBullTotal ?? 0);
-  const dBullRate = totalBulls > 0 ? ((dBullTotal ?? 0) / totalBulls) * 100 : 0;
+  // ハットトリック率 (0-60%レンジで正規化)
+  const htRate = hatTrickRate ?? 0;
 
   // 安定性 (CVベース)
   let stability = 50;
@@ -188,9 +185,10 @@ function buildSimpleData(
       rawLabel: statsPraAvg != null ? `(${Math.round(statsPraAvg)})` : '',
     },
     {
-      axis: 'D-Bull率',
-      value: dBullRate,
-      rawLabel: totalBulls > 0 ? `(${dBullRate.toFixed(1)}%)` : '',
+      axis: 'HT率',
+      value: normalize(htRate, 0, 60),
+      benchmark: bench?.hatTrickRate != null ? normalize(bench.hatTrickRate, 0, 60) : undefined,
+      rawLabel: hatTrickRate != null ? `(${htRate.toFixed(1)}%)` : '',
     },
     {
       axis: '安定性',
@@ -209,8 +207,7 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
         props.stats01Avg,
         props.statsCriAvg,
         props.statsPraAvg,
-        props.dBullTotal,
-        props.sBullTotal,
+        props.hatTrickRate,
         props.countUpScores,
         props.flight,
       )
