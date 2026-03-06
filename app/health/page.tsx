@@ -1067,42 +1067,12 @@ export default function HealthPage() {
         return;
       }
 
-      addLog('3. Firestore書き込み...');
-      try {
-        const { getAuth } = await import('firebase/auth');
-        const user = getAuth().currentUser;
-        addLog('3. Firebase user: ' + (user?.uid ?? 'null'));
-
-        if (!user) {
-          addLog('3. Firebase未認証のためデータ保存スキップ');
-        } else {
-          // プラグインから取得済みのデータを直接Firestoreに書き込む
-          const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
-          const { db } = await import('@/lib/firebase');
-          const batch = writeBatch(db);
-          const ref = doc(db, 'users', user.uid, 'healthMetrics', metrics.metricDate);
-          batch.set(
-            ref,
-            {
-              ...metrics,
-              source: 'capacitor',
-              syncedAt: serverTimestamp(),
-            },
-            { merge: true },
-          );
-          await batch.commit();
-          addLog('3. Firestore書き込み完了');
-          setLastSync(new Date().toLocaleString('ja-JP'));
-          await fetchMetrics(period);
-        }
-      } catch (writeErr) {
-        addLog('3. Firestore書き込みエラー: ' + (writeErr instanceof Error ? writeErr.message : String(writeErr)));
-        // 書き込みエラーでもセットアップは完了にする
-      }
-
+      // セットアップでは権限取得+データ読み取り確認のみ
+      // Firestore書き込みはautoSyncに任せる（Firebase Auth非同期のため）
+      addLog('3. セットアップ完了処理...');
       markHealthKitSetupComplete();
       setSetupNeeded(false);
-      addLog('4. セットアップ完了！');
+      addLog('4. セットアップ完了！データ同期は自動で実行されます');
     } catch (err) {
       addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
       setSyncError(err instanceof Error ? err.message : 'セットアップに失敗しました');
