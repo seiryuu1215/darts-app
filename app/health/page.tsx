@@ -1049,6 +1049,31 @@ export default function HealthPage() {
     setDebugLog([]);
     try {
       addLog('isNative: ' + isNativePlatform());
+
+      // プラグイン登録テスト
+      addLog('registerPlugin 開始...');
+      try {
+        const { registerPlugin, Capacitor } = await import('@capacitor/core');
+        addLog('Capacitor platform: ' + Capacitor.getPlatform());
+        addLog('isNative: ' + Capacitor.isNativePlatform());
+        const plugin = registerPlugin('HealthKitPlugin');
+        addLog('registerPlugin 完了: ' + typeof plugin);
+
+        // タイムアウト付きで呼び出し
+        addLog('requestAuthorization 呼び出し中...');
+        const authResult = await Promise.race([
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (plugin as any).requestAuthorization(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('10秒タイムアウト')), 10000)),
+        ]);
+        addLog('requestAuthorization 結果: ' + JSON.stringify(authResult));
+      } catch (err) {
+        addLog('プラグインエラー: ' + (err instanceof Error ? err.message : String(err)));
+        setSyncError('プラグイン呼び出しエラー: ' + (err instanceof Error ? err.message : String(err)));
+        setSyncing(false);
+        return;
+      }
+
       addLog('権限リクエスト中...');
       const granted = await requestHealthKitPermissions();
       addLog('権限結果: ' + granted);
