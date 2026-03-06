@@ -1068,30 +1068,41 @@ export default function HealthPage() {
       }
 
       addLog('3. Firestore書き込み...');
-      const { getAuth } = await import('firebase/auth');
-      const user = getAuth().currentUser;
-      addLog('3. Firebase user: ' + (user?.uid ?? 'null'));
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const user = getAuth().currentUser;
+        addLog('3. Firebase user: ' + (user?.uid ?? 'null'));
 
-      if (!user) {
-        // Firebase Auth未認証の場合、セットアップだけ完了にする
-        addLog('3. Firebase未認証のためデータ保存スキップ');
-        markHealthKitSetupComplete();
-        setSetupNeeded(false);
-        addLog('4. セットアップ完了（データ保存は次回同期時）');
-      } else {
-        const { syncHealthData: doSync } = await import('@/lib/capacitor/health-sync');
-        const result = await doSync();
-        addLog('3. 同期結果: ' + JSON.stringify(result));
-        if (result.success) {
-          markHealthKitSetupComplete();
-          setSetupNeeded(false);
-          setLastSync(new Date().toLocaleString('ja-JP'));
-          addLog('4. セットアップ完了！');
-          await fetchMetrics(period);
+        if (!user) {
+          addLog('3. Firebase未認証のためデータ保存スキップ');
         } else {
-          setSyncError(result.error || '同期に失敗しました');
+          // プラグインから取得済みのデータを直接Firestoreに書き込む
+          const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase');
+          const batch = writeBatch(db);
+          const ref = doc(db, 'users', user.uid, 'healthMetrics', metrics.metricDate);
+          batch.set(
+            ref,
+            {
+              ...metrics,
+              source: 'capacitor',
+              syncedAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+          await batch.commit();
+          addLog('3. Firestore書き込み完了');
+          setLastSync(new Date().toLocaleString('ja-JP'));
+          await fetchMetrics(period);
         }
+      } catch (writeErr) {
+        addLog('3. Firestore書き込みエラー: ' + (writeErr instanceof Error ? writeErr.message : String(writeErr)));
+        // 書き込みエラーでもセットアップは完了にする
       }
+
+      markHealthKitSetupComplete();
+      setSetupNeeded(false);
+      addLog('4. セットアップ完了！');
     } catch (err) {
       addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
       setSyncError(err instanceof Error ? err.message : 'セットアップに失敗しました');
