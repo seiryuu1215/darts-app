@@ -995,6 +995,7 @@ export default function HealthPage() {
   const [isNative, setIsNative] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [detailType, setDetailType] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // ヘルスデータ取得
   const fetchMetrics = useCallback(async (days: number) => {
@@ -1042,23 +1043,35 @@ export default function HealthPage() {
   // 初回セットアップ
   const handleSetup = async () => {
     setSyncing(true);
+    setSyncError(null);
     try {
+      console.log('[HealthKit] Requesting permissions...');
       const granted = await requestHealthKitPermissions();
+      console.log('[HealthKit] Permission result:', granted);
       if (!granted) {
+        setSyncError('HealthKit権限が許可されませんでした');
         setSyncing(false);
         return;
       }
 
+      console.log('[HealthKit] Starting data sync (30 days)...');
       const result = await syncHealthDataRange(30, (progress) => {
+        console.log('[HealthKit] Sync progress:', progress);
         setSyncProgress(progress);
       });
+      console.log('[HealthKit] Sync result:', result);
 
       if (result.success) {
         markHealthKitSetupComplete();
         setSetupNeeded(false);
         setLastSync(new Date().toLocaleString('ja-JP'));
         await fetchMetrics(period);
+      } else {
+        setSyncError(result.error || '同期に失敗しました');
       }
+    } catch (err) {
+      console.error('[HealthKit] Setup error:', err);
+      setSyncError(err instanceof Error ? err.message : 'セットアップに失敗しました');
     } finally {
       setSyncing(false);
       setSyncProgress(null);
@@ -1124,6 +1137,11 @@ export default function HealthPage() {
                 {syncProgress.current} / {syncProgress.total} 日分を同期中...
               </Typography>
             </Box>
+          )}
+          {syncError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {syncError}
+            </Alert>
           )}
         </Paper>
       )}
