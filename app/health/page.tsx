@@ -996,6 +996,8 @@ export default function HealthPage() {
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [detailType, setDetailType] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const addLog = (msg: string) => setDebugLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
 
   // ヘルスデータ取得
   const fetchMetrics = useCallback(async (days: number) => {
@@ -1044,22 +1046,24 @@ export default function HealthPage() {
   const handleSetup = async () => {
     setSyncing(true);
     setSyncError(null);
+    setDebugLog([]);
     try {
-      console.log('[HealthKit] Requesting permissions...');
+      addLog('isNative: ' + isNativePlatform());
+      addLog('権限リクエスト中...');
       const granted = await requestHealthKitPermissions();
-      console.log('[HealthKit] Permission result:', granted);
+      addLog('権限結果: ' + granted);
       if (!granted) {
         setSyncError('HealthKit権限が許可されませんでした');
         setSyncing(false);
         return;
       }
 
-      console.log('[HealthKit] Starting data sync (30 days)...');
+      addLog('データ同期開始 (30日)...');
       const result = await syncHealthDataRange(30, (progress) => {
-        console.log('[HealthKit] Sync progress:', progress);
+        addLog(`同期: ${progress.phase} ${progress.current}/${progress.total}`);
         setSyncProgress(progress);
       });
-      console.log('[HealthKit] Sync result:', result);
+      addLog('同期結果: ' + JSON.stringify(result));
 
       if (result.success) {
         markHealthKitSetupComplete();
@@ -1070,7 +1074,7 @@ export default function HealthPage() {
         setSyncError(result.error || '同期に失敗しました');
       }
     } catch (err) {
-      console.error('[HealthKit] Setup error:', err);
+      addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
       setSyncError(err instanceof Error ? err.message : 'セットアップに失敗しました');
     } finally {
       setSyncing(false);
@@ -1142,6 +1146,24 @@ export default function HealthPage() {
             <Alert severity="error" sx={{ mt: 1 }}>
               {syncError}
             </Alert>
+          )}
+          {debugLog.length > 0 && (
+            <Box
+              sx={{
+                mt: 1,
+                p: 1,
+                bgcolor: '#111',
+                borderRadius: 1,
+                maxHeight: 150,
+                overflow: 'auto',
+              }}
+            >
+              {debugLog.map((log, i) => (
+                <Typography key={i} variant="caption" sx={{ display: 'block', fontFamily: 'monospace', color: '#0f0', fontSize: 10 }}>
+                  {log}
+                </Typography>
+              ))}
+            </Box>
           )}
         </Paper>
       )}
