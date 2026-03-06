@@ -86,6 +86,7 @@ const collections: Collection[] = [
       'dartLikes/{dartId}',
       'dartBookmarks/{dartId}',
       'barrelBookmarks/{id}',
+      'healthMetrics/{date}',
     ],
   },
   {
@@ -689,7 +690,7 @@ export default function ERDiagramDiagram() {
         ))}
       </div>
       <p style={{ color: C.textDim, fontSize: 9, textAlign: 'center', marginTop: 8, opacity: 0.5 }}>
-        ※ 各コレクションをクリックすると詳細が表示されます｜7,000+ barrels DB / 12 collections / 11
+        ※ 各コレクションをクリックすると詳細が表示されます｜7,000+ barrels DB / 12 collections / 12
         subcollections
       </p>
     </div>

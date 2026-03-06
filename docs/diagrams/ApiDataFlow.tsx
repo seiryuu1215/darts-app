@@ -277,7 +277,7 @@ function Tab({ label, active, onClick, color }: TabProps) {
 
 function ApiEndpoints() {
   return (
-    <svg viewBox="0 0 560 680" width="100%">
+    <svg viewBox="0 0 560 760" width="100%">
       <defs>
         <pattern id="apigrid" width="16" height="16" patternUnits="userSpaceOnUse">
           <path
@@ -289,7 +289,7 @@ function ApiEndpoints() {
           />
         </pattern>
       </defs>
-      <rect width="560" height="680" fill="url(#apigrid)" opacity="0.4" />
+      <rect width="560" height="760" fill="url(#apigrid)" opacity="0.4" />
 
       <SectionHeader
         x={10}
@@ -473,13 +473,31 @@ function ApiEndpoints() {
         desc="N01データインポート"
         auth="auth"
       />
+
+      <SectionHeader x={10} y={695} w={540} label="ヘルスケア連携 ❤️" icon="🏥" color={C.red} />
+      <EndpointRow
+        x={15}
+        y={723}
+        method="GET"
+        path="/api/health-metrics"
+        desc="ヘルスメトリクス取得"
+        auth="auth"
+      />
+      <EndpointRow
+        x={15}
+        y={743}
+        method="GET"
+        path="/api/health-correlation"
+        desc="ダーツ×ヘルス相関データ"
+        auth="auth"
+      />
     </svg>
   );
 }
 
 function DataFlowDiagram() {
   return (
-    <svg viewBox="0 0 800 520" width="100%">
+    <svg viewBox="0 0 800 620" width="100%">
       <defs>
         <pattern id="dfgrid" width="16" height="16" patternUnits="userSpaceOnUse">
           <path
@@ -491,7 +509,7 @@ function DataFlowDiagram() {
           />
         </pattern>
       </defs>
-      <rect width="800" height="520" fill="url(#dfgrid)" opacity="0.4" />
+      <rect width="800" height="620" fill="url(#dfgrid)" opacity="0.4" />
 
       <text
         x={400}
@@ -686,6 +704,58 @@ function DataFlowDiagram() {
         color={C.green}
         items={['Flex Message', '週次/月次レポート', '実績通知']}
       />
+
+      <text
+        x={400}
+        y={520}
+        textAnchor="middle"
+        fill={C.red}
+        fontSize={11}
+        fontWeight={700}
+        fontFamily="'JetBrains Mono',monospace"
+        opacity={0.7}
+      >
+        ❤️ HEALTHKIT DATA PIPELINE
+      </text>
+      <DataFlowBox
+        x={20}
+        y={535}
+        w={120}
+        h={70}
+        title="🍎 HealthKit"
+        color={C.red}
+        items={['心拍 / HRV', '睡眠 / 歩数', 'Apple Watch']}
+      />
+      <FlowArrow x1={140} y1={570} x2={170} y2={570} color={C.red} label="Bridge" />
+      <DataFlowBox
+        x={170}
+        y={535}
+        w={130}
+        h={70}
+        title="📱 Capacitor"
+        color={C.blue}
+        items={['Swift Plugin', 'health-sync.ts', 'iOS Bridge']}
+      />
+      <FlowArrow x1={300} y1={570} x2={330} y2={570} color={C.amber} label="sync" />
+      <DataFlowBox
+        x={330}
+        y={535}
+        w={130}
+        h={70}
+        title="🗄️ Firestore"
+        color={C.amber}
+        items={['healthMetrics', 'サブコレクション', '10種メトリクス']}
+      />
+      <FlowArrow x1={460} y1={570} x2={490} y2={570} color={C.purple} label="API" />
+      <DataFlowBox
+        x={490}
+        y={535}
+        w={130}
+        h={70}
+        title="📊 Dashboard"
+        color={C.purple}
+        items={['ヘルス×ダーツ相関', 'ピアソン相関分析', 'インサイト自動生成']}
+      />
     </svg>
   );
 }
@@ -869,7 +939,7 @@ export default function ApiDataFlowDiagram() {
           <span style={{ color: C.green }}>🔄</span> Darts Lab — API & Data Flow
         </h2>
         <p style={{ color: C.textDim, fontSize: 11, margin: '6px 0 0', letterSpacing: '0.1em' }}>
-          25+ API ROUTES · 6 AFFILIATE SHOPS · MULTI-LAYER SECURITY
+          27+ API ROUTES · 6 AFFILIATE SHOPS · MULTI-LAYER SECURITY
         </p>
       </div>
 

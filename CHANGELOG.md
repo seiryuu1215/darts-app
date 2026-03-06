@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-03-07
+
+### Added
+
+- **HealthKit連携（iOS）** — Swift Capacitor プラグインで Apple HealthKit と連携、心拍・HRV・睡眠・歩数等10種のメトリクスを取得
+- **ヘルスダッシュボード** — ヘルスメトリクス一覧・推移グラフをスタッツ画面に統合
+- **ダーツ×ヘルス相関分析** — ピアソン相関でダーツ成績とヘルスデータの関連を分析、「HRV高い日はPPD+2.3」等のインサイトを自動生成
+- **HealthCorrelationCard** — 相関分析結果をダッシュボードにカード表示
+- **API: health-metrics** — ヘルスメトリクス取得エンドポイント
+- **API: health-correlation** — ダーツ×ヘルス相関データエンドポイント
+
 ## [3.1.0] - 2026-03-01
 
 ### Added
@@ -116,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **カウントアップスコア色付け** — 01 期待値ベースの色分け表示
 - **ランキング** — バレル売上ランキング
 
+[3.2.0]: https://github.com/seiryuu1215/darts-app/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/seiryuu1215/darts-app/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/seiryuu1215/darts-app/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/seiryuu1215/darts-app/compare/v1.1.0...v2.0.0

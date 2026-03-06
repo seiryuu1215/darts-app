@@ -47,6 +47,7 @@
 - **ディスカッション** — 6カテゴリの掲示板、投稿者のRt・バレル自動表示
 - **記事 (admin)** — Markdown ベースの公式コンテンツ
 - **アフィリエイト連携** — ダーツハイブ（A8.net）・楽天・Amazon — 商品直リンク+検索で購入導線を提供
+- **ヘルスケア連携 (iOS)** — HealthKit から心拍・HRV・睡眠・歩数等を取得、ダーツ成績との相関分析・インサイト自動生成
 - **PWA & iOS** — Service Worker オフラインキャッシュ + Capacitor iOS ネイティブ
 - **ダークモード** — OS連動 + 手動切替、FOUC防止
 
@@ -88,6 +89,7 @@
 | CI             | GitHub Actions (lint / format / test / build) |
 | PWA            | Serwist (Workbox ベース)                      |
 | モバイル       | Capacitor 8 (iOS WebView)                     |
+| ヘルスケア     | HealthKit (Swift Capacitor Plugin)            |
 | ホスティング   | Vercel                                        |
 
 <details>
@@ -117,6 +119,10 @@ graph TB
     subgraph ExtData["📡 Data Sources"]
         DL["DARTSLIVE<br/>card.dartslive.com"]
         PX["PHOENIX<br/>stats API"]
+    end
+
+    subgraph Health["❤️ HealthKit"]
+        HK["Apple HealthKit<br/>Swift Plugin"]
     end
 
     subgraph Messaging["💬 Messaging"]
@@ -157,6 +163,8 @@ graph TB
     SF -->|IP Rate Limit| Redis
     SF -->|captureException| Sentry
     OG -->|動的画像| Client
+    Cap -->|Bridge| HK
+    HK -->|心拍/HRV/睡眠| FS
 
     style Client fill:#1a1a2e,stroke:#16213e,color:#e0e0e0
     style Vercel fill:#000,stroke:#333,color:#fff
@@ -167,6 +175,7 @@ graph TB
     style Cache fill:#b71c1c,stroke:#c62828,color:#fff
     style Monitor fill:#e65100,stroke:#ef6c00,color:#fff
     style Affiliate fill:#33691e,stroke:#558b2f,color:#fff
+    style Health fill:#7f1d1d,stroke:#991b1b,color:#fff
 ```
 
 - **サーバーレスアーキテクチャ**: Vercel + Firebase + Upstash Redis（レートリミット）による完全マネージド構成

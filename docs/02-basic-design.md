@@ -5,9 +5,9 @@
 | 項目           | 内容       |
 | -------------- | ---------- |
 | プロジェクト名 | Darts Lab  |
-| バージョン     | 3.1        |
+| バージョン     | 3.2        |
 | 作成日         | 2025-02-09 |
-| 最終更新日     | 2026-03-01 |
+| 最終更新日     | 2026-03-07 |
 
 ---
 
@@ -21,11 +21,11 @@
 | 設計図               | 内容                                                         |
 | -------------------- | ------------------------------------------------------------ |
 | 📐 アーキテクチャ    | Client → Vercel → Firebase → 外部サービスの全体構成          |
-| 🗄️ ER図              | Firestore 12コレクション + 11サブコレクション + リレーション |
+| 🗄️ ER図              | Firestore 12コレクション + 12サブコレクション + リレーション |
 | 🔐 認証・課金        | NextAuth JWT フロー / Stripe Webhook / LINE連携              |
 | ⏰ Cronバッチ        | 日次自動パイプライン（9ステップ + XPルール14種）             |
 | 📱 画面遷移          | 30+ページ × ロール別アクセス制御                             |
-| 🔄 API・データフロー | 25+ APIルート / セキュリティレイヤー                         |
+| 🔄 API・データフロー | 27+ APIルート / セキュリティレイヤー                         |
 | 📋 要件・ペルソナ    | 機能マップ / ペルソナ / 非機能要件 / 技術選定                |
 
 > TSXソースは [`docs/diagrams/`](./diagrams/) に収録。
@@ -68,6 +68,8 @@
 │  │                 │  │  │  /api/og                        │ │ │
 │  │                 │  │  │  /api/shops/*                   │ │ │
 │  │                 │  │  │  /api/n01-import                │ │ │
+│  │                 │  │  │  /api/health-metrics            │ │ │
+│  │                 │  │  │  /api/health-correlation        │ │ │
 │  │                 │  │  │  /api/admin/dartslive-sync      │ │ │
 │  │                 │  │  │  /api/admin/dartslive-history   │ │ │
 │  │                 │  │  │  /api/admin/update-role         │ │ │
@@ -90,6 +92,9 @@
                        │ ├──────────────┤ │
                        │ │ LINE         │ │
                        │ │ Messaging API│ │
+                       │ ├──────────────┤ │
+                       │ │ HealthKit    │ │
+                       │ │ (iOS)        │ │
                        │ └──────────────┘ │
                        └─────────────────┘
 ```
@@ -178,6 +183,7 @@
 | **LINE Messaging API**           | -          | アカウント連携・日次通知                              |
 | **Sentry**                       | 10         | エラー監視・例外追跡                                  |
 | **Capacitor**                    | 8          | iOSネイティブアプリ                                   |
+| **HealthKit (Swift)**            | -          | iOS ヘルスデータ取得（心拍・HRV・睡眠・歩数等）       |
 | **Leaflet / react-leaflet**      | -          | 地図表示（ショップマップ）                            |
 | **Upstash Redis**                | -          | 分散レートリミット                                    |
 | **Serwist**                      | -          | PWA / Service Worker                                  |
@@ -279,9 +285,29 @@ Firestore Root
 │   │     reason: string
 │   │     createdAt: Timestamp
 │   │
-│   └── settingHistory/{historyId}
-│         dartId: string
-│         changedFields: object
+│   ├── settingHistory/{historyId}
+│   │     dartId: string
+│   │     changedFields: object
+│   │     createdAt: Timestamp
+│   │
+│   └── healthMetrics/{date}
+│         date: string (YYYY-MM-DD)
+│         heartRateAvg: number | null
+│         heartRateMax: number | null
+│         heartRateResting: number | null
+│         hrvAvg: number | null
+│         sleepDuration: number | null
+│         sleepQuality: string | null
+│         steps: number | null
+│         activeCalories: number | null
+│         standHours: number | null
+│         exerciseMinutes: number | null
+│         bodyTemperature: number | null
+│         bloodOxygen: number | null
+│         respiratoryRate: number | null
+│         syncedAt: Timestamp
+│         source: "healthkit"
+│         deviceModel: string | null
 │         createdAt: Timestamp
 │
 ├── darts/{dartId}
@@ -517,6 +543,57 @@ lib/affiliate.ts → ショップURL生成
 - `AffiliateButton.tsx` — ドロップダウンで購入先選択、`target="_blank"` + `rel="noopener noreferrer"`
 - `AffiliateBanner.tsx` — サイドバー等に表示するショップバナー
 
+### 6.6 HealthKit連携（iOS）
+
+Apple HealthKit から心拍・HRV・睡眠・歩数等のヘルスメトリクスを取得し、ダーツパフォーマンスとの相関を分析する。
+
+```
+Apple Watch / iPhone           Capacitor Plugin            Firestore           Next.js API
+  (HealthKit Store)            (Swift Bridge)              (healthMetrics)     (Dashboard)
+       │                            │                          │                   │
+       │── ヘルスデータ許可要求 ────→│                          │                   │
+       │←── ユーザー許可 ──────────│                          │                   │
+       │                            │                          │                   │
+       │── HKSampleQuery ──────────→│                          │                   │
+       │←── 心拍/HRV/睡眠/歩数 ────│                          │                   │
+       │                            │── health-sync.ts ───────→│                   │
+       │                            │   healthMetrics/{date}   │                   │
+       │                            │                          │                   │
+       │                            │                          │── GET /api/ ─────→│
+       │                            │                          │   health-metrics   │
+       │                            │                          │                   │
+       │                            │                          │── GET /api/ ─────→│
+       │                            │                          │ health-correlation │
+       │                            │                          │←── 相関データ ────│
+```
+
+**取得メトリクス:**
+
+| メトリクス         | HealthKit型    | 単位 |
+| ------------------ | -------------- | ---- |
+| 心拍数（平均）     | HKQuantityType | bpm  |
+| 心拍数（最大）     | HKQuantityType | bpm  |
+| 安静時心拍数       | HKQuantityType | bpm  |
+| HRV                | HKQuantityType | ms   |
+| 睡眠時間           | HKCategoryType | 時間 |
+| 歩数               | HKQuantityType | 歩   |
+| アクティブカロリー | HKQuantityType | kcal |
+| スタンド時間       | HKCategoryType | 時間 |
+| エクササイズ       | HKQuantityType | 分   |
+| 体温               | HKQuantityType | ℃    |
+
+**同期方式:**
+
+- iOS アプリ起動時に前日分のヘルスデータを自動取得
+- Swift Capacitor プラグイン経由で HealthKit → JavaScript Bridge
+- `lib/health-sync.ts` で Firestore `healthMetrics/{date}` サブコレクションに保存
+
+**相関分析:**
+
+- `/api/health-correlation` でダーツスタッツ × ヘルスメトリクスのピアソン相関を計算
+- 例: 「HRV が高い日は PPD +2.3」「睡眠7h以上で Rating 安定」等のインサイトを自動生成
+- `HealthCorrelationCard` コンポーネントでダッシュボードに表示
+
 ---
 
 ## 7. デプロイ構成
@@ -623,6 +700,8 @@ darts-app/
 │       ├── og/                   #   OGP画像生成
 │       ├── shops/                #   ショップ (fetch-url, import-by-line)
 │       ├── n01-import/           #   N01データインポート
+│       ├── health-metrics/      #   ヘルスメトリクス取得
+│       ├── health-correlation/  #   ダーツ×ヘルス相関データ
 │       └── admin/                #   管理API (update-role, dartslive-sync, dartslive-history, update-pricing)
 ├── components/                   # 再利用コンポーネント
 │   ├── layout/                   #   Header, Footer
@@ -674,6 +753,8 @@ darts-app/
 │   │   ├── AwardPaceSimpleCard  #     アワードペース予測（簡易版）
 │   │   ├── GameMixCard          #     ゲームミックス分析
 │   │   ├── ConditionCorrelationCard # コンディション×パフォーマンス相関
+│   │   ├── HealthCorrelationCard #     ダーツ×ヘルス相関分析
+│   │   ├── HealthDashboard       #     ヘルスダッシュボード
 │   │   └── StatsPageContent      #     スタッツページコンテンツ
 │   ├── shops/                    #   ショップ関連
 │   │   ├── ShopCard              #     ショップカード
@@ -714,6 +795,8 @@ darts-app/
 │   ├── crypto.ts                 #   暗号化ユーティリティ（AES）
 │   ├── line.ts                   #   LINE Messaging API連携
 │   ├── stripe.ts                 #   Stripe決済連携
+│   ├── health-sync.ts            #   HealthKit データ同期
+│   ├── health-correlation.ts     #   ダーツ×ヘルス相関分析
 │   ├── session-analysis.ts       #   セッション分析
 │   ├── sensor-analysis.ts        #   センサーデータ分析
 │   ├── countup-round-analysis.ts #   COUNT-UPラウンド分析
@@ -750,6 +833,17 @@ darts-app/
 ```
 
 ---
+
+## v3.2 追加モジュール
+
+| モジュール           | ファイル                                     | 概要                                                                    |
+| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------- |
+| HealthKit同期        | `lib/health-sync.ts`                         | Swift Capacitor プラグイン経由で HealthKit → Firestore 同期             |
+| ヘルス相関分析       | `lib/health-correlation.ts`                  | ダーツスタッツ × ヘルスメトリクスのピアソン相関計算・インサイト自動生成 |
+| ヘルスダッシュボード | `components/stats/HealthDashboard.tsx`       | ヘルスメトリクス一覧・推移グラフ・ダーツ成績との相関表示                |
+| ヘルス相関カード     | `components/stats/HealthCorrelationCard.tsx` | ダーツ × ヘルス相関分析結果をカード表示                                 |
+| ヘルスメトリクスAPI  | `app/api/health-metrics/route.ts`            | ヘルスメトリクス取得エンドポイント                                      |
+| ヘルス相関API        | `app/api/health-correlation/route.ts`        | ダーツ × ヘルス相関データエンドポイント                                 |
 
 ## v3.1 追加モジュール
 

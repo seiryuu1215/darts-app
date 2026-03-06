@@ -23,6 +23,8 @@ const COLORS: Record<string, string> = {
   greenGlow: 'rgba(52, 211, 153, 0.12)',
   pink: '#f472b6',
   pinkGlow: 'rgba(244, 114, 182, 0.12)',
+  health: '#ef4444',
+  healthGlow: 'rgba(239, 68, 68, 0.12)',
 };
 
 interface NodeBoxProps {
@@ -383,11 +385,11 @@ const nodes: NodeDef[] = [
     h: 52,
     icon: '🍎',
     label: 'iOS App',
-    sublabel: 'Capacitor 8',
+    sublabel: 'Capacitor 8 + HealthKit',
     color: COLORS.accent,
     glow: COLORS.accentGlow,
     detail:
-      'Capacitor 8 で Web アプリを iOS ネイティブラップ。WebView ベースで同一コードベースから App Store 配布可能な iOS アプリを生成。',
+      'Capacitor 8 で Web アプリを iOS ネイティブラップ。Swift Capacitor プラグインで HealthKit と連携し、心拍・HRV・睡眠・歩数等10種のヘルスメトリクスを取得。ピアソン相関でダーツ成績との関連を分析。',
   },
   {
     id: 'edge',
@@ -529,6 +531,20 @@ const nodes: NodeDef[] = [
     detail:
       'Sentry でフロントエンド・サーバーサイド両方のエラーを監視。スタックトレース、パフォーマンスメトリクス、ユーザーコンテキストを自動収集。',
   },
+  {
+    id: 'healthkit',
+    x: 560,
+    y: 70,
+    w: 130,
+    h: 52,
+    icon: '❤️',
+    label: 'HealthKit',
+    sublabel: 'Swift Plugin',
+    color: COLORS.health,
+    glow: COLORS.healthGlow,
+    detail:
+      'Swift Capacitor プラグインで Apple HealthKit と連携。心拍・HRV・睡眠・歩数・消費カロリー等10種のメトリクスを取得し、Firestore に同期。ピアソン相関でダーツ成績との関連を分析し「HRV高い日はPPD+2.3」等のインサイトを自動生成。',
+  },
 ];
 
 const arrows: ArrowProps[] = [
@@ -554,7 +570,7 @@ const arrows: ArrowProps[] = [
     bidirectional: true,
   },
   { x1: 500, y1: 272, x2: 465, y2: 380, color: COLORS.firebase, label: 'Upload' },
-  { x1: 540, y1: 96, x2: 580, y2: 96, color: COLORS.firebase, dashed: true },
+  { x1: 540, y1: 96, x2: 560, y2: 96, color: COLORS.health, label: 'Health' },
   { x1: 100, y1: 272, x2: 110, y2: 530, color: COLORS.external, label: 'Puppeteer', dashed: true },
   { x1: 295, y1: 272, x2: 250, y2: 530, color: COLORS.pink, label: 'Webhook' },
   { x1: 355, y1: 272, x2: 390, y2: 530, color: COLORS.green, label: 'Push' },
@@ -616,28 +632,35 @@ export default function ArchitectureDiagram() {
           margin: '0 auto 24px',
         }}
       >
-        {['Next.js 16', 'TypeScript', 'React 19', 'Firebase', 'Stripe', 'Vercel', 'Capacitor'].map(
-          (t) => (
-            <span
-              key={t}
-              style={{
-                padding: '3px 10px',
-                borderRadius: 6,
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px solid rgba(56, 189, 248, 0.2)',
-                color: COLORS.accent,
-                fontSize: 10,
-                fontWeight: 500,
-              }}
-            >
-              {t}
-            </span>
-          ),
-        )}
+        {[
+          'Next.js 16',
+          'TypeScript',
+          'React 19',
+          'Firebase',
+          'Stripe',
+          'Vercel',
+          'Capacitor',
+          'HealthKit',
+        ].map((t) => (
+          <span
+            key={t}
+            style={{
+              padding: '3px 10px',
+              borderRadius: 6,
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.2)',
+              color: COLORS.accent,
+              fontSize: 10,
+              fontWeight: 500,
+            }}
+          >
+            {t}
+          </span>
+        ))}
       </div>
 
       <div style={{ position: 'relative', width: '100%', maxWidth: 640, margin: '0 auto' }}>
-        <svg viewBox="0 0 640 610" width="100%" style={{ overflow: 'visible' }}>
+        <svg viewBox="0 0 720 610" width="100%" style={{ overflow: 'visible' }}>
           <defs>
             <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
               <path
@@ -649,12 +672,12 @@ export default function ArchitectureDiagram() {
               />
             </pattern>
           </defs>
-          <rect width="640" height="610" fill="url(#grid)" opacity="0.5" />
+          <rect width="720" height="610" fill="url(#grid)" opacity="0.5" />
 
           <GroupBox
             x={30}
             y={42}
-            width={530}
+            width={680}
             height={98}
             label="CLIENT LAYER"
             color={COLORS.accent}
@@ -681,7 +704,7 @@ export default function ArchitectureDiagram() {
           <GroupBox
             x={30}
             y={502}
-            width={580}
+            width={620}
             height={98}
             label="EXTERNAL SERVICES"
             color={COLORS.external}
@@ -742,6 +765,7 @@ export default function ArchitectureDiagram() {
           { color: COLORS.external, label: 'External' },
           { color: COLORS.pink, label: 'Payment' },
           { color: COLORS.green, label: 'Messaging' },
+          { color: COLORS.health, label: 'Health' },
         ].map((l) => (
           <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div
