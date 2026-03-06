@@ -1082,7 +1082,41 @@ export default function HealthPage() {
     }
   };
 
-  // 手動同期（プラグイン直接呼び出し）
+  // Firebase Authユーザーを取得（非同期待機対応）
+  const getFirebaseUser = async () => {
+    const { getAuth } = await import('firebase/auth');
+    const user = getAuth().currentUser;
+    if (user) return user;
+
+    // 未初期化の場合onAuthStateChangedで待機
+    return new Promise<import('firebase/auth').User | null>((resolve) => {
+      const unsub = getAuth().onAuthStateChanged((u) => {
+        unsub();
+        resolve(u);
+      });
+      setTimeout(() => resolve(null), 5000);
+    });
+  };
+
+  // Firestoreに直接書き込む（バッチ対応）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const writeMetricsToFirestore = async (uid: string, metricsList: any[]) => {
+    const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase');
+    // Firestoreバッチは500件まで
+    for (let i = 0; i < metricsList.length; i += 400) {
+      const chunk = metricsList.slice(i, i + 400);
+      const batch = writeBatch(db);
+      for (const m of chunk) {
+        if (!m.metricDate) continue;
+        const ref = doc(db, 'users', uid, 'healthMetrics', m.metricDate);
+        batch.set(ref, { ...m, source: 'capacitor', syncedAt: serverTimestamp() }, { merge: true });
+      }
+      await batch.commit();
+    }
+  };
+
+  // 手動同期（30日バックフィル）
   const handleSync = async () => {
     setSyncing(true);
     setSyncError(null);
@@ -1092,61 +1126,48 @@ export default function HealthPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const plugin = registerPlugin<any>('HealthKitPlugin');
 
-      addLog('1. データ読み取り...');
-      const metrics = await plugin.readTodayMetrics();
-      addLog('1. 完了: ' + (metrics?.metricDate ?? 'null'));
+      addLog('1. Firebase Auth確認...');
+      const firebaseUser = await getFirebaseUser();
+      if (!firebaseUser) {
+        setSyncError('Firebaseにログインしていません');
+        addLog('1. Firebase未認証');
+        return;
+      }
+      addLog('1. OK: ' + firebaseUser.uid.substring(0, 8) + '...');
 
-      if (!metrics?.metricDate) {
-        setSyncError('HealthKitデータの取得に失敗しました');
+      addLog('2. 過去30日分のデータ読み取り中...');
+      setSyncProgress({ current: 0, total: 30, phase: 'reading' });
+      const rangeResult = await plugin.readMetricsForRange({ days: 30 });
+      const allMetrics = rangeResult?.metrics ?? [];
+      addLog('2. 取得: ' + allMetrics.length + '日分');
+
+      if (allMetrics.length === 0) {
+        setSyncError('HealthKitにデータがありません。設定→ヘルスケアで権限を確認してください');
         return;
       }
 
-      addLog('2. Firestore書き込み...');
-      const { getAuth } = await import('firebase/auth');
-      const user = getAuth().currentUser;
+      // データがある日数をカウント
+      const daysWithData = allMetrics.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (m: any) => m.restingHr || m.steps || m.sleepDurationMinutes || m.avgHr,
+      ).length;
+      addLog('2. データあり: ' + daysWithData + '日');
 
-      if (!user) {
-        // Firebase Auth未認証 — onAuthStateChangedで待つ
-        addLog('2. Firebase Auth待機中...');
-        const firebaseUser = await new Promise<import('firebase/auth').User | null>((resolve) => {
-          const unsub = getAuth().onAuthStateChanged((u) => {
-            unsub();
-            resolve(u);
-          });
-          setTimeout(() => resolve(null), 5000); // 5秒タイムアウト
-        });
-        if (!firebaseUser) {
-          addLog('2. Firebase未認証のためスキップ');
-          setSyncError('Firebaseにログインしていません');
-          return;
-        }
-        addLog('2. Firebase user: ' + firebaseUser.uid);
-        await writeMetricsToFirestore(firebaseUser.uid, metrics);
-      } else {
-        addLog('2. Firebase user: ' + user.uid);
-        await writeMetricsToFirestore(user.uid, metrics);
-      }
+      addLog('3. Firestore書き込み中...');
+      setSyncProgress({ current: 15, total: 30, phase: 'writing' });
+      await writeMetricsToFirestore(firebaseUser.uid, allMetrics);
+      addLog('3. 書き込み完了');
 
-      addLog('3. 同期完了！');
       setLastSync(new Date().toLocaleString('ja-JP'));
+      addLog('4. 同期完了！ ' + allMetrics.length + '日分');
       await fetchMetrics(period);
     } catch (err) {
       addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
       setSyncError(err instanceof Error ? err.message : '同期に失敗しました');
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
     }
-  };
-
-  // Firestoreに直接書き込む
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const writeMetricsToFirestore = async (uid: string, metrics: any) => {
-    const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
-    const { db } = await import('@/lib/firebase');
-    const batch = writeBatch(db);
-    const ref = doc(db, 'users', uid, 'healthMetrics', metrics.metricDate);
-    batch.set(ref, { ...metrics, source: 'capacitor', syncedAt: serverTimestamp() }, { merge: true });
-    await batch.commit();
   };
 
   const latest = metrics.length > 0 ? metrics[0] : null;
