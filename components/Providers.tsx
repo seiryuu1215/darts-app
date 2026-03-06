@@ -9,6 +9,30 @@ import ToastProvider from '@/components/ToastProvider';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
+/** アプリ復帰・タブ復帰時にHealthKitデータを自動同期する */
+function HealthKitAutoSync() {
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+
+    const setup = async () => {
+      const { autoSyncIfNeeded } = await import('@/lib/capacitor/health-sync');
+
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') {
+          autoSyncIfNeeded().catch(() => {});
+        }
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      cleanup = () => document.removeEventListener('visibilitychange', onVisible);
+    };
+
+    setup();
+    return () => cleanup?.();
+  }, []);
+
+  return null;
+}
+
 /** NextAuthセッションに連動してFirebase Authにもサインインする */
 function FirebaseAuthSync() {
   const { data: session, status } = useSession();
@@ -108,6 +132,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <FirebaseAuthSync />
+      <HealthKitAutoSync />
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />

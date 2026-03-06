@@ -34,6 +34,7 @@ const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
 const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
 const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
 const RangeTrendChart = dynamic(() => import('./RangeTrendChart'));
+const HealthCorrelationCard = dynamic(() => import('./HealthCorrelationCard'));
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -401,6 +402,11 @@ export default function StatsPageContent({
       {/* Condition × Performance Correlation */}
       <StatsCardBoundary name="コンディション相関">
         <ConditionCorrelationCard periodRecords={periodRecords} />
+      </StatsCardBoundary>
+
+      {/* Health × Darts Correlation */}
+      <StatsCardBoundary name="ヘルス相関">
+        <HealthCorrelationCard />
       </StatsCardBoundary>
 
       {/* Awards Table */}

@@ -348,6 +348,49 @@ export interface ShopList {
   updatedAt: Timestamp;
 }
 
+// --- HealthKit連携 ---
+export interface HealthMetric {
+  metricDate: string; // 'YYYY-MM-DD'
+  restingHr: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  hrvSdnn: number | null; // ms
+  sleepDurationMinutes: number | null;
+  sleepDeepMinutes: number | null;
+  sleepRemMinutes: number | null;
+  sleepCoreMinutes: number | null;
+  sleepAwakeMinutes: number | null;
+  timeInBedMinutes: number | null;
+  steps: number | null;
+  activeEnergyKcal: number | null;
+  exerciseMinutes: number | null;
+  standHours: number | null;
+  respiratoryRate: number | null;
+  bloodOxygenPct: number | null;
+}
+
+export interface HealthInsight {
+  type: 'correlation' | 'trend' | 'warning';
+  metric: string;
+  messageJa: string;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+export interface HealthDartsCorrelation {
+  date: string;
+  restingHr: number | null;
+  hrvSdnn: number | null;
+  sleepDurationMinutes: number | null;
+  steps: number | null;
+  activeEnergyKcal: number | null;
+  exerciseMinutes: number | null;
+  rating: number | null;
+  ppd: number | null;
+  mpr: number | null;
+  condition: number | null;
+  gamesPlayed: number | null;
+}
+
 // Affiliate
 export type ShopType = 'dartshive' | 'rakuten' | 'amazon';
 

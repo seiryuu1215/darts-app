@@ -36,6 +36,7 @@ import SportsBarIcon from '@mui/icons-material/SportsBar';
 import BuildIcon from '@mui/icons-material/Build';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ForumIcon from '@mui/icons-material/Forum';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
@@ -107,6 +108,7 @@ export default function Header() {
             { label: 'スタッツ記録', href: '/stats' },
             { label: 'レポート', href: '/reports' },
             { label: 'カレンダー', href: '/stats/calendar' },
+            { label: 'ヘルスケア', href: '/health' },
           ],
         },
         {
@@ -146,6 +148,7 @@ export default function Header() {
             { label: 'スタッツ記録', href: '/stats' },
             { label: 'レポート', href: '/reports' },
             { label: 'カレンダー', href: '/stats/calendar' },
+            { label: 'ヘルスケア', href: '/health' },
           ],
         },
         {
