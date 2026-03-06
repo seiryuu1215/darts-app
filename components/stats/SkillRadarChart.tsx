@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { RATING_BENCHMARKS } from '@/lib/dartslive-reference';
 import { ppdForRating, mprForRating } from '@/lib/dartslive-rating';
-import { COLOR_01, COLOR_CRICKET, COLOR_COUNTUP, FLIGHT_COLORS } from '@/lib/dartslive-colors';
+import { COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
 interface Stats01Detailed {
   avg: number | null;
@@ -252,10 +252,8 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
   const hasBenchmark = !!props.flight;
   const targetRt = getNextFlightTargetRt(props.flight);
 
-  // ベンチマーク線の色: 次フライトのカラーを使用
-  const targetFlight =
-    targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt)?.flight : null;
-  const benchColor = targetFlight ? (FLIGHT_COLORS[targetFlight] ?? '#888') : '#888';
+  // ベンチマーク線の色: グレーで統一（プレイヤーラインと区別しやすく）
+  const benchColor = '#888';
 
   const data: RadarDataItem[] = isSimple
     ? buildSimpleData(
@@ -356,7 +354,7 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
                         borderTop: `2px dashed ${benchColor}`,
                       }}
                     />
-                    <Typography variant="caption" sx={{ color: benchColor, fontWeight: 'bold' }}>
+                    <Typography variant="caption" color="text.secondary">
                       Rt.{targetRt}平均
                     </Typography>
                   </Box>
