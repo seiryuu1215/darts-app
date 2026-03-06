@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { calculateGoalCurrent, getMonthlyRange, type StatsRecord } from '@/lib/goals';
+import {
+  calculateGoalCurrent,
+  calculateHealthGoalCurrent,
+  getMonthlyRange,
+  type StatsRecord,
+} from '@/lib/goals';
 import type { GoalType } from '@/types';
 
 const DAILY_LIMIT = 3;
@@ -254,11 +259,38 @@ export const GET = withErrorHandler(
       achievable: boolean;
     }[] = [];
 
+    // ヘルスゴール用: healthMetrics を取得
+    let healthMetricsForGoals: { sleepDurationMinutes: number | null; hrvSdnn: number | null }[] =
+      [];
+    const hasHealthGoal = activeRawGoals.some(
+      (g) => g.type === 'sleep_hours' || g.type === 'hrv_target',
+    );
+    if (hasHealthGoal) {
+      try {
+        const { startDate: monthStart } = getMonthlyRange();
+        const monthStartStr = monthStart.toISOString().split('T')[0];
+        const healthSnap = await adminDb
+          .collection(`users/${userId}/healthMetrics`)
+          .where('metricDate', '>=', monthStartStr)
+          .get();
+        healthMetricsForGoals = healthSnap.docs.map((d) => ({
+          sleepDurationMinutes: d.data().sleepDurationMinutes ?? null,
+          hrvSdnn: d.data().hrvSdnn ?? null,
+        }));
+      } catch {
+        // ヘルスデータ取得失敗時は空
+      }
+    }
+
     for (const goal of activeRawGoals) {
       let current = 0;
 
+      // ヘルスゴール: healthMetrics から計算
+      if (goal.type === 'sleep_hours' || goal.type === 'hrv_target') {
+        current = calculateHealthGoalCurrent(goal.type, healthMetricsForGoals);
+      }
       // daily目標: baseline差分で計算
-      if (goal.period === 'daily' && goal.baseline !== null && goal.baseline !== undefined) {
+      else if (goal.period === 'daily' && goal.baseline !== null && goal.baseline !== undefined) {
         if (goal.type === 'bulls') {
           let totalBulls = 0;
           if (cacheData) {

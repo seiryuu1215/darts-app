@@ -292,7 +292,14 @@ export interface UserInventory {
 }
 
 // Goals
-export type GoalType = 'bulls' | 'rating' | 'cu_score' | 'play_days' | 'hat_tricks';
+export type GoalType =
+  | 'bulls'
+  | 'rating'
+  | 'cu_score'
+  | 'play_days'
+  | 'hat_tricks'
+  | 'sleep_hours'
+  | 'hrv_target';
 export type GoalPeriod = 'monthly' | 'yearly' | 'daily';
 
 export interface Goal {
@@ -314,6 +321,8 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   cu_score: 'CU最高スコア',
   play_days: 'プレイ日数',
   hat_tricks: 'HAT TRICK',
+  sleep_hours: '平均睡眠時間',
+  hrv_target: '平均HRV',
 };
 
 // Shop Bookmark (マイショップ)
@@ -381,6 +390,9 @@ export interface HealthDartsCorrelation {
   restingHr: number | null;
   hrvSdnn: number | null;
   sleepDurationMinutes: number | null;
+  sleepDeepMinutes: number | null;
+  sleepRemMinutes: number | null;
+  sleepCoreMinutes: number | null;
   steps: number | null;
   activeEnergyKcal: number | null;
   exerciseMinutes: number | null;
@@ -389,6 +401,70 @@ export interface HealthDartsCorrelation {
   mpr: number | null;
   condition: number | null;
   gamesPlayed: number | null;
+}
+
+// --- コンディション & 分析型 ---
+export interface ConditionScore {
+  score: number; // 0-100
+  factors: {
+    hrv: number;
+    sleep: number;
+    restingHr: number;
+    sleepQuality: number;
+    activity: number;
+  };
+  label: string; // Excellent / Good / Fair / Poor / Bad
+  star: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface PersonalBaseline {
+  avgHrv: number;
+  avgSleep: number;
+  avgRestingHr: number;
+  avgSleepQuality: number;
+  avgSteps: number;
+}
+
+export interface FatigueAlert {
+  type: 'hrv_drop' | 'sleep_deficit' | 'hr_spike';
+  severity: 'warning' | 'critical';
+  messageJa: string;
+  recommendation: string;
+  value: number;
+  baseline: number;
+}
+
+export interface BestConditionProfile {
+  optimalHrv: [number, number];
+  optimalSleep: [number, number];
+  optimalRestingHr: [number, number];
+  optimalSteps: [number, number];
+  sampleSize: number;
+}
+
+export interface PracticeTimingResult {
+  dayOfWeek: { day: string; avgCondition: number; avgPpd: number; count: number }[];
+  bestDay: string;
+  worstDay: string;
+}
+
+export interface MonthlyTrendData {
+  month: string;
+  avgCondition: number | null;
+  avgPpd: number | null;
+  avgSleep: number | null;
+  avgHrv: number | null;
+  count: number;
+}
+
+export interface SleepStageCorrelationResult {
+  deepSleepR: number;
+  remSleepR: number;
+  coreSleepR: number;
+  deepSleepPct: number;
+  remSleepPct: number;
+  coreSleepPct: number;
+  n: number;
 }
 
 // Affiliate

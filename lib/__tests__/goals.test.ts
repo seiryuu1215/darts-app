@@ -9,8 +9,8 @@ import {
 } from '../goals';
 
 describe('GOAL_TYPES', () => {
-  it('has 5 goal types', () => {
-    expect(GOAL_TYPES).toHaveLength(5);
+  it('has 7 goal types', () => {
+    expect(GOAL_TYPES).toHaveLength(7);
   });
 
   it('includes bulls, rating types', () => {

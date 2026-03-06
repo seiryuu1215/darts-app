@@ -2,6 +2,8 @@
  * 週次/月次レポートデータ集計
  */
 import { adminDb } from '@/lib/firebase-admin';
+import { calculateConditionScore, calculatePersonalBaseline } from '@/lib/health-analytics';
+import type { HealthMetric } from '@/types';
 
 export interface PeriodReportData {
   playDays: number;
@@ -18,6 +20,11 @@ export interface PeriodReportData {
   goalsAchieved: number;
   goalsActive: number;
   xpGained: number;
+  healthSummary: {
+    avgCondition: number | null;
+    avgSleep: number | null;
+    avgHrv: number | null;
+  } | null;
 }
 
 export async function gatherPeriodReport(
@@ -122,6 +129,50 @@ export async function gatherPeriodReport(
     .get();
   const xpGained = xpSnap.docs.reduce((sum, d) => sum + ((d.data().xp as number) ?? 0), 0);
 
+  // ヘルスサマリー
+  let healthSummary: PeriodReportData['healthSummary'] = null;
+  try {
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+    const healthSnap = await adminDb
+      .collection(`users/${userId}/healthMetrics`)
+      .where('metricDate', '>=', startStr)
+      .where('metricDate', '<=', endStr)
+      .get();
+
+    if (!healthSnap.empty) {
+      const healthMetrics = healthSnap.docs.map((d) => d.data() as HealthMetric);
+      const baseline = calculatePersonalBaseline(healthMetrics);
+
+      const sleeps = healthMetrics
+        .map((m) => m.sleepDurationMinutes)
+        .filter((v): v is number => v !== null);
+      const hrvs = healthMetrics.map((m) => m.hrvSdnn).filter((v): v is number => v !== null);
+
+      const conditions = healthMetrics.map((m) => {
+        const score = calculateConditionScore(m, baseline);
+        return score.score;
+      });
+
+      healthSummary = {
+        avgCondition:
+          conditions.length > 0
+            ? Math.round((conditions.reduce((a, b) => a + b, 0) / conditions.length) * 10) / 10
+            : null,
+        avgSleep:
+          sleeps.length > 0
+            ? Math.round((sleeps.reduce((a, b) => a + b, 0) / sleeps.length / 60) * 10) / 10
+            : null,
+        avgHrv:
+          hrvs.length > 0
+            ? Math.round((hrvs.reduce((a, b) => a + b, 0) / hrvs.length) * 10) / 10
+            : null,
+      };
+    }
+  } catch {
+    // ヘルスデータ取得失敗時はnull
+  }
+
   return {
     playDays,
     totalGames,
@@ -137,5 +188,6 @@ export async function gatherPeriodReport(
     goalsAchieved,
     goalsActive,
     xpGained,
+    healthSummary,
   };
 }

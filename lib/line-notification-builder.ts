@@ -13,8 +13,17 @@ import {
   buildSessionComparisonFlexBubble,
   buildSensorSummaryFlexBubble,
   extractBubble,
+  buildHealthSummaryLine,
+  sendLinePushMessage,
+  buildFatigueAlertMessage,
   type CuNotifyStats,
 } from '@/lib/line';
+import {
+  calculateConditionScore,
+  calculatePersonalBaseline,
+  checkFatigueAlert,
+} from '@/lib/health-analytics';
+import type { HealthMetric } from '@/types';
 import { analyzeMissDirection } from '@/lib/stats-math';
 import { computeSegmentFrequency } from '@/lib/heatmap-data';
 import { analyzeRounds, analyzeRoundBulls } from '@/lib/countup-round-analysis';
@@ -102,6 +111,54 @@ export async function buildRoleBasedDailyNotification(
   });
   const statsBubble = extractBubble(statsFlex);
   if (statsBubble) bubbles.push(statsBubble);
+
+  // ── ヘルスコンディション: 今日のスコアを計算してテキスト追加 ──
+  try {
+    const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const todayStr = `${todayJST.getUTCFullYear()}-${String(todayJST.getUTCMonth() + 1).padStart(2, '0')}-${String(todayJST.getUTCDate()).padStart(2, '0')}`;
+    const healthSnap = await adminDb
+      .collection(`users/${ctx.userId}/healthMetrics`)
+      .orderBy('metricDate', 'desc')
+      .limit(30)
+      .get();
+    if (!healthSnap.empty) {
+      const healthMetrics = healthSnap.docs.map((d) => d.data() as HealthMetric);
+      const todayMetric = healthMetrics.find((m) => m.metricDate === todayStr) ?? healthMetrics[0];
+      const baseline = calculatePersonalBaseline(healthMetrics);
+      const condScore = calculateConditionScore(todayMetric, baseline);
+      const summaryLine = buildHealthSummaryLine(condScore);
+
+      // テキストメッセージとして追加（カルーセルの前に表示される）
+      // ここでは直接pushせず、呼び出し元で使えるようbubbleの後にテキストを追加
+      // → 代わりにstatsBubbleの後にテキストバブルを挿入
+      bubbles.push({
+        type: 'bubble',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          paddingAll: '14px',
+          contents: [{ type: 'text', text: summaryLine, size: 'sm', wrap: true }],
+        },
+      });
+
+      // 疲労アラートチェック → プッシュ通知
+      if (baseline) {
+        const alert = checkFatigueAlert(todayMetric, baseline);
+        if (alert) {
+          const lineUserId = (
+            await adminDb.collection('users').where('lineUserId', '!=', null).get()
+          ).docs
+            .find((d) => d.id === ctx.userId)
+            ?.data()?.lineUserId;
+          if (lineUserId) {
+            await sendLinePushMessage(lineUserId, [buildFatigueAlertMessage(alert)]);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Health condition inject error:', e);
+  }
 
   // ── 全ロール共通: COUNT-UPバブル ──
   const cuPlays = ctx.yesterdayCuPlays ?? [];

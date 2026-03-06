@@ -37,15 +37,44 @@ import {
   Area,
   BarChart,
   Bar,
+  ComposedChart,
+  Line,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Legend,
 } from 'recharts';
-import type { HealthMetric, HealthInsight } from '@/types';
-import { generateHealthInsights } from '@/lib/health-analytics';
+import CircularProgress from '@mui/material/CircularProgress';
+import StarIcon from '@mui/icons-material/Star';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import InsightsIcon from '@mui/icons-material/Insights';
+import NightsStayIcon from '@mui/icons-material/NightsStay';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import type {
+  HealthMetric,
+  HealthInsight,
+  HealthDartsCorrelation,
+  ConditionScore,
+  BestConditionProfile,
+  PracticeTimingResult,
+  MonthlyTrendData,
+  SleepStageCorrelationResult,
+} from '@/types';
+import {
+  generateHealthInsights,
+  calculateConditionScore,
+  calculatePersonalBaseline,
+  predictPpdFromCondition,
+  analyzeBestConditionProfile,
+  analyzePracticeTimingPatterns,
+  aggregateMonthlyHealthDarts,
+  analyzeSleepStageCorrelations,
+} from '@/lib/health-analytics';
 import {
   isNativePlatform,
   syncHealthData,
@@ -831,6 +860,528 @@ function VitalsSection({
 }
 
 // ============================================
+// コンディションスコアセクション (A)
+// ============================================
+
+function ConditionScoreSection({
+  metrics,
+  correlationData,
+}: {
+  metrics: HealthMetric[];
+  correlationData: HealthDartsCorrelation[];
+}) {
+  const result = useMemo(() => {
+    if (metrics.length === 0) return null;
+    const baseline = calculatePersonalBaseline(metrics);
+    const score = calculateConditionScore(metrics[0], baseline);
+    const prediction = predictPpdFromCondition(score.score, correlationData);
+    return { score, prediction };
+  }, [metrics, correlationData]);
+
+  if (!result) return null;
+
+  const { score, prediction } = result;
+  const progressColor =
+    score.score >= 80
+      ? '#22c55e'
+      : score.score >= 60
+        ? '#eab308'
+        : score.score >= 40
+          ? '#f97316'
+          : '#ef4444';
+
+  const factors = [
+    { label: 'HRV', value: score.factors.hrv, color: '#ef4444' },
+    { label: '睡眠時間', value: score.factors.sleep, color: '#a78bfa' },
+    { label: '安静時心拍', value: score.factors.restingHr, color: '#f97316' },
+    { label: '睡眠品質', value: score.factors.sleepQuality, color: '#6d28d9' },
+    { label: '活動量', value: score.factors.activity, color: '#22c55e' },
+  ];
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+        <InsightsIcon sx={{ fontSize: 16, color: progressColor }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          コンディションスコア
+        </Typography>
+      </Box>
+
+      <Paper
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.05)',
+          bgcolor: 'rgba(24,24,27,0.8)',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress
+              variant="determinate"
+              value={score.score}
+              size={80}
+              thickness={5}
+              sx={{ color: progressColor }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1 }}>
+                {score.score}
+              </Typography>
+              <Typography variant="caption" sx={{ fontSize: 9, color: '#71717a' }}>
+                {score.label}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ flex: 1 }}>
+            {factors.map((f) => (
+              <Box key={f.label} sx={{ mb: 0.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                  <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
+                    {f.label}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
+                    {f.value}
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={f.value}
+                  sx={{
+                    height: 4,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                    '& .MuiLinearProgress-bar': { bgcolor: f.color, borderRadius: 2 },
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* 星サジェスト */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5 }}>
+          <StarIcon sx={{ fontSize: 14, color: '#eab308' }} />
+          <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
+            LINE記録おすすめ: ★{score.star}
+          </Typography>
+        </Box>
+
+        {/* PPD予測レンジ */}
+        {prediction && (
+          <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
+            <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
+              PPD予測レンジ
+            </Typography>
+            <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#fafafa' }}>
+              {prediction.low} — <strong>{prediction.expected}</strong> — {prediction.high}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    </Box>
+  );
+}
+
+// ============================================
+// ベストコンディションセクション (C)
+// ============================================
+
+function BestConditionSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
+  const profile = useMemo(() => analyzeBestConditionProfile(correlationData), [correlationData]);
+
+  if (!profile) return null;
+
+  const ranges = [
+    { label: 'HRV', range: profile.optimalHrv, unit: 'ms', color: '#ef4444' },
+    { label: '睡眠', range: profile.optimalSleep, unit: 'h', color: '#a78bfa' },
+    { label: '安静時心拍', range: profile.optimalRestingHr, unit: 'bpm', color: '#f97316' },
+    { label: '歩数', range: profile.optimalSteps, unit: '歩', color: '#22c55e' },
+  ];
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+        <EmojiEventsIcon sx={{ fontSize: 16, color: '#eab308' }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          ベストコンディション
+        </Typography>
+      </Box>
+
+      <Paper
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.05)',
+          bgcolor: 'rgba(24,24,27,0.8)',
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
+        >
+          PPD上位20%時の最適レンジ（{profile.sampleSize}日分析）
+        </Typography>
+        {ranges.map((r) => (
+          <Box key={r.label} sx={{ mb: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+              <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
+                {r.label}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ fontSize: 11, color: '#fafafa', fontFamily: 'monospace' }}
+              >
+                {r.range[0].toLocaleString()} - {r.range[1].toLocaleString()} {r.unit}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                bgcolor: 'rgba(255,255,255,0.05)',
+                position: 'relative',
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  height: '100%',
+                  borderRadius: 3,
+                  bgcolor: r.color,
+                  opacity: 0.6,
+                  left: '20%',
+                  width: '60%',
+                }}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Paper>
+    </Box>
+  );
+}
+
+// ============================================
+// 練習タイミングセクション (F)
+// ============================================
+
+function PracticeTimingSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
+  const result = useMemo(() => analyzePracticeTimingPatterns(correlationData), [correlationData]);
+
+  if (!result) return null;
+
+  const chartData = result.dayOfWeek.map((d) => ({
+    day: d.day,
+    ppd: d.avgPpd,
+    condition: d.avgCondition,
+  }));
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+        <CalendarTodayIcon sx={{ fontSize: 16, color: '#3b82f6' }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          練習タイミング分析
+        </Typography>
+      </Box>
+
+      <Paper
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.05)',
+          bgcolor: 'rgba(24,24,27,0.8)',
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
+        >
+          曜日別平均PPD
+        </Typography>
+        <ResponsiveContainer width="100%" height={140}>
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 11, fill: '#a1a1aa' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: '#71717a' }}
+              axisLine={false}
+              tickLine={false}
+              width={30}
+            />
+            <Tooltip content={<ChartTooltip unit="" />} />
+            <Bar dataKey="ppd" radius={[4, 4, 0, 0]} maxBarSize={28}>
+              {chartData.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={
+                    entry.day === result.bestDay
+                      ? '#22c55e'
+                      : entry.day === result.worstDay
+                        ? '#ef4444'
+                        : '#3b82f6'
+                  }
+                  fillOpacity={0.7}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <Typography
+          variant="caption"
+          sx={{ fontSize: 11, color: '#22c55e', mt: 0.5, display: 'block' }}
+        >
+          {result.bestDay}曜日がベストコンディション
+        </Typography>
+      </Paper>
+    </Box>
+  );
+}
+
+// ============================================
+// 月次トレンドセクション (G)
+// ============================================
+
+function MonthlyTrendSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
+  const trendData = useMemo(() => aggregateMonthlyHealthDarts(correlationData), [correlationData]);
+
+  if (trendData.length < 2) return null;
+
+  const chartData = trendData.map((d) => ({
+    month: d.month.slice(5), // MM
+    ppd: d.avgPpd,
+    condition: d.avgCondition,
+  }));
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+        <TrendingUpIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          月次トレンド
+        </Typography>
+      </Box>
+
+      <Paper
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.05)',
+          bgcolor: 'rgba(24,24,27,0.8)',
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
+        >
+          コンディション vs PPD (月別)
+        </Typography>
+        <ResponsiveContainer width="100%" height={160}>
+          <ComposedChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 10, fill: '#71717a' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              yAxisId="left"
+              tick={{ fontSize: 10, fill: '#71717a' }}
+              axisLine={false}
+              tickLine={false}
+              width={30}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 10, fill: '#71717a' }}
+              axisLine={false}
+              tickLine={false}
+              width={30}
+            />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            <Bar
+              yAxisId="left"
+              dataKey="condition"
+              name="コンディション"
+              fill="#8b5cf6"
+              fillOpacity={0.5}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={20}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="ppd"
+              name="PPD"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              connectNulls
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </Paper>
+    </Box>
+  );
+}
+
+// ============================================
+// 睡眠ステージ相関セクション (J)
+// ============================================
+
+function SleepStageCorrelationSection({
+  correlationData,
+}: {
+  correlationData: HealthDartsCorrelation[];
+}) {
+  const result = useMemo(() => analyzeSleepStageCorrelations(correlationData), [correlationData]);
+
+  if (!result) return null;
+
+  const stages = [
+    { label: '深い睡眠', r: result.deepSleepR, pct: result.deepSleepPct, color: '#6d28d9' },
+    { label: 'REM睡眠', r: result.remSleepR, pct: result.remSleepPct, color: '#a78bfa' },
+    { label: 'コア睡眠', r: result.coreSleepR, pct: result.coreSleepPct, color: '#7c3aed' },
+  ];
+
+  // 散布図データ（深い睡眠% vs PPD）
+  const scatterData = correlationData
+    .filter(
+      (d) =>
+        d.ppd !== null &&
+        d.sleepDurationMinutes !== null &&
+        d.sleepDurationMinutes > 0 &&
+        d.sleepDeepMinutes !== null,
+    )
+    .map((d) => ({
+      x: Math.round(((d.sleepDeepMinutes ?? 0) / d.sleepDurationMinutes!) * 100),
+      y: d.ppd,
+    }));
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+        <NightsStayIcon sx={{ fontSize: 16, color: '#6d28d9' }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          睡眠ステージ × PPD
+        </Typography>
+      </Box>
+
+      <Paper
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.05)',
+          bgcolor: 'rgba(24,24,27,0.8)',
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
+        >
+          睡眠ステージ別 PPD相関 ({result.n}日分析)
+        </Typography>
+
+        {stages.map((s) => (
+          <Box key={s.label} sx={{ mb: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+              <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
+                {s.label} (平均{s.pct}%)
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: Math.abs(s.r) >= 0.3 ? '#22c55e' : '#71717a',
+                }}
+              >
+                r = {s.r > 0 ? '+' : ''}
+                {s.r.toFixed(2)}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                bgcolor: 'rgba(255,255,255,0.05)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  height: '100%',
+                  borderRadius: 3,
+                  bgcolor: s.color,
+                  left: '50%',
+                  width: `${Math.abs(s.r) * 50}%`,
+                  transform: s.r < 0 ? 'translateX(-100%)' : 'none',
+                }}
+              />
+            </Box>
+          </Box>
+        ))}
+
+        {/* 散布図 */}
+        {scatterData.length >= 5 && (
+          <Box sx={{ mt: 2 }}>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: 10, color: '#71717a', display: 'block', mb: 0.5 }}
+            >
+              深い睡眠% × PPD
+            </Typography>
+            <ResponsiveContainer width="100%" height={120}>
+              <ScatterChart>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis
+                  dataKey="x"
+                  name="深い睡眠%"
+                  tick={{ fontSize: 9, fill: '#71717a' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  dataKey="y"
+                  name="PPD"
+                  tick={{ fontSize: 9, fill: '#71717a' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={30}
+                />
+                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                <Scatter data={scatterData} fill="#6d28d9" fillOpacity={0.6} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </Box>
+        )}
+      </Paper>
+    </Box>
+  );
+}
+
+// ============================================
 // 詳細ドロワー
 // ============================================
 
@@ -997,6 +1548,7 @@ export default function HealthPage() {
   const [detailType, setDetailType] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [correlationData, setCorrelationData] = useState<HealthDartsCorrelation[]>([]);
   const addLog = (msg: string) =>
     setDebugLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
 
@@ -1036,6 +1588,12 @@ export default function HealthPage() {
     }
 
     fetchMetrics(period);
+
+    // 相関分析用データ取得
+    fetch('/api/health-correlation?days=180')
+      .then((r) => (r.ok ? r.json() : { correlations: [] }))
+      .then((d) => setCorrelationData(d.correlations || []))
+      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 期間変更
@@ -1385,6 +1943,13 @@ export default function HealthPage() {
                 onDetailOpen={setDetailType}
               />
               <VitalsSection latest={latest} previousLatest={previousLatest} />
+
+              {/* 新セクション: コンディション / ベスト / 練習タイミング / 月次 / 睡眠ステージ */}
+              <ConditionScoreSection metrics={metrics} correlationData={correlationData} />
+              <BestConditionSection correlationData={correlationData} />
+              <PracticeTimingSection correlationData={correlationData} />
+              <MonthlyTrendSection correlationData={correlationData} />
+              <SleepStageCorrelationSection correlationData={correlationData} />
             </>
           )}
         </Box>

@@ -19,6 +19,8 @@ import {
   type TrendBubbleInput,
 } from '@/lib/line';
 import { decrypt } from '@/lib/crypto';
+import { calculateConditionScore, calculatePersonalBaseline } from '@/lib/health-analytics';
+import type { HealthMetric } from '@/types';
 import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
 import type { CountUpPlayData } from '@/lib/dartslive-api';
 import type { ScrapedStats } from '@/lib/dartslive-scraper';
@@ -52,10 +54,12 @@ async function getConversation(lineUserId: string) {
       condition: null,
       memo: null,
       pendingMemo: null,
+      recordDate: null,
     };
   return snap.data() as {
     state:
       | 'idle'
+      | 'waiting_date_confirm'
       | 'waiting_condition'
       | 'waiting_memo'
       | 'waiting_challenge'
@@ -64,6 +68,7 @@ async function getConversation(lineUserId: string) {
     condition: number | null;
     memo: string | null;
     pendingMemo: string | null;
+    recordDate: string | null;
   };
 }
 
@@ -237,6 +242,83 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
   // 会話状態に応じた処理
   const conv = await getConversation(lineUserId);
 
+  // waiting_date_confirm 状態: 今日/昨日の日付選択
+  if (conv.state === 'waiting_date_confirm') {
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    let selectedDate: string;
+    if (trimmed === '今日の記録') {
+      const y = jstNow.getUTCFullYear();
+      const m = String(jstNow.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(jstNow.getUTCDate()).padStart(2, '0');
+      selectedDate = `${y}/${m}/${d}`;
+    } else if (trimmed === '昨日の記録') {
+      const yd = new Date(jstNow.getTime() - 86_400_000);
+      const y = yd.getUTCFullYear();
+      const m = String(yd.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(yd.getUTCDate()).padStart(2, '0');
+      selectedDate = `${y}/${m}/${d}`;
+    } else {
+      await replyLineMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: '「今日の記録」か「昨日の記録」を選んでください。',
+          quickReply: {
+            items: [
+              {
+                type: 'action',
+                action: { type: 'message', label: '今日の記録', text: '今日の記録' },
+              },
+              {
+                type: 'action',
+                action: { type: 'message', label: '昨日の記録', text: '昨日の記録' },
+              },
+            ],
+          },
+        },
+      ]);
+      return;
+    }
+
+    // pendingStatsの日付を更新して waiting_condition へ遷移
+    const updatedStats = { ...(conv.pendingStats ?? {}), date: selectedDate };
+    await setConversation(lineUserId, {
+      state: 'waiting_condition',
+      pendingStats: updatedStats,
+      recordDate: selectedDate,
+    });
+
+    // HealthKitデータからコンディションサジェスト
+    let suggestion = '';
+    try {
+      const user = await findUserByLineId(lineUserId);
+      if (user) {
+        const healthSnap = await adminDb
+          .collection(`users/${user.id}/healthMetrics`)
+          .orderBy('metricDate', 'desc')
+          .limit(30)
+          .get();
+        if (!healthSnap.empty) {
+          const hMetrics = healthSnap.docs.map((d) => d.data() as HealthMetric);
+          const todayM = hMetrics[0];
+          const bl = calculatePersonalBaseline(hMetrics);
+          const cs = calculateConditionScore(todayM, bl);
+          suggestion = `\n（HealthKitデータから ★${cs.star} をおすすめ）`;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    await replyLineMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: `${selectedDate} の記録です。\n今日の調子を選んでください！${suggestion}\n★1 絶不調 / ★2 不調 / ★3 普通 / ★4 好調 / ★5 絶好調`,
+        quickReply: CONDITION_QUICK_REPLY,
+      },
+    ]);
+    return;
+  }
+
   if (conv.state === 'waiting_condition') {
     const condition = parseCondition(trimmed);
     if (!condition) {
@@ -306,12 +388,15 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
     const stats = conv.pendingStats;
     const condition = conv.condition || 3;
     const memo = conv.memo || '';
+    const recordDate = conv.recordDate || (stats.date ? String(stats.date) : null);
 
     // Firestore に dartsLiveStats レコード作成
     await adminDb.collection(`users/${user.id}/dartsLiveStats`).add({
-      date: stats.date
-        ? new Date(String(stats.date).replace(/\//g, '-') + 'T00:00:00+09:00')
-        : FieldValue.serverTimestamp(),
+      date: recordDate
+        ? new Date(String(recordDate).replace(/\//g, '-') + 'T00:00:00+09:00')
+        : stats.date
+          ? new Date(String(stats.date).replace(/\//g, '-') + 'T00:00:00+09:00')
+          : FieldValue.serverTimestamp(),
       rating: stats.rating ?? null,
       gamesPlayed: stats.gamesPlayed ?? 0,
       zeroOneStats: {
@@ -342,15 +427,15 @@ async function handleTextMessage(event: LineEvent, lineUserId: string, text: str
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    // 完了通知
+    // 完了通知（日付明記）
+    const displayDate = recordDate
+      ? `${recordDate.split('/').slice(1).join('/')}の記録を保存しました！`
+      : '記録しました！';
     await replyLineMessage(event.replyToken, [
-      buildCompletionMessage({
-        rating: (stats.rating as number) ?? null,
-        ppd: (stats.ppd as number) ?? null,
-        condition,
-        memo,
-        challenge,
-      }),
+      {
+        type: 'text',
+        text: `${displayDate}\nRt.${(stats.rating as number)?.toFixed(2) ?? '--'} / PPD ${(stats.ppd as number)?.toFixed(2) ?? '--'} / ★${condition} ${getConditionLabel(condition)}\nメモ: ${memo || 'なし'}\n課題: ${challenge || 'なし'}`,
+      },
     ]);
 
     // 会話状態リセット
@@ -545,28 +630,44 @@ async function handleFetchStats(replyToken: string, lineUserId: string) {
       { merge: true },
     );
 
-    // 会話状態を waiting_condition に遷移
-    await setConversation(lineUserId, {
-      state: 'waiting_condition',
-      pendingStats: {
-        date: dateStr,
-        rating: stats.rating,
-        ppd: stats.stats01Avg,
-        mpr: stats.statsCriAvg,
-        avg01: stats.stats01Avg,
-        dBullTotal: stats.dBullTotal,
-        sBullTotal: stats.sBullTotal,
-        ton80: stats.ton80,
-        lowTon: stats.lowTon,
-        highTon: stats.highTon,
-        threeInABed: stats.threeInABed,
-        threeInABlack: stats.threeInABlack,
-        whiteHorse: stats.whiteHorse,
-        hatTricksTotal: stats.hatTricksTotal,
-      },
-      condition: null,
-      memo: null,
-    });
+    // JST時刻判定: 0:00〜10:00なら日付確認フローへ
+    const jstHour = now.getUTCHours(); // nowは既に+9済み
+    const pendingStats = {
+      date: dateStr,
+      rating: stats.rating,
+      ppd: stats.stats01Avg,
+      mpr: stats.statsCriAvg,
+      avg01: stats.stats01Avg,
+      dBullTotal: stats.dBullTotal,
+      sBullTotal: stats.sBullTotal,
+      ton80: stats.ton80,
+      lowTon: stats.lowTon,
+      highTon: stats.highTon,
+      threeInABed: stats.threeInABed,
+      threeInABlack: stats.threeInABlack,
+      whiteHorse: stats.whiteHorse,
+      hatTricksTotal: stats.hatTricksTotal,
+    };
+
+    if (jstHour < 10) {
+      // 0:00〜10:00 → 日付確認
+      await setConversation(lineUserId, {
+        state: 'waiting_date_confirm',
+        pendingStats,
+        condition: null,
+        memo: null,
+        recordDate: null,
+      });
+    } else {
+      // 10:00以降 → 自動的に今日
+      await setConversation(lineUserId, {
+        state: 'waiting_condition',
+        pendingStats,
+        condition: null,
+        memo: null,
+        recordDate: dateStr,
+      });
+    }
   } catch (err) {
     console.error('Fetch stats error:', err);
     await replyLineMessage(replyToken, [

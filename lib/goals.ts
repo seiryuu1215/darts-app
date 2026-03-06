@@ -59,6 +59,20 @@ export const GOAL_TYPES: GoalTypeDef[] = [
     defaultTargets: { monthly: 50, daily: 5 },
     periods: ['monthly', 'daily'],
   },
+  {
+    type: 'sleep_hours',
+    label: '平均睡眠時間',
+    unit: '時間',
+    defaultTargets: { monthly: 7.0 },
+    periods: ['monthly'],
+  },
+  {
+    type: 'hrv_target',
+    label: '平均HRV',
+    unit: 'ms',
+    defaultTargets: { monthly: 50 },
+    periods: ['monthly'],
+  },
 ];
 
 export function getGoalTypeDef(type: GoalType): GoalTypeDef | undefined {
@@ -208,7 +222,37 @@ export function calculateGoalCurrent(
       const last = records[records.length - 1];
       return Math.max(0, (last.hatTricks ?? 0) - (first.hatTricks ?? 0));
     }
+    case 'sleep_hours':
+    case 'hrv_target':
+      // ヘルスゴールは別途 calculateHealthGoalCurrent で計算
+      return 0;
     default:
       return 0;
   }
+}
+
+/**
+ * ヘルスゴール（sleep_hours / hrv_target）の当月平均を healthMetrics から算出
+ */
+export function calculateHealthGoalCurrent(
+  type: GoalType,
+  healthMetrics: { sleepDurationMinutes: number | null; hrvSdnn: number | null }[],
+): number {
+  if (healthMetrics.length === 0) return 0;
+
+  if (type === 'sleep_hours') {
+    const sleeps = healthMetrics
+      .map((m) => m.sleepDurationMinutes)
+      .filter((v): v is number => v !== null);
+    if (sleeps.length === 0) return 0;
+    return Math.round((sleeps.reduce((a, b) => a + b, 0) / sleeps.length / 60) * 10) / 10;
+  }
+
+  if (type === 'hrv_target') {
+    const hrvs = healthMetrics.map((m) => m.hrvSdnn).filter((v): v is number => v !== null);
+    if (hrvs.length === 0) return 0;
+    return Math.round((hrvs.reduce((a, b) => a + b, 0) / hrvs.length) * 10) / 10;
+  }
+
+  return 0;
 }

@@ -50,6 +50,13 @@ import {
 } from '@/lib/dartslive-scraper';
 import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
 import { sendPushToUser } from '@/lib/push-notifications';
+import {
+  calculateConditionScore,
+  calculatePersonalBaseline,
+  checkFatigueAlert,
+} from '@/lib/health-analytics';
+import { buildFatigueAlertMessage } from '@/lib/line';
+import type { HealthMetric } from '@/types';
 
 export const maxDuration = 300;
 
@@ -496,6 +503,28 @@ export async function GET(request: NextRequest) {
               } else {
                 results.push({ userId, status: 'skipped_cu_under_30' });
               }
+            }
+
+            // ヘルスデータ疲労チェック & アラート送信
+            try {
+              const healthSnap = await adminDb
+                .collection(`users/${userId}/healthMetrics`)
+                .orderBy('metricDate', 'desc')
+                .limit(30)
+                .get();
+              if (!healthSnap.empty) {
+                const healthMetrics = healthSnap.docs.map((d) => d.data() as HealthMetric);
+                const baseline = calculatePersonalBaseline(healthMetrics);
+                if (baseline) {
+                  const todayMetric = healthMetrics[0];
+                  const alert = checkFatigueAlert(todayMetric, baseline);
+                  if (alert) {
+                    await sendLinePushMessage(lineUserId, [buildFatigueAlertMessage(alert)]);
+                  }
+                }
+              }
+            } catch (healthErr) {
+              console.error(`Health fatigue check error for user ${userId}:`, healthErr);
             }
 
             // XP自動付与: 前回/今回スタッツ差分からXPを算出

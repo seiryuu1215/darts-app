@@ -6,6 +6,7 @@ import type { CuSessionComparison } from './countup-session-compare';
 import type { PracticeRecommendation } from './practice-recommendations';
 import type { TrendResult, CrossSignal } from './stats-trend';
 import type { RoundAnalysis } from './countup-round-analysis';
+import type { ConditionScore, FatigueAlert } from '@/types';
 
 const LINE_API_BASE = 'https://api.line.me/v2/bot';
 
@@ -2032,6 +2033,95 @@ export function buildSensorSummaryFlexBubble(
 }
 
 /** Flex Message からバブル部分を抽出 */
+// ──────────────────────────────
+// ヘルスサマリー行 / 疲労アラートメッセージ
+// ──────────────────────────────
+
+/** コンディションスコアから1行サマリーを生成 */
+export function buildHealthSummaryLine(score: ConditionScore): string {
+  const emoji =
+    score.score >= 80 ? '💚' : score.score >= 60 ? '💛' : score.score >= 40 ? '🧡' : '❤️';
+  return `${emoji} コンディション: ${score.score}/100（${score.label}）`;
+}
+
+/** 疲労アラートのFlex Message */
+export function buildFatigueAlertMessage(alert: FatigueAlert): object {
+  const severityColor = alert.severity === 'critical' ? '#D32F2F' : '#F57C00';
+  return {
+    type: 'flex',
+    altText: `⚠️ 体調注意: ${alert.messageJa}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: severityColor,
+        paddingAll: '14px',
+        contents: [
+          { type: 'text', text: 'Darts Lab', color: '#ffffff', size: 'sm', weight: 'bold' },
+          { type: 'text', text: '⚠️ 体調注意', color: '#ffffffcc', size: 'xs' },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: '16px',
+        spacing: 'md',
+        contents: [
+          { type: 'text', text: alert.messageJa, size: 'sm', wrap: true, weight: 'bold' },
+          { type: 'separator' },
+          {
+            type: 'text',
+            text: `💡 ${alert.recommendation}`,
+            size: 'xs',
+            color: '#888888',
+            wrap: true,
+          },
+        ],
+      },
+    },
+  };
+}
+
+/** レポートにヘルスサマリーボックスを追加するための行データ */
+export function buildHealthReportContents(healthSummary: {
+  avgCondition: number | null;
+  avgSleep: number | null;
+  avgHrv: number | null;
+}): object[] {
+  const contents: object[] = [{ type: 'separator', margin: 'md' }];
+  contents.push({
+    type: 'text',
+    text: '🏥 ヘルスサマリー',
+    size: 'sm',
+    weight: 'bold',
+    margin: 'md',
+  });
+
+  const lines: string[] = [];
+  if (healthSummary.avgCondition !== null) {
+    lines.push(`コンディション平均: ${healthSummary.avgCondition}/100`);
+  }
+  if (healthSummary.avgSleep !== null) {
+    lines.push(`平均睡眠: ${healthSummary.avgSleep}h`);
+  }
+  if (healthSummary.avgHrv !== null) {
+    lines.push(`平均HRV: ${healthSummary.avgHrv}ms`);
+  }
+
+  if (lines.length > 0) {
+    contents.push({
+      type: 'text',
+      text: lines.join('\n'),
+      size: 'xs',
+      color: '#888888',
+      wrap: true,
+      margin: 'sm',
+    });
+  }
+  return contents;
+}
+
 export function extractBubble(flexMessage: object): object | null {
   const msg = flexMessage as Record<string, unknown>;
   if (msg.type === 'bubble') return flexMessage;
