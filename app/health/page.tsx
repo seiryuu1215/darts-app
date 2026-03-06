@@ -997,7 +997,8 @@ export default function HealthPage() {
   const [detailType, setDetailType] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
-  const addLog = (msg: string) => setDebugLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
+  const addLog = (msg: string) =>
+    setDebugLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
 
   // ヘルスデータ取得
   const fetchMetrics = useCallback(async (days: number) => {
@@ -1233,7 +1234,11 @@ export default function HealthPage() {
               }}
             >
               {debugLog.map((log, i) => (
-                <Typography key={i} variant="caption" sx={{ display: 'block', fontFamily: 'monospace', color: '#0f0', fontSize: 10 }}>
+                <Typography
+                  key={i}
+                  variant="caption"
+                  sx={{ display: 'block', fontFamily: 'monospace', color: '#0f0', fontSize: 10 }}
+                >
                   {log}
                 </Typography>
               ))}
@@ -1264,13 +1269,23 @@ export default function HealthPage() {
 
       {/* デバッグログ（同期時も表示） */}
       {!setupNeeded && debugLog.length > 0 && (
-        <Box sx={{ mb: 1.5, p: 1, bgcolor: '#111', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}>
+        <Box
+          sx={{ mb: 1.5, p: 1, bgcolor: '#111', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}
+        >
           {debugLog.map((log, i) => (
-            <Typography key={i} variant="caption" sx={{ display: 'block', fontFamily: 'monospace', color: '#0f0', fontSize: 10 }}>
+            <Typography
+              key={i}
+              variant="caption"
+              sx={{ display: 'block', fontFamily: 'monospace', color: '#0f0', fontSize: 10 }}
+            >
               {log}
             </Typography>
           ))}
-          {syncError && <Alert severity="error" sx={{ mt: 1 }}>{syncError}</Alert>}
+          {syncError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {syncError}
+            </Alert>
+          )}
         </Box>
       )}
 
