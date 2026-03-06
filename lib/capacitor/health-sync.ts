@@ -65,20 +65,40 @@ export function isNativePlatform(): boolean {
 // プラグイン呼び出し
 // ==========================================
 
-/** HealthKitプラグインのメソッドを呼び出す */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function callHealthKitPlugin(method: string, args?: Record<string, any>): Promise<unknown> {
+/** HealthKitプラグインのインターフェース */
+interface HealthKitPluginInterface {
+  requestAuthorization(): Promise<{ granted: boolean }>;
+  readTodayMetrics(): Promise<HealthKitMetrics>;
+  readMetricsForRange(options: { days: number }): Promise<{ metrics: HealthKitMetrics[] }>;
+  isAuthorized(): Promise<{ authorized: boolean; available: boolean }>;
+}
+
+/** registerPluginでプラグインを取得（Capacitor 5+） */
+let pluginInstance: HealthKitPluginInterface | null = null;
+
+async function getHealthKitPlugin(): Promise<HealthKitPluginInterface | null> {
+  if (pluginInstance) return pluginInstance;
   if (!isNativePlatform()) return null;
 
   try {
-    const { Capacitor } = await import('@capacitor/core');
+    const { registerPlugin } = await import('@capacitor/core');
+    pluginInstance = registerPlugin<HealthKitPluginInterface>('HealthKitPlugin');
+    return pluginInstance;
+  } catch (err) {
+    console.error('Failed to register HealthKitPlugin:', err);
+    return null;
+  }
+}
+
+/** HealthKitプラグインのメソッドを呼び出す */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function callHealthKitPlugin(method: string, args?: Record<string, any>): Promise<unknown> {
+  const plugin = await getHealthKitPlugin();
+  if (!plugin) return null;
+
+  try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const plugin = (Capacitor as any).Plugins?.HealthKitPlugin;
-    if (!plugin) {
-      console.warn('HealthKitPlugin not available');
-      return null;
-    }
-    return await plugin[method](args || {});
+    return await (plugin as any)[method](args || {});
   } catch (err) {
     console.error(`HealthKitPlugin.${method} failed:`, err);
     return null;
