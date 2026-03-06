@@ -1048,55 +1048,29 @@ export default function HealthPage() {
     setSyncError(null);
     setDebugLog([]);
     try {
-      addLog('isNative: ' + isNativePlatform());
-
-      // プラグイン登録テスト
-      addLog('registerPlugin 開始...');
-      try {
-        const { registerPlugin, Capacitor } = await import('@capacitor/core');
-        addLog('Capacitor platform: ' + Capacitor.getPlatform());
-        addLog('isNative: ' + Capacitor.isNativePlatform());
-        const plugin = registerPlugin('HealthKitPlugin');
-        addLog('registerPlugin 完了: ' + typeof plugin);
-
-        // タイムアウト付きで呼び出し
-        addLog('requestAuthorization 呼び出し中...');
-        const authResult = await Promise.race([
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (plugin as any).requestAuthorization(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('10秒タイムアウト')), 10000)),
-        ]);
-        addLog('requestAuthorization 結果: ' + JSON.stringify(authResult));
-      } catch (err) {
-        addLog('プラグインエラー: ' + (err instanceof Error ? err.message : String(err)));
-        setSyncError('プラグイン呼び出しエラー: ' + (err instanceof Error ? err.message : String(err)));
-        setSyncing(false);
-        return;
-      }
-
-      addLog('権限リクエスト中...');
+      addLog('1. 権限リクエスト中...');
       const granted = await requestHealthKitPermissions();
-      addLog('権限結果: ' + granted);
+      addLog('1. 権限結果: ' + granted);
       if (!granted) {
         setSyncError('HealthKit権限が許可されませんでした');
         setSyncing(false);
         return;
       }
 
-      addLog('データ同期開始 (30日)...');
-      const result = await syncHealthDataRange(30, (progress) => {
-        addLog(`同期: ${progress.phase} ${progress.current}/${progress.total}`);
-        setSyncProgress(progress);
-      });
-      addLog('同期結果: ' + JSON.stringify(result));
+      // まず1日だけ同期テスト
+      addLog('2. 今日のデータ取得テスト...');
+      const { syncHealthData } = await import('@/lib/capacitor/health-sync');
+      const todayResult = await syncHealthData();
+      addLog('2. 今日の同期結果: ' + JSON.stringify(todayResult));
 
-      if (result.success) {
+      if (todayResult.success) {
         markHealthKitSetupComplete();
         setSetupNeeded(false);
         setLastSync(new Date().toLocaleString('ja-JP'));
+        addLog('3. セットアップ完了！');
         await fetchMetrics(period);
       } else {
-        setSyncError(result.error || '同期に失敗しました');
+        setSyncError(todayResult.error || '同期に失敗しました');
       }
     } catch (err) {
       addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
