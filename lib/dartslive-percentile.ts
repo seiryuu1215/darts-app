@@ -176,3 +176,32 @@ export function getPercentileLabel(percentile: number): string {
   if (percentile <= 50) return '平均以上';
   return 'アベレージ';
 }
+
+/** パーセンタイル(上位X%)から相当レーティングを推定 */
+export function percentileToRating(percentile: number): number {
+  // RATING_DISTRIBUTION の累積上位%からレーティングを逆引き
+  const cumulative = [
+    { rating: 18, upperPct: 0.05 },
+    { rating: 17, upperPct: 0.12 },
+    { rating: 16, upperPct: 0.26 },
+    { rating: 15, upperPct: 0.53 },
+    { rating: 14, upperPct: 1.04 },
+    { rating: 13, upperPct: 1.89 },
+    { rating: 12, upperPct: 3.31 },
+    { rating: 11, upperPct: 5.42 },
+    { rating: 10, upperPct: 8.6 },
+    { rating: 9, upperPct: 12.96 },
+    { rating: 8, upperPct: 18.85 },
+    { rating: 7, upperPct: 26.78 },
+    { rating: 6, upperPct: 37.24 },
+    { rating: 5, upperPct: 50.9 },
+    { rating: 4, upperPct: 66.93 },
+    { rating: 3, upperPct: 86.92 },
+    { rating: 2, upperPct: 98.99 },
+    { rating: 1, upperPct: 100 },
+  ];
+  for (const c of cumulative) {
+    if (percentile <= c.upperPct) return c.rating;
+  }
+  return 1;
+}

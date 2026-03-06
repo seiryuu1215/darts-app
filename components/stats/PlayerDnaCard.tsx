@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Paper, Typography, Box, LinearProgress } from '@mui/material';
-import { getPercentile, getPercentileColor, getPercentileLabel } from '@/lib/dartslive-percentile';
+import { getPercentile, getPercentileColor, percentileToRating } from '@/lib/dartslive-percentile';
 import { calc01Rating, calcCriRating } from '@/lib/dartslive-rating';
 import { COLOR_01, COLOR_CRICKET, COLOR_COUNTUP } from '@/lib/dartslive-colors';
 
@@ -118,7 +118,7 @@ function SkillBarItem({ skill }: { skill: SkillBar }) {
   // パーセンタイルを0-100のバー値に変換（小さいパーセンタイル = 高スキル → 高いバー）
   const barValue = Math.max(0, Math.min(100, 100 - skill.percentile));
   const pColor = getPercentileColor(skill.percentile);
-  const pLabel = getPercentileLabel(skill.percentile);
+  const estRt = percentileToRating(skill.percentile);
 
   return (
     <Box sx={{ mb: 1.5 }}>
@@ -131,7 +131,7 @@ function SkillBarItem({ skill }: { skill: SkillBar }) {
             {skill.displayValue}
           </Typography>
           <Typography variant="caption" sx={{ color: pColor, fontWeight: 'bold', fontSize: 10 }}>
-            上位{skill.percentile}% ({pLabel})
+            Rt.{estRt}相当
           </Typography>
         </Box>
       </Box>
@@ -221,23 +221,32 @@ export default function PlayerDnaCard({ stats01, statsCricket, countupAvg }: Pla
       });
     }
 
-    if (statsCricket?.tripleRate != null) {
+    if (statsCricket?.tripleRate != null || stats01?.bullRate != null) {
+      // ブル率-25%をトリプル率の推定基準として使用
+      const estimatedTriple = Math.max(0, (stats01?.bullRate ?? 0) - 25);
+      const displayVal = statsCricket?.tripleRate ?? estimatedTriple;
+      // 推定トリプル率に基づくパーセンタイル
       const p =
-        statsCricket.tripleRate >= 40
-          ? 5
-          : statsCricket.tripleRate >= 30
-            ? 15
-            : statsCricket.tripleRate >= 22
-              ? 30
-              : statsCricket.tripleRate >= 15
-                ? 50
-                : 70;
+        estimatedTriple >= 35
+          ? 1
+          : estimatedTriple >= 25
+            ? 5
+            : estimatedTriple >= 17
+              ? 10
+              : estimatedTriple >= 10
+                ? 20
+                : estimatedTriple >= 5
+                  ? 40
+                  : 65;
       skills.push({
         label: 'トリプル率',
-        value: statsCricket.tripleRate,
+        value: displayVal,
         percentile: p,
         color: COLOR_CRICKET,
-        displayValue: `${statsCricket.tripleRate}%`,
+        displayValue:
+          statsCricket?.tripleRate != null
+            ? `${statsCricket.tripleRate}%`
+            : `推定${estimatedTriple.toFixed(1)}%`,
       });
     }
 

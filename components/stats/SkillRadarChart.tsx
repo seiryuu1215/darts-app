@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { RATING_BENCHMARKS } from '@/lib/dartslive-reference';
 import { ppdForRating, mprForRating } from '@/lib/dartslive-rating';
+import { COLOR_01, COLOR_CRICKET, COLOR_COUNTUP, FLIGHT_COLORS } from '@/lib/dartslive-colors';
 
 interface Stats01Detailed {
   avg: number | null;
@@ -57,16 +58,12 @@ function normalize(value: number | null | undefined, min: number, max: number): 
   return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
 }
 
-function formatRaw(value: number | null | undefined, unit: string): string {
-  if (value == null) return '--';
-  return `${value}${unit}`;
-}
-
 interface RadarDataItem {
   axis: string;
   value: number;
   benchmark?: number;
   rawLabel: string;
+  axisColor: string;
 }
 
 /** 次フライトの最上位Rtを返す（レーダーの最大値・ベンチマーク基準） */
@@ -86,12 +83,25 @@ function getNextFlightTargetRt(flight?: string): number | null {
   return NEXT_FLIGHT_MAX_RT[flight] ?? null;
 }
 
+/** 値/最大値 (pct%) 形式のラベルを生成 */
+function fmtPct(
+  value: number | null | undefined,
+  max: number,
+  unit: string = '',
+  decimals: number = 1,
+): string {
+  if (value == null) return '--';
+  const pct = Math.round(Math.min(100, Math.max(0, (value / max) * 100)));
+  const v = decimals === 0 ? Math.round(value) : value.toFixed(decimals);
+  const m = decimals === 0 ? Math.round(max) : max.toFixed(decimals);
+  return `${v}${unit}/${m}${unit} (${pct}%)`;
+}
+
 function buildDetailedData(
   stats01: Stats01Detailed | null,
   statsCricket: StatsCricketDetailed | null,
   flight?: string,
 ): RadarDataItem[] {
-  // 次フライトの最上位Rtをベンチマーク基準として使う
   const targetRt = getNextFlightTargetRt(flight);
   const targetBench =
     targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt) : null;
@@ -99,58 +109,73 @@ function buildDetailedData(
   const nextMpr = targetRt != null ? mprForRating(targetRt) : null;
   const max01 = nextPpd ?? 80;
   const maxCri = nextMpr ?? 4.0;
+  const maxBull = targetBench?.bullRatePerThrow ?? 50;
+  const maxArrange = targetRt != null ? Math.min(100, targetRt * 3.5) : 50;
+  const maxTriple =
+    targetBench?.bullRatePerThrow != null ? Math.max(1, targetBench.bullRatePerThrow - 25) : 25;
 
   return [
     {
       axis: '01 Avg',
       value: normalize(stats01?.avg, 20, max01),
       benchmark: nextPpd != null ? normalize(nextPpd, 20, max01) : undefined,
-      rawLabel: `(${formatRaw(stats01?.avg, '')}/${max01.toFixed(0)})`,
+      rawLabel: fmtPct(stats01?.avg, max01),
+      axisColor: COLOR_01,
     },
     {
       axis: '01 勝率',
       value: stats01?.winRate ?? 0,
       benchmark: 50,
-      rawLabel: `(${formatRaw(stats01?.winRate, '%')})`,
+      rawLabel: fmtPct(stats01?.winRate, 100, '%'),
+      axisColor: COLOR_01,
     },
     {
       axis: 'Bull率',
-      value: stats01?.bullRate ?? 0,
-      benchmark: targetBench?.bullRatePerThrow,
-      rawLabel: `(${formatRaw(stats01?.bullRate, '%')})`,
+      value: normalize(stats01?.bullRate, 0, maxBull),
+      benchmark:
+        targetBench?.bullRatePerThrow != null
+          ? normalize(targetBench.bullRatePerThrow, 0, maxBull)
+          : undefined,
+      rawLabel: fmtPct(stats01?.bullRate, maxBull, '%'),
+      axisColor: COLOR_01,
     },
     {
       axis: 'アレンジ率',
-      value: stats01?.arrangeRate ?? 0,
-      benchmark: targetRt != null ? Math.min(100, targetRt * 3.5) : undefined,
-      rawLabel: `(${formatRaw(stats01?.arrangeRate, '%')})`,
+      value: normalize(stats01?.arrangeRate, 0, maxArrange),
+      benchmark: targetRt != null ? normalize(maxArrange, 0, maxArrange) : undefined,
+      rawLabel: fmtPct(stats01?.arrangeRate, maxArrange, '%'),
+      axisColor: COLOR_01,
     },
     {
       axis: 'Cri Avg',
       value: normalize(statsCricket?.avg, 0.5, maxCri),
       benchmark: nextMpr != null ? normalize(nextMpr, 0.5, maxCri) : undefined,
-      rawLabel: `(${formatRaw(statsCricket?.avg, '')}/${maxCri.toFixed(1)})`,
+      rawLabel: fmtPct(statsCricket?.avg, maxCri, '', 2),
+      axisColor: COLOR_CRICKET,
     },
     {
       axis: 'Cri 勝率',
       value: statsCricket?.winRate ?? 0,
       benchmark: 50,
-      rawLabel: `(${formatRaw(statsCricket?.winRate, '%')})`,
+      rawLabel: fmtPct(statsCricket?.winRate, 100, '%'),
+      axisColor: COLOR_CRICKET,
     },
     {
       axis: 'トリプル率',
-      value: Math.max(0, (stats01?.bullRate ?? 0) - 25),
+      value: normalize(Math.max(0, (stats01?.bullRate ?? 0) - 25), 0, maxTriple),
       benchmark:
         targetBench?.bullRatePerThrow != null
-          ? Math.max(0, targetBench.bullRatePerThrow - 25)
+          ? normalize(Math.max(0, targetBench.bullRatePerThrow - 25), 0, maxTriple)
           : undefined,
-      rawLabel: `(推定${Math.max(0, (stats01?.bullRate ?? 0) - 25).toFixed(1)}% / 実${formatRaw(statsCricket?.tripleRate, '%')})`,
+      rawLabel: fmtPct(Math.max(0, (stats01?.bullRate ?? 0) - 25), maxTriple, '%'),
+      axisColor: COLOR_CRICKET,
     },
     {
       axis: 'Open-Close',
-      value: statsCricket?.openCloseRate ?? 0,
-      benchmark: targetRt != null ? Math.min(100, targetRt * 3.5) : undefined,
-      rawLabel: `(${formatRaw(statsCricket?.openCloseRate, '%')})`,
+      value: normalize(statsCricket?.openCloseRate, 0, maxArrange),
+      benchmark: targetRt != null ? normalize(maxArrange, 0, maxArrange) : undefined,
+      rawLabel: fmtPct(statsCricket?.openCloseRate, maxArrange, '%'),
+      axisColor: COLOR_CRICKET,
     },
   ];
 }
@@ -163,7 +188,6 @@ function buildSimpleData(
   noBullRate: number | null | undefined,
   flight?: string,
 ): RadarDataItem[] {
-  // 次フライトの最上位Rtをベンチマーク基準として使う
   const targetRt = getNextFlightTargetRt(flight);
   const targetBench =
     targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt) : null;
@@ -173,7 +197,6 @@ function buildSimpleData(
   const maxCri = nextMpr ?? 4.0;
   const maxCU = nextPpd != null ? nextPpd * 8 : 800;
   const maxBull = targetBench?.bullRatePerThrow ?? 40;
-  // ノーブル率: 低い方が優秀 → max = 100(最悪値), min = targetBenchのnoBullRate(目標値)
   const minNoBull = targetBench?.noBullRate ?? 30;
 
   const br = bullRate ?? 0;
@@ -184,19 +207,22 @@ function buildSimpleData(
       axis: '01 Avg',
       value: normalize(stats01Avg, 20, max01),
       benchmark: nextPpd != null ? normalize(nextPpd, 20, max01) : undefined,
-      rawLabel: stats01Avg != null ? `(${stats01Avg.toFixed(1)})` : '',
+      rawLabel: fmtPct(stats01Avg, max01),
+      axisColor: COLOR_01,
     },
     {
       axis: 'Cricket Avg',
       value: normalize(statsCriAvg, 0.5, maxCri),
       benchmark: nextMpr != null ? normalize(nextMpr, 0.5, maxCri) : undefined,
-      rawLabel: statsCriAvg != null ? `(${statsCriAvg.toFixed(2)})` : '',
+      rawLabel: fmtPct(statsCriAvg, maxCri, '', 2),
+      axisColor: COLOR_CRICKET,
     },
     {
       axis: 'COUNT-UP',
       value: normalize(statsPraAvg, 200, maxCU),
       benchmark: nextPpd != null ? normalize(nextPpd * 8, 200, maxCU) : undefined,
-      rawLabel: statsPraAvg != null ? `(${Math.round(statsPraAvg)})` : '',
+      rawLabel: fmtPct(statsPraAvg, maxCU, '', 0),
+      axisColor: COLOR_COUNTUP,
     },
     {
       axis: 'ブル率',
@@ -205,17 +231,18 @@ function buildSimpleData(
         targetBench?.bullRatePerThrow != null
           ? normalize(targetBench.bullRatePerThrow, 0, maxBull)
           : undefined,
-      rawLabel: bullRate != null ? `(${br.toFixed(1)}%)` : '',
+      rawLabel: fmtPct(bullRate, maxBull, '%'),
+      axisColor: COLOR_01,
     },
     {
       axis: 'ノーブル率',
-      // ノーブル率は低い方が良い → 反転正規化 (100からの距離)
       value: normalize(100 - nbr, 0, 100 - minNoBull),
       benchmark:
         targetBench?.noBullRate != null
           ? normalize(100 - targetBench.noBullRate, 0, 100 - minNoBull)
           : undefined,
-      rawLabel: noBullRate != null ? `(${nbr.toFixed(1)}%)` : '',
+      rawLabel: noBullRate != null ? `${nbr.toFixed(1)}%→${minNoBull.toFixed(1)}%` : '',
+      axisColor: COLOR_01,
     },
   ];
 }
@@ -224,6 +251,11 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
   const isSimple = props.simpleMode === true;
   const hasBenchmark = !!props.flight;
   const targetRt = getNextFlightTargetRt(props.flight);
+
+  // ベンチマーク線の色: 次フライトのカラーを使用
+  const targetFlight =
+    targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt)?.flight : null;
+  const benchColor = targetFlight ? (FLIGHT_COLORS[targetFlight] ?? '#888') : '#888';
 
   const data: RadarDataItem[] = isSimple
     ? buildSimpleData(
@@ -253,12 +285,14 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
             dataKey="axis"
             tick={({ x, y, payload, index }: Record<string, unknown>) => {
               const item = data[index as number];
+              const color = item?.axisColor ?? '#aaa';
               return (
                 <g transform={`translate(${x},${y})`}>
                   <text
                     textAnchor="middle"
-                    fill="#aaa"
+                    fill={color}
                     fontSize={11}
+                    fontWeight="bold"
                     dominantBaseline="central"
                     dy={-6}
                   >
@@ -268,8 +302,8 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
                   </text>
                   <text
                     textAnchor="middle"
-                    fill="#888"
-                    fontSize={9}
+                    fill="#999"
+                    fontSize={8}
                     dominantBaseline="central"
                     dy={8}
                   >
@@ -282,10 +316,11 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
           {showBenchmark && (
             <Radar
               dataKey="benchmark"
-              stroke="#888"
-              fill="none"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
+              stroke={benchColor}
+              fill={benchColor}
+              fillOpacity={0.08}
+              strokeWidth={2}
+              strokeDasharray="6 3"
               dot={false}
             />
           )}
@@ -318,10 +353,10 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
                       sx={{
                         width: 16,
                         height: 0,
-                        borderTop: '2px dashed #888',
+                        borderTop: `2px dashed ${benchColor}`,
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: benchColor, fontWeight: 'bold' }}>
                       Rt.{targetRt}平均
                     </Typography>
                   </Box>
