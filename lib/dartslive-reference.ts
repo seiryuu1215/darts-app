@@ -16,6 +16,7 @@ export interface RatingBenchmark {
   lowTonRate: number;
   hatTrickRate: number;
   hatTrickFrequency: string;
+  avgRange: number; // 平均レンジ (mm) — DL3センサー参考値
 }
 
 /**
@@ -36,6 +37,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 0,
     hatTrickRate: 0,
     hatTrickFrequency: '-',
+    avgRange: 111.9,
   },
   {
     rating: 2,
@@ -47,6 +49,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 1.91,
     hatTrickRate: 0.06,
     hatTrickFrequency: '1/1667',
+    avgRange: 93.2,
   },
   {
     rating: 3,
@@ -58,6 +61,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 4.1,
     hatTrickRate: 0.2,
     hatTrickFrequency: '1/500',
+    avgRange: 82.9,
   },
   {
     rating: 4,
@@ -69,6 +73,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 6.95,
     hatTrickRate: 0.46,
     hatTrickFrequency: '1/217',
+    avgRange: 76.7,
   },
   {
     rating: 5,
@@ -80,6 +85,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 10.31,
     hatTrickRate: 0.9,
     hatTrickFrequency: '1/111',
+    avgRange: 72.3,
   },
   {
     rating: 6,
@@ -91,6 +97,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 14.06,
     hatTrickRate: 1.56,
     hatTrickFrequency: '1/64',
+    avgRange: 68.2,
   },
   {
     rating: 7,
@@ -102,6 +109,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 18.08,
     hatTrickRate: 2.48,
     hatTrickFrequency: '1/40',
+    avgRange: 65.7,
   },
   {
     rating: 8,
@@ -113,6 +121,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 22.22,
     hatTrickRate: 3.7,
     hatTrickFrequency: '1/27',
+    avgRange: 63.9,
   },
   {
     rating: 9,
@@ -124,6 +133,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 26.37,
     hatTrickRate: 5.27,
     hatTrickFrequency: '1/19',
+    avgRange: 63.4,
   },
   {
     rating: 10,
@@ -135,6 +145,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 30.39,
     hatTrickRate: 7.24,
     hatTrickFrequency: '1/14',
+    avgRange: 62.8,
   },
   {
     rating: 11,
@@ -146,6 +157,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 34.13,
     hatTrickRate: 9.63,
     hatTrickFrequency: '1/10',
+    avgRange: 62.5,
   },
   {
     rating: 12,
@@ -157,6 +169,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 37.5,
     hatTrickRate: 12.5,
     hatTrickFrequency: '1/8',
+    avgRange: 62.0,
   },
   {
     rating: 13,
@@ -168,6 +181,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 40.34,
     hatTrickRate: 15.9,
     hatTrickFrequency: '1/6.3',
+    avgRange: 63.0,
   },
   {
     rating: 14,
@@ -179,6 +193,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 43.2,
     hatTrickRate: 21.6,
     hatTrickFrequency: '1/4.6',
+    avgRange: 64.1,
   },
   {
     rating: 15,
@@ -190,6 +205,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 44.42,
     hatTrickRate: 28.53,
     hatTrickFrequency: '1/3.5',
+    avgRange: 65.9,
   },
   {
     rating: 16,
@@ -201,6 +217,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 43.66,
     hatTrickRate: 36.81,
     hatTrickFrequency: '1/2.7',
+    avgRange: 67.7,
   },
   {
     rating: 17,
@@ -212,6 +229,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 40.54,
     hatTrickRate: 46.55,
     hatTrickFrequency: '1/2.2',
+    avgRange: 71.2,
   },
   {
     rating: 18,
@@ -223,6 +241,7 @@ export const RATING_BENCHMARKS: RatingBenchmark[] = [
     lowTonRate: 34.73,
     hatTrickRate: 57.86,
     hatTrickFrequency: '1/1.7',
+    avgRange: 59.2,
   },
 ];
 
@@ -232,6 +251,12 @@ export function getRatingFromPpd(ppd: number): number {
     if (ppd >= RATING_BENCHMARKS[i].ppdMin) return RATING_BENCHMARKS[i].rating;
   }
   return 1;
+}
+
+/** PPDから期待レンジ(mm)を取得 */
+export function getExpectedRange(ppd: number): number {
+  const rating = getRatingFromPpd(ppd);
+  return RATING_BENCHMARKS.find((b) => b.rating === rating)?.avgRange ?? 0;
 }
 
 /** PPDから期待ブル率を取得 */

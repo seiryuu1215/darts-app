@@ -767,6 +767,10 @@ export interface CuNotifyStats {
   vectorXChange?: number | null;
   vectorYChange?: number | null;
   radiusChange?: number | null;
+  // レンジ（グルーピング半径）
+  avgRange?: number | null;
+  prevAvgRange?: number | null;
+  expectedRange?: number | null;
 }
 
 /** 差分表示ヘルパー ("+1.2" / "-0.5") */
@@ -918,6 +922,17 @@ export function buildCountUpFlexMessage(cu: CuNotifyStats): object {
         label: 'ブル率',
         delta: formatDelta(d, '%'),
         color: d > 0 ? '#4CAF50' : d < 0 ? '#E53935' : '#888888',
+      });
+    }
+    if (cu.avgRange != null && cu.prevAvgRange != null) {
+      const d = cu.avgRange - cu.prevAvgRange;
+      // レンジは小さい方が良いので色を反転
+      const rangeText =
+        formatDelta(d, 'mm') + (cu.expectedRange ? ` (Rt目安: ${cu.expectedRange}mm)` : '');
+      comparisonItems.push({
+        label: 'レンジ',
+        delta: rangeText,
+        color: d < 0 ? '#4CAF50' : d > 0 ? '#E53935' : '#888888',
       });
     }
 

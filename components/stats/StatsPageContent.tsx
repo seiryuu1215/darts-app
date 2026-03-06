@@ -33,6 +33,7 @@ const SessionCompareCard = dynamic(() => import('./SessionCompareCard'));
 const RatingSimulatorCard = dynamic(() => import('./RatingSimulatorCard'));
 const PerformanceInsightsCard = dynamic(() => import('./PerformanceInsightsCard'));
 const PracticeRecommendationsCard = dynamic(() => import('./PracticeRecommendationsCard'));
+const RangeTrendChart = dynamic(() => import('./RangeTrendChart'));
 
 interface StatsHistorySummary {
   avgRating: number | null;
@@ -384,6 +385,16 @@ export default function StatsPageContent({
       {countupPlays && countupPlays.length > 0 && (
         <StatsCardBoundary name="ミス方向分析">
           <MissDirectionCard countupPlays={countupPlays} />
+        </StatsCardBoundary>
+      )}
+
+      {/* RangeTrendChart（DL3レンジ推移） */}
+      {countupPlays && countupPlays.some((p) => p.dl3Radius > 0) && (
+        <StatsCardBoundary name="レンジ推移">
+          <RangeTrendChart
+            countupPlays={countupPlays}
+            currentPpd={enrichedData?.stats01Detailed?.avg ?? c.stats01Avg}
+          />
         </StatsCardBoundary>
       )}
 

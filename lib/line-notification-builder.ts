@@ -21,6 +21,7 @@ import { analyzeRounds, analyzeRoundBulls } from '@/lib/countup-round-analysis';
 import { compareLastTwoSessions } from '@/lib/countup-session-compare';
 import { calcRating } from '@/lib/dartslive-rating';
 import { calculateConsistency } from '@/lib/stats-math';
+import { getExpectedRange } from '@/lib/dartslive-reference';
 import { generateSessionComparisonImage } from './session-comparison-image';
 import { generateMissDirectionImage } from './miss-direction-image';
 import { uploadLineImage } from './line-image-upload';
@@ -134,6 +135,20 @@ export async function buildRoleBasedDailyNotification(
       hatTrickRate: roundBulls.hatTrickRate,
     };
 
+    // DL3有効データの平均レンジ
+    const dl3Plays = cuPlays.filter(
+      (p) => p.dl3VectorX !== 0 || p.dl3VectorY !== 0 || p.dl3Radius !== 0 || p.dl3Speed !== 0,
+    );
+    if (dl3Plays.length > 0) {
+      cuStats.avgRange =
+        Math.round((dl3Plays.reduce((s, p) => s + p.dl3Radius, 0) / dl3Plays.length) * 10) / 10;
+    }
+
+    // ベンチマークレンジ
+    if (ctx.stats.ppd != null) {
+      cuStats.expectedRange = getExpectedRange(ctx.stats.ppd);
+    }
+
     // 30G以上なら前回比較を追加（Pro/Adminは画像で比較データを送るのでスキップ）
     if (cuPlays.length >= 30 && sessionComparison && !isPro) {
       cuStats.prevAvgScore = sessionComparison.prev.avgScore;
@@ -144,6 +159,9 @@ export async function buildRoleBasedDailyNotification(
       cuStats.vectorXChange = sessionComparison.deltas.vectorX;
       cuStats.vectorYChange = sessionComparison.deltas.vectorY;
       cuStats.radiusChange = sessionComparison.deltas.radius;
+      if (sessionComparison.prev.avgRadius > 0) {
+        cuStats.prevAvgRange = sessionComparison.prev.avgRadius;
+      }
     }
 
     const cuFlex = buildCountUpFlexMessage(cuStats);

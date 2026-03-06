@@ -91,6 +91,9 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
                 <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
                   ハット率
                 </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                  レンジ
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -149,6 +152,9 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
                         ({b.hatTrickFrequency})
                       </Typography>
                     </TableCell>
+                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                      {b.avgRange}mm
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -156,7 +162,7 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
           </Table>
         </TableContainer>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          出典: DARTSLIVE公式コラム (2024)
+          出典: DARTSLIVE公式コラム (2024) / レンジデータ: dartslive.com/jp/news/127509/
         </Typography>
       </Collapse>
     </Paper>
