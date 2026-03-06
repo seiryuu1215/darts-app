@@ -1048,29 +1048,49 @@ export default function HealthPage() {
     setSyncError(null);
     setDebugLog([]);
     try {
-      addLog('1. 権限リクエスト中...');
-      const granted = await requestHealthKitPermissions();
-      addLog('1. 権限結果: ' + granted);
-      if (!granted) {
-        setSyncError('HealthKit権限が許可されませんでした');
+      // プラグイン直接呼び出し（ヘルパー関数を経由しない）
+      const { registerPlugin } = await import('@capacitor/core');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const plugin = registerPlugin<any>('HealthKitPlugin');
+
+      addLog('1. 権限リクエスト...');
+      const authResult = await plugin.requestAuthorization();
+      addLog('1. 結果: ' + JSON.stringify(authResult));
+
+      addLog('2. 今日のデータ読み取り...');
+      const metrics = await plugin.readTodayMetrics();
+      addLog('2. メトリクス: ' + JSON.stringify(metrics).substring(0, 200));
+
+      if (!metrics || !metrics.metricDate) {
+        setSyncError('HealthKitデータの取得に失敗しました');
         setSyncing(false);
         return;
       }
 
-      // まず1日だけ同期テスト
-      addLog('2. 今日のデータ取得テスト...');
-      const { syncHealthData } = await import('@/lib/capacitor/health-sync');
-      const todayResult = await syncHealthData();
-      addLog('2. 今日の同期結果: ' + JSON.stringify(todayResult));
+      addLog('3. Firestore書き込み...');
+      const { getAuth } = await import('firebase/auth');
+      const user = getAuth().currentUser;
+      addLog('3. Firebase user: ' + (user?.uid ?? 'null'));
 
-      if (todayResult.success) {
+      if (!user) {
+        // Firebase Auth未認証の場合、セットアップだけ完了にする
+        addLog('3. Firebase未認証のためデータ保存スキップ');
         markHealthKitSetupComplete();
         setSetupNeeded(false);
-        setLastSync(new Date().toLocaleString('ja-JP'));
-        addLog('3. セットアップ完了！');
-        await fetchMetrics(period);
+        addLog('4. セットアップ完了（データ保存は次回同期時）');
       } else {
-        setSyncError(todayResult.error || '同期に失敗しました');
+        const { syncHealthData: doSync } = await import('@/lib/capacitor/health-sync');
+        const result = await doSync();
+        addLog('3. 同期結果: ' + JSON.stringify(result));
+        if (result.success) {
+          markHealthKitSetupComplete();
+          setSetupNeeded(false);
+          setLastSync(new Date().toLocaleString('ja-JP'));
+          addLog('4. セットアップ完了！');
+          await fetchMetrics(period);
+        } else {
+          setSyncError(result.error || '同期に失敗しました');
+        }
       }
     } catch (err) {
       addLog('エラー: ' + (err instanceof Error ? err.message : String(err)));
