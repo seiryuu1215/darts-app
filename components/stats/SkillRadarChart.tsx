@@ -69,10 +69,21 @@ interface RadarDataItem {
   rawLabel: string;
 }
 
-function getFlightRating(flight?: string): number | null {
+/** 次フライトの最上位Rtを返す（レーダーの最大値・ベンチマーク基準） */
+const NEXT_FLIGHT_MAX_RT: Record<string, number> = {
+  N: 3, // N → C(2-3) の最上位
+  C: 5, // C → CC(4-5)
+  CC: 7, // CC → B(6-7)
+  B: 9, // B → BB(8-9)
+  BB: 11, // BB → A(10-11)
+  A: 13, // A → AA(12-13)
+  AA: 16, // AA → SA(14-18) の中間
+  SA: 18, // SA → SA最上位
+};
+
+function getNextFlightTargetRt(flight?: string): number | null {
   if (!flight) return null;
-  const bench = RATING_BENCHMARKS.find((b) => b.flight === flight);
-  return bench?.rating ?? null;
+  return NEXT_FLIGHT_MAX_RT[flight] ?? null;
 }
 
 function buildDetailedData(
@@ -80,13 +91,12 @@ function buildDetailedData(
   statsCricket: StatsCricketDetailed | null,
   flight?: string,
 ): RadarDataItem[] {
-  const rt = getFlightRating(flight);
-
-  // 次のレーティング(Rt+1)のベンチマークを最大値＆基準線として使う
-  const nextRt = rt != null ? rt + 1 : null;
-  const nextBench = nextRt != null ? RATING_BENCHMARKS.find((b) => b.rating === nextRt) : null;
-  const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
-  const nextMpr = nextRt != null ? mprForRating(nextRt) : null;
+  // 次フライトの最上位Rtをベンチマーク基準として使う
+  const targetRt = getNextFlightTargetRt(flight);
+  const targetBench =
+    targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt) : null;
+  const nextPpd = targetRt != null ? ppdForRating(targetRt) : null;
+  const nextMpr = targetRt != null ? mprForRating(targetRt) : null;
   const max01 = nextPpd ?? 80;
   const maxCri = nextMpr ?? 4.0;
 
@@ -106,13 +116,13 @@ function buildDetailedData(
     {
       axis: 'Bull率',
       value: stats01?.bullRate ?? 0,
-      benchmark: nextBench?.bullRatePerThrow,
+      benchmark: targetBench?.bullRatePerThrow,
       rawLabel: `(${formatRaw(stats01?.bullRate, '%')})`,
     },
     {
       axis: 'アレンジ率',
       value: stats01?.arrangeRate ?? 0,
-      benchmark: nextRt != null ? Math.min(100, nextRt * 3.5) : undefined,
+      benchmark: targetRt != null ? Math.min(100, targetRt * 3.5) : undefined,
       rawLabel: `(${formatRaw(stats01?.arrangeRate, '%')})`,
     },
     {
@@ -131,15 +141,15 @@ function buildDetailedData(
       axis: 'トリプル率',
       value: Math.max(0, (stats01?.bullRate ?? 0) - 25),
       benchmark:
-        nextBench?.bullRatePerThrow != null
-          ? Math.max(0, nextBench.bullRatePerThrow - 25)
+        targetBench?.bullRatePerThrow != null
+          ? Math.max(0, targetBench.bullRatePerThrow - 25)
           : undefined,
       rawLabel: `(推定${Math.max(0, (stats01?.bullRate ?? 0) - 25).toFixed(1)}% / 実${formatRaw(statsCricket?.tripleRate, '%')})`,
     },
     {
       axis: 'Open-Close',
       value: statsCricket?.openCloseRate ?? 0,
-      benchmark: nextRt != null ? Math.min(100, nextRt * 3.5) : undefined,
+      benchmark: targetRt != null ? Math.min(100, targetRt * 3.5) : undefined,
       rawLabel: `(${formatRaw(statsCricket?.openCloseRate, '%')})`,
     },
   ];
@@ -153,19 +163,18 @@ function buildSimpleData(
   noBullRate: number | null | undefined,
   flight?: string,
 ): RadarDataItem[] {
-  const rt = getFlightRating(flight);
-
-  // 次のレーティング(Rt+1)のベンチマークを最大値＆基準線として使う
-  const nextRt = rt != null ? rt + 1 : null;
-  const nextBench = nextRt != null ? RATING_BENCHMARKS.find((b) => b.rating === nextRt) : null;
-  const nextPpd = nextRt != null ? ppdForRating(nextRt) : null;
-  const nextMpr = nextRt != null ? mprForRating(nextRt) : null;
+  // 次フライトの最上位Rtをベンチマーク基準として使う
+  const targetRt = getNextFlightTargetRt(flight);
+  const targetBench =
+    targetRt != null ? RATING_BENCHMARKS.find((b) => b.rating === targetRt) : null;
+  const nextPpd = targetRt != null ? ppdForRating(targetRt) : null;
+  const nextMpr = targetRt != null ? mprForRating(targetRt) : null;
   const max01 = nextPpd ?? 80;
   const maxCri = nextMpr ?? 4.0;
   const maxCU = nextPpd != null ? nextPpd * 8 : 800;
-  const maxBull = nextBench?.bullRatePerThrow ?? 40;
-  // ノーブル率: 低い方が優秀 → max = 100(最悪値), min = nextBenchのnoBullRate(目標値)
-  const minNoBull = nextBench?.noBullRate ?? 30;
+  const maxBull = targetBench?.bullRatePerThrow ?? 40;
+  // ノーブル率: 低い方が優秀 → max = 100(最悪値), min = targetBenchのnoBullRate(目標値)
+  const minNoBull = targetBench?.noBullRate ?? 30;
 
   const br = bullRate ?? 0;
   const nbr = noBullRate ?? 0;
@@ -193,8 +202,8 @@ function buildSimpleData(
       axis: 'ブル率',
       value: normalize(br, 0, maxBull),
       benchmark:
-        nextBench?.bullRatePerThrow != null
-          ? normalize(nextBench.bullRatePerThrow, 0, maxBull)
+        targetBench?.bullRatePerThrow != null
+          ? normalize(targetBench.bullRatePerThrow, 0, maxBull)
           : undefined,
       rawLabel: bullRate != null ? `(${br.toFixed(1)}%)` : '',
     },
@@ -203,8 +212,8 @@ function buildSimpleData(
       // ノーブル率は低い方が良い → 反転正規化 (100からの距離)
       value: normalize(100 - nbr, 0, 100 - minNoBull),
       benchmark:
-        nextBench?.noBullRate != null
-          ? normalize(100 - nextBench.noBullRate, 0, 100 - minNoBull)
+        targetBench?.noBullRate != null
+          ? normalize(100 - targetBench.noBullRate, 0, 100 - minNoBull)
           : undefined,
       rawLabel: noBullRate != null ? `(${nbr.toFixed(1)}%)` : '',
     },
@@ -214,6 +223,7 @@ function buildSimpleData(
 export default function SkillRadarChart(props: SkillRadarChartProps) {
   const isSimple = props.simpleMode === true;
   const hasBenchmark = !!props.flight;
+  const targetRt = getNextFlightTargetRt(props.flight);
 
   const data: RadarDataItem[] = isSimple
     ? buildSimpleData(
@@ -312,7 +322,7 @@ export default function SkillRadarChart(props: SkillRadarChartProps) {
                       }}
                     />
                     <Typography variant="caption" color="text.secondary">
-                      {props.flight}平均
+                      Rt.{targetRt}平均
                     </Typography>
                   </Box>
                 </Box>
