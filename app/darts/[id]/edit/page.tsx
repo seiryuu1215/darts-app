@@ -35,7 +35,7 @@ export default function EditDartPage() {
           setDart(data);
         }
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setLoading(false);
       }

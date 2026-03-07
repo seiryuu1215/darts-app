@@ -397,8 +397,7 @@ export interface HealthDartsCorrelation {
   activeEnergyKcal: number | null;
   exerciseMinutes: number | null;
   rating: number | null;
-  ppd: number | null;
-  mpr: number | null;
+  countUpAvg: number | null;
   condition: number | null;
   gamesPlayed: number | null;
 }
@@ -443,7 +442,7 @@ export interface BestConditionProfile {
 }
 
 export interface PracticeTimingResult {
-  dayOfWeek: { day: string; avgCondition: number; avgPpd: number; count: number }[];
+  dayOfWeek: { day: string; avgCondition: number; avgCu: number; count: number }[];
   bestDay: string;
   worstDay: string;
 }
@@ -451,7 +450,7 @@ export interface PracticeTimingResult {
 export interface MonthlyTrendData {
   month: string;
   avgCondition: number | null;
-  avgPpd: number | null;
+  avgCu: number | null;
   avgSleep: number | null;
   avgHrv: number | null;
   count: number;

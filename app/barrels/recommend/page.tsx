@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -75,7 +75,7 @@ export default function RecommendPage() {
         })) as BarrelProduct[];
         setAllBarrels(barrels);
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -137,7 +137,7 @@ export default function RecommendPage() {
       );
       setResults(analyzed);
     } catch (err) {
-      void err;
+      console.error(err);
     } finally {
       setSearching(false);
     }

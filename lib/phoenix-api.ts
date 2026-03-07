@@ -158,8 +158,6 @@ function parseStatsHtml(html: string): PxStats {
   const className = extractValue('sc_class');
   const countUpAvg = parseNum(extractValue('sc_countup'));
 
-  console.log(`[PX-API] パース結果: rating=${rating}, ppd=${ppd}, mpr=${mpr}, class=${className}`);
-
   return { rating, ppd, mpr, className, countUpAvg };
 }
 
@@ -170,13 +168,8 @@ export async function pxSync(
   email: string,
   password: string,
 ): Promise<PxStats & { isPayed: boolean }> {
-  console.log('[PX-API] ログイン中...');
   const { token, mainCardCSeq, isPayed } = await pxLogin(email, password);
-  console.log(`[PX-API] ログイン成功 (cSeq=${mainCardCSeq}, isPayed=${isPayed})`);
-
-  console.log('[PX-API] スタッツ取得中...');
   const stats = await pxFetchStats(token, mainCardCSeq);
-  console.log('[PX-API] スタッツ取得完了');
 
   return { ...stats, isPayed };
 }

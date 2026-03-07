@@ -2,7 +2,6 @@
 
 import { Typography, Box, Chip } from '@mui/material';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
-import { SectionTitle } from './countup-deep-shared';
 
 /** 8方向の角度 (0°=上, 時計回り) */
 const DIR_ANGLES: Record<DirectionLabel, number> = {

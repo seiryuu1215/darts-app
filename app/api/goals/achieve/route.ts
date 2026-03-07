@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -234,6 +235,7 @@ export const POST = withErrorHandler(
       });
     } catch (e) {
       console.error('Goal XP award error:', e);
+      Sentry.captureException(e);
     }
 
     // 達成した目標をFirestoreから削除

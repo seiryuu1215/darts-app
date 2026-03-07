@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   validateLineSignature,
   replyLineMessage,
   getConditionLabel,
-  buildCompletionMessage,
   buildStatsFlexMessage,
   buildDailyCarouselMessage,
   buildMissDirectionFlexBubble,
@@ -14,7 +14,6 @@ import {
   buildRecommendationsFlexBubble,
   buildRoundPatternFlexBubble,
   buildTrendFlexBubble,
-  extractBubble,
   CONDITION_QUICK_REPLY,
   type TrendBubbleInput,
 } from '@/lib/line';
@@ -126,6 +125,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       console.error('Webhook event error:', err);
+      Sentry.captureException(err);
     }
   }
 
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 }
 
 /** フォローイベント: ウェルカム + コード案内 */
-async function handleFollow(event: LineEvent, lineUserId: string) {
+async function handleFollow(event: LineEvent, _lineUserId: string) {
   if (!event.replyToken) return;
   await replyLineMessage(event.replyToken, [
     {

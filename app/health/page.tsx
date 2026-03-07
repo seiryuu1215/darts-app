@@ -55,21 +55,12 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import InsightsIcon from '@mui/icons-material/Insights';
 import NightsStayIcon from '@mui/icons-material/NightsStay';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import type {
-  HealthMetric,
-  HealthInsight,
-  HealthDartsCorrelation,
-  ConditionScore,
-  BestConditionProfile,
-  PracticeTimingResult,
-  MonthlyTrendData,
-  SleepStageCorrelationResult,
-} from '@/types';
+import type { HealthMetric, HealthDartsCorrelation } from '@/types';
 import {
   generateHealthInsights,
   calculateConditionScore,
   calculatePersonalBaseline,
-  predictPpdFromCondition,
+  predictCuFromCondition,
   analyzeBestConditionProfile,
   analyzePracticeTimingPatterns,
   aggregateMonthlyHealthDarts,
@@ -77,10 +68,6 @@ import {
 } from '@/lib/health-analytics';
 import {
   isNativePlatform,
-  syncHealthData,
-  syncHealthDataRange,
-  requestHealthKitPermissions,
-  checkHealthKitAuthorization,
   isHealthKitSetupComplete,
   markHealthKitSetupComplete,
   getLastSyncDate,
@@ -358,7 +345,6 @@ function ChartTooltip({
   unit,
 }: {
   active?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: Array<{ value: number; color: string }>;
   label?: string;
   unit?: string;
@@ -874,7 +860,7 @@ function ConditionScoreSection({
     if (metrics.length === 0) return null;
     const baseline = calculatePersonalBaseline(metrics);
     const score = calculateConditionScore(metrics[0], baseline);
-    const prediction = predictPpdFromCondition(score.score, correlationData);
+    const prediction = predictCuFromCondition(score.score, correlationData);
     return { score, prediction };
   }, [metrics, correlationData]);
 
@@ -977,11 +963,11 @@ function ConditionScoreSection({
           </Typography>
         </Box>
 
-        {/* PPD予測レンジ */}
+        {/* CU平均予測レンジ */}
         {prediction && (
           <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
             <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
-              PPD予測レンジ
+              CU平均予測レンジ
             </Typography>
             <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#fafafa' }}>
               {prediction.low} — <strong>{prediction.expected}</strong> — {prediction.high}
@@ -1030,7 +1016,7 @@ function BestConditionSection({ correlationData }: { correlationData: HealthDart
           variant="caption"
           sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
         >
-          PPD上位20%時の最適レンジ（{profile.sampleSize}日分析）
+          CU平均上位20%時の最適レンジ（{profile.sampleSize}日分析）
         </Typography>
         {ranges.map((r) => (
           <Box key={r.label} sx={{ mb: 1 }}>
@@ -1083,7 +1069,7 @@ function PracticeTimingSection({ correlationData }: { correlationData: HealthDar
 
   const chartData = result.dayOfWeek.map((d) => ({
     day: d.day,
-    ppd: d.avgPpd,
+    cu: d.avgCu,
     condition: d.avgCondition,
   }));
 
@@ -1108,7 +1094,7 @@ function PracticeTimingSection({ correlationData }: { correlationData: HealthDar
           variant="caption"
           sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
         >
-          曜日別平均PPD
+          曜日別CU平均スコア
         </Typography>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={chartData}>
@@ -1126,7 +1112,7 @@ function PracticeTimingSection({ correlationData }: { correlationData: HealthDar
               width={30}
             />
             <Tooltip content={<ChartTooltip unit="" />} />
-            <Bar dataKey="ppd" radius={[4, 4, 0, 0]} maxBarSize={28}>
+            <Bar dataKey="cu" radius={[4, 4, 0, 0]} maxBarSize={28}>
               {chartData.map((entry, i) => (
                 <Cell
                   key={i}
@@ -1165,7 +1151,7 @@ function MonthlyTrendSection({ correlationData }: { correlationData: HealthDarts
 
   const chartData = trendData.map((d) => ({
     month: d.month.slice(5), // MM
-    ppd: d.avgPpd,
+    cu: d.avgCu,
     condition: d.avgCondition,
   }));
 
@@ -1190,7 +1176,7 @@ function MonthlyTrendSection({ correlationData }: { correlationData: HealthDarts
           variant="caption"
           sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
         >
-          コンディション vs PPD (月別)
+          コンディション vs CU平均 (月別)
         </Typography>
         <ResponsiveContainer width="100%" height={160}>
           <ComposedChart data={chartData}>
@@ -1230,8 +1216,8 @@ function MonthlyTrendSection({ correlationData }: { correlationData: HealthDarts
             <Line
               yAxisId="right"
               type="monotone"
-              dataKey="ppd"
-              name="PPD"
+              dataKey="cu"
+              name="CU平均"
               stroke="#22c55e"
               strokeWidth={2}
               dot={{ r: 3 }}
@@ -1263,18 +1249,18 @@ function SleepStageCorrelationSection({
     { label: 'コア睡眠', r: result.coreSleepR, pct: result.coreSleepPct, color: '#7c3aed' },
   ];
 
-  // 散布図データ（深い睡眠% vs PPD）
+  // 散布図データ（深い睡眠% vs CU平均）
   const scatterData = correlationData
     .filter(
       (d) =>
-        d.ppd !== null &&
+        d.countUpAvg !== null &&
         d.sleepDurationMinutes !== null &&
         d.sleepDurationMinutes > 0 &&
         d.sleepDeepMinutes !== null,
     )
     .map((d) => ({
       x: Math.round(((d.sleepDeepMinutes ?? 0) / d.sleepDurationMinutes!) * 100),
-      y: d.ppd,
+      y: d.countUpAvg,
     }));
 
   return (
@@ -1282,7 +1268,7 @@ function SleepStageCorrelationSection({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
         <NightsStayIcon sx={{ fontSize: 16, color: '#6d28d9' }} />
         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          睡眠ステージ × PPD
+          睡眠ステージ × CU平均
         </Typography>
       </Box>
 
@@ -1298,7 +1284,7 @@ function SleepStageCorrelationSection({
           variant="caption"
           sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
         >
-          睡眠ステージ別 PPD相関 ({result.n}日分析)
+          睡眠ステージ別 CU平均相関 ({result.n}日分析)
         </Typography>
 
         {stages.map((s) => (
@@ -1350,7 +1336,7 @@ function SleepStageCorrelationSection({
               variant="caption"
               sx={{ fontSize: 10, color: '#71717a', display: 'block', mb: 0.5 }}
             >
-              深い睡眠% × PPD
+              深い睡眠% × CU平均
             </Typography>
             <ResponsiveContainer width="100%" height={120}>
               <ScatterChart>
@@ -1364,7 +1350,7 @@ function SleepStageCorrelationSection({
                 />
                 <YAxis
                   dataKey="y"
-                  name="PPD"
+                  name="CU平均"
                   tick={{ fontSize: 9, fill: '#71717a' }}
                   axisLine={false}
                   tickLine={false}

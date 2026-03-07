@@ -87,7 +87,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       const snapshot = await getDocs(q);
       setComments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Comment[]);
     } catch (err) {
-      void err;
+      console.error(err);
     }
   }, [dartId]);
 
@@ -102,7 +102,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           .filter((m) => (m as Memo).userId === session.user.id) as Memo[],
       );
     } catch (err) {
-      void err;
+      console.error(err);
     }
   }, [dartId, session, isOwner]);
 
@@ -259,7 +259,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       setIsActiveDart(true);
       setHistoryDialogOpen(false);
     } catch (err) {
-      void err;
+      console.error(err);
     } finally {
       setHistoryLoading(false);
     }
@@ -287,7 +287,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       await deleteDoc(doc(db, 'darts', dartId));
       router.push('/');
     } catch (err) {
-      void err;
+      console.error(err);
     }
   };
 

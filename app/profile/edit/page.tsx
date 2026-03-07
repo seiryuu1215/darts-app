@@ -83,8 +83,8 @@ export default function ProfileEditPage() {
             setLineNotifyEnabled(data.lineNotifyEnabled || false);
             setHasDlCredentials(!!data.dlCredentialsEncrypted);
           }
-        } catch (err) {
-          void err;
+        } catch {
+          // ignore fetch error
         } finally {
           setLoading(false);
         }
@@ -108,7 +108,7 @@ export default function ProfileEditPage() {
       const url = await getDownloadURL(storageRef);
       setAvatarUrl(url);
       setError('');
-    } catch (err) {
+    } catch {
       setError('画像のアップロードに失敗しました');
     }
   };
@@ -134,7 +134,7 @@ export default function ProfileEditPage() {
         updatedAt: serverTimestamp(),
       });
       setSuccess('プロフィールを更新しました');
-    } catch (err) {
+    } catch {
       setError('更新に失敗しました');
     } finally {
       setSaving(false);

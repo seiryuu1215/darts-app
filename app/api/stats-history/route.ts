@@ -59,6 +59,31 @@ export const GET = withErrorHandler(
       }
     }
 
+    // カウントアップ日別平均を算出
+    const countupDoc = await adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get();
+    const countUpDailyAvg = new Map<string, number>();
+    if (countupDoc.exists) {
+      try {
+        const plays: { time: string; score: number }[] = JSON.parse(
+          countupDoc.data()?.data ?? '[]',
+        );
+        const byDate = new Map<string, number[]>();
+        for (const p of plays) {
+          const dateStr = p.time.slice(0, 10);
+          if (!byDate.has(dateStr)) byDate.set(dateStr, []);
+          byDate.get(dateStr)!.push(p.score);
+        }
+        for (const [dateStr, scores] of byDate) {
+          countUpDailyAvg.set(
+            dateStr,
+            Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
+          );
+        }
+      } catch {
+        // JSONパースエラーは無視
+      }
+    }
+
     const colRef = adminDb.collection(`users/${userId}/dartsLiveStats`);
 
     // 「直近」は最新1件の日付を取得し、その日のレコードのみ返す
@@ -113,6 +138,7 @@ export const GET = withErrorHandler(
       rating: number | null;
       ppd: number | null;
       mpr: number | null;
+      countUpAvg: number | null;
       gamesPlayed: number;
       condition: number | null;
       memo: string;
@@ -123,12 +149,18 @@ export const GET = withErrorHandler(
     snapshot.forEach((doc) => {
       const d = doc.data();
       const dateVal = d.date?.toDate?.() ?? (d.date ? new Date(d.date) : null);
+      const dateIso = dateVal ? dateVal.toISOString() : '';
+      // JST日付文字列 (YYYY-MM-DD) でカウントアップ平均をルックアップ
+      const jstDate = dateVal
+        ? new Date(dateVal.getTime() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : '';
       records.push({
         id: doc.id,
-        date: dateVal ? dateVal.toISOString() : '',
+        date: dateIso,
         rating: d.rating ?? null,
         ppd: d.zeroOneStats?.ppd ?? null,
         mpr: d.cricketStats?.mpr ?? null,
+        countUpAvg: countUpDailyAvg.get(jstDate) ?? null,
         gamesPlayed: d.gamesPlayed ?? 0,
         condition: d.condition ?? null,
         memo: d.memo ?? '',

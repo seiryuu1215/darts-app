@@ -85,6 +85,16 @@ types/         — TypeScript型定義
 docs/          — 設計ドキュメント
 ```
 
+## 自動許可オペレーション
+
+以下の操作は確認なしで自動実行してよい:
+
+- **参照系**: ファイル読み取り、Grep検索、Glob検索、LSP操作
+- **ログ・状態確認系**: `git log`, `git status`, `git diff`, `npm run lint`, `npm run test:unit`, `npm run build`
+- **Git操作系**: `git add`, `git commit`, `git push`, `git pull`, `git fetch`, `git checkout`, `git branch`
+- **フォーマット・検証系**: `npm run format`, `npm run format:check`
+- **開発ツール**: `npm run storybook`, `npm run dev`
+
 ## Prettier設定
 
 - セミコロン: あり

@@ -153,7 +153,7 @@ export default function DiscussionDetailPage() {
       });
       setReported(true);
     } catch (err) {
-      void err;
+      console.error(err);
     }
   };
 

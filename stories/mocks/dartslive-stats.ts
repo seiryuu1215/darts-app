@@ -64,6 +64,7 @@ export interface StatsHistoryRecord {
   rating: number | null;
   ppd: number | null;
   mpr: number | null;
+  countUpAvg: number | null;
   gamesPlayed: number;
   condition: number | null;
   memo: string;
@@ -206,6 +207,7 @@ function generateRecords(): StatsHistoryRecord[] {
       rating: +baseRt.toFixed(2),
       ppd: +basePpd.toFixed(2),
       mpr: +baseMpr.toFixed(2),
+      countUpAvg: +(500 + Math.random() * 200).toFixed(1),
       gamesPlayed: Math.floor(4 + Math.random() * 8),
       condition: Math.floor(2 + Math.random() * 4),
       memo: i === 0 ? '調子良かった' : '',

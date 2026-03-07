@@ -31,7 +31,7 @@ export default function AboutPage() {
           setArticle({ id: doc.id, ...doc.data() } as Article);
         }
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setLoading(false);
       }

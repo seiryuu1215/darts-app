@@ -180,8 +180,6 @@ export default function ReferencePage() {
   const [tabIndex, setTabIndex] = useState(0);
   const current = shaftData[tabIndex];
 
-  const products = [...new Set(current.entries.map((e) => e.product))];
-
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 1 }}>

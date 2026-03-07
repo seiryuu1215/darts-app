@@ -108,80 +108,20 @@ export const GET = withErrorHandler(
         endDate: (d.endDate?.toDate?.() ?? null) as Date | null,
         achievedAt: (d.achievedAt?.toDate?.() ?? null) as Date | null,
         xpAwarded: (d.xpAwarded ?? false) as boolean,
-        carryOver: (d.carryOver ?? false) as boolean,
         baseline: (d.baseline ?? null) as number | null,
       };
     });
 
-    // 期限切れ未達成monthly目標の自動引き継ぎ
+    // 期限切れ未達成目標の自動削除（daily / monthly / yearly 共通）
     const now = new Date();
     for (const goal of rawGoals) {
-      if (
-        goal.period === 'monthly' &&
-        !goal.achievedAt &&
-        goal.endDate &&
-        goal.endDate.getTime() < now.getTime()
-      ) {
-        const { startDate: newStart, endDate: newEnd } = getMonthlyRange();
-        const alreadyCarried = rawGoals.some(
-          (g) =>
-            g.type === goal.type &&
-            g.startDate &&
-            g.startDate.getTime() >= newStart.getTime() &&
-            g.endDate &&
-            g.endDate.getTime() <= newEnd.getTime() + 24 * 60 * 60 * 1000,
-        );
-
-        if (!alreadyCarried) {
-          const newGoalRef = await adminDb.collection(`users/${userId}/goals`).add({
-            type: goal.type,
-            period: goal.period,
-            target: goal.target,
-            current: 0,
-            startDate: Timestamp.fromDate(newStart),
-            endDate: Timestamp.fromDate(newEnd),
-            achievedAt: null,
-            xpAwarded: false,
-            carryOver: true,
-            createdAt: FieldValue.serverTimestamp(),
-          });
-
-          rawGoals.push({
-            id: newGoalRef.id,
-            type: goal.type,
-            period: goal.period,
-            target: goal.target,
-            startDate: newStart,
-            endDate: newEnd,
-            achievedAt: null,
-            xpAwarded: false,
-            carryOver: true,
-            baseline: null,
-          });
-        }
-      }
-    }
-
-    // 期限切れdaily目標の自動削除（引き継ぎなし）
-    for (const goal of rawGoals) {
-      if (
-        goal.period === 'daily' &&
-        !goal.achievedAt &&
-        goal.endDate &&
-        goal.endDate.getTime() < now.getTime()
-      ) {
+      if (!goal.achievedAt && goal.endDate && goal.endDate.getTime() < now.getTime()) {
         await adminDb.doc(`users/${userId}/goals/${goal.id}`).delete();
       }
     }
-    // 削除済みdailyを除外
+    // 削除済みを除外
     const activeRawGoals = rawGoals.filter(
-      (g) =>
-        !(
-          g.period === 'daily' &&
-          !g.achievedAt &&
-          g.endDate &&
-          g.endDate.getTime() < now.getTime()
-        ),
+      (g) => !(!g.achievedAt && g.endDate && g.endDate.getTime() < now.getTime()),
     );
 
     // 全目標の期間をカバーする最小日付を求める
@@ -255,7 +195,6 @@ export const GET = withErrorHandler(
       endDate: string;
       achievedAt: string | null;
       xpAwarded: boolean;
-      carryOver: boolean;
       achievable: boolean;
     }[] = [];
 
@@ -393,7 +332,6 @@ export const GET = withErrorHandler(
         endDate: goal.endDate?.toISOString() ?? '',
         achievedAt: null,
         xpAwarded: goal.xpAwarded,
-        carryOver: goal.carryOver,
         achievable,
       });
     }
@@ -523,7 +461,6 @@ export const POST = withErrorHandler(
       endDate: Timestamp.fromDate(new Date(endDate)),
       achievedAt: null,
       xpAwarded: false,
-      carryOver: false,
       ...(baseline !== null ? { baseline } : {}),
       createdAt: FieldValue.serverTimestamp(),
     });

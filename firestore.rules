@@ -115,6 +115,11 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // focusPoints（練習の意識ポイント）
+      match /focusPoints/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
     }
 
     // ──────────────────────────────

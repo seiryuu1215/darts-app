@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { Container, Typography, Button, Paper, Box } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
@@ -13,6 +14,7 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('Unhandled error:', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

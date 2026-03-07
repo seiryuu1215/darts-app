@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -70,6 +71,7 @@ export const POST = withErrorHandler(
       });
     } catch (e) {
       console.error('n01 import XP error:', e);
+      Sentry.captureException(e);
     }
 
     return NextResponse.json({

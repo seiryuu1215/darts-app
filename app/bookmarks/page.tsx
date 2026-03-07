@@ -71,7 +71,7 @@ export default function BookmarksPage() {
         }
         setDartBookmarks(darts);
       } catch (err) {
-        void err;
+        console.error(err);
         setFetchError(true);
       } finally {
         setLoading(false);

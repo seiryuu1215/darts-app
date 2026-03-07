@@ -274,13 +274,6 @@ export async function dlApiFetchBundle(authKey: string, toId: string): Promise<D
     parseNum(rawUser.RATING_FULL) ??
     parseNum(rawUser.Rt);
   const ratingValue = ratingRef ?? ratingRaw;
-  if (ratingRaw != null && ratingRef == null && Number.isInteger(ratingRaw)) {
-    console.log(
-      `[DL-API] RATING=${ratingRaw} (整数のみ, 小数フィールド未検出). USER_DATA keys:`,
-      Object.keys(rawUser).join(', '),
-    );
-  }
-
   const userData: DlApiUserData = {
     rating: ratingValue,
     maxRating: parseNum(rawUser.MAX_RATING),
@@ -427,16 +420,9 @@ export async function dlApiFetchDailyHistory(
 
     // ldt ページネーション: 最後の DATE を次のリクエストに
     const lastDate = String(rawList[rawList.length - 1].DATE ?? '');
-    console.log(
-      `[DL-API] dailyHistory page ${page}: ${rawList.length}件, lastDate=${lastDate}, total=${all.length}`,
-    );
     if (!lastDate || rawList.length < 300) break;
     ldt = lastDate.replace(' ', '_');
   }
-
-  console.log(
-    `[DL-API] dailyHistory完了: ${all.length}件 (最古=${all[0]?.date}, 最新=${all[all.length - 1]?.date})`,
-  );
 
   return all;
 }
@@ -517,17 +503,9 @@ export async function dlApiFetchPlayHistory(
     if (!lastTime) break;
     ldt = lastTime.replace(' ', '_');
 
-    console.log(
-      `[DL-API] playHistory page ${page}: ${rawList.length}件, ldt=${ldt}, total=${all.length}`,
-    );
-
     // 空ページで終了
     if (rawList.length < 100) break;
   }
-
-  console.log(
-    `[DL-API] playHistory完了: ${all.length}件 (最古=${all[0]?.date}, 最新=${all[all.length - 1]?.date})`,
-  );
 
   return all;
 }

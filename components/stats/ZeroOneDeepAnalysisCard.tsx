@@ -16,11 +16,7 @@ import { calc01Rating, calcCriRating, ppdForRating } from '@/lib/dartslive-ratin
 import { getPercentile, getPercentileColor } from '@/lib/dartslive-percentile';
 import { COLOR_01 } from '@/lib/dartslive-colors';
 import { getFlightColor } from '@/lib/dartslive-colors';
-import {
-  analyzeDartout,
-  classifyFinishRange,
-  analyzeDoublePreference,
-} from '@/lib/dartout-analysis';
+import { analyzeDartout, analyzeDoublePreference } from '@/lib/dartout-analysis';
 import { useChartTheme } from '@/lib/chart-theme';
 
 interface Stats01Detailed {
@@ -90,10 +86,6 @@ export default function ZeroOneDeepAnalysisCard({
 
   const dartoutAnalysis = useMemo(
     () => (dartoutList && dartoutList.length > 0 ? analyzeDartout(dartoutList) : null),
-    [dartoutList],
-  );
-  const finishRanges = useMemo(
-    () => (dartoutList && dartoutList.length > 0 ? classifyFinishRange(dartoutList) : []),
     [dartoutList],
   );
   const topFinishes = useMemo(

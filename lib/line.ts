@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 import type { MissDirectionResult } from './stats-math';
 import type { HeatmapData } from './heatmap-data';
 import { getSegmentLabel } from './heatmap-data';
@@ -44,6 +45,7 @@ export async function sendLinePushMessage(
     console.error(
       `[LINE Push] 送信失敗 (${res.status}): ${errBody.slice(0, 300)}, payload=${(payload.length / 1024).toFixed(1)}KB`,
     );
+    Sentry.captureException(new Error(`LINE Push送信失敗 (${res.status})`));
   }
   return res.ok;
 }
@@ -64,6 +66,7 @@ export async function replyLineMessage(replyToken: string, messages: object[]): 
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
     console.error(`[LINE Reply] 送信失敗 (${res.status}): ${errBody.slice(0, 300)}`);
+    Sentry.captureException(new Error(`LINE Reply送信失敗 (${res.status})`));
   }
 }
 

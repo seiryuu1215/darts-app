@@ -28,6 +28,7 @@ export interface StatsHistoryRecord {
   rating: number | null;
   ppd: number | null;
   mpr: number | null;
+  countUpAvg: number | null;
   gamesPlayed: number;
   condition: number | null;
   memo: string;

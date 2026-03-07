@@ -60,7 +60,7 @@ const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: Barr
       }
       setLocalOverride(!bookmarked);
     } catch (err) {
-      void err;
+      console.error(err);
     }
   };
 

@@ -1,4 +1,5 @@
 import webpush from 'web-push';
+import * as Sentry from '@sentry/nextjs';
 import { adminDb } from '@/lib/firebase-admin';
 
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
@@ -56,6 +57,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         await doc.ref.delete();
       } else {
         console.error(`Push送信失敗 (user=${userId}, sub=${doc.id}):`, error);
+        Sentry.captureException(error);
       }
     }
   }

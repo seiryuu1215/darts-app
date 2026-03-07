@@ -57,7 +57,7 @@ function CompareContent() {
         })) as Dart[];
         setDarts(all);
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setLoading(false);
       }

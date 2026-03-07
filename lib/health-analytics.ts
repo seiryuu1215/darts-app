@@ -226,7 +226,7 @@ export function generateHealthInsights(metrics: HealthMetric[]): HealthInsight[]
 interface DartsHealthCorrelationResult {
   metric: string;
   metricLabel: string;
-  dartsMetric: 'ppd' | 'mpr';
+  dartsMetric: 'countUpAvg';
   dartsLabel: string;
   r: number;
   n: number;
@@ -282,8 +282,8 @@ export function analyzeDartsHealthCorrelations(
   const results: DartsHealthCorrelationResult[] = [];
 
   for (const pair of HEALTH_DARTS_PAIRS) {
-    for (const dartsMetric of ['ppd', 'mpr'] as const) {
-      const dartsLabel = dartsMetric === 'ppd' ? 'PPD' : 'MPR';
+    for (const dartsMetric of ['countUpAvg'] as const) {
+      const dartsLabel = 'CU平均';
 
       // 有効なデータのみフィルタ
       const valid = data.filter((d) => d[pair.metric] !== null && d[dartsMetric] !== null);
@@ -461,24 +461,24 @@ export function calculateConditionScore(
 }
 
 // ==========================================
-// コンディション → PPD予測レンジ
+// コンディション → CU平均予測レンジ
 // ==========================================
-export function predictPpdFromCondition(
+export function predictCuFromCondition(
   score: number,
   correlationData: HealthDartsCorrelation[],
 ): { low: number; expected: number; high: number } | null {
-  const valid = correlationData.filter((d) => d.ppd !== null && d.condition !== null);
+  const valid = correlationData.filter((d) => d.countUpAvg !== null && d.condition !== null);
   if (valid.length < 5) return null;
 
-  const ppds = valid.map((d) => d.ppd!);
-  const avgPpd = ppds.reduce((a, b) => a + b, 0) / ppds.length;
-  const stdPpd = Math.sqrt(ppds.reduce((s, v) => s + (v - avgPpd) ** 2, 0) / ppds.length);
+  const cuAvgs = valid.map((d) => d.countUpAvg!);
+  const avg = cuAvgs.reduce((a, b) => a + b, 0) / cuAvgs.length;
+  const std = Math.sqrt(cuAvgs.reduce((s, v) => s + (v - avg) ** 2, 0) / cuAvgs.length);
 
   // スコアベースの倍率
   const factor = (score - 50) / 100; // -0.5 to +0.5
-  const expected = Math.round((avgPpd + avgPpd * factor * 0.15) * 10) / 10;
-  const low = Math.round((expected - stdPpd * 0.8) * 10) / 10;
-  const high = Math.round((expected + stdPpd * 0.8) * 10) / 10;
+  const expected = Math.round((avg + avg * factor * 0.15) * 10) / 10;
+  const low = Math.round((expected - std * 0.8) * 10) / 10;
+  const high = Math.round((expected + std * 0.8) * 10) / 10;
 
   return { low, expected, high };
 }
@@ -537,18 +537,18 @@ export function checkFatigueAlert(
 
 // ==========================================
 // ベストコンディション分析
-// PPD上位20%時のヘルスメトリクス範囲を算出
+// CU平均上位20%時のヘルスメトリクス範囲を算出
 // ==========================================
 export function analyzeBestConditionProfile(
   data: HealthDartsCorrelation[],
 ): BestConditionProfile | null {
   const valid = data.filter(
-    (d) => d.ppd !== null && d.hrvSdnn !== null && d.sleepDurationMinutes !== null,
+    (d) => d.countUpAvg !== null && d.hrvSdnn !== null && d.sleepDurationMinutes !== null,
   );
   if (valid.length < 10) return null;
 
-  // PPDで降順ソート → 上位20%
-  const sorted = [...valid].sort((a, b) => (b.ppd ?? 0) - (a.ppd ?? 0));
+  // CU平均で降順ソート → 上位20%
+  const sorted = [...valid].sort((a, b) => (b.countUpAvg ?? 0) - (a.countUpAvg ?? 0));
   const topN = Math.max(3, Math.floor(sorted.length * 0.2));
   const top = sorted.slice(0, topN);
 
@@ -584,35 +584,37 @@ export function analyzePracticeTimingPatterns(
 ): PracticeTimingResult | null {
   if (data.length < 7) return null;
 
-  const byDay: Record<number, { conditions: number[]; ppds: number[] }> = {};
-  for (let i = 0; i < 7; i++) byDay[i] = { conditions: [], ppds: [] };
+  const byDay: Record<number, { conditions: number[]; cuAvgs: number[] }> = {};
+  for (let i = 0; i < 7; i++) byDay[i] = { conditions: [], cuAvgs: [] };
 
   for (const d of data) {
     const dow = new Date(d.date + 'T00:00:00').getDay();
     if (d.condition !== null) byDay[dow].conditions.push(d.condition);
-    if (d.ppd !== null) byDay[dow].ppds.push(d.ppd);
+    if (d.countUpAvg !== null) byDay[dow].cuAvgs.push(d.countUpAvg);
   }
 
   const dayOfWeek = DAY_NAMES.map((name, i) => {
     const conds = byDay[i].conditions;
-    const ppds = byDay[i].ppds;
+    const cuAvgs = byDay[i].cuAvgs;
     return {
       day: name,
       avgCondition:
         conds.length > 0
           ? Math.round((conds.reduce((a, b) => a + b, 0) / conds.length) * 10) / 10
           : 0,
-      avgPpd:
-        ppds.length > 0 ? Math.round((ppds.reduce((a, b) => a + b, 0) / ppds.length) * 10) / 10 : 0,
-      count: ppds.length,
+      avgCu:
+        cuAvgs.length > 0
+          ? Math.round((cuAvgs.reduce((a, b) => a + b, 0) / cuAvgs.length) * 10) / 10
+          : 0,
+      count: cuAvgs.length,
     };
   });
 
   const withData = dayOfWeek.filter((d) => d.count > 0);
   if (withData.length === 0) return null;
 
-  const bestDay = withData.reduce((a, b) => (b.avgPpd > a.avgPpd ? b : a)).day;
-  const worstDay = withData.reduce((a, b) => (b.avgPpd < a.avgPpd ? b : a)).day;
+  const bestDay = withData.reduce((a, b) => (b.avgCu > a.avgCu ? b : a)).day;
+  const worstDay = withData.reduce((a, b) => (b.avgCu < a.avgCu ? b : a)).day;
 
   return { dayOfWeek, bestDay, worstDay };
 }
@@ -625,13 +627,13 @@ export function aggregateMonthlyHealthDarts(data: HealthDartsCorrelation[]): Mon
 
   const byMonth: Record<
     string,
-    { ppds: number[]; sleeps: number[]; hrvs: number[]; conditions: number[] }
+    { cuAvgs: number[]; sleeps: number[]; hrvs: number[]; conditions: number[] }
   > = {};
 
   for (const d of data) {
     const month = d.date.slice(0, 7); // YYYY-MM
-    if (!byMonth[month]) byMonth[month] = { ppds: [], sleeps: [], hrvs: [], conditions: [] };
-    if (d.ppd !== null) byMonth[month].ppds.push(d.ppd);
+    if (!byMonth[month]) byMonth[month] = { cuAvgs: [], sleeps: [], hrvs: [], conditions: [] };
+    if (d.countUpAvg !== null) byMonth[month].cuAvgs.push(d.countUpAvg);
     if (d.sleepDurationMinutes !== null) byMonth[month].sleeps.push(d.sleepDurationMinutes / 60);
     if (d.hrvSdnn !== null) byMonth[month].hrvs.push(d.hrvSdnn);
     if (d.condition !== null) byMonth[month].conditions.push(d.condition);
@@ -645,10 +647,10 @@ export function aggregateMonthlyHealthDarts(data: HealthDartsCorrelation[]): Mon
     .map(([month, vals]) => ({
       month,
       avgCondition: avg(vals.conditions),
-      avgPpd: avg(vals.ppds),
+      avgCu: avg(vals.cuAvgs),
       avgSleep: avg(vals.sleeps),
       avgHrv: avg(vals.hrvs),
-      count: vals.ppds.length,
+      count: vals.cuAvgs.length,
     }));
 }
 
@@ -660,14 +662,14 @@ export function analyzeSleepStageCorrelations(
 ): SleepStageCorrelationResult | null {
   const valid = data.filter(
     (d) =>
-      d.ppd !== null &&
+      d.countUpAvg !== null &&
       d.sleepDurationMinutes !== null &&
       d.sleepDurationMinutes > 0 &&
       d.sleepDeepMinutes !== null,
   );
   if (valid.length < 5) return null;
 
-  const ppds = valid.map((d) => d.ppd!);
+  const cuAvgs = valid.map((d) => d.countUpAvg!);
   const deepPcts = valid.map((d) => ((d.sleepDeepMinutes ?? 0) / d.sleepDurationMinutes!) * 100);
   const remPcts = valid.map((d) => ((d.sleepRemMinutes ?? 0) / d.sleepDurationMinutes!) * 100);
   const corePcts = valid.map((d) => ((d.sleepCoreMinutes ?? 0) / d.sleepDurationMinutes!) * 100);
@@ -676,9 +678,9 @@ export function analyzeSleepStageCorrelations(
     arr.length > 0 ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : 0;
 
   return {
-    deepSleepR: Math.round(pearsonCorrelation(deepPcts, ppds) * 100) / 100,
-    remSleepR: Math.round(pearsonCorrelation(remPcts, ppds) * 100) / 100,
-    coreSleepR: Math.round(pearsonCorrelation(corePcts, ppds) * 100) / 100,
+    deepSleepR: Math.round(pearsonCorrelation(deepPcts, cuAvgs) * 100) / 100,
+    remSleepR: Math.round(pearsonCorrelation(remPcts, cuAvgs) * 100) / 100,
+    coreSleepR: Math.round(pearsonCorrelation(corePcts, cuAvgs) * 100) / 100,
     deepSleepPct: avgPct(deepPcts),
     remSleepPct: avgPct(remPcts),
     coreSleepPct: avgPct(corePcts),

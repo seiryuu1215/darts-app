@@ -100,7 +100,7 @@ export default function BarrelsPage() {
         })) as BarrelProduct[];
         setBarrels(data);
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -149,7 +149,7 @@ export default function BarrelsPage() {
         const snapshot = await getDocs(q);
         setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setRecommendLoading(false);
       }

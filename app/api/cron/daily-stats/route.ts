@@ -4,20 +4,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { decrypt } from '@/lib/crypto';
 import {
   sendLinePushMessage,
-  buildStatsFlexMessage,
   buildAchievementFlexMessage,
   buildWeeklyReportFlexMessage,
   buildMonthlyReportFlexMessage,
-  buildCountUpFlexMessage,
   buildDailyCarouselMessage,
   CONDITION_QUICK_REPLY,
 } from '@/lib/line';
-import type { CuNotifyStats } from '@/lib/line';
-import {
-  compareLastTwoSessions,
-  summarizeSession,
-  extractQualifiedSessions,
-} from '@/lib/countup-session-compare';
 import {
   buildRoleBasedDailyNotification,
   type DailyNotificationContext,
@@ -32,12 +24,7 @@ import {
   type AchievementSnapshot,
 } from '@/lib/progression/xp-engine';
 import { ACHIEVEMENT_MAP } from '@/lib/progression/achievements';
-import {
-  calculateGoalCurrent,
-  calculateScaledGoalXp,
-  getDailyRange,
-  type StatsRecord,
-} from '@/lib/goals';
+import { calculateGoalCurrent, calculateScaledGoalXp, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
 import {
   launchBrowser,
@@ -50,11 +37,7 @@ import {
 } from '@/lib/dartslive-scraper';
 import { dlApiFullSync, dlApiDiffSync, mapApiToScrapedStats } from '@/lib/dartslive-api';
 import { sendPushToUser } from '@/lib/push-notifications';
-import {
-  calculateConditionScore,
-  calculatePersonalBaseline,
-  checkFatigueAlert,
-} from '@/lib/health-analytics';
+import { calculatePersonalBaseline, checkFatigueAlert } from '@/lib/health-analytics';
 import { buildFatigueAlertMessage } from '@/lib/line';
 import type { HealthMetric } from '@/types';
 
@@ -194,16 +177,6 @@ export async function GET(request: NextRequest) {
               prevData.rating !== stats.rating ||
               prevData.stats01Avg !== stats.stats01Avg ||
               prevData.statsCriAvg !== stats.statsCriAvg;
-
-            // ゲーム数合計を算出 (dartsLiveStatsのgamesPlayed合計)
-            const gamesSnap = await adminDb
-              .collection(`users/${userId}/dartsLiveStats`)
-              .select('gamesPlayed')
-              .get();
-            const totalGames = gamesSnap.docs.reduce(
-              (sum, d) => sum + (d.data().gamesPlayed ?? 0),
-              0,
-            );
 
             // 連続プレイ日数（streak）計算
             const todayJST = new Date();
@@ -530,8 +503,6 @@ export async function GET(request: NextRequest) {
             // XP自動付与: 前回/今回スタッツ差分からXPを算出
             try {
               // 累計プレイ日数 = dartsLiveStats のドキュメント数
-              const totalPlayDays = gamesSnap.size;
-
               const prevSnapshot: CronStatsSnapshot = {
                 rating: prevData?.rating ?? null,
                 hatTricks: prevData?.hatTricks ?? 0,

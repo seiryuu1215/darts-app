@@ -11,9 +11,10 @@ export const GET = withErrorHandler(
     // JST日付でのFirestore Timestamp比較用
     const sinceDate = new Date(sinceStr + 'T00:00:00+09:00');
 
-    const [healthSnap, statsSnap] = await Promise.all([
+    const [healthSnap, statsSnap, countupDoc] = await Promise.all([
       adminDb.collection(`users/${userId}/healthMetrics`).where('metricDate', '>=', sinceStr).get(),
       adminDb.collection(`users/${userId}/dartsLiveStats`).where('date', '>=', sinceDate).get(),
+      adminDb.doc(`users/${userId}/dartsliveApiCache/countupPlays`).get(),
     ]);
 
     // ヘルスデータをdate文字列でMap化
@@ -38,11 +39,40 @@ export const GET = withErrorHandler(
       }
     }
 
-    // 両方にデータがある日のみマージ
+    // カウントアップ日別平均を算出
+    const countUpDailyAvg = new Map<string, number>();
+    if (countupDoc.exists) {
+      try {
+        const plays: { time: string; score: number }[] = JSON.parse(
+          countupDoc.data()?.data ?? '[]',
+        );
+        const byDate = new Map<string, number[]>();
+        for (const p of plays) {
+          // time例: "2025-01-15 20:30" → JST日付として扱う
+          const dateStr = p.time.slice(0, 10);
+          if (dateStr < sinceStr) continue;
+          if (!byDate.has(dateStr)) byDate.set(dateStr, []);
+          byDate.get(dateStr)!.push(p.score);
+        }
+        for (const [dateStr, scores] of byDate) {
+          countUpDailyAvg.set(
+            dateStr,
+            Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
+          );
+        }
+      } catch {
+        // JSONパースエラーは無視
+      }
+    }
+
+    // ヘルスデータ + (ダーツスタッツ or カウントアップ)がある日のみマージ
     const correlations: HealthDartsCorrelation[] = [];
     for (const [dateStr, health] of healthMap) {
       const stats = statsMap.get(dateStr);
-      if (!stats) continue;
+      const cuAvg = countUpDailyAvg.get(dateStr) ?? null;
+
+      // ダーツスタッツもカウントアップもない日はスキップ
+      if (!stats && cuAvg === null) continue;
 
       correlations.push({
         date: dateStr,
@@ -55,11 +85,10 @@ export const GET = withErrorHandler(
         steps: health.steps ?? null,
         activeEnergyKcal: health.activeEnergyKcal ?? null,
         exerciseMinutes: health.exerciseMinutes ?? null,
-        rating: stats.rating ?? null,
-        ppd: stats.zeroOneStats?.ppd ?? null,
-        mpr: stats.cricketStats?.mpr ?? null,
-        condition: stats.condition ?? null,
-        gamesPlayed: stats.gamesPlayed ?? null,
+        rating: stats?.rating ?? null,
+        countUpAvg: cuAvg,
+        condition: stats?.condition ?? null,
+        gamesPlayed: stats?.gamesPlayed ?? null,
       });
     }
 

@@ -92,7 +92,7 @@ function DartsListContent() {
         setLastDoc(snapshot.docs[snapshot.docs.length - 1] ?? null);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        void err;
+        console.error(err);
         setFetchError(message);
       } finally {
         setLoading(false);
@@ -131,7 +131,7 @@ function DartsListContent() {
       setHasMore(snapshot.docs.length === PAGE_SIZE);
       setLastDoc(snapshot.docs[snapshot.docs.length - 1] ?? null);
     } catch (err) {
-      void err;
+      console.error(err);
     } finally {
       setLoadingMore(false);
     }

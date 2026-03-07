@@ -43,7 +43,7 @@ export default function ReplyList({ discussionId, replies, onReplyDeleted }: Rep
       });
       setReportedIds((prev) => new Set(prev).add(replyId));
     } catch (err) {
-      void err;
+      console.error(err);
     }
   };
 
@@ -55,7 +55,7 @@ export default function ReplyList({ discussionId, replies, onReplyDeleted }: Rep
       });
       onReplyDeleted();
     } catch (err) {
-      void err;
+      console.error(err);
     }
   };
 

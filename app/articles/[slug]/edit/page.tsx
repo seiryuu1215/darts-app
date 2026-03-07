@@ -80,7 +80,7 @@ export default function EditArticlePage() {
           setExistingCoverUrl(data.coverImageUrl || null);
         }
       } catch (err) {
-        void err;
+        console.error(err);
       } finally {
         setFetchLoading(false);
       }

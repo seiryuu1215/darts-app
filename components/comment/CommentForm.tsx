@@ -33,8 +33,7 @@ export default function CommentForm({ dartId, onCommentAdded }: CommentFormProps
       setText('');
       onCommentAdded();
     } catch (err) {
-      // 投稿失敗時はUIが更新されないため、ユーザーは気付ける
-      void err;
+      console.error(err);
     } finally {
       setLoading(false);
     }

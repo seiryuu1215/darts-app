@@ -33,6 +33,7 @@ import LevelUpSnackbar from '@/components/progression/LevelUpSnackbar';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import StatsOverviewCard from '@/components/home/StatsOverviewCard';
 import ActiveSettings from '@/components/home/ActiveSettings';
+import FocusPointsCard from '@/components/home/FocusPointsCard';
 import GuestHero from '@/components/home/GuestHero';
 import { useToast } from '@/components/ToastProvider';
 import type { Dart } from '@/types';
@@ -220,7 +221,7 @@ export default function HomePage() {
           setActiveSteelDart(null);
         }
       } catch (err) {
-        void err;
+        console.error(err);
       }
     };
     const fetchMyDarts = async () => {
@@ -233,7 +234,7 @@ export default function HomePage() {
         const snapshot = await getDocs(q);
         setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
       } catch (err) {
-        void err;
+        console.error(err);
       }
     };
     const fetchDlCache = async () => {
@@ -308,6 +309,9 @@ export default function HomePage() {
 
       {/* 1. 目標 */}
       {session && <GoalSection />}
+
+      {/* 1.5. 練習の意識ポイント */}
+      {session?.user?.id && <FocusPointsCard userId={session.user.id} />}
 
       {/* 2. DARTSLIVEスタッツ */}
       {session &&
