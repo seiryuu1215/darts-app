@@ -17,6 +17,16 @@
 
 **Demo:** [https://darts-app-lime.vercel.app](https://darts-app-lime.vercel.app)
 
+---
+
+## プロジェクト規模
+
+| コード行数  | コンポーネント | ページ | API Routes | テスト  |         Storybook          | コミット | 設計書 |
+| :---------: | :------------: | :----: | :--------: | :-----: | :------------------------: | :------: | :----: |
+| **67,000+** |    **120**     | **41** |   **40**   | **459** | **63 files / 240 stories** | **298**  | **12** |
+
+---
+
 ## デモアカウント
 
 以下のデモアカウントでログインして機能を試せます（データは毎日リセットされます）。
@@ -27,14 +37,7 @@
 | Pro     | `demo-pro@darts-lab.example`     | `demo1234` | DARTSLIVEスタッツ連携、グラフ表示 |
 | Admin   | `demo-admin@darts-lab.example`   | `demo1234` | 記事投稿、ディスカッション管理    |
 
-## プロジェクト規模
-
-| 指標                   | 数値       |
-| ---------------------- | ---------- |
-| コード行数             | 61,000+ 行 |
-| スタッツコンポーネント | 64         |
-| ページ数               | 41+        |
-| テスト数               | 459+       |
+---
 
 ## Screenshots
 
@@ -54,20 +57,63 @@
 | :----------------------------------------: | :--------------------------------------: | :------------------------------------------: |
 | ![Calendar](docs/screenshots/calendar.png) | ![Compare](docs/screenshots/compare.png) | ![Recommend](docs/screenshots/recommend.png) |
 
+---
+
+## 設計・技術のポイント
+
+- **フルサーバーレス構成** — Vercel Serverless Functions + Firebase + Upstash Redis。インフラ管理ゼロで運用継続中
+- **3段階 SaaS モデル** — general / pro / admin のロールベースアクセス制御。Stripe Checkout → Webhook → Firestore ロール更新のサーバーサイド完結フロー
+- **DARTSLIVE スタッツ自動取得** — Puppeteer スクレイピング + 公式 API のデュアルパス同期。Vercel Cron で日次バッチ処理（XP付与 → 実績チェック → 週次/月次レポート配信）
+- **統計分析エンジン** — ピアソン相関・線形回帰・スピード分析・ブル率シミュレーター・パーセンタイル算出を自前実装。フライト別ベンチマーク付きスキルレーダー
+- **独自レコメンドエンジン** — 重量(30)・径(25)・長さ(25)・カット(15)・ブランド(5) の 100点スコアリングで 7,000+ バレルからレコメンド
+- **iOS HealthKit 連携** — Swift Capacitor Plugin で心拍・HRV・睡眠・歩数を取得し、ダーツパフォーマンスとの相関分析・インサイト自動生成
+- **LINE Bot 連携** — Flex Message でスタッツカルーセル・週次/月次レポート・疲労アラートを自動配信。Rich Menu + Quick Reply で双方向操作
+- **AI 駆動開発** — Claude Code で設計〜実装〜テストを一貫して開発
+
+---
+
 ## 主な機能
 
-- **セッティング管理** — バレル・チップ・シャフト・フライトの組み合わせを登録、スペック自動計算、比較、変更履歴、OGP付きシェア
-- **バレル検索 & 探索** — 7,000種以上のDB、スペック横断検索、売上ランキング、実寸シミュレーター、診断クイズ、レコメンドエンジン
-- **DARTSLIVE スタッツ連携 (PRO)** — 自動取得（Puppeteer + API）、Rating/01/Cricket/COUNT-UP の月間推移グラフ、パーセンタイル表示、ブル統計、Rt目標分析、スキルレーダー（フライト別ベンチマーク付き）、レーティングトレンドスパークライン、セッション比較、ゲーム安定度分析、PHOENIX 換算、CU セッション間比較、カレンダーヒートマップ、CU分析（ミス方向・グルーピング）
-- **マイショップ** — DARTSLIVE サーチ URL 貼り付けで店名・住所・駅・画像を自動登録、タグフィルター（禁煙・投げ放題等）、リスト管理、お気に入り
-- **週次/月次レポート** — LINE Flex Message で自動配信（前期間比較付き）、リッチメニュー、練習メモ
-- **XP / 経験値** — 14種のXPルール、日次Cron自動付与、30段階ランク、12種の実績
-- **目標トラッキング** — 月間/年間/デイリー目標の設定、DARTSLIVE スタッツからリアルタイム進捗計算、達成時にXP付与+紙吹雪演出、期限切れ目標は自動削除、ヘルスケア目標（睡眠・HRV）対応
-- **練習の意識ポイント** — トップ画面に最大3つの練習ポイントを設定、無意識にできるようになったら削除
-- **ディスカッション** — 6カテゴリの掲示板、投稿者のRt・バレル自動表示
-- **記事 (admin)** — Markdown ベースの公式コンテンツ
+### セッティング管理
+
+バレル・チップ・シャフト・フライトの組み合わせを登録、スペック自動計算、比較、変更履歴、OGP付きシェア
+
+### バレル検索 & 探索
+
+7,000種以上のDB、スペック横断検索、売上ランキング、実寸シミュレーター、診断クイズ、レコメンドエンジン
+
+### DARTSLIVE スタッツ連携 (PRO)
+
+自動取得（Puppeteer + API）、Rating/01/Cricket/COUNT-UP の月間推移グラフ、パーセンタイル表示、ブル統計、Rt目標分析、スキルレーダー（フライト別ベンチマーク付き）、レーティングトレンドスパークライン、セッション比較、ゲーム安定度分析、PHOENIX 換算、CU セッション間比較、カレンダーヒートマップ、CU分析（ミス方向・グルーピング）
+
+### マイショップ
+
+DARTSLIVE サーチ URL 貼り付けで店名・住所・駅・画像を自動登録、タグフィルター（禁煙・投げ放題等）、リスト管理、お気に入り、路線フィルター
+
+### 週次/月次レポート
+
+LINE Flex Message で自動配信（前期間比較付き）、リッチメニュー、練習メモ
+
+### XP / 経験値
+
+14種のXPルール、日次Cron自動付与、30段階ランク、12種の実績
+
+### 目標トラッキング
+
+月間/年間/デイリー目標の設定、DARTSLIVE スタッツからリアルタイム進捗計算、達成時にXP付与+紙吹雪演出、ヘルスケア目標（睡眠・HRV）対応
+
+### ヘルスケア連携 (iOS)
+
+HealthKit から心拍・HRV・睡眠・歩数等を取得、カウントアップ平均スコアとの相関分析・インサイト自動生成、コンディションスコア算出、疲労アラート
+
+### ディスカッション & 記事
+
+6カテゴリの掲示板（投稿者のRt・バレル自動表示）、Markdown ベースの公式コンテンツ
+
+### その他
+
+- **練習の意識ポイント** — トップ画面に最大3つの練習ポイントを設定
 - **アフィリエイト連携** — ダーツハイブ（A8.net）・楽天・Amazon — 商品直リンク+検索で購入導線を提供
-- **ヘルスケア連携 (iOS)** — HealthKit から心拍・HRV・睡眠・歩数等を取得、カウントアップ平均スコアとの相関分析・インサイト自動生成
 - **PWA & iOS** — Service Worker オフラインキャッシュ + Capacitor iOS ネイティブ
 - **ダークモード** — OS連動 + 手動切替、FOUC防止
 
@@ -91,6 +137,8 @@
 
 </details>
 
+---
+
 ## 技術スタック
 
 | カテゴリ       | 技術                                          |
@@ -104,64 +152,83 @@
 | 決済           | Stripe (Subscription / Webhook)               |
 | グラフ         | Recharts 3                                    |
 | スクレイピング | Puppeteer 24                                  |
+| メッセージング | LINE Messaging API (Webhook + Rich Menu)      |
 | エラー監視     | Sentry                                        |
-| テスト         | Vitest (459+ tests)                           |
+| レートリミット | Upstash Redis                                 |
+| テスト         | Vitest (459+ unit) + Storybook (240 stories)  |
 | CI             | GitHub Actions (lint / format / test / build) |
 | PWA            | Serwist (Workbox ベース)                      |
 | モバイル       | Capacitor 8 (iOS WebView)                     |
 | ヘルスケア     | HealthKit (Swift Capacitor Plugin)            |
 | ホスティング   | Vercel                                        |
 
-<details>
-<summary><b>アーキテクチャ概要</b></summary>
+---
+
+## セキュリティ
+
+セキュリティレビュー実施済み — 詳細は [セキュリティレビュー](docs/05-security-review.md)
+
+- Firestore / Storage セキュリティルールによるフィールドレベル制限
+- レートリミット（Upstash Redis / IP ベース 60 req/min + in-memory フォールバック）
+- タイミングセーフ署名検証（LINE Webhook HMAC）
+- Stripe Webhook 署名検証 + イベント重複排除
+- SSRF 防止（OG 画像生成でドメインホワイトリスト）
+- SVG ブロック（画像プロキシ）、HTTPS のみ
+- CSV インジェクション防止
+- AES-256-GCM 暗号化（DARTSLIVE 認証情報）
+- Sentry によるエラー監視・アラート
+
+---
+
+## アーキテクチャ
 
 ```mermaid
 graph TB
-    subgraph Client["🖥 Client — Browser / PWA / iOS"]
+    subgraph Client["Client — Browser / PWA / iOS"]
         App["Next.js 16 App Router<br/>React 19 + MUI v7 + Recharts"]
         SW["Service Worker<br/>(Serwist)"]
         Cap["Capacitor<br/>iOS WebView"]
     end
 
-    subgraph Vercel["▲ Vercel Platform"]
+    subgraph Vercel["Vercel Platform"]
         Edge["Edge Network<br/>SSR / Static"]
         SF["Serverless Functions"]
         Cron["Vercel Cron<br/>JST 10:00 Daily"]
         OG["OGP Image Generator<br/>(Edge Runtime)"]
     end
 
-    subgraph Firebase["🔥 Firebase"]
+    subgraph Firebase["Firebase"]
         Auth["Authentication"]
         FS["Cloud Firestore"]
         ST["Cloud Storage"]
     end
 
-    subgraph ExtData["📡 Data Sources"]
+    subgraph ExtData["Data Sources"]
         DL["DARTSLIVE<br/>card.dartslive.com"]
         PX["PHOENIX<br/>stats API"]
     end
 
-    subgraph Health["❤️ HealthKit"]
+    subgraph Health["HealthKit"]
         HK["Apple HealthKit<br/>Swift Plugin"]
     end
 
-    subgraph Messaging["💬 Messaging"]
+    subgraph Messaging["Messaging"]
         LINE["LINE Messaging API<br/>Webhook + Rich Menu"]
     end
 
-    subgraph Payment["💳 Payment"]
+    subgraph Payment["Payment"]
         Stripe["Stripe<br/>Subscription + Webhook"]
     end
 
-    subgraph Cache["⚡ Cache"]
+    subgraph Cache["Cache"]
         Redis["Upstash Redis<br/>Rate Limit"]
     end
 
-    subgraph Monitor["📊 Monitoring"]
+    subgraph Monitor["Monitoring"]
         Sentry["Sentry"]
     end
 
-    subgraph Affiliate["🛒 Affiliate（6 shops）"]
+    subgraph Affiliate["Affiliate（6 shops）"]
         Shops["ダーツハイブ / エスダーツ<br/>MAXIM / TiTO<br/>楽天 / Amazon"]
     end
 
@@ -207,7 +274,7 @@ graph TB
 
 詳細は [ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照。
 
-</details>
+---
 
 ## ドキュメント
 
@@ -220,19 +287,7 @@ graph TB
 | [自動処理 (Cron)](docs/CRON.md)                    | 日次バッチの処理内容・認証・データフロー              |
 | [セキュリティレビュー](docs/05-security-review.md) | セキュリティ観点のレビュー結果                        |
 
-<details>
-<summary><b>セキュリティ</b></summary>
-
-- Firestore / Storage セキュリティルールによるフィールドレベル制限
-- レートリミット（IP ベース 60 req/min）
-- タイミングセーフ署名検証（LINE Webhook）
-- SSRF 防止（OG 画像生成でドメインホワイトリスト）
-- SVG ブロック（画像プロキシ）、HTTPS のみ
-- CSV インジェクション防止
-- Stripe Webhook 署名検証 + イベント重複排除
-- Sentry によるエラー監視
-
-</details>
+---
 
 ## ライセンス
 
