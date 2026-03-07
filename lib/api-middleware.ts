@@ -5,11 +5,13 @@ import { adminDb } from '@/lib/firebase-admin';
 import * as Sentry from '@sentry/nextjs';
 import type { UserRole } from '@/types';
 import { checkRedisRateLimit } from '@/lib/rate-limit';
+import { DEMO_BLOCKED_ROUTES, DEMO_ADMIN_BLOCKED_ROUTES } from '@/lib/demo';
 
 export interface AuthContext {
   userId: string;
   role: UserRole;
   email: string | null;
+  isDemo: boolean;
 }
 
 type HandlerWithAuth = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
@@ -101,10 +103,19 @@ export function withAuth(handler: HandlerWithAuth): Handler {
     if (!session?.user?.id) {
       return NextResponse.json({ error: '未ログインです' }, { status: 401 });
     }
+    const isDemo = session.user.isDemo === true;
+    const pathname = new URL(req.url).pathname;
+    if (isDemo && DEMO_BLOCKED_ROUTES.has(pathname)) {
+      return NextResponse.json(
+        { error: 'デモアカウントではこの操作はできません' },
+        { status: 403 },
+      );
+    }
     return handler(req, {
       userId: session.user.id,
       role: session.user.role || 'general',
       email: session.user.email || null,
+      isDemo,
     });
   };
 }
@@ -117,6 +128,15 @@ export function withAdmin(handler: HandlerWithAuth): Handler {
     const adminDoc = await adminDb.doc(`users/${ctx.userId}`).get();
     if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    }
+    if (ctx.isDemo) {
+      const pathname = new URL(req.url).pathname;
+      if (DEMO_ADMIN_BLOCKED_ROUTES.has(pathname)) {
+        return NextResponse.json(
+          { error: 'デモアカウントではこの操作はできません' },
+          { status: 403 },
+        );
+      }
     }
     return handler(req, { ...ctx, role: 'admin' });
   });

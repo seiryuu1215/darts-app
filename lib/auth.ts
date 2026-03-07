@@ -25,10 +25,12 @@ export const authOptions: NextAuthOptions = {
 
           let role: UserRole = 'general';
           let subscriptionStatus: StripeSubscriptionStatus | null = null;
+          let isDemo = false;
           const userDoc = await adminDb.doc(`users/${user.uid}`).get();
           if (userDoc.exists) {
             role = userDoc.data()?.role || 'general';
             subscriptionStatus = userDoc.data()?.subscriptionStatus || null;
+            isDemo = userDoc.data()?.isDemo === true;
           }
 
           return {
@@ -37,6 +39,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             role,
             subscriptionStatus,
+            isDemo,
           };
         } catch (error) {
           console.error('Auth error:', error instanceof Error ? error.message : error);
@@ -56,6 +59,7 @@ export const authOptions: NextAuthOptions = {
         token.subscriptionStatus = (
           user as unknown as { subscriptionStatus: StripeSubscriptionStatus | null }
         ).subscriptionStatus;
+        token.isDemo = (user as unknown as { isDemo: boolean }).isDemo;
       } else if (token.sub) {
         // セッション更新時にFirestoreから最新のroleを取得
         try {
@@ -63,6 +67,7 @@ export const authOptions: NextAuthOptions = {
           if (userDoc.exists) {
             token.role = userDoc.data()?.role || 'general';
             token.subscriptionStatus = userDoc.data()?.subscriptionStatus || null;
+            token.isDemo = userDoc.data()?.isDemo === true;
           }
         } catch {
           // Firestore読み取りエラー時は既存のroleを維持
@@ -76,6 +81,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = (token.role as UserRole) || 'general';
         session.user.subscriptionStatus =
           (token.subscriptionStatus as StripeSubscriptionStatus | null) || null;
+        session.user.isDemo = token.isDemo === true;
       }
       return session;
     },

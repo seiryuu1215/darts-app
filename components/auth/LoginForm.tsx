@@ -1,9 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { TextField, Button, Box, Alert, Typography } from '@mui/material';
+import { TextField, Button, Box, Alert, Typography, Divider, Stack, Chip } from '@mui/material';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+
+const DEMO_ENABLED = process.env.NEXT_PUBLIC_DEMO_ENABLED === 'true';
+
+const DEMO_ACCOUNTS = [
+  { label: 'General', email: 'demo-general@darts-lab.example', password: 'demo1234' },
+  { label: 'Pro', email: 'demo-pro@darts-lab.example', password: 'demo1234' },
+  { label: 'Admin', email: 'demo-admin@darts-lab.example', password: 'demo1234' },
+] as const;
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -79,6 +87,31 @@ export default function LoginForm() {
         アカウントをお持ちでない方は
         <Link href="/register">新規登録</Link>
       </Typography>
+      {DEMO_ENABLED && (
+        <>
+          <Divider sx={{ my: 3 }}>
+            <Chip label="デモアカウント" size="small" />
+          </Divider>
+          <Stack spacing={1}>
+            {DEMO_ACCOUNTS.map((account) => (
+              <Button
+                key={account.label}
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword(account.password);
+                }}
+              >
+                {account.label} でログイン
+              </Button>
+            ))}
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            データは毎日リセットされます
+          </Typography>
+        </>
+      )}
     </Box>
   );
 }

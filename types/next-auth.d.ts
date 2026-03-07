@@ -7,6 +7,7 @@ declare module 'next-auth' {
       id: string;
       role: UserRole;
       subscriptionStatus: StripeSubscriptionStatus | null;
+      isDemo?: boolean;
     } & DefaultSession['user'];
   }
 }
@@ -15,5 +16,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role?: UserRole;
     subscriptionStatus?: StripeSubscriptionStatus | null;
+    isDemo?: boolean;
   }
 }

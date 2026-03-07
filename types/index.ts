@@ -37,6 +37,7 @@ export interface User {
   highestRating?: number | null;
   dartsHistory: string;
   homeShop: string;
+  isDemo?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
