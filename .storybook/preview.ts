@@ -1,6 +1,8 @@
+import React from 'react';
 import type { Preview, ReactRenderer } from '@storybook/nextjs-vite';
 import { withThemeFromJSXProvider } from '@storybook/addon-themes';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { SessionProvider } from 'next-auth/react';
 
 const darkTheme = createTheme({
   palette: {
@@ -44,8 +46,12 @@ const preview: Preview = {
       test: 'todo',
     },
     layout: 'padded',
+    nextjs: {
+      appDirectory: true,
+    },
   },
   decorators: [
+    (Story) => React.createElement(SessionProvider, { session: null }, React.createElement(Story)),
     withThemeFromJSXProvider<ReactRenderer>({
       themes: {
         dark: darkTheme,
