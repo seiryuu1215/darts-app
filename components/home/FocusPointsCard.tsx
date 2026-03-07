@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Paper,
-  Typography,
   Box,
-  Chip,
+  Typography,
   IconButton,
   TextField,
   Button,
+  Card,
+  CardContent,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import {
   collection,
@@ -90,40 +90,66 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
   };
 
   return (
-    <Paper sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TrackChangesIcon fontSize="small" color="primary" />
-          <Typography variant="subtitle1" fontWeight="bold">
-            練習の意識ポイント
-          </Typography>
+          <TrackChangesIcon color="primary" />
+          <Typography variant="h5">意識ポイント</Typography>
         </Box>
         {points.length < MAX_FOCUS_POINTS && (
-          <IconButton size="small" onClick={() => setAddOpen(true)} color="primary">
-            <AddIcon />
-          </IconButton>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
+            追加
+          </Button>
         )}
       </Box>
 
       {points.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-          練習で意識するポイントを設定しましょう（最大{MAX_FOCUS_POINTS}つ）
+        <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 4 }}>
+          練習で意識するポイントを設定しよう（最大{MAX_FOCUS_POINTS}つ）
         </Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {points.map((point) => (
-            <Chip
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {points.map((point, idx) => (
+            <Card
               key={point.id}
-              label={point.text}
-              deleteIcon={<CheckCircleIcon />}
-              onDelete={() => setConfirmDeleteId(point.id)}
               sx={{
-                height: 'auto',
-                py: 0.5,
-                '& .MuiChip-label': { whiteSpace: 'normal', lineHeight: 1.4 },
-                '& .MuiChip-deleteIcon': { color: 'success.main' },
+                borderLeft: 4,
+                borderColor: 'warning.main',
+                height: '100%',
               }}
-            />
+            >
+              <CardContent
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:last-child': { pb: 1.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  color="warning.main"
+                  sx={{ minWidth: 24, textAlign: 'center' }}
+                >
+                  {idx + 1}
+                </Typography>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {point.text}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setConfirmDeleteId(point.id)}
+                  color="success"
+                  aria-label="達成済みにする"
+                  sx={{ p: 0.5 }}
+                >
+                  <CheckCircleOutlineIcon />
+                </IconButton>
+              </CardContent>
+            </Card>
           ))}
         </Box>
       )}
@@ -139,6 +165,9 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
             placeholder="例: グリップを柔らかく"
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newText.trim() && !saving) handleAdd();
+            }}
             sx={{ mt: 1 }}
             slotProps={{ htmlInput: { maxLength: 50 } }}
           />
@@ -156,14 +185,14 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
         </DialogActions>
       </Dialog>
 
-      {/* 削除確認ダイアログ */}
+      {/* 達成確認ダイアログ */}
       <Dialog
         open={confirmDeleteId !== null}
         onClose={() => setConfirmDeleteId(null)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>意識ポイントを削除</DialogTitle>
+        <DialogTitle>意識ポイントを達成</DialogTitle>
         <DialogContent>
           <Typography>無意識にできるようになりましたか？</Typography>
         </DialogContent>
@@ -178,6 +207,6 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </Box>
   );
 }
