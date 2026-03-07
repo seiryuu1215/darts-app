@@ -11,10 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **HealthKit連携（iOS）** — Swift Capacitor プラグインで Apple HealthKit と連携、心拍・HRV・睡眠・歩数等10種のメトリクスを取得
 - **ヘルスダッシュボード** — ヘルスメトリクス一覧・推移グラフをスタッツ画面に統合
-- **ダーツ×ヘルス相関分析** — ピアソン相関でダーツ成績とヘルスデータの関連を分析、「HRV高い日はPPD+2.3」等のインサイトを自動生成
+- **ダーツ×ヘルス相関分析** — ピアソン相関でカウントアップ平均スコアとヘルスデータの関連を分析、「HRV高い日はCU平均+15」等のインサイトを自動生成
 - **HealthCorrelationCard** — 相関分析結果をダッシュボードにカード表示
+- **練習の意識ポイント** — トップ画面に最大3つの意識ポイントを設定・表示、達成したら削除する仕組み（FocusPointsCard）
 - **API: health-metrics** — ヘルスメトリクス取得エンドポイント
 - **API: health-correlation** — ダーツ×ヘルス相関データエンドポイント
+
+### Changed
+
+- **ヘルス相関分析の指標変更** — 01/Cricketは対戦相手の影響で信頼性が低いため、相関分析の対象をPPD/MPRからカウントアップ平均スコアに変更
+- **目標の期限切れ処理を統一** — 月次目標の自動引き継ぎ（carryOver）を廃止し、daily/monthly/yearly全てで期限切れ＝自動削除に統一
 
 ## [3.1.0] - 2026-03-01
 

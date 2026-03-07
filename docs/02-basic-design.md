@@ -290,6 +290,11 @@ Firestore Root
 │   │     changedFields: object
 │   │     createdAt: Timestamp
 │   │
+│   ├── focusPoints/{docId}
+│   │     text: string
+│   │     order: number (0-2)
+│   │     createdAt: Timestamp
+│   │
 │   └── healthMetrics/{date}
 │         date: string (YYYY-MM-DD)
 │         heartRateAvg: number | null
@@ -590,8 +595,9 @@ Apple Watch / iPhone           Capacitor Plugin            Firestore           N
 
 **相関分析:**
 
-- `/api/health-correlation` でダーツスタッツ × ヘルスメトリクスのピアソン相関を計算
-- 例: 「HRV が高い日は PPD +2.3」「睡眠7h以上で Rating 安定」等のインサイトを自動生成
+- `/api/health-correlation` でカウントアップ平均スコア × ヘルスメトリクスのピアソン相関を計算
+- 01/Cricketは対戦相手の影響で信頼性が低いため、カウントアップ平均スコアのみを相関対象とする
+- 例: 「HRV が高い日は CU平均 +15」「睡眠7h以上で Rating 安定」等のインサイトを自動生成
 - `HealthCorrelationCard` コンポーネントでダッシュボードに表示
 
 ---
@@ -775,6 +781,7 @@ darts-app/
 │   ├── comment/                  #   CommentList, CommentForm
 │   ├── auth/                     #   LoginForm, RegisterForm
 │   └── home/                     #   ホーム画面コンポーネント
+│       └── FocusPointsCard       #     練習の意識ポイント（最大3つ、Firestore CRUD）
 ├── lib/                          # ビジネスロジック・ユーティリティ
 │   ├── auth.ts                   #   NextAuth設定
 │   ├── firebase.ts               #   Firebase Client SDK
@@ -836,14 +843,15 @@ darts-app/
 
 ## v3.2 追加モジュール
 
-| モジュール           | ファイル                                     | 概要                                                                    |
-| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------- |
-| HealthKit同期        | `lib/health-sync.ts`                         | Swift Capacitor プラグイン経由で HealthKit → Firestore 同期             |
-| ヘルス相関分析       | `lib/health-correlation.ts`                  | ダーツスタッツ × ヘルスメトリクスのピアソン相関計算・インサイト自動生成 |
-| ヘルスダッシュボード | `components/stats/HealthDashboard.tsx`       | ヘルスメトリクス一覧・推移グラフ・ダーツ成績との相関表示                |
-| ヘルス相関カード     | `components/stats/HealthCorrelationCard.tsx` | ダーツ × ヘルス相関分析結果をカード表示                                 |
-| ヘルスメトリクスAPI  | `app/api/health-metrics/route.ts`            | ヘルスメトリクス取得エンドポイント                                      |
-| ヘルス相関API        | `app/api/health-correlation/route.ts`        | ダーツ × ヘルス相関データエンドポイント                                 |
+| モジュール           | ファイル                                     | 概要                                                                        |
+| -------------------- | -------------------------------------------- | --------------------------------------------------------------------------- |
+| HealthKit同期        | `lib/health-sync.ts`                         | Swift Capacitor プラグイン経由で HealthKit → Firestore 同期                 |
+| ヘルス相関分析       | `lib/health-analytics.ts`                    | カウントアップ平均 × ヘルスメトリクスのピアソン相関計算・インサイト自動生成 |
+| ヘルスダッシュボード | `components/stats/HealthDashboard.tsx`       | ヘルスメトリクス一覧・推移グラフ・ダーツ成績との相関表示                    |
+| ヘルス相関カード     | `components/stats/HealthCorrelationCard.tsx` | ダーツ × ヘルス相関分析結果をカード表示                                     |
+| ヘルスメトリクスAPI  | `app/api/health-metrics/route.ts`            | ヘルスメトリクス取得エンドポイント                                          |
+| ヘルス相関API        | `app/api/health-correlation/route.ts`        | カウントアップ平均 × ヘルス相関データエンドポイント                         |
+| 意識ポイント         | `components/home/FocusPointsCard.tsx`        | 練習の意識ポイント設定・表示・削除（最大3つ、Firestore CRUD）               |
 
 ## v3.1 追加モジュール
 

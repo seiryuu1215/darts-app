@@ -543,7 +543,7 @@ const nodes: NodeDef[] = [
     color: COLORS.health,
     glow: COLORS.healthGlow,
     detail:
-      'Swift Capacitor プラグインで Apple HealthKit と連携。心拍・HRV・睡眠・歩数・消費カロリー等10種のメトリクスを取得し、Firestore に同期。ピアソン相関でダーツ成績との関連を分析し「HRV高い日はPPD+2.3」等のインサイトを自動生成。',
+      'Swift Capacitor プラグインで Apple HealthKit と連携。心拍・HRV・睡眠・歩数・消費カロリー等10種のメトリクスを取得し、Firestore に同期。ピアソン相関でカウントアップ平均スコアとの関連を分析し「HRV高い日はCU平均+15」等のインサイトを自動生成。',
   },
 ];
 

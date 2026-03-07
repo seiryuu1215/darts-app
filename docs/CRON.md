@@ -138,6 +138,7 @@ sequenceDiagram
 - 月間目標: DARTSLIVE の「今月」値を直接使用（ブル数、HAT TRICK）
 - 期間目標: `dartsLiveStats` レコードから期間内の変動を計算
 - `current >= target` の場合: スケーリング XP 付与 + 目標ドキュメント削除 + 通知
+- 期限切れ未達成の目標は全期間（daily/monthly/yearly）で自動削除（引き継ぎなし）
 
 ### 7. 週次 / 月次レポート
 

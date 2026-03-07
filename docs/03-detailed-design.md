@@ -673,6 +673,8 @@ RootLayout (app/layout.tsx)
     │   │   ├── GoalCard (目標カード)
     │   │   ├── GoalSettingDialog (目標設定)
     │   │   └── GoalAchievedDialog (目標達成演出)
+    │   ├── FocusPointsCard (components/home/)
+    │   │   └── 練習の意識ポイント（最大3つ、追加・削除）
     │   ├── ReportsPage (components/reports/)
     │   │   ├── WeeklyReportCard (週次レポート)
     │   │   └── MonthlyReportCard (月次レポート)
@@ -723,6 +725,7 @@ RootLayout (app/layout.tsx)
 | `ShopBookmarkDialog`          | ショップブックマーク管理       | `shop`, `lists`, `onSave`                                                                                                                                           |
 | `DiscussionCard`              | ディスカッションカード表示     | `discussion`, `replyCount`                                                                                                                                          |
 | `GoalCard`                    | 目標進捗カード                 | `goal`, `onAchieve`, `onEdit`                                                                                                                                       |
+| `FocusPointsCard`             | 練習の意識ポイント管理         | `userId`                                                                                                                                                            |
 | `XpBar`                       | 経験値プログレスバー           | `currentXp`, `level`, `nextLevelXp`                                                                                                                                 |
 | `NotificationBell`            | ヘッダー通知アイコン           | `unreadCount`, `onClick`                                                                                                                                            |
 | `WeeklyReportCard`            | 週次レポートカード             | `reportData`, `weekRange`                                                                                                                                           |
@@ -803,3 +806,27 @@ DARTSLIVEの100%スタッツからPHOENIXレーティングを換算する。
 - 入力: Bull率・アレンジ率・MPR・安定度・ミス方向・グルーピング半径・ラウンドパターンなど
 - 出力: 最大5件の優先度付きレコメンデーション
 - 各レコメンドにカテゴリ・緊急度・練習メニュー・期待効果を付与
+
+---
+
+## 9. v3.2 追加設計
+
+### 9.1 ヘルス相関分析のカウントアップ指標変更
+
+- 01/Cricketは対戦相手やセパブルの影響を受けるため、ヘルスコンディションとの相関分析にはカウントアップ平均スコアのみを使用
+- `/api/health-correlation` は `dartsliveApiCache/countupPlays` からプレイデータを取得し、日別平均を算出
+- `/api/stats-history` にも `countUpAvg` フィールドを追加
+
+### 9.2 練習の意識ポイント (`components/home/FocusPointsCard.tsx`)
+
+- Firestore `users/{userId}/focusPoints` サブコレクションでCRUD（API不要、Client SDK直接）
+- `onSnapshot` でリアルタイム同期
+- 最大3つまで登録可能（`order: 0-2` でソート）
+- テキスト入力（maxLength 50）で追加、「できた！」確認ダイアログで削除
+- トップ画面の `GoalSection` 直下に配置
+
+### 9.3 目標の期限切れ処理統一
+
+- 月次目標の自動引き継ぎ（`carryOver`）を廃止
+- `GET /api/goals` 内で全期間（daily/monthly/yearly）の期限切れ未達成目標を自動削除
+- `carryOver` フィールドの参照・表示を全コンポーネントから削除

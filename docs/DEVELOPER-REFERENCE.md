@@ -242,7 +242,8 @@ User (ユーザー)
     ├── barrelBookmarks/{barrelId}
     ├── settingHistory/{historyId}    ← セッティング使用履歴
     ├── dartsLiveStats/{statsId}      ← スタッツ記録
-    ├── goals/{goalId}                ← 目標設定・進捗（達成時に削除）
+    ├── goals/{goalId}                ← 目標設定・進捗（達成時・期限切れ時に削除）
+    ├── focusPoints/{docId}           ← 練習の意識ポイント（最大3つ）
     ├── notifications/{notifId}       ← XP通知（未読/既読）
     ├── xpHistory/{historyId}         ← XP獲得履歴
     └── dartsliveCache/latest         ← DARTSLIVEキャッシュ（最新スタッツ）
@@ -378,6 +379,7 @@ service cloud.firestore {
 ホーム画面
 ├── GoalSection（目標進捗、ログイン時のみ）
 │   └── 目標達成時に GoalAchievedDialog（紙吹雪お祝い）
+├── FocusPointsCard（練習の意識ポイント、最大3つ、ログイン時のみ）
 ├── XpBar（コンパクトなランクカード、ログイン時のみ）
 │   └── タップで詳細展開（次レベルまでのXP、XP獲得条件一覧）
 ├── 使用中ダーツカード（ログイン時のみ）
@@ -753,7 +755,7 @@ users/{userId}/notifications に通知ドキュメント作成
 - 月間目標: 最大3つ、年間目標: 最大1つ（アクティブ = 未達成 & 期間内）
 - 月間ブル・HAT TRICK目標はDARTSLIVEの「今月」列の値を直接使用（差分計算ではない）
 - 既に達成済みの値で目標設定はできない（POST時にバリデーション）
-- 期限切れ未達成の月間目標は翌月に自動引き継ぎ（`carryOver: true`）
+- 期限切れ未達成の目標は全期間（daily/monthly/yearly）で自動削除（引き継ぎなし）
 
 **達成フロー（GET /api/goals 内で処理）:**
 
