@@ -47,6 +47,7 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
   const [newText, setNewText] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const colRef = collection(db, `users/${userId}/focusPoints`);
@@ -66,6 +67,7 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
   const handleAdd = async () => {
     if (!newText.trim() || points.length >= MAX_FOCUS_POINTS) return;
     setSaving(true);
+    setError(null);
     try {
       await addDoc(collection(db, `users/${userId}/focusPoints`), {
         text: newText.trim(),
@@ -74,6 +76,9 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
       });
       setNewText('');
       setAddOpen(false);
+    } catch (e) {
+      console.error('focusPoints addDoc error:', e);
+      setError('保存に失敗しました。再度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -137,6 +142,11 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
             sx={{ mt: 1 }}
             slotProps={{ htmlInput: { maxLength: 50 } }}
           />
+          {error && (
+            <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+              {error}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddOpen(false)}>キャンセル</Button>
