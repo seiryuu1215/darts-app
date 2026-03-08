@@ -621,6 +621,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {(() => {
+            const searchName = `${dart.barrel.brand} ${dart.barrel.name}`;
+            const dartshiveSearchUrl = `https://www.dartshive.jp/form/search?search=${encodeURIComponent(searchName)}`;
             const barrelProduct = {
               id: dart.sourceBarrelId || '',
               name: dart.barrel.name,
@@ -630,7 +632,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
               length: dart.barrel.length,
               cut: dart.barrel.cut,
               imageUrl: null,
-              productUrl: `https://www.dartshive.jp/`,
+              productUrl: dartshiveSearchUrl,
               source: 'dartshive' as const,
               scrapedAt: dart.createdAt,
             };

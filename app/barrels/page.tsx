@@ -111,6 +111,7 @@ export default function BarrelsPage() {
   // ランキング取得（タブ切替時に再取得）
   useEffect(() => {
     const fetchRanking = async () => {
+      // period付きデータを試行
       try {
         const rq = query(
           collection(db, 'barrelRanking'),
@@ -119,19 +120,18 @@ export default function BarrelsPage() {
           limit(20),
         );
         const snapshot = await getDocs(rq);
-        const data = snapshot.docs.map((d) => d.data() as RankedBarrel);
-        // period付きデータがなければフォールバック（旧データ互換）
-        if (data.length === 0) {
-          const fallback = query(
-            collection(db, 'barrelRanking'),
-            orderBy('rank', 'asc'),
-            limit(20),
-          );
-          const fbSnap = await getDocs(fallback);
-          setRanking(fbSnap.docs.map((d) => d.data() as RankedBarrel));
-        } else {
-          setRanking(data);
+        if (snapshot.size > 0) {
+          setRanking(snapshot.docs.map((d) => d.data() as RankedBarrel));
+          return;
         }
+      } catch {
+        // composite index未作成の場合はフォールバック
+      }
+      // フォールバック: period なしの旧データ
+      try {
+        const fallback = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(20));
+        const fbSnap = await getDocs(fallback);
+        setRanking(fbSnap.docs.map((d) => d.data() as RankedBarrel));
       } catch {
         // ランキングデータがない場合は無視
       }
@@ -195,31 +195,37 @@ export default function BarrelsPage() {
     return '';
   };
 
-  // フィルタリング
+  // フィルタリング + 新しい順ソート
   const filteredBarrels = useMemo(() => {
-    return barrels.filter((b) => {
-      // 販売状態フィルタ
-      if (statusFilter === 'current' && b.isDiscontinued === true) return false;
-      if (statusFilter === 'discontinued' && b.isDiscontinued !== true) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (!b.name.toLowerCase().includes(q) && !b.brand.toLowerCase().includes(q)) return false;
-      }
-      if (selectedBrand && b.brand !== selectedBrand) return false;
-      if (selectedType) {
-        const barrelType = getBarrelType(b.name);
-        if (barrelType !== selectedType) return false;
-      }
-      if (b.weight < weightRange[0] || b.weight > weightRange[1]) return false;
-      if (b.maxDiameter && (b.maxDiameter < diameterRange[0] || b.maxDiameter > diameterRange[1]))
-        return false;
-      if (b.length && (b.length < lengthRange[0] || b.length > lengthRange[1])) return false;
-      if (selectedCut && b.cut) {
-        const cutTags = b.cut.split(/[,+＋]/).map((s) => s.trim());
-        if (!cutTags.includes(selectedCut)) return false;
-      }
-      return true;
-    });
+    return barrels
+      .filter((b) => {
+        // 販売状態フィルタ
+        if (statusFilter === 'current' && b.isDiscontinued === true) return false;
+        if (statusFilter === 'discontinued' && b.isDiscontinued !== true) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          if (!b.name.toLowerCase().includes(q) && !b.brand.toLowerCase().includes(q)) return false;
+        }
+        if (selectedBrand && b.brand !== selectedBrand) return false;
+        if (selectedType) {
+          const barrelType = getBarrelType(b.name);
+          if (barrelType !== selectedType) return false;
+        }
+        if (b.weight < weightRange[0] || b.weight > weightRange[1]) return false;
+        if (b.maxDiameter && (b.maxDiameter < diameterRange[0] || b.maxDiameter > diameterRange[1]))
+          return false;
+        if (b.length && (b.length < lengthRange[0] || b.length > lengthRange[1])) return false;
+        if (selectedCut && b.cut) {
+          const cutTags = b.cut.split(/[,+＋]/).map((s) => s.trim());
+          if (!cutTags.includes(selectedCut)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const aTime = a.scrapedAt?.seconds ?? 0;
+        const bTime = b.scrapedAt?.seconds ?? 0;
+        return bTime - aTime;
+      });
   }, [
     barrels,
     searchQuery,
