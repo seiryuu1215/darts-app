@@ -28,6 +28,8 @@ interface StatsHistorySummary {
   bestRating: number | null;
   bestPpd: number | null;
   bestMpr: number | null;
+  avgCountUpAvg: number | null;
+  bestCountUpAvg: number | null;
   streak: number;
 }
 
@@ -150,6 +152,14 @@ export default function PeriodStatsPanel({
               </Typography>
               <DiffIndicator current={summary.avgMpr} prev={prevMpr} />
             </Paper>
+            <Paper variant="outlined" sx={{ flex: 1, minWidth: 80, p: 1, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                Avg CU
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {summary.avgCountUpAvg?.toFixed(1) ?? '--'}
+              </Typography>
+            </Paper>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
@@ -186,17 +196,20 @@ export default function PeriodStatsPanel({
             )}
           </Box>
 
-          {/* 自己ベスト（累計のみ） */}
-          {periodTab === 'all' &&
-            (summary.bestRating != null || summary.bestPpd != null || summary.bestMpr != null) && (
+          {/* 自己ベスト（latest以外） */}
+          {periodTab !== 'latest' &&
+            (summary.bestRating != null ||
+              summary.bestPpd != null ||
+              summary.bestMpr != null ||
+              summary.bestCountUpAvg != null) && (
               <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                   <EmojiEventsIcon sx={{ fontSize: 18, color: '#ffc107' }} />
                   <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                    自己ベスト（記録内）
+                    ベスト（期間内）
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   {summary.bestRating != null && (
                     <Box>
                       <Typography variant="caption" color="text.secondary">
@@ -227,6 +240,16 @@ export default function PeriodStatsPanel({
                       </Typography>
                     </Box>
                   )}
+                  {summary.bestCountUpAvg != null && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        CU
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {summary.bestCountUpAvg.toFixed(1)}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Paper>
             )}
@@ -246,6 +269,9 @@ export default function PeriodStatsPanel({
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                       MPR
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                      CU
                     </TableCell>
                     <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                       調子
@@ -274,6 +300,9 @@ export default function PeriodStatsPanel({
                         </TableCell>
                         <TableCell align="right" sx={{ fontSize: '0.75rem' }}>
                           {r.mpr?.toFixed(2) ?? '--'}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.75rem' }}>
+                          {r.countUpAvg?.toFixed(1) ?? '--'}
                         </TableCell>
                         <TableCell align="center" sx={{ fontSize: '0.75rem' }}>
                           {r.condition ? `${'★'.repeat(r.condition)}` : '--'}

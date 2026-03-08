@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import type { Comment } from '@/types';
 import UserAvatar from '@/components/UserAvatar';
+import { useToast } from '@/components/ToastProvider';
 
 interface CommentListProps {
   dartId: string;
@@ -16,13 +17,14 @@ interface CommentListProps {
 
 export default function CommentList({ dartId, comments, onCommentDeleted }: CommentListProps) {
   const { data: session } = useSession();
+  const { showToast } = useToast();
 
   const handleDelete = async (commentId: string) => {
     try {
       await deleteDoc(doc(db, 'darts', dartId, 'comments', commentId));
       onCommentDeleted();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('コメントの削除に失敗しました');
     }
   };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Container, Typography, Grid, Box, CircularProgress, Button } from '@mui/material';
+import { Container, Typography, Grid, Box, CircularProgress, Button, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,10 +16,12 @@ export default function ArticlesPage() {
   const { data: session } = useSession();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const canWrite = canWriteArticles(session?.user?.role);
 
   useEffect(() => {
     const fetchArticles = async () => {
+      setError(null);
       try {
         const q = query(collection(db, 'articles'), where('isDraft', '==', false));
         const snapshot = await getDocs(q);
@@ -32,8 +34,8 @@ export default function ArticlesPage() {
             return bTime - aTime;
           });
         setArticles(docs);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setError('記事の読み込みに失敗しました');
       } finally {
         setLoading(false);
       }
@@ -57,6 +59,10 @@ export default function ArticlesPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ my: 4 }}>
+          {error}
+        </Alert>
       ) : articles.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
           まだ記事がありません

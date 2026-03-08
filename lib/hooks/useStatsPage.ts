@@ -19,6 +19,8 @@ export interface StatsHistorySummary {
   bestRating: number | null;
   bestPpd: number | null;
   bestMpr: number | null;
+  avgCountUpAvg: number | null;
+  bestCountUpAvg: number | null;
   streak: number;
 }
 

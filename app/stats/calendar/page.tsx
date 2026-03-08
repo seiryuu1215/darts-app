@@ -12,7 +12,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Paper,
 } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
@@ -160,6 +162,57 @@ export default function CalendarPage() {
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* 月間サマリー */}
+          {records.length > 0 &&
+            (() => {
+              const playDays = new Set(
+                records.map((r) => {
+                  const d = new Date(r.date);
+                  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+                  return jst.toISOString().split('T')[0];
+                }),
+              ).size;
+              const totalGames = records.reduce((sum, r) => sum + r.gamesPlayed, 0);
+              const validRatings = records.filter((r) => r.rating != null);
+              const avgRating =
+                validRatings.length > 0
+                  ? validRatings.reduce((s, r) => s + r.rating!, 0) / validRatings.length
+                  : null;
+              const validConditions = records.filter((r) => r.condition != null);
+              const avgCondition =
+                validConditions.length > 0
+                  ? validConditions.reduce((s, r) => s + r.condition!, 0) / validConditions.length
+                  : null;
+              return (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1.5,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={700}>
+                    {month}月:
+                  </Typography>
+                  <Typography variant="body2">{playDays}日プレイ</Typography>
+                  <Typography variant="body2">{totalGames}G</Typography>
+                  {avgRating != null && (
+                    <Typography variant="body2">Rt平均 {avgRating.toFixed(2)}</Typography>
+                  )}
+                  {avgCondition != null && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                      <Typography variant="body2">調子 {avgCondition.toFixed(1)}</Typography>
+                      <StarIcon sx={{ fontSize: 14, color: '#ffc107' }} />
+                    </Box>
+                  )}
+                </Paper>
+              );
+            })()}
+
           {/* カレンダー */}
           <CalendarGrid
             year={year}

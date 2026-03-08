@@ -6,6 +6,8 @@ import { useTheme } from '@mui/material/styles';
 interface CalendarRecord {
   date: string;
   condition: number | null;
+  rating: number | null;
+  gamesPlayed: number;
 }
 
 interface CalendarGridProps {
@@ -57,16 +59,33 @@ export default function CalendarGrid({
     cells.push({ day: cells.length - startDow - daysInMonth + 1, inMonth: false });
   }
 
-  // プレイ日のマップ: dateStr -> best condition
-  const playDayMap = new Map<string, number | null>();
+  // プレイ日のマップ: dateStr -> { condition, rating, gamesPlayed }
+  const playDayMap = new Map<
+    string,
+    { condition: number | null; rating: number | null; gamesPlayed: number }
+  >();
   for (const r of records) {
     // ISO -> JST日付文字列
     const d = new Date(r.date);
     const jstDate = new Date(d.getTime() + 9 * 60 * 60 * 1000);
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(jstDate.getUTCDate()).padStart(2, '0')}`;
     const existing = playDayMap.get(dateStr);
-    if (existing == null || (r.condition != null && (existing == null || r.condition > existing))) {
-      playDayMap.set(dateStr, r.condition);
+    if (!existing) {
+      playDayMap.set(dateStr, {
+        condition: r.condition,
+        rating: r.rating,
+        gamesPlayed: r.gamesPlayed,
+      });
+    } else {
+      // 複数レコードがある場合: conditionは最大、ratingは最新（後勝ち）、gamesPlayedは合計
+      playDayMap.set(dateStr, {
+        condition:
+          r.condition != null && (existing.condition == null || r.condition > existing.condition)
+            ? r.condition
+            : existing.condition,
+        rating: r.rating ?? existing.rating,
+        gamesPlayed: existing.gamesPlayed + r.gamesPlayed,
+      });
     }
   }
 
@@ -103,7 +122,8 @@ export default function CalendarGrid({
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const hasPlay = cell.inMonth && playDayMap.has(dateStr);
-          const condition = hasPlay ? (playDayMap.get(dateStr) ?? null) : null;
+          const playData = hasPlay ? playDayMap.get(dateStr)! : null;
+          const condition = playData?.condition ?? null;
           const dow = idx % 7;
 
           return (
@@ -127,7 +147,11 @@ export default function CalendarGrid({
                   ? theme.palette.mode === 'dark'
                     ? 'rgba(33, 150, 243, 0.2)'
                     : 'rgba(33, 150, 243, 0.1)'
-                  : 'transparent',
+                  : hasPlay
+                    ? theme.palette.mode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.04)'
+                      : 'rgba(0, 0, 0, 0.02)'
+                    : 'transparent',
                 border: isToday
                   ? `2px solid ${theme.palette.primary.main}`
                   : '2px solid transparent',
@@ -155,20 +179,45 @@ export default function CalendarGrid({
                         ? '#f44336'
                         : 'text.primary',
                   fontSize: '0.85rem',
+                  lineHeight: 1.2,
                 }}
               >
                 {cell.day}
               </Typography>
+              {hasPlay && playData?.rating != null && (
+                <Typography
+                  variant="caption"
+                  sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1.2 }}
+                >
+                  {playData.rating.toFixed(2)}
+                </Typography>
+              )}
               {hasPlay && (
                 <Box
                   sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    bgcolor: getConditionColor(condition),
-                    mt: 0.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.3,
+                    mt: 0.1,
                   }}
-                />
+                >
+                  {playData && playData.gamesPlayed > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{ fontSize: '0.55rem', color: 'text.secondary', lineHeight: 1 }}
+                    >
+                      {playData.gamesPlayed}G
+                    </Typography>
+                  )}
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: getConditionColor(condition),
+                    }}
+                  />
+                </Box>
               )}
             </Box>
           );

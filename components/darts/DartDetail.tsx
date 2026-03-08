@@ -57,6 +57,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { getShopLinks } from '@/lib/affiliate';
 import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
+import { useToast } from '@/components/ToastProvider';
 
 interface DartDetailProps {
   dart: Dart;
@@ -66,6 +67,7 @@ interface DartDetailProps {
 export default function DartDetail({ dart, dartId }: DartDetailProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { showToast } = useToast();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [liked, setLiked] = useState(false);
@@ -86,8 +88,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       const q = query(collection(db, 'darts', dartId, 'comments'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       setComments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Comment[]);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('コメントの読み込みに失敗しました');
     }
   }, [dartId]);
 
@@ -101,8 +103,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
           .map((d) => ({ id: d.id, ...d.data() }))
           .filter((m) => (m as Memo).userId === session.user.id) as Memo[],
       );
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('メモの読み込みに失敗しました');
     }
   }, [dartId, session, isOwner]);
 
@@ -258,8 +260,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
       await setDoc(userRef, { [activeField]: dartId }, { merge: true });
       setIsActiveDart(true);
       setHistoryDialogOpen(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('使用中ダーツの切替に失敗しました');
     } finally {
       setHistoryLoading(false);
     }
@@ -286,8 +288,8 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
     try {
       await deleteDoc(doc(db, 'darts', dartId));
       router.push('/');
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('ダーツの削除に失敗しました');
     }
   };
 

@@ -22,6 +22,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -44,6 +45,7 @@ export default function RecommendPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<BarrelAnalysis[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [preferenceText, setPreferenceText] = useState('');
@@ -74,8 +76,8 @@ export default function RecommendPage() {
           ...d.data(),
         })) as BarrelProduct[];
         setAllBarrels(barrels);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setError('データの読み込みに失敗しました');
       } finally {
         setLoading(false);
       }
@@ -136,8 +138,8 @@ export default function RecommendPage() {
         preferenceText || undefined,
       );
       setResults(analyzed);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setError('おすすめの検索に失敗しました');
     } finally {
       setSearching(false);
     }
@@ -160,6 +162,12 @@ export default function RecommendPage() {
           質問に答えておすすめを探す（初心者向け）
         </Button>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -200,12 +208,14 @@ export default function RecommendPage() {
             fullWidth
             size="small"
             sx={{ mb: 2 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
 

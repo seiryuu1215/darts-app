@@ -55,6 +55,8 @@ export interface StatsHistorySummary {
   bestRating: number | null;
   bestPpd: number | null;
   bestMpr: number | null;
+  avgCountUpAvg: number | null;
+  bestCountUpAvg: number | null;
   streak: number;
 }
 
@@ -185,6 +187,8 @@ export const MOCK_PERIOD_SUMMARY: StatsHistorySummary = {
   bestRating: 8.52,
   bestPpd: 70.34,
   bestMpr: 2.61,
+  avgCountUpAvg: 542.3,
+  bestCountUpAvg: 612.8,
   streak: 5,
 };
 

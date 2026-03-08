@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,7 +16,11 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  TextField,
+  InputAdornment,
+  Pagination,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { useSession } from 'next-auth/react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -32,6 +36,8 @@ interface UserRow {
   subscriptionId: string | null;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -39,6 +45,9 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  const [page, setPage] = useState(1);
 
   const isAdmin = session?.user?.role === 'admin';
 
@@ -60,7 +69,6 @@ export default function AdminUsersPage() {
           subscriptionStatus: doc.data().subscriptionStatus || null,
           subscriptionId: doc.data().subscriptionId || null,
         }));
-        // admin を先頭、次にpro、最後にgeneral
         userList.sort((a, b) => {
           const order = { admin: 0, pro: 1, general: 2 };
           return order[a.role] - order[b.role];
@@ -75,6 +83,33 @@ export default function AdminUsersPage() {
 
     fetchUsers();
   }, [session, status, isAdmin, router]);
+
+  const filteredUsers = useMemo(() => {
+    let list = users;
+    if (roleFilter !== 'all') {
+      list = list.filter((u) => u.role === roleFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (u) =>
+          u.displayName.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          u.id.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [users, roleFilter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredUsers, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, roleFilter]);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     setError('');
@@ -129,6 +164,40 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          placeholder="名前・メール・IDで検索..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="small"
+          sx={{ flex: 1, minWidth: 200 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <Select
+          value={roleFilter}
+          size="small"
+          onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
+          sx={{ minWidth: 120 }}
+        >
+          <MenuItem value="all">全ロール</MenuItem>
+          <MenuItem value="admin">admin</MenuItem>
+          <MenuItem value="pro">pro</MenuItem>
+          <MenuItem value="general">general</MenuItem>
+        </Select>
+        <Typography variant="caption" color="text.secondary">
+          {filteredUsers.length}件
+          {filteredUsers.length !== users.length && ` / 全${users.length}件`}
+        </Typography>
+      </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -140,7 +209,7 @@ export default function AdminUsersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
+            {paginatedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.displayName}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -177,6 +246,12 @@ export default function AdminUsersPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} />
+        </Box>
+      )}
     </Box>
   );
 }

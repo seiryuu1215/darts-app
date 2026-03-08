@@ -14,6 +14,8 @@ interface DayRecord {
   condition: number | null;
   memo: string;
   challenge: string;
+  dBull: number | null;
+  sBull: number | null;
 }
 
 interface DayDetailPanelProps {
@@ -76,6 +78,42 @@ export default function DayDetailPanel({ records }: DayDetailPanelProps) {
               </Typography>
             </Paper>
           </Box>
+
+          {/* ゲーム数・Bull統計 */}
+          {(record.gamesPlayed > 0 || record.dBull != null || record.sBull != null) && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, mb: 1.5 }}>
+              {record.gamesPlayed > 0 && (
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    ゲーム数
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {record.gamesPlayed}
+                  </Typography>
+                </Paper>
+              )}
+              {record.dBull != null && (
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    D-BULL
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {record.dBull}
+                  </Typography>
+                </Paper>
+              )}
+              {record.sBull != null && (
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    S-BULL
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {record.sBull}
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
+          )}
 
           {/* コンディション */}
           {record.condition != null && (

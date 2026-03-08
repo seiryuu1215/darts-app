@@ -103,6 +103,8 @@ export const GET = withErrorHandler(
             bestRating: null,
             bestPpd: null,
             bestMpr: null,
+            avgCountUpAvg: null,
+            bestCountUpAvg: null,
             streak: 0,
           },
           records: [],
@@ -197,11 +199,20 @@ export const GET = withErrorHandler(
         ? validRatings[validRatings.length - 1].rating! - validRatings[0].rating!
         : null;
 
+    // CU平均
+    const validCountUp = records.filter((r) => r.countUpAvg != null);
+    const avgCountUpAvg =
+      validCountUp.length > 0
+        ? validCountUp.reduce((sum, r) => sum + r.countUpAvg!, 0) / validCountUp.length
+        : null;
+
     // 自己ベスト
     const bestRating =
       validRatings.length > 0 ? Math.max(...validRatings.map((r) => r.rating!)) : null;
     const bestPpd = validPpd.length > 0 ? Math.max(...validPpd.map((r) => r.ppd!)) : null;
     const bestMpr = validMpr.length > 0 ? Math.max(...validMpr.map((r) => r.mpr!)) : null;
+    const bestCountUpAvg =
+      validCountUp.length > 0 ? Math.max(...validCountUp.map((r) => r.countUpAvg!)) : null;
 
     // 連続プレイ日数（ストリーク） — 全期間のみ計算
     let streak = 0;
@@ -241,6 +252,8 @@ export const GET = withErrorHandler(
         bestRating,
         bestPpd,
         bestMpr,
+        avgCountUpAvg,
+        bestCountUpAvg,
         streak,
       },
       records,

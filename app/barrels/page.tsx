@@ -7,36 +7,18 @@ import {
   Typography,
   Box,
   TextField,
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Paper,
-  CircularProgress,
   Button,
-  Collapse,
   InputAdornment,
   Pagination,
-  Card,
-  CardActionArea,
-  CardContent,
-  CardMedia,
-  IconButton,
-  Tabs,
-  Tab,
-  ToggleButton,
-  ToggleButtonGroup,
+  Alert,
 } from '@mui/material';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import QuizIcon from '@mui/icons-material/Quiz';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import RecommendIcon from '@mui/icons-material/AutoAwesome';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Link from 'next/link';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -44,12 +26,13 @@ import { useSession } from 'next-auth/react';
 import type { BarrelProduct, Dart, RankingPeriod } from '@/types';
 import BarrelCard from '@/components/barrels/BarrelCard';
 import BarrelCardSkeleton from '@/components/barrels/BarrelCardSkeleton';
+import BarrelRankingSection from '@/components/barrels/BarrelRankingSection';
+import BarrelRecommendSection from '@/components/barrels/BarrelRecommendSection';
+import BarrelFilterPanel from '@/components/barrels/BarrelFilterPanel';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import { BARREL_CUTS } from '@/lib/darts-parts';
 import { recommendBarrels } from '@/lib/recommend-barrels';
-import { toDartshiveAffiliateUrl, getAffiliateConfig } from '@/lib/affiliate';
-import { getBarrelImageUrl } from '@/lib/image-proxy';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -66,21 +49,16 @@ export default function BarrelsPage() {
   const { data: session } = useSession();
   const [barrels, setBarrels] = useState<BarrelProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [ranking, setRanking] = useState<RankedBarrel[]>([]);
   const [rankingTab, setRankingTab] = useState<RankingPeriod>('weekly');
-
-  // ブックマーク状態（1回のfetchで取得）
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
-
-  // おすすめ関連
   const [myDarts, setMyDarts] = useState<Dart[]>([]);
   const [recommendType, setRecommendType] = useState<'soft' | 'steel'>('soft');
-  const [recommendOpen, setRecommendOpen] = useState(true);
   const [recommendLoading, setRecommendLoading] = useState(false);
 
-  // フィルター状態
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [weightRange, setWeightRange] = useState<[number, number]>([18, 20]);
@@ -99,8 +77,8 @@ export default function BarrelsPage() {
           ...doc.data(),
         })) as BarrelProduct[];
         setBarrels(data);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setError('バレルデータの読み込みに失敗しました');
       } finally {
         setLoading(false);
       }
@@ -108,10 +86,8 @@ export default function BarrelsPage() {
     fetchBarrels();
   }, []);
 
-  // ランキング取得（タブ切替時に再取得）
   useEffect(() => {
     const fetchRanking = async () => {
-      // period付きデータを試行
       try {
         const rq = query(
           collection(db, 'barrelRanking'),
@@ -127,7 +103,6 @@ export default function BarrelsPage() {
       } catch {
         // composite index未作成の場合はフォールバック
       }
-      // フォールバック: period なしの旧データ
       try {
         const fallback = query(collection(db, 'barrelRanking'), orderBy('rank', 'asc'), limit(20));
         const fbSnap = await getDocs(fallback);
@@ -139,7 +114,6 @@ export default function BarrelsPage() {
     fetchRanking();
   }, [rankingTab]);
 
-  // ログインユーザーの自分のダーツを取得（おすすめ用）+ ブックマーク一括取得
   useEffect(() => {
     if (!session?.user?.id) return;
     setRecommendLoading(true);
@@ -148,8 +122,8 @@ export default function BarrelsPage() {
         const q = query(collection(db, 'darts'), where('userId', '==', session.user.id));
         const snapshot = await getDocs(q);
         setMyDarts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Dart[]);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // おすすめ用データ取得失敗は無視
       } finally {
         setRecommendLoading(false);
       }
@@ -166,13 +140,11 @@ export default function BarrelsPage() {
     fetchBookmarks();
   }, [session]);
 
-  // ブランド一覧（動的生成）
   const brands = useMemo(() => {
     const set = new Set(barrels.map((b) => b.brand).filter(Boolean));
     return Array.from(set).sort();
   }, [barrels]);
 
-  // カット一覧（プリセット + DBに存在するカット、個別タグに展開）
   const cuts = useMemo(() => {
     const dbCuts = barrels
       .map((b) => b.cut)
@@ -187,7 +159,6 @@ export default function BarrelsPage() {
     return Array.from(set);
   }, [barrels]);
 
-  // 商品名からソフト/スティールを判定
   const getBarrelType = (name: string): 'soft' | 'steel' | '' => {
     const n = name.toLowerCase();
     if (n.includes('steel') || n.includes('スティール')) return 'steel';
@@ -195,11 +166,9 @@ export default function BarrelsPage() {
     return '';
   };
 
-  // フィルタリング + 新しい順ソート
   const filteredBarrels = useMemo(() => {
     return barrels
       .filter((b) => {
-        // 販売状態フィルタ
         if (statusFilter === 'current' && b.isDiscontinued === true) return false;
         if (statusFilter === 'discontinued' && b.isDiscontinued !== true) return false;
         if (searchQuery) {
@@ -208,8 +177,7 @@ export default function BarrelsPage() {
         }
         if (selectedBrand && b.brand !== selectedBrand) return false;
         if (selectedType) {
-          const barrelType = getBarrelType(b.name);
-          if (barrelType !== selectedType) return false;
+          if (getBarrelType(b.name) !== selectedType) return false;
         }
         if (b.weight < weightRange[0] || b.weight > weightRange[1]) return false;
         if (b.maxDiameter && (b.maxDiameter < diameterRange[0] || b.maxDiameter > diameterRange[1]))
@@ -238,7 +206,6 @@ export default function BarrelsPage() {
     selectedCut,
   ]);
 
-  // フィルター変更時にページを1に戻す
   useEffect(() => {
     setPage(1);
   }, [
@@ -252,7 +219,6 @@ export default function BarrelsPage() {
     selectedCut,
   ]);
 
-  // ページネーション
   const totalPages = Math.ceil(filteredBarrels.length / ITEMS_PER_PAGE);
   const paginatedBarrels = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
@@ -330,167 +296,16 @@ export default function BarrelsPage() {
         </Box>
       </Box>
 
-      {/* 人気バレルランキング */}
-      {ranking.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <TrendingUpIcon color="primary" />
-            <Typography variant="h6">人気バレル</Typography>
-            <Typography variant="caption" color="text.secondary">
-              ダーツハイブ売上ランキング
-            </Typography>
-          </Box>
-          <Tabs
-            value={rankingTab}
-            onChange={(_, v) => setRankingTab(v)}
-            sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
-          >
-            <Tab label="週間" value="weekly" />
-            <Tab label="月間" value="monthly" />
-            <Tab label="総合" value="all" />
-          </Tabs>
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 2,
-              overflowX: 'auto',
-              pb: 1,
-              scrollSnapType: 'x mandatory',
-              '&::-webkit-scrollbar': { height: 6 },
-              '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
-            }}
-          >
-            {ranking.map((item) => (
-              <Card
-                key={item.rank}
-                sx={{
-                  minWidth: 150,
-                  maxWidth: 150,
-                  flexShrink: 0,
-                  position: 'relative',
-                  scrollSnapAlign: 'start',
-                }}
-              >
-                <CardActionArea
-                  href={toDartshiveAffiliateUrl(item.productUrl, getAffiliateConfig())}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ height: '100%' }}
-                >
-                  <Chip
-                    label={`${item.rank}位`}
-                    size="small"
-                    color="primary"
-                    sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1, fontWeight: 'bold' }}
-                  />
-                  {item.imageUrl ? (
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={getBarrelImageUrl(item.imageUrl) ?? ''}
-                      alt={item.name}
-                      sx={{ objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        height: 120,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: 'action.hover',
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        No Image
-                      </Typography>
-                    </Box>
-                  )}
-                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                    <Typography variant="caption" noWrap display="block" fontWeight="bold">
-                      {item.name}
-                    </Typography>
-                    {item.price && (
-                      <Typography variant="caption" color="text.secondary" noWrap display="block">
-                        {item.price}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            ))}
-          </Box>
-        </Box>
-      )}
+      <BarrelRankingSection ranking={ranking} rankingTab={rankingTab} onTabChange={setRankingTab} />
 
-      {/* あなたへのおすすめバレル */}
       {session && myDarts.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, cursor: 'pointer' }}
-            onClick={() => setRecommendOpen(!recommendOpen)}
-          >
-            <RecommendIcon color="primary" />
-            <Typography variant="h6">あなたへのおすすめバレル</Typography>
-            <IconButton size="small">
-              {recommendOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Box>
-          <Collapse in={recommendOpen}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              登録済みのセッティングの重量・最大径・全長・カット・ブランドをもとに、近いスペックのバレルを提案しています。
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <Chip
-                label="ソフト"
-                onClick={() => setRecommendType('soft')}
-                color={recommendType === 'soft' ? 'primary' : 'default'}
-                variant={recommendType === 'soft' ? 'filled' : 'outlined'}
-                size="small"
-              />
-              <Chip
-                label="スティール"
-                onClick={() => setRecommendType('steel')}
-                color={recommendType === 'steel' ? 'primary' : 'default'}
-                variant={recommendType === 'steel' ? 'filled' : 'outlined'}
-                size="small"
-              />
-            </Box>
-            {recommendLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={32} />
-              </Box>
-            ) : recommendedBarrels.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                おすすめバレルが見つかりませんでした
-              </Typography>
-            ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  overflowX: 'auto',
-                  pb: 1,
-                  scrollSnapType: 'x mandatory',
-                  '&::-webkit-scrollbar': { height: 6 },
-                  '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.disabled' },
-                }}
-              >
-                {recommendedBarrels.map((barrel) => (
-                  <Box
-                    key={barrel.id}
-                    sx={{ minWidth: 240, maxWidth: 240, flexShrink: 0, scrollSnapAlign: 'start' }}
-                  >
-                    <BarrelCard
-                      barrel={barrel}
-                      isBookmarked={barrel.id ? bookmarkedIds.has(barrel.id) : false}
-                    />
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Collapse>
-        </Box>
+        <BarrelRecommendSection
+          recommendedBarrels={recommendedBarrels}
+          recommendType={recommendType}
+          onTypeChange={setRecommendType}
+          loading={recommendLoading}
+          bookmarkedIds={bookmarkedIds}
+        />
       )}
 
       <TextField
@@ -500,12 +315,14 @@ export default function BarrelsPage() {
         fullWidth
         size="small"
         sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          },
         }}
       />
 
@@ -533,7 +350,6 @@ export default function BarrelsPage() {
         )}
       </Box>
 
-      {/* ヒット件数表示 */}
       <Paper
         variant="outlined"
         sx={{
@@ -564,119 +380,25 @@ export default function BarrelsPage() {
         )}
       </Paper>
 
-      <Collapse in={filterOpen}>
-        <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
-              販売状態
-            </Typography>
-            <ToggleButtonGroup
-              value={statusFilter}
-              exclusive
-              onChange={(_, v) => {
-                if (v !== null) setStatusFilter(v);
-              }}
-              size="small"
-            >
-              <ToggleButton value="all">すべて</ToggleButton>
-              <ToggleButton value="current">現行品のみ</ToggleButton>
-              <ToggleButton value="discontinued">廃盤のみ</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>タイプ</InputLabel>
-                <Select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  label="タイプ"
-                >
-                  <MenuItem value="">すべて</MenuItem>
-                  <MenuItem value="soft">ソフト (2BA/4BA)</MenuItem>
-                  <MenuItem value="steel">スティール</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>ブランド</InputLabel>
-                <Select
-                  value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
-                  label="ブランド"
-                >
-                  <MenuItem value="">すべて</MenuItem>
-                  {brands.map((brand) => (
-                    <MenuItem key={brand} value={brand}>
-                      {brand}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>カット</InputLabel>
-                <Select
-                  value={selectedCut}
-                  onChange={(e) => setSelectedCut(e.target.value)}
-                  label="カット"
-                >
-                  <MenuItem value="">すべて</MenuItem>
-                  {cuts.map((cut) => (
-                    <MenuItem key={cut} value={cut}>
-                      {cut}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Typography variant="body2" gutterBottom>
-                重量: {weightRange[0]}g 〜 {weightRange[1]}g
-              </Typography>
-              <Slider
-                value={weightRange}
-                onChange={(_, v) => setWeightRange(v as [number, number])}
-                min={10}
-                max={30}
-                step={0.5}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(v) => `${v}g`}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Typography variant="body2" gutterBottom>
-                最大径: {diameterRange[0]}mm 〜 {diameterRange[1]}mm
-              </Typography>
-              <Slider
-                value={diameterRange}
-                onChange={(_, v) => setDiameterRange(v as [number, number])}
-                min={4}
-                max={10}
-                step={0.1}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(v) => `${v}mm`}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Typography variant="body2" gutterBottom>
-                全長: {lengthRange[0]}mm 〜 {lengthRange[1]}mm
-              </Typography>
-              <Slider
-                value={lengthRange}
-                onChange={(_, v) => setLengthRange(v as [number, number])}
-                min={20}
-                max={60}
-                step={0.5}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(v) => `${v}mm`}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
-      </Collapse>
+      <BarrelFilterPanel
+        open={filterOpen}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedBrand={selectedBrand}
+        onBrandChange={setSelectedBrand}
+        brands={brands}
+        selectedCut={selectedCut}
+        onCutChange={setSelectedCut}
+        cuts={cuts}
+        weightRange={weightRange}
+        onWeightChange={setWeightRange}
+        diameterRange={diameterRange}
+        onDiameterChange={setDiameterRange}
+        lengthRange={lengthRange}
+        onLengthChange={setLengthRange}
+      />
 
       {loading ? (
         <Grid container spacing={2}>
@@ -686,6 +408,10 @@ export default function BarrelsPage() {
             </Grid>
           ))}
         </Grid>
+      ) : error ? (
+        <Alert severity="error" sx={{ my: 4 }}>
+          {error}
+        </Alert>
       ) : filteredBarrels.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 8 }}>
           {barrels.length === 0

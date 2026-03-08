@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Container, Typography, Box, CircularProgress, Button } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Button, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,6 +16,7 @@ export default function AboutPage() {
   const { data: session } = useSession();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -30,8 +31,8 @@ export default function AboutPage() {
           const doc = snapshot.docs[0];
           setArticle({ id: doc.id, ...doc.data() } as Article);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setError('ページの読み込みに失敗しました');
       } finally {
         setLoading(false);
       }
@@ -44,6 +45,14 @@ export default function AboutPage() {
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
     );
   }
 

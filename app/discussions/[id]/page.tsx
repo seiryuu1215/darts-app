@@ -10,6 +10,12 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import LockIcon from '@mui/icons-material/Lock';
@@ -58,6 +64,10 @@ export default function DiscussionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reported, setReported] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: 'delete' | 'report' | null;
+  }>({ open: false, action: null });
 
   const role = session?.user?.role;
   const userId = session?.user?.id;
@@ -85,7 +95,7 @@ export default function DiscussionDetailPage() {
       const snap = await getDocs(q);
       setReplies(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DiscussionReply));
     } catch {
-      /* データ取得エラーは無視 */
+      setError('返信の読み込みに失敗しました');
     }
   }, [discussionId]);
 
@@ -118,7 +128,7 @@ export default function DiscussionDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('このスレッドを削除しますか？')) return;
+    setConfirmDialog({ open: false, action: null });
     try {
       // 返信も削除
       const repliesSnap = await getDocs(collection(db, 'discussions', discussionId, 'replies'));
@@ -141,7 +151,7 @@ export default function DiscussionDetailPage() {
 
   const handleReport = async () => {
     if (!userId || !discussionId) return;
-    if (!confirm('このスレッドを通報しますか？')) return;
+    setConfirmDialog({ open: false, action: null });
     try {
       await addDoc(collection(db, 'reports'), {
         userId,
@@ -152,8 +162,8 @@ export default function DiscussionDetailPage() {
         createdAt: serverTimestamp(),
       });
       setReported(true);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setError('通報に失敗しました');
     }
   };
 
@@ -264,7 +274,11 @@ export default function DiscussionDetailPage() {
           )}
           {canEdit && (
             <Tooltip title="削除">
-              <IconButton size="small" onClick={handleDelete} color="error">
+              <IconButton
+                size="small"
+                onClick={() => setConfirmDialog({ open: true, action: 'delete' })}
+                color="error"
+              >
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -282,7 +296,7 @@ export default function DiscussionDetailPage() {
             <span>
               <IconButton
                 size="small"
-                onClick={handleReport}
+                onClick={() => setConfirmDialog({ open: true, action: 'report' })}
                 disabled={reported}
                 aria-label="通報する"
               >
@@ -306,6 +320,39 @@ export default function DiscussionDetailPage() {
       )}
 
       {canReply && <ReplyForm discussionId={discussionId} onReplyAdded={handleReplyChange} />}
+
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, action: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          {confirmDialog.action === 'delete' ? 'スレッドの削除' : 'スレッドの通報'}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {confirmDialog.action === 'delete'
+              ? 'このスレッドを削除しますか？'
+              : 'このスレッドを通報しますか？'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog({ open: false, action: null })}>
+            キャンセル
+          </Button>
+          <Button
+            onClick={() => {
+              if (confirmDialog.action === 'delete') handleDelete();
+              else handleReport();
+            }}
+            color={confirmDialog.action === 'delete' ? 'error' : 'primary'}
+            variant="contained"
+          >
+            {confirmDialog.action === 'delete' ? '削除' : '通報'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </TwoColumnLayout>
   );
 }

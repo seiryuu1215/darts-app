@@ -11,61 +11,13 @@ import {
   Alert,
   AlertTitle,
   LinearProgress,
-  Drawer,
-  IconButton,
   Skeleton,
   Container,
 } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import BedtimeIcon from '@mui/icons-material/Bedtime';
-import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import AirIcon from '@mui/icons-material/Air';
-import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import SyncIcon from '@mui/icons-material/Sync';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import TimerIcon from '@mui/icons-material/Timer';
-import CloseIcon from '@mui/icons-material/Close';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  ComposedChart,
-  Line,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  Legend,
-} from 'recharts';
-import CircularProgress from '@mui/material/CircularProgress';
-import StarIcon from '@mui/icons-material/Star';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import InsightsIcon from '@mui/icons-material/Insights';
-import NightsStayIcon from '@mui/icons-material/NightsStay';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import type { HealthMetric, HealthDartsCorrelation } from '@/types';
-import {
-  generateHealthInsights,
-  calculateConditionScore,
-  calculatePersonalBaseline,
-  predictCuFromCondition,
-  analyzeBestConditionProfile,
-  analyzePracticeTimingPatterns,
-  aggregateMonthlyHealthDarts,
-  analyzeSleepStageCorrelations,
-} from '@/lib/health-analytics';
+import { generateHealthInsights } from '@/lib/health-analytics';
 import {
   isNativePlatform,
   isHealthKitSetupComplete,
@@ -74,1453 +26,17 @@ import {
   autoSyncIfNeeded,
   type SyncProgress,
 } from '@/lib/capacitor/health-sync';
-
-// ============================================
-// 定数
-// ============================================
-
-const PERIOD_OPTIONS = [
-  { label: '1日', days: 1 },
-  { label: '7日', days: 7 },
-  { label: '14日', days: 14 },
-  { label: '30日', days: 30 },
-] as const;
-
-const CATEGORY_COLORS = {
-  heart: { primary: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  sleep: { primary: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
-  activity: { primary: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
-  vitals: { primary: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-};
-
-// ============================================
-// ユーティリティ
-// ============================================
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
-function formatMinutesToHM(minutes: number | null): string {
-  if (minutes === null) return '--';
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h}h${m > 0 ? `${m}m` : ''}`;
-}
-
-function getTrend(current: number | null, previous: number | null): 'up' | 'down' | 'flat' | null {
-  if (current === null || previous === null) return null;
-  const diff = current - previous;
-  const pct = Math.abs(diff / previous) * 100;
-  if (pct < 2) return 'flat';
-  return diff > 0 ? 'up' : 'down';
-}
-
-function TrendIcon({
-  trend,
-  goodDirection = 'up',
-}: {
-  trend: 'up' | 'down' | 'flat' | null;
-  goodDirection?: 'up' | 'down';
-}) {
-  if (!trend || trend === 'flat')
-    return <TrendingFlatIcon sx={{ fontSize: 14, color: '#71717a' }} />;
-  const isGood = trend === goodDirection;
-  const color = isGood ? '#22c55e' : '#ef4444';
-  if (trend === 'up') return <TrendingUpIcon sx={{ fontSize: 14, color }} />;
-  return <TrendingDownIcon sx={{ fontSize: 14, color }} />;
-}
-
-// ============================================
-// リングチャート (SVG)
-// ============================================
-
-function RingChart({
-  value,
-  max,
-  size = 64,
-  strokeWidth = 5,
-  color,
-  children,
-}: {
-  value: number;
-  max: number;
-  size?: number;
-  strokeWidth?: number;
-  color: string;
-  children?: React.ReactNode;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Math.min(value / max, 1);
-  const offset = circumference * (1 - progress);
-
-  return (
-    <Box
-      sx={{
-        position: 'relative',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-      }}
-    >
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#333"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.7s ease-out' }}
-        />
-      </svg>
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {children}
-      </Box>
-    </Box>
-  );
-}
-
-// ============================================
-// 睡眠ステージバー
-// ============================================
-
-function SleepStageBar({ metric }: { metric: HealthMetric }) {
-  const total = metric.timeInBedMinutes || metric.sleepDurationMinutes || 0;
-  if (total === 0) return null;
-
-  const deep = metric.sleepDeepMinutes || 0;
-  const rem = metric.sleepRemMinutes || 0;
-  const core = metric.sleepCoreMinutes || 0;
-  const awake = metric.sleepAwakeMinutes || 0;
-  const light = Math.max(0, (metric.sleepDurationMinutes || 0) - deep - rem - core);
-
-  const stages = [
-    { label: '深い', minutes: deep, color: '#6d28d9' },
-    { label: 'コア', minutes: core, color: '#7c3aed' },
-    { label: 'REM', minutes: rem, color: '#a78bfa' },
-    { label: '浅い', minutes: light, color: '#c4b5fd' },
-    { label: '覚醒', minutes: awake, color: '#3f3f46' },
-  ].filter((s) => s.minutes > 0);
-
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', height: 24, borderRadius: 2, overflow: 'hidden' }}>
-        {stages.map((stage, i) => (
-          <Box
-            key={i}
-            sx={{
-              width: `${(stage.minutes / total) * 100}%`,
-              backgroundColor: stage.color,
-              transition: 'all 0.5s',
-            }}
-          />
-        ))}
-      </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 1 }}>
-        {stages.map((stage, i) => (
-          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: stage.color }} />
-            <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
-              {stage.label} {formatMinutesToHM(stage.minutes)}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
-// ============================================
-// ヘルスメトリクスカード
-// ============================================
-
-function HealthCard({
-  icon,
-  label,
-  value,
-  unit,
-  trend,
-  trendGoodDirection = 'up',
-  color,
-  subLabel,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number | null;
-  unit: string;
-  trend?: 'up' | 'down' | 'flat' | null;
-  trendGoodDirection?: 'up' | 'down';
-  color: { primary: string; bg: string };
-  subLabel?: string;
-  onClick?: () => void;
-}) {
-  return (
-    <Paper
-      onClick={onClick}
-      sx={{
-        p: 1.5,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: `${color.primary}20`,
-        bgcolor: 'rgba(24,24,27,0.8)',
-        cursor: onClick ? 'pointer' : 'default',
-        transition: 'transform 0.1s',
-        '&:active': onClick ? { transform: 'scale(0.98)' } : {},
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Box
-            sx={{
-              borderRadius: 1,
-              p: 0.5,
-              bgcolor: color.bg,
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
-            {label}
-          </Typography>
-        </Box>
-        {trend && <TrendIcon trend={trend} goodDirection={trendGoodDirection} />}
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: '#fafafa' }}>
-          {value ?? '--'}
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#71717a' }}>
-          {unit}
-        </Typography>
-      </Box>
-      {subLabel && (
-        <Typography variant="caption" sx={{ fontSize: 11, color: '#71717a', mt: 0.25 }}>
-          {subLabel}
-        </Typography>
-      )}
-      {onClick && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
-          <ChevronRightIcon sx={{ fontSize: 14, color: '#52525b' }} />
-        </Box>
-      )}
-    </Paper>
-  );
-}
-
-// ============================================
-// カスタムTooltip
-// ============================================
-
-function ChartTooltip({
-  active,
-  payload,
-  label,
-  unit,
-}: {
-  active?: boolean;
-  payload?: Array<{ value: number; color: string }>;
-  label?: string;
-  unit?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <Paper sx={{ px: 1.5, py: 1, bgcolor: '#1e1e1e', border: '1px solid #444', borderRadius: 1.5 }}>
-      <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
-        {label}
-      </Typography>
-      {payload.map((p, i) => (
-        <Typography
-          key={i}
-          variant="body2"
-          sx={{ fontFamily: 'monospace', fontWeight: 500, color: p.color }}
-        >
-          {typeof p.value === 'number' ? p.value.toLocaleString() : p.value}
-          {unit && (
-            <Typography
-              component="span"
-              variant="caption"
-              sx={{ ml: 0.5, color: '#71717a', fontSize: 10 }}
-            >
-              {unit}
-            </Typography>
-          )}
-        </Typography>
-      ))}
-    </Paper>
-  );
-}
-
-// ============================================
-// カテゴリセクション: 心臓
-// ============================================
-
-function HeartSection({
-  metrics,
-  latest,
-  previousLatest,
-  onDetailOpen,
-}: {
-  metrics: HealthMetric[];
-  latest: HealthMetric | null;
-  previousLatest: HealthMetric | null;
-  onDetailOpen: (type: string) => void;
-}) {
-  const chartData = useMemo(
-    () =>
-      [...metrics].reverse().map((m) => ({
-        date: formatDate(m.metricDate),
-        rhr: m.restingHr,
-        hrv: m.hrvSdnn,
-      })),
-    [metrics],
-  );
-
-  const color = CATEGORY_COLORS.heart;
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <FavoriteIcon sx={{ fontSize: 16, color: color.primary }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          心臓
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-        <HealthCard
-          icon={<FavoriteIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="安静時心拍"
-          value={latest?.restingHr ?? null}
-          unit="bpm"
-          trend={getTrend(latest?.restingHr ?? null, previousLatest?.restingHr ?? null)}
-          trendGoodDirection="down"
-          color={color}
-          onClick={() => onDetailOpen('rhr')}
-        />
-        <HealthCard
-          icon={<MonitorHeartIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="HRV"
-          value={latest?.hrvSdnn ?? null}
-          unit="ms"
-          trend={getTrend(latest?.hrvSdnn ?? null, previousLatest?.hrvSdnn ?? null)}
-          trendGoodDirection="up"
-          color={color}
-          onClick={() => onDetailOpen('hrv')}
-        />
-      </Box>
-
-      {chartData.length > 1 && (
-        <Paper
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.05)',
-            bgcolor: 'rgba(24,24,27,0.8)',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-          >
-            安静時心拍の推移
-          </Typography>
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="rhrGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['dataMin - 5', 'dataMax + 5']}
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-                width={30}
-              />
-              <Tooltip content={<ChartTooltip unit="bpm" />} />
-              <Area
-                type="monotone"
-                dataKey="rhr"
-                stroke="#ef4444"
-                fill="url(#rhrGradient)"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Paper>
-      )}
-    </Box>
-  );
-}
-
-// ============================================
-// カテゴリセクション: 睡眠
-// ============================================
-
-function SleepSection({
-  metrics,
-  latest,
-  previousLatest,
-  onDetailOpen,
-}: {
-  metrics: HealthMetric[];
-  latest: HealthMetric | null;
-  previousLatest: HealthMetric | null;
-  onDetailOpen: (type: string) => void;
-}) {
-  const chartData = useMemo(
-    () =>
-      [...metrics].reverse().map((m) => ({
-        date: formatDate(m.metricDate),
-        hours: m.sleepDurationMinutes ? Math.round((m.sleepDurationMinutes / 60) * 10) / 10 : null,
-      })),
-    [metrics],
-  );
-
-  const color = CATEGORY_COLORS.sleep;
-  const sleepHours = latest?.sleepDurationMinutes
-    ? Math.round((latest.sleepDurationMinutes / 60) * 10) / 10
-    : null;
-  const prevSleepHours = previousLatest?.sleepDurationMinutes
-    ? Math.round((previousLatest.sleepDurationMinutes / 60) * 10) / 10
-    : null;
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <BedtimeIcon sx={{ fontSize: 16, color: color.primary }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          睡眠
-        </Typography>
-      </Box>
-
-      <HealthCard
-        icon={<BedtimeIcon sx={{ fontSize: 14, color: color.primary }} />}
-        label="睡眠時間"
-        value={sleepHours}
-        unit="時間"
-        trend={getTrend(sleepHours, prevSleepHours)}
-        trendGoodDirection="up"
-        color={color}
-        subLabel={
-          latest?.sleepDeepMinutes
-            ? `深い睡眠 ${formatMinutesToHM(latest.sleepDeepMinutes)}`
-            : undefined
-        }
-        onClick={() => onDetailOpen('sleep')}
-      />
-
-      {latest && (latest.sleepDeepMinutes || latest.sleepRemMinutes) && (
-        <Paper
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.05)',
-            bgcolor: 'rgba(24,24,27,0.8)',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-          >
-            睡眠ステージ
-          </Typography>
-          <SleepStageBar metric={latest} />
-        </Paper>
-      )}
-
-      {chartData.length > 1 && (
-        <Paper
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.05)',
-            bgcolor: 'rgba(24,24,27,0.8)',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-          >
-            睡眠時間の推移
-          </Typography>
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={[0, 'dataMax + 1']}
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-                width={24}
-              />
-              <Tooltip content={<ChartTooltip unit="h" />} />
-              <Bar dataKey="hours" radius={[4, 4, 0, 0]} maxBarSize={20}>
-                {chartData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={entry.hours !== null && entry.hours < 6 ? '#7c3aed' : '#a78bfa'}
-                    fillOpacity={entry.hours !== null && entry.hours < 6 ? 1 : 0.7}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
-      )}
-    </Box>
-  );
-}
-
-// ============================================
-// カテゴリセクション: アクティビティ
-// ============================================
-
-function ActivitySection({
-  metrics,
-  latest,
-  previousLatest,
-  onDetailOpen,
-}: {
-  metrics: HealthMetric[];
-  latest: HealthMetric | null;
-  previousLatest: HealthMetric | null;
-  onDetailOpen: (type: string) => void;
-}) {
-  const color = CATEGORY_COLORS.activity;
-  const stepsGoal = 8000;
-  const exerciseGoal = 30;
-  const standGoal = 12;
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <LocalFireDepartmentIcon sx={{ fontSize: 16, color: color.primary }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          アクティビティ
-        </Typography>
-      </Box>
-
-      {/* Activity Rings */}
-      {latest && (latest.steps !== null || latest.exerciseMinutes !== null) && (
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.05)',
-            bgcolor: 'rgba(24,24,27,0.8)',
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
-              <RingChart
-                value={latest.steps || 0}
-                max={stepsGoal}
-                size={72}
-                strokeWidth={6}
-                color="#22c55e"
-              >
-                <DirectionsWalkIcon sx={{ fontSize: 16, color: '#22c55e' }} />
-              </RingChart>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#fafafa' }}>
-                  {(latest.steps || 0).toLocaleString()}
-                </Typography>
-                <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
-                  歩数
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
-              <RingChart
-                value={latest.exerciseMinutes || 0}
-                max={exerciseGoal}
-                size={72}
-                strokeWidth={6}
-                color="#eab308"
-              >
-                <TimerIcon sx={{ fontSize: 16, color: '#eab308' }} />
-              </RingChart>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#fafafa' }}>
-                  {latest.exerciseMinutes || 0}
-                </Typography>
-                <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
-                  エクササイズ(分)
-                </Typography>
-              </Box>
-            </Box>
-
-            {latest.standHours !== null && (
-              <Box
-                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}
-              >
-                <RingChart
-                  value={latest.standHours || 0}
-                  max={standGoal}
-                  size={72}
-                  strokeWidth={6}
-                  color="#06b6d4"
-                >
-                  <FitnessCenterIcon sx={{ fontSize: 16, color: '#06b6d4' }} />
-                </RingChart>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#fafafa' }}>
-                    {latest.standHours || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
-                    スタンド(時間)
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Paper>
-      )}
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-        <HealthCard
-          icon={<DirectionsWalkIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="歩数"
-          value={latest?.steps?.toLocaleString() ?? null}
-          unit="歩"
-          trend={getTrend(latest?.steps ?? null, previousLatest?.steps ?? null)}
-          color={color}
-          onClick={() => onDetailOpen('steps')}
-        />
-        <HealthCard
-          icon={<LocalFireDepartmentIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="アクティブカロリー"
-          value={latest?.activeEnergyKcal ? Math.round(latest.activeEnergyKcal) : null}
-          unit="kcal"
-          trend={getTrend(
-            latest?.activeEnergyKcal ?? null,
-            previousLatest?.activeEnergyKcal ?? null,
-          )}
-          color={color}
-          onClick={() => onDetailOpen('calories')}
-        />
-      </Box>
-
-      {/* 歩数チャート */}
-      {metrics.length > 1 && (
-        <Paper
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.05)',
-            bgcolor: 'rgba(24,24,27,0.8)',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-          >
-            歩数の推移
-          </Typography>
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart
-              data={[...metrics].reverse().map((m) => ({
-                date: formatDate(m.metricDate),
-                steps: m.steps,
-              }))}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: '#71717a' }}
-                axisLine={false}
-                tickLine={false}
-                width={36}
-              />
-              <Tooltip content={<ChartTooltip unit="歩" />} />
-              <Bar
-                dataKey="steps"
-                fill="#22c55e"
-                fillOpacity={0.7}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={20}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
-      )}
-    </Box>
-  );
-}
-
-// ============================================
-// カテゴリセクション: バイタル
-// ============================================
-
-function VitalsSection({
-  latest,
-  previousLatest,
-}: {
-  latest: HealthMetric | null;
-  previousLatest: HealthMetric | null;
-}) {
-  const color = CATEGORY_COLORS.vitals;
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <WaterDropIcon sx={{ fontSize: 16, color: color.primary }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          バイタル
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-        <HealthCard
-          icon={<AirIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="呼吸数"
-          value={latest?.respiratoryRate ?? null}
-          unit="回/分"
-          trend={getTrend(latest?.respiratoryRate ?? null, previousLatest?.respiratoryRate ?? null)}
-          trendGoodDirection="down"
-          color={color}
-        />
-        <HealthCard
-          icon={<WaterDropIcon sx={{ fontSize: 14, color: color.primary }} />}
-          label="SpO2"
-          value={latest?.bloodOxygenPct ?? null}
-          unit="%"
-          trend={getTrend(latest?.bloodOxygenPct ?? null, previousLatest?.bloodOxygenPct ?? null)}
-          trendGoodDirection="up"
-          color={color}
-        />
-      </Box>
-    </Box>
-  );
-}
-
-// ============================================
-// コンディションスコアセクション (A)
-// ============================================
-
-function ConditionScoreSection({
-  metrics,
-  correlationData,
-}: {
-  metrics: HealthMetric[];
-  correlationData: HealthDartsCorrelation[];
-}) {
-  const result = useMemo(() => {
-    if (metrics.length === 0) return null;
-    const baseline = calculatePersonalBaseline(metrics);
-    const score = calculateConditionScore(metrics[0], baseline);
-    const prediction = predictCuFromCondition(score.score, correlationData);
-    return { score, prediction };
-  }, [metrics, correlationData]);
-
-  if (!result) return null;
-
-  const { score, prediction } = result;
-  const progressColor =
-    score.score >= 80
-      ? '#22c55e'
-      : score.score >= 60
-        ? '#eab308'
-        : score.score >= 40
-          ? '#f97316'
-          : '#ef4444';
-
-  const factors = [
-    { label: 'HRV', value: score.factors.hrv, color: '#ef4444' },
-    { label: '睡眠時間', value: score.factors.sleep, color: '#a78bfa' },
-    { label: '安静時心拍', value: score.factors.restingHr, color: '#f97316' },
-    { label: '睡眠品質', value: score.factors.sleepQuality, color: '#6d28d9' },
-    { label: '活動量', value: score.factors.activity, color: '#22c55e' },
-  ];
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <InsightsIcon sx={{ fontSize: 16, color: progressColor }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          コンディションスコア
-        </Typography>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.05)',
-          bgcolor: 'rgba(24,24,27,0.8)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <CircularProgress
-              variant="determinate"
-              value={score.score}
-              size={80}
-              thickness={5}
-              sx={{ color: progressColor }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1 }}>
-                {score.score}
-              </Typography>
-              <Typography variant="caption" sx={{ fontSize: 9, color: '#71717a' }}>
-                {score.label}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ flex: 1 }}>
-            {factors.map((f) => (
-              <Box key={f.label} sx={{ mb: 0.5 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-                  <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
-                    {f.label}
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: 10, color: '#a1a1aa' }}>
-                    {f.value}
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={f.value}
-                  sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    bgcolor: 'rgba(255,255,255,0.05)',
-                    '& .MuiLinearProgress-bar': { bgcolor: f.color, borderRadius: 2 },
-                  }}
-                />
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* 星サジェスト */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5 }}>
-          <StarIcon sx={{ fontSize: 14, color: '#eab308' }} />
-          <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
-            LINE記録おすすめ: ★{score.star}
-          </Typography>
-        </Box>
-
-        {/* CU平均予測レンジ */}
-        {prediction && (
-          <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
-            <Typography variant="caption" sx={{ fontSize: 10, color: '#71717a' }}>
-              CU平均予測レンジ
-            </Typography>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#fafafa' }}>
-              {prediction.low} — <strong>{prediction.expected}</strong> — {prediction.high}
-            </Typography>
-          </Box>
-        )}
-      </Paper>
-    </Box>
-  );
-}
-
-// ============================================
-// ベストコンディションセクション (C)
-// ============================================
-
-function BestConditionSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
-  const profile = useMemo(() => analyzeBestConditionProfile(correlationData), [correlationData]);
-
-  if (!profile) return null;
-
-  const ranges = [
-    { label: 'HRV', range: profile.optimalHrv, unit: 'ms', color: '#ef4444' },
-    { label: '睡眠', range: profile.optimalSleep, unit: 'h', color: '#a78bfa' },
-    { label: '安静時心拍', range: profile.optimalRestingHr, unit: 'bpm', color: '#f97316' },
-    { label: '歩数', range: profile.optimalSteps, unit: '歩', color: '#22c55e' },
-  ];
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <EmojiEventsIcon sx={{ fontSize: 16, color: '#eab308' }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          ベストコンディション
-        </Typography>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.05)',
-          bgcolor: 'rgba(24,24,27,0.8)',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-        >
-          CU平均上位20%時の最適レンジ（{profile.sampleSize}日分析）
-        </Typography>
-        {ranges.map((r) => (
-          <Box key={r.label} sx={{ mb: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-              <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
-                {r.label}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ fontSize: 11, color: '#fafafa', fontFamily: 'monospace' }}
-              >
-                {r.range[0].toLocaleString()} - {r.range[1].toLocaleString()} {r.unit}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                height: 6,
-                borderRadius: 3,
-                bgcolor: 'rgba(255,255,255,0.05)',
-                position: 'relative',
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'absolute',
-                  height: '100%',
-                  borderRadius: 3,
-                  bgcolor: r.color,
-                  opacity: 0.6,
-                  left: '20%',
-                  width: '60%',
-                }}
-              />
-            </Box>
-          </Box>
-        ))}
-      </Paper>
-    </Box>
-  );
-}
-
-// ============================================
-// 練習タイミングセクション (F)
-// ============================================
-
-function PracticeTimingSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
-  const result = useMemo(() => analyzePracticeTimingPatterns(correlationData), [correlationData]);
-
-  if (!result) return null;
-
-  const chartData = result.dayOfWeek.map((d) => ({
-    day: d.day,
-    cu: d.avgCu,
-    condition: d.avgCondition,
-  }));
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <CalendarTodayIcon sx={{ fontSize: 16, color: '#3b82f6' }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          練習タイミング分析
-        </Typography>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 1.5,
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.05)',
-          bgcolor: 'rgba(24,24,27,0.8)',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-        >
-          曜日別CU平均スコア
-        </Typography>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-            <XAxis
-              dataKey="day"
-              tick={{ fontSize: 11, fill: '#a1a1aa' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: '#71717a' }}
-              axisLine={false}
-              tickLine={false}
-              width={30}
-            />
-            <Tooltip content={<ChartTooltip unit="" />} />
-            <Bar dataKey="cu" radius={[4, 4, 0, 0]} maxBarSize={28}>
-              {chartData.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={
-                    entry.day === result.bestDay
-                      ? '#22c55e'
-                      : entry.day === result.worstDay
-                        ? '#ef4444'
-                        : '#3b82f6'
-                  }
-                  fillOpacity={0.7}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <Typography
-          variant="caption"
-          sx={{ fontSize: 11, color: '#22c55e', mt: 0.5, display: 'block' }}
-        >
-          {result.bestDay}曜日がベストコンディション
-        </Typography>
-      </Paper>
-    </Box>
-  );
-}
-
-// ============================================
-// 月次トレンドセクション (G)
-// ============================================
-
-function MonthlyTrendSection({ correlationData }: { correlationData: HealthDartsCorrelation[] }) {
-  const trendData = useMemo(() => aggregateMonthlyHealthDarts(correlationData), [correlationData]);
-
-  if (trendData.length < 2) return null;
-
-  const chartData = trendData.map((d) => ({
-    month: d.month.slice(5), // MM
-    cu: d.avgCu,
-    condition: d.avgCondition,
-  }));
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <TrendingUpIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          月次トレンド
-        </Typography>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 1.5,
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.05)',
-          bgcolor: 'rgba(24,24,27,0.8)',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-        >
-          コンディション vs CU平均 (月別)
-        </Typography>
-        <ResponsiveContainer width="100%" height={160}>
-          <ComposedChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 10, fill: '#71717a' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              yAxisId="left"
-              tick={{ fontSize: 10, fill: '#71717a' }}
-              axisLine={false}
-              tickLine={false}
-              width={30}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tick={{ fontSize: 10, fill: '#71717a' }}
-              axisLine={false}
-              tickLine={false}
-              width={30}
-            />
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-            <Bar
-              yAxisId="left"
-              dataKey="condition"
-              name="コンディション"
-              fill="#8b5cf6"
-              fillOpacity={0.5}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={20}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="cu"
-              name="CU平均"
-              stroke="#22c55e"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              connectNulls
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </Paper>
-    </Box>
-  );
-}
-
-// ============================================
-// 睡眠ステージ相関セクション (J)
-// ============================================
-
-function SleepStageCorrelationSection({
-  correlationData,
-}: {
-  correlationData: HealthDartsCorrelation[];
-}) {
-  const result = useMemo(() => analyzeSleepStageCorrelations(correlationData), [correlationData]);
-
-  if (!result) return null;
-
-  const stages = [
-    { label: '深い睡眠', r: result.deepSleepR, pct: result.deepSleepPct, color: '#6d28d9' },
-    { label: 'REM睡眠', r: result.remSleepR, pct: result.remSleepPct, color: '#a78bfa' },
-    { label: 'コア睡眠', r: result.coreSleepR, pct: result.coreSleepPct, color: '#7c3aed' },
-  ];
-
-  // 散布図データ（深い睡眠% vs CU平均）
-  const scatterData = correlationData
-    .filter(
-      (d) =>
-        d.countUpAvg !== null &&
-        d.sleepDurationMinutes !== null &&
-        d.sleepDurationMinutes > 0 &&
-        d.sleepDeepMinutes !== null,
-    )
-    .map((d) => ({
-      x: Math.round(((d.sleepDeepMinutes ?? 0) / d.sleepDurationMinutes!) * 100),
-      y: d.countUpAvg,
-    }));
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
-        <NightsStayIcon sx={{ fontSize: 16, color: '#6d28d9' }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          睡眠ステージ × CU平均
-        </Typography>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.05)',
-          bgcolor: 'rgba(24,24,27,0.8)',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{ fontSize: 11, color: '#71717a', mb: 1, display: 'block' }}
-        >
-          睡眠ステージ別 CU平均相関 ({result.n}日分析)
-        </Typography>
-
-        {stages.map((s) => (
-          <Box key={s.label} sx={{ mb: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-              <Typography variant="caption" sx={{ fontSize: 11, color: '#a1a1aa' }}>
-                {s.label} (平均{s.pct}%)
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: Math.abs(s.r) >= 0.3 ? '#22c55e' : '#71717a',
-                }}
-              >
-                r = {s.r > 0 ? '+' : ''}
-                {s.r.toFixed(2)}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                height: 6,
-                borderRadius: 3,
-                bgcolor: 'rgba(255,255,255,0.05)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'absolute',
-                  height: '100%',
-                  borderRadius: 3,
-                  bgcolor: s.color,
-                  left: '50%',
-                  width: `${Math.abs(s.r) * 50}%`,
-                  transform: s.r < 0 ? 'translateX(-100%)' : 'none',
-                }}
-              />
-            </Box>
-          </Box>
-        ))}
-
-        {/* 散布図 */}
-        {scatterData.length >= 5 && (
-          <Box sx={{ mt: 2 }}>
-            <Typography
-              variant="caption"
-              sx={{ fontSize: 10, color: '#71717a', display: 'block', mb: 0.5 }}
-            >
-              深い睡眠% × CU平均
-            </Typography>
-            <ResponsiveContainer width="100%" height={120}>
-              <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis
-                  dataKey="x"
-                  name="深い睡眠%"
-                  tick={{ fontSize: 9, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  dataKey="y"
-                  name="CU平均"
-                  tick={{ fontSize: 9, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={30}
-                />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                <Scatter data={scatterData} fill="#6d28d9" fillOpacity={0.6} />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </Box>
-        )}
-      </Paper>
-    </Box>
-  );
-}
-
-// ============================================
-// 詳細ドロワー
-// ============================================
-
-function DetailDrawer({
-  open,
-  onClose,
-  type,
-  metrics,
-}: {
-  open: boolean;
-  onClose: () => void;
-  type: string;
-  metrics: HealthMetric[];
-}) {
-  const config = useMemo(() => {
-    switch (type) {
-      case 'rhr':
-        return {
-          title: '安静時心拍',
-          color: '#ef4444',
-          unit: 'bpm',
-          getValue: (m: HealthMetric) => m.restingHr,
-        };
-      case 'hrv':
-        return {
-          title: 'HRV (SDNN)',
-          color: '#ef4444',
-          unit: 'ms',
-          getValue: (m: HealthMetric) => m.hrvSdnn,
-        };
-      case 'sleep':
-        return {
-          title: '睡眠時間',
-          color: '#a78bfa',
-          unit: 'h',
-          getValue: (m: HealthMetric) =>
-            m.sleepDurationMinutes ? Math.round((m.sleepDurationMinutes / 60) * 10) / 10 : null,
-        };
-      case 'steps':
-        return {
-          title: '歩数',
-          color: '#22c55e',
-          unit: '歩',
-          getValue: (m: HealthMetric) => m.steps,
-        };
-      case 'calories':
-        return {
-          title: 'アクティブカロリー',
-          color: '#22c55e',
-          unit: 'kcal',
-          getValue: (m: HealthMetric) =>
-            m.activeEnergyKcal ? Math.round(m.activeEnergyKcal) : null,
-        };
-      default:
-        return { title: '', color: '#fff', unit: '', getValue: () => null };
-    }
-  }, [type]);
-
-  const chartData = useMemo(
-    () =>
-      [...metrics]
-        .reverse()
-        .map((m) => ({ date: formatDate(m.metricDate), value: config.getValue(m) })),
-    [metrics, config],
-  );
-
-  const values = chartData.map((d) => d.value).filter((v): v is number => v !== null);
-  const avg =
-    values.length > 0
-      ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10
-      : null;
-  const min = values.length > 0 ? Math.min(...values) : null;
-  const max = values.length > 0 ? Math.max(...values) : null;
-
-  return (
-    <Drawer
-      anchor="bottom"
-      open={open}
-      onClose={onClose}
-      PaperProps={{ sx: { borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '80vh' } }}
-    >
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            {config.title}
-          </Typography>
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          {[
-            { label: '平均', value: avg },
-            { label: '最小', value: min },
-            { label: '最大', value: max },
-          ].map((stat) => (
-            <Paper key={stat.label} variant="outlined" sx={{ flex: 1, p: 1, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                {stat.label}
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {stat.value !== null ? stat.value.toLocaleString() : '--'}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
-
-        {chartData.length > 0 && (
-          <Box sx={{ width: '100%', height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="detailGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={config.color} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={config.color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                />
-                <Tooltip content={<ChartTooltip unit={config.unit} />} />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={config.color}
-                  fill="url(#detailGradient)"
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Box>
-        )}
-      </Box>
-    </Drawer>
-  );
-}
-
-// ============================================
-// メインページ
-// ============================================
+import { PERIOD_OPTIONS } from '@/components/health/constants';
+import { HeartSection } from '@/components/health/HeartSection';
+import { SleepSection } from '@/components/health/SleepSection';
+import { ActivitySection } from '@/components/health/ActivitySection';
+import { VitalsSection } from '@/components/health/VitalsSection';
+import { ConditionScoreSection } from '@/components/health/ConditionScoreSection';
+import { BestConditionSection } from '@/components/health/BestConditionSection';
+import { PracticeTimingSection } from '@/components/health/PracticeTimingSection';
+import { MonthlyTrendSection } from '@/components/health/MonthlyTrendSection';
+import { SleepStageCorrelationSection } from '@/components/health/SleepStageCorrelationSection';
+import { DetailDrawer } from '@/components/health/DetailDrawer';
 
 export default function HealthPage() {
   const [metrics, setMetrics] = useState<HealthMetric[]>([]);
@@ -1538,7 +54,6 @@ export default function HealthPage() {
   const addLog = (msg: string) =>
     setDebugLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
 
-  // ヘルスデータ取得
   const fetchMetrics = useCallback(async (days: number) => {
     setLoading(true);
     try {
@@ -1554,7 +69,6 @@ export default function HealthPage() {
     }
   }, []);
 
-  // 初期化
   useEffect(() => {
     const native = isNativePlatform();
     setIsNative(native);
@@ -1564,7 +78,6 @@ export default function HealthPage() {
       const ls = getLastSyncDate();
       setLastSync(ls ? ls.toLocaleString('ja-JP') : null);
 
-      // 自動同期
       autoSyncIfNeeded().then((result) => {
         if (result?.success) {
           setLastSync(new Date().toLocaleString('ja-JP'));
@@ -1575,25 +88,21 @@ export default function HealthPage() {
 
     fetchMetrics(period);
 
-    // 相関分析用データ取得
     fetch('/api/health-correlation?days=180')
       .then((r) => (r.ok ? r.json() : { correlations: [] }))
       .then((d) => setCorrelationData(d.correlations || []))
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 期間変更
   useEffect(() => {
     fetchMetrics(period);
   }, [period, fetchMetrics]);
 
-  // 初回セットアップ
   const handleSetup = async () => {
     setSyncing(true);
     setSyncError(null);
     setDebugLog([]);
     try {
-      // プラグイン直接呼び出し（ヘルパー関数を経由しない）
       const { registerPlugin } = await import('@capacitor/core');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const plugin = registerPlugin<any>('HealthKitPlugin');
@@ -1612,8 +121,6 @@ export default function HealthPage() {
         return;
       }
 
-      // セットアップでは権限取得+データ読み取り確認のみ
-      // Firestore書き込みはautoSyncに任せる（Firebase Auth非同期のため）
       addLog('3. セットアップ完了処理...');
       markHealthKitSetupComplete();
       setSetupNeeded(false);
@@ -1627,13 +134,11 @@ export default function HealthPage() {
     }
   };
 
-  // Firebase Authユーザーを取得（非同期待機対応）
   const getFirebaseUser = async () => {
     const { getAuth } = await import('firebase/auth');
     const user = getAuth().currentUser;
     if (user) return user;
 
-    // 未初期化の場合onAuthStateChangedで待機
     return new Promise<import('firebase/auth').User | null>((resolve) => {
       const unsub = getAuth().onAuthStateChanged((u) => {
         unsub();
@@ -1643,12 +148,10 @@ export default function HealthPage() {
     });
   };
 
-  // Firestoreに直接書き込む（バッチ対応）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const writeMetricsToFirestore = async (uid: string, metricsList: any[]) => {
     const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
-    // Firestoreバッチは500件まで
     for (let i = 0; i < metricsList.length; i += 400) {
       const chunk = metricsList.slice(i, i + 400);
       const batch = writeBatch(db);
@@ -1661,7 +164,6 @@ export default function HealthPage() {
     }
   };
 
-  // 手動同期（30日バックフィル）
   const handleSync = async () => {
     setSyncing(true);
     setSyncError(null);
@@ -1691,7 +193,6 @@ export default function HealthPage() {
         return;
       }
 
-      // データがある日数をカウント
       const daysWithData = allMetrics.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (m: any) => m.restingHr || m.steps || m.sleepDurationMinutes || m.avgHr,
@@ -1722,7 +223,6 @@ export default function HealthPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 2, px: { xs: 1.5, sm: 2 } }}>
-      {/* タイトル */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <HealthAndSafetyIcon sx={{ color: '#22c55e' }} />
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -1730,7 +230,6 @@ export default function HealthPage() {
         </Typography>
       </Box>
 
-      {/* HealthKitセットアップ（ネイティブ限定） */}
       {isNative && setupNeeded && (
         <Paper
           sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'primary.main' }}
@@ -1791,7 +290,6 @@ export default function HealthPage() {
         </Paper>
       )}
 
-      {/* 同期バー（ネイティブ限定） */}
       {isNative && !setupNeeded && (
         <Box
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}
@@ -1811,7 +309,6 @@ export default function HealthPage() {
         </Box>
       )}
 
-      {/* デバッグログ（同期時も表示） */}
       {!setupNeeded && debugLog.length > 0 && (
         <Box
           sx={{ mb: 1.5, p: 1, bgcolor: '#111', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}
@@ -1833,7 +330,6 @@ export default function HealthPage() {
         </Box>
       )}
 
-      {/* 期間セレクター */}
       <ToggleButtonGroup
         value={period}
         exclusive
@@ -1849,7 +345,6 @@ export default function HealthPage() {
         ))}
       </ToggleButtonGroup>
 
-      {/* ローディング */}
       {loading && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Skeleton variant="rounded" height={100} />
@@ -1858,10 +353,8 @@ export default function HealthPage() {
         </Box>
       )}
 
-      {/* コンテンツ */}
       {!loading && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* インサイト */}
           {insights.length > 0 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {insights.map((insight, i) => (
@@ -1892,7 +385,6 @@ export default function HealthPage() {
             </Box>
           )}
 
-          {/* データなし */}
           {metrics.length === 0 && (
             <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
               <HealthAndSafetyIcon sx={{ fontSize: 48, color: '#52525b', mb: 1 }} />
@@ -1907,7 +399,6 @@ export default function HealthPage() {
             </Paper>
           )}
 
-          {/* セクション */}
           {metrics.length > 0 && (
             <>
               <HeartSection
@@ -1930,7 +421,6 @@ export default function HealthPage() {
               />
               <VitalsSection latest={latest} previousLatest={previousLatest} />
 
-              {/* 新セクション: コンディション / ベスト / 練習タイミング / 月次 / 睡眠ステージ */}
               <ConditionScoreSection metrics={metrics} correlationData={correlationData} />
               <BestConditionSection correlationData={correlationData} />
               <PracticeTimingSection correlationData={correlationData} />
@@ -1941,7 +431,6 @@ export default function HealthPage() {
         </Box>
       )}
 
-      {/* 詳細ドロワー */}
       <DetailDrawer
         open={detailType !== null}
         onClose={() => setDetailType(null)}
