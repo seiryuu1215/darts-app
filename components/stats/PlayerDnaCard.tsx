@@ -306,7 +306,7 @@ export default function PlayerDnaCard({ stats01, statsCricket, countupAvg }: Pla
             py: 0.2,
             borderRadius: 1,
             bgcolor: analysis.typeColor,
-            color: '#fff',
+            color: 'common.white',
             fontSize: 12,
             fontWeight: 'bold',
           }}
@@ -327,8 +327,9 @@ export default function PlayerDnaCard({ stats01, statsCricket, countupAvg }: Pla
         sx={{
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>

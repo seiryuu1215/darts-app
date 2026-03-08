@@ -31,7 +31,11 @@ interface CricketDeepAnalysisCardProps {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, color: '#aaa' }}>
+    <Typography
+      variant="subtitle2"
+      sx={{ fontWeight: 'bold', mt: 2.5, mb: 1 }}
+      color="text.secondary"
+    >
       {children}
     </Typography>
   );
@@ -130,7 +134,7 @@ export default function CricketDeepAnalysisCard({
         <Chip
           label="CRICKET"
           size="small"
-          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_CRICKET, color: '#fff' }}
+          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_CRICKET, color: 'common.white' }}
         />
       </Box>
 
@@ -142,8 +146,9 @@ export default function CricketDeepAnalysisCard({
           gap: 1,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
@@ -161,7 +166,7 @@ export default function CricketDeepAnalysisCard({
                 fontSize: 9,
                 height: 18,
                 bgcolor: getPercentileColor(mprPercentile),
-                color: '#fff',
+                color: 'common.white',
               }}
             />
           )}
@@ -180,7 +185,7 @@ export default function CricketDeepAnalysisCard({
               fontSize: 9,
               height: 18,
               bgcolor: getFlightColor(rtCriFlight),
-              color: '#fff',
+              color: 'common.white',
             }}
           />
         </Box>
@@ -266,8 +271,9 @@ export default function CricketDeepAnalysisCard({
               gap: 1,
               p: 1.5,
               borderRadius: 1,
-              bgcolor: 'rgba(255,255,255,0.03)',
-              border: '1px solid #333',
+              bgcolor: 'action.hover',
+              border: 1,
+              borderColor: 'divider',
             }}
           >
             <Box sx={{ textAlign: 'center' }}>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Paper, Typography, Box, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { useMemo } from 'react';
+import { Paper, Typography, Box, Chip } from '@mui/material';
 import {
   ResponsiveContainer,
   LineChart,
@@ -25,60 +25,16 @@ interface SessionFatigueCardProps {
   countupPlays: CountUpPlay[];
 }
 
-type PeriodKey = 'last30' | 'month' | 'week' | 'latest';
-
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: 'last30', label: '直近30G' },
-  { key: 'month', label: '1ヶ月' },
-  { key: 'week', label: '1週間' },
-  { key: 'latest', label: '直近' },
-];
-
-function filterByPeriod(plays: CountUpPlay[], period: PeriodKey): CountUpPlay[] {
-  if (period === 'last30') return plays.slice(-30);
-  const now = new Date();
-  let cutoff: Date;
-  switch (period) {
-    case 'latest': {
-      if (plays.length === 0) return [];
-      const latestTime = parsePlayTime(plays[plays.length - 1].time);
-      cutoff = new Date(latestTime.getFullYear(), latestTime.getMonth(), latestTime.getDate());
-      break;
-    }
-    case 'week':
-      cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'month':
-      cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      return plays;
-  }
+function filterLastMonth(plays: CountUpPlay[]): CountUpPlay[] {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   return plays.filter((p) => parsePlayTime(p.time) >= cutoff);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, color: '#aaa' }}>
-      {children}
-    </Typography>
-  );
 }
 
 export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardProps) {
   const ct = useChartTheme();
-  const [period, setPeriod] = useState<PeriodKey>('last30');
 
-  const filtered = useMemo(() => filterByPeriod(countupPlays, period), [countupPlays, period]);
+  const filtered = useMemo(() => filterLastMonth(countupPlays), [countupPlays]);
   const analysis = useMemo(() => analyzeSession(filtered), [filtered]);
-
-  const periodCounts = useMemo(() => {
-    const result: Record<PeriodKey, number> = { last30: 0, month: 0, week: 0, latest: 0 };
-    for (const p of PERIODS) {
-      result[p.key] = filterByPeriod(countupPlays, p.key).length;
-    }
-    return result;
-  }, [countupPlays]);
 
   if (countupPlays.length < 10) return null;
 
@@ -88,34 +44,8 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
         <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
           セッション疲労分析
         </Typography>
-        <ToggleButtonGroup
-          value={period}
-          exclusive
-          onChange={(_, v) => v && setPeriod(v as PeriodKey)}
-          size="small"
-          sx={{ mb: 1, flexWrap: 'wrap' }}
-        >
-          {PERIODS.map((p) => (
-            <ToggleButton
-              key={p.key}
-              value={p.key}
-              sx={{
-                fontSize: 11,
-                px: 1.2,
-                py: 0.4,
-                textTransform: 'none',
-                '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
-              }}
-            >
-              {p.label}
-              <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
-                ({periodCounts[p.key]})
-              </Typography>
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-          この期間のデータが不足しています
+          直近1ヶ月のデータが不足しています
         </Typography>
       </Paper>
     );
@@ -123,13 +53,11 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
 
   const { sessionCurve, optimalLength, timeOfDay, avgSessionLength, totalSessions } = analysis;
 
-  // 時間帯のベストとワースト
   const bestHour =
     timeOfDay.length > 0 ? timeOfDay.reduce((a, b) => (b.avgScore > a.avgScore ? b : a)) : null;
   const worstHour =
     timeOfDay.length > 0 ? timeOfDay.reduce((a, b) => (b.avgScore < a.avgScore ? b : a)) : null;
 
-  // 全体平均
   const overallAvg =
     sessionCurve.reduce((s, p) => s + p.avgScore * p.count, 0) /
     sessionCurve.reduce((s, p) => s + p.count, 0);
@@ -143,36 +71,12 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
         <Chip
           label={`${totalSessions}セッション`}
           size="small"
-          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: '#fff' }}
+          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: 'common.white' }}
         />
+        <Typography variant="caption" color="text.secondary">
+          直近1ヶ月
+        </Typography>
       </Box>
-
-      <ToggleButtonGroup
-        value={period}
-        exclusive
-        onChange={(_, v) => v && setPeriod(v as PeriodKey)}
-        size="small"
-        sx={{ mb: 1, flexWrap: 'wrap' }}
-      >
-        {PERIODS.map((p) => (
-          <ToggleButton
-            key={p.key}
-            value={p.key}
-            sx={{
-              fontSize: 11,
-              px: 1.2,
-              py: 0.4,
-              textTransform: 'none',
-              '&.Mui-selected': { bgcolor: 'rgba(67, 160, 71, 0.2)' },
-            }}
-          >
-            {p.label}
-            <Typography component="span" sx={{ fontSize: 9, ml: 0.5, opacity: 0.7 }}>
-              ({periodCounts[p.key]})
-            </Typography>
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
 
       {/* サマリー */}
       <Box
@@ -182,8 +86,9 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           gap: 1.5,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
           mb: 2,
         }}
       >
@@ -227,7 +132,13 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
       </Box>
 
       {/* セッション曲線 */}
-      <SectionTitle>ゲーム番号別平均スコア</SectionTitle>
+      <Typography
+        variant="subtitle2"
+        sx={{ fontWeight: 'bold', mt: 2.5, mb: 1 }}
+        color="text.secondary"
+      >
+        ゲーム番号別平均スコア
+      </Typography>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={sessionCurve}>
           <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
@@ -240,7 +151,7 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
               position: 'insideBottomRight',
               offset: -5,
               fontSize: 10,
-              fill: '#888',
+              fill: ct.text,
             }}
           />
           <YAxis fontSize={11} tick={{ fill: ct.text }} domain={['dataMin - 30', 'dataMax + 30']} />
@@ -307,7 +218,13 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
       {/* 時間帯別パフォーマンス */}
       {timeOfDay.length >= 3 && (
         <>
-          <SectionTitle>時間帯別パフォーマンス</SectionTitle>
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: 'bold', mt: 2.5, mb: 1 }}
+            color="text.secondary"
+          >
+            時間帯別パフォーマンス
+          </Typography>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={timeOfDay}>
               <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />

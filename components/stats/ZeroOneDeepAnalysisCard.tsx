@@ -49,7 +49,11 @@ interface ZeroOneDeepAnalysisCardProps {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, color: '#aaa' }}>
+    <Typography
+      variant="subtitle2"
+      sx={{ fontWeight: 'bold', mt: 2.5, mb: 1 }}
+      color="text.secondary"
+    >
       {children}
     </Typography>
   );
@@ -148,7 +152,7 @@ export default function ZeroOneDeepAnalysisCard({
         <Chip
           label="ZERO-ONE"
           size="small"
-          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_01, color: '#fff' }}
+          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_01, color: 'common.white' }}
         />
       </Box>
 
@@ -160,8 +164,9 @@ export default function ZeroOneDeepAnalysisCard({
           gap: 1,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
@@ -179,7 +184,7 @@ export default function ZeroOneDeepAnalysisCard({
                 fontSize: 9,
                 height: 18,
                 bgcolor: getPercentileColor(ppdPercentile),
-                color: '#fff',
+                color: 'common.white',
               }}
             />
           )}
@@ -198,7 +203,7 @@ export default function ZeroOneDeepAnalysisCard({
               fontSize: 9,
               height: 18,
               bgcolor: getFlightColor(rt01Flight),
-              color: '#fff',
+              color: 'common.white',
             }}
           />
         </Box>
@@ -285,8 +290,9 @@ export default function ZeroOneDeepAnalysisCard({
               gap: 1,
               p: 1.5,
               borderRadius: 1,
-              bgcolor: 'rgba(255,255,255,0.03)',
-              border: '1px solid #333',
+              bgcolor: 'action.hover',
+              border: 1,
+              borderColor: 'divider',
               mb: 1.5,
             }}
           >
@@ -374,8 +380,9 @@ export default function ZeroOneDeepAnalysisCard({
               gap: 1,
               p: 1.5,
               borderRadius: 1,
-              bgcolor: 'rgba(255,255,255,0.03)',
-              border: '1px solid #333',
+              bgcolor: 'action.hover',
+              border: 1,
+              borderColor: 'divider',
             }}
           >
             {[

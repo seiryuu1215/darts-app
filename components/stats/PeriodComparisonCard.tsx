@@ -238,7 +238,8 @@ export default function PeriodComparisonCard({ dailyHistory }: PeriodComparisonC
                 gridTemplateColumns: '80px 1fr 1fr 1fr',
                 gap: 1,
                 py: 0.8,
-                borderTop: '1px solid #222',
+                borderTop: 1,
+                borderColor: 'divider',
                 alignItems: 'center',
               }}
             >

@@ -91,8 +91,9 @@ export default function RatingSimulatorCard({ currentPpd, currentMpr }: RatingSi
           mb: 2,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
@@ -213,8 +214,9 @@ export default function RatingSimulatorCard({ currentPpd, currentMpr }: RatingSi
         sx={{
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>

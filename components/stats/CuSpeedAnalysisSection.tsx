@@ -32,7 +32,7 @@ function SpeedChartTooltip({
   return (
     <Box
       sx={{
-        bgcolor: '#1e1e1e',
+        bgcolor: 'background.paper',
         border: '1px solid #444',
         borderRadius: 1,
         p: 1,
@@ -79,8 +79,9 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
           gap: 1,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
           mb: 1.5,
         }}
       >
@@ -170,8 +171,9 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
             mt: 1.5,
             p: 1.5,
             borderRadius: 1,
-            bgcolor: 'rgba(255,255,255,0.03)',
-            border: '1px solid #333',
+            bgcolor: 'action.hover',
+            border: 1,
+            borderColor: 'divider',
             alignItems: 'center',
           }}
         >

@@ -28,7 +28,7 @@ function RecommendationItem({ rec }: { rec: PracticeRecommendation }) {
       sx={{
         p: 1.5,
         borderRadius: 1,
-        bgcolor: 'rgba(255,255,255,0.03)',
+        bgcolor: 'action.hover',
         border: `1px solid ${config.color}33`,
         mb: 1,
       }}

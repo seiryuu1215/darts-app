@@ -212,7 +212,13 @@ function CollapsibleSection({
           transformOrigin={{ vertical: 'top', horizontal: 'center' }}
           slotProps={{
             paper: {
-              sx: { p: 1.5, bgcolor: '#1e1e1e', border: '1px solid #444', maxWidth: 320 },
+              sx: {
+                p: 1.5,
+                bgcolor: 'background.paper',
+                border: 1,
+                borderColor: 'divider',
+                maxWidth: 320,
+              },
             },
           }}
         >

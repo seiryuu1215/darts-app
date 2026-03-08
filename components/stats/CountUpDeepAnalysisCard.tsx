@@ -106,7 +106,7 @@ export default function CountUpDeepAnalysisCard({
         <Chip
           label={`${filtered.length}件`}
           size="small"
-          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: '#fff' }}
+          sx={{ fontSize: 10, height: 20, bgcolor: COLOR_COUNTUP, color: 'common.white' }}
         />
         <Chip
           label={`全${sortedPlays.length}件`}

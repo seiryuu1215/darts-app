@@ -74,8 +74,9 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           gap: 1.5,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
           mb: 2,
         }}
       >
@@ -194,8 +195,9 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           mt: 1.5,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>

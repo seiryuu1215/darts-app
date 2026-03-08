@@ -31,7 +31,8 @@ function PaceItem({ pace }: { pace: AwardPace }) {
         alignItems: 'center',
         justifyContent: 'space-between',
         py: 0.8,
-        borderBottom: '1px solid #222',
+        borderBottom: 1,
+        borderColor: 'divider',
         '&:last-child': { borderBottom: 'none' },
       }}
     >
@@ -77,7 +78,7 @@ function MilestoneItem({ milestone }: { milestone: Milestone }) {
   return (
     <Box sx={{ mb: 1.5 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.3 }}>
-        <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#ccc' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
           {milestone.awardName} → {milestone.targetCount.toLocaleString()}回
         </Typography>
         <Typography variant="caption" color="text.secondary">
@@ -156,7 +157,11 @@ export default function AwardPaceCard({ awardList }: AwardPaceCardProps) {
       {/* マイルストーン予測 */}
       {milestones.length > 0 && (
         <>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2, mb: 1, color: '#aaa' }}>
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ fontWeight: 'bold', mt: 2, mb: 1 }}
+          >
             マイルストーン予測
           </Typography>
           {milestones.slice(0, 5).map((m) => (

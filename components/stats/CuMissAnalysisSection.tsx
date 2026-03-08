@@ -181,7 +181,7 @@ export default function CuMissAnalysisSection({
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2.5, mb: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#aaa' }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold' }}>
           ミス方向分析（ブル狙い）{excludeOuterSingle ? '(アウター除外)' : ''}
         </Typography>
         <Chip

@@ -43,7 +43,11 @@ export const PERIODS: { key: PeriodKey; label: string }[] = [
 
 export function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, color: '#aaa' }}>
+    <Typography
+      variant="subtitle2"
+      sx={{ fontWeight: 'bold', mt: 2.5, mb: 1 }}
+      color="text.secondary"
+    >
       {children}
     </Typography>
   );

@@ -99,7 +99,7 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
         <Chip
           label={`${validCount}件`}
           size="small"
-          sx={{ fontSize: 10, height: 20, bgcolor: '#7B1FA2', color: '#fff' }}
+          sx={{ fontSize: 10, height: 20, bgcolor: '#7B1FA2', color: 'common.white' }}
         />
       </Box>
 
@@ -111,8 +111,9 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
           gap: 1.5,
           p: 1.5,
           borderRadius: 1,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid #333',
+          bgcolor: 'action.hover',
+          border: 1,
+          borderColor: 'divider',
           mb: 2,
         }}
       >
@@ -174,7 +175,7 @@ export default function SpeedAccuracyCard({ countupPlays }: SpeedAccuracyCardPro
               position: 'insideBottomRight',
               offset: -5,
               fontSize: 10,
-              fill: '#888',
+              fill: ct.text,
             }}
           />
           <YAxis

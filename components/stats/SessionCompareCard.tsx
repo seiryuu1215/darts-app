@@ -166,7 +166,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       variant="subtitle2"
-      sx={{ fontWeight: 'bold', color: '#aaa', mt: 2.5, mb: 1, fontSize: 12 }}
+      color="text.secondary"
+      sx={{ fontWeight: 'bold', mt: 2.5, mb: 1, fontSize: 12 }}
     >
       {children}
     </Typography>

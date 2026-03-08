@@ -67,31 +67,49 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   Rt
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   フライト
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   01 Stats
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   ブル率
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   ノーブル
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   ワンブル
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   ロートン
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   ハット率
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', fontSize: 11, px: 1 }}>
+                <TableCell
+                  sx={{ fontWeight: 'bold', bgcolor: 'background.paper', fontSize: 11, px: 1 }}
+                >
                   レンジ
                 </TableCell>
               </TableRow>
