@@ -93,7 +93,10 @@ async function scrapePeriod(
 async function main() {
   console.log('ダーツハイブ バレルランキング取得中...');
 
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
+  });
   const page = await browser.newPage();
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 

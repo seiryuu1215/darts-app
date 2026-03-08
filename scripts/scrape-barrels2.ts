@@ -353,7 +353,10 @@ async function main() {
   const BASE_ALL =
     'https://www.dartshive.jp/shopbrand/010?sort=publish_start_date%20desc&fq.category=010';
 
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
+  });
   const stats = { saved: 0, skipped: 0 };
 
   if (allMode) {
