@@ -9,7 +9,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
       # バレル差分取得
       - name: Scrape barrels (differential)
         run: npx tsx scripts/scrape-barrels2.ts
-        timeout-minutes: 20
+        timeout-minutes: 50
         env:
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-sa.json
