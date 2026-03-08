@@ -276,7 +276,7 @@ export default function Header() {
                 >
                   <UserAvatar
                     userId={session.user.id}
-                    avatarUrl={null}
+                    avatarUrl={session.user.avatarUrl}
                     userName={session.user.name || ''}
                     size={30}
                   />
@@ -360,7 +360,7 @@ export default function Header() {
                 >
                   <UserAvatar
                     userId={session.user.id}
-                    avatarUrl={null}
+                    avatarUrl={session.user.avatarUrl}
                     userName={session.user.name || ''}
                     size={28}
                   />
@@ -396,7 +396,7 @@ export default function Header() {
             <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <UserAvatar
                 userId={session.user.id}
-                avatarUrl={null}
+                avatarUrl={session.user.avatarUrl}
                 userName={session.user.name || ''}
                 size={36}
               />

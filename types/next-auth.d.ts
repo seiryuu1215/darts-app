@@ -8,6 +8,7 @@ declare module 'next-auth' {
       role: UserRole;
       subscriptionStatus: StripeSubscriptionStatus | null;
       isDemo?: boolean;
+      avatarUrl?: string | null;
     } & DefaultSession['user'];
   }
 }
@@ -17,5 +18,6 @@ declare module 'next-auth/jwt' {
     role?: UserRole;
     subscriptionStatus?: StripeSubscriptionStatus | null;
     isDemo?: boolean;
+    avatarUrl?: string | null;
   }
 }

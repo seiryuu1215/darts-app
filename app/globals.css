@@ -13,70 +13,71 @@ html[data-theme='dark'] body {
 }
 
 /* ── ダークモード: MUI コンポーネント背景 ── */
-html[data-theme='dark'] .MuiPaper-root,
-html[data-theme='dark'] .MuiCard-root {
+/* hydration前のみ適用。MUI hydration完了後はテーマが制御 */
+html[data-theme='dark']:not([data-hydrated]) .MuiPaper-root,
+html[data-theme='dark']:not([data-hydrated]) .MuiCard-root {
   background-color: #1e1e1e;
   color: #fff;
 }
 
-html[data-theme='dark'] .MuiAppBar-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiAppBar-root {
   background-color: #1976d2;
 }
 
-html[data-theme='dark'] .MuiDrawer-paper {
+html[data-theme='dark']:not([data-hydrated]) .MuiDrawer-paper {
   background-color: #1e1e1e;
   color: #fff;
 }
 
-html[data-theme='dark'] .MuiDivider-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiDivider-root {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-html[data-theme='dark'] .MuiLinearProgress-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiLinearProgress-root {
   background-color: rgba(255, 255, 255, 0.08);
 }
 
-html[data-theme='dark'] .MuiSkeleton-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiSkeleton-root {
   background-color: rgba(255, 255, 255, 0.11);
 }
 
-html[data-theme='dark'] .MuiCardActionArea-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiCardActionArea-root {
   color: #fff;
 }
 
 /* ── ダークモード: テキスト・リンク・各種コンポーネント ── */
-/* MUI hydration 完了後は MUI テーマが specificity でオーバーライド */
-html[data-theme='dark'] .MuiTypography-root {
+/* hydration前のみ適用。MUI hydration完了後はテーマが制御 */
+html[data-theme='dark']:not([data-hydrated]) .MuiTypography-root {
   color: #fff;
 }
-html[data-theme='dark'] .MuiLink-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiLink-root {
   color: rgba(255, 255, 255, 0.7);
 }
-html[data-theme='dark'] .MuiChip-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiChip-root {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.23);
 }
-html[data-theme='dark'] .MuiButton-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiButton-root {
   color: #fff;
 }
-html[data-theme='dark'] .MuiListItemText-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiListItemText-root {
   color: #fff;
 }
-html[data-theme='dark'] .MuiAccordionSummary-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiAccordionSummary-root {
   color: #fff;
 }
-html[data-theme='dark'] .MuiTab-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiTab-root {
   color: rgba(255, 255, 255, 0.7);
 }
-html[data-theme='dark'] .MuiInputBase-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiInputBase-root {
   color: #fff;
 }
-html[data-theme='dark'] .MuiTableCell-root {
+html[data-theme='dark']:not([data-hydrated]) .MuiTableCell-root {
   color: #fff;
 }
 
 /* ── ダークモード: フッター境界線 ── */
-html[data-theme='dark'] footer {
+html[data-theme='dark']:not([data-hydrated]) footer {
   background-color: #1a1a1a;
   border-top-color: rgba(255, 255, 255, 0.2);
 }

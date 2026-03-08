@@ -33,6 +33,8 @@ export const authOptions: NextAuthOptions = {
             isDemo = userDoc.data()?.isDemo === true;
           }
 
+          const avatarUrl = userDoc.exists ? userDoc.data()?.avatarUrl || null : null;
+
           return {
             id: user.uid,
             name: user.displayName,
@@ -40,6 +42,7 @@ export const authOptions: NextAuthOptions = {
             role,
             subscriptionStatus,
             isDemo,
+            image: avatarUrl,
           };
         } catch (error) {
           console.error('Auth error:', error instanceof Error ? error.message : error);
@@ -60,6 +63,7 @@ export const authOptions: NextAuthOptions = {
           user as unknown as { subscriptionStatus: StripeSubscriptionStatus | null }
         ).subscriptionStatus;
         token.isDemo = (user as unknown as { isDemo: boolean }).isDemo;
+        token.avatarUrl = user.image || null;
       } else if (token.sub) {
         // セッション更新時にFirestoreから最新のroleを取得
         try {
@@ -68,6 +72,7 @@ export const authOptions: NextAuthOptions = {
             token.role = userDoc.data()?.role || 'general';
             token.subscriptionStatus = userDoc.data()?.subscriptionStatus || null;
             token.isDemo = userDoc.data()?.isDemo === true;
+            token.avatarUrl = userDoc.data()?.avatarUrl || null;
           }
         } catch {
           // Firestore読み取りエラー時は既存のroleを維持
@@ -82,6 +87,8 @@ export const authOptions: NextAuthOptions = {
         session.user.subscriptionStatus =
           (token.subscriptionStatus as StripeSubscriptionStatus | null) || null;
         session.user.isDemo = token.isDemo === true;
+        session.user.avatarUrl = (token.avatarUrl as string | null) || null;
+        session.user.image = (token.avatarUrl as string | null) || null;
       }
       return session;
     },

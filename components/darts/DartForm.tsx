@@ -466,6 +466,7 @@ export default function DartForm({
           ...dartData,
           userId: session.user.id,
           userName: session.user.name || '',
+          userAvatarUrl: session.user.avatarUrl || null,
           likeCount: 0,
           ...(isDraft && { isDraft: true }),
           ...(initialData?.sourceBarrelId && { sourceBarrelId: initialData.sourceBarrelId }),
