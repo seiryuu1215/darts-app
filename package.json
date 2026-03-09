@@ -23,7 +23,8 @@
     "line:richmenu": "tsx scripts/setup-line-richmenu.ts",
     "line:icon": "tsx scripts/generate-line-icon.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "metrics": "tsx scripts/export-metrics.ts"
   },
   "dependencies": {
     "@capacitor/cli": "^8.1.0",

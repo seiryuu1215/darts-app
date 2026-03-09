@@ -107,3 +107,44 @@ docs/          — 設計ドキュメント
 - ユニットテスト: `lib/**/*.test.ts` に配置
 - Storybookテスト: `stories/**/*.stories.tsx` に配置（ブラウザ実行、CI外）
 - Storybook実行時は `npm run storybook` を先に停止してから `npm run test` を実行すること（ポート競合防止）
+
+## メトリクス
+
+`npm run metrics` で `docs/metrics.json` にプロジェクト指標を自動出力する。
+portfolio や zenn の数値更新時はこのファイルを参照すること。
+
+## クロスリポ同期ルール
+
+本プロジェクトの変更は **portfolio** と **zenn-content** に影響する場合がある。
+以下の変更をした場合、対応するリポジトリの更新を忘れないこと。
+
+### portfolio（https://github.com/seiryuu1215/portfolio）への同期
+
+| darts-app の変更 | portfolio の更新箇所 |
+|------------------|---------------------|
+| 機能追加・削除 | Works セクションの機能数・スクリーンショット |
+| `package.json` の version 変更 | scale タグのバージョン表記 |
+| LOC が大きく変動（±5,000行） | Hero セクションの行数表記 |
+| テスト数が大きく変動 | Hero セクションのテスト数表記 |
+| API ルート追加・削除 | 設計図ビューアの数値 |
+| README の数値変更 | portfolio 側の対応する数値 |
+| 新しいスクリーンショットが必要な UI 変更 | docs/screenshots/ + portfolio 画像 |
+
+### zenn-content（https://github.com/seiryuu1215/zenn-content）への同期
+
+| darts-app の変更 | zenn の更新箇所 |
+|------------------|----------------|
+| 認証フロー変更 | darts-lab-auth.md, darts-lab-dual-auth.md |
+| Stripe/決済変更 | darts-lab-stripe.md, darts-lab-stripe-flow.md |
+| API 設計変更 | darts-lab-api.md |
+| Firestore スキーマ変更 | darts-lab-firestore.md |
+| LINE Bot 変更 | darts-lab-cron-line.md, darts-lab-line-statemachine.md |
+| Cron/自動化変更 | darts-lab-cron-pipeline.md |
+| セキュリティ変更 | darts-lab-defense-layers.md |
+| Book タイトルの行数表記（例: 55,000行） | books/claude-code-darts-lab/config.yaml |
+
+### 運用ルール
+
+1. 大きな機能追加・リファクタ後に `npm run metrics` を実行し `docs/metrics.json` を更新する
+2. コミットメッセージに `[sync:portfolio]` `[sync:zenn]` タグを付けると同期が必要なことが明示される
+3. 同期作業は同じ日にまとめて行い、3リポを一括で push する

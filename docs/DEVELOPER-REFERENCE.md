@@ -822,7 +822,7 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 | **グローバル状態管理なし（Redux/Zustand不使用）**  | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
 | **Recharts**                                       | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
 | **サーバーサイドブラウザ自動化（puppeteer-core）** | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
-| **Upstash Redis レートリミット**                    | 分散環境でもインスタンス間で共有可能。IP ベース 60 req/min で API を保護                                                               |
+| **Upstash Redis レートリミット**                   | 分散環境でもインスタンス間で共有可能。IP ベース 60 req/min で API を保護                                                               |
 
 ### 知っておくべき懸念点
 

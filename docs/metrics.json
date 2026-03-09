@@ -1,0 +1,17 @@
+{
+  "loc": 82940,
+  "locBreakdown": {
+    "ts": 32760,
+    "tsx": 50080,
+    "css": 100
+  },
+  "features": 180,
+  "apiRoutes": 41,
+  "pages": 41,
+  "components": 144,
+  "commits": 309,
+  "testFiles": 34,
+  "scripts": 40,
+  "version": "3.2.0",
+  "updatedAt": "2026-03-09"
+}
