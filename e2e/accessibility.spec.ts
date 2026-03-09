@@ -16,6 +16,13 @@ test.describe('アクセシビリティ監査', () => {
       await page.goto(pg.path);
       await page.waitForLoadState('networkidle');
 
+      // CI環境ではFirestore未接続のためエラー表示になるページをスキップ
+      const hasAlert = await page.getByRole('alert').isVisible().catch(() => false);
+      if (hasAlert && process.env.CI) {
+        test.skip();
+        return;
+      }
+
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
         .disableRules(['color-contrast']) // テーマ依存のため除外
