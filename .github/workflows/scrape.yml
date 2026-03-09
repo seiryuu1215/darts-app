@@ -27,7 +27,7 @@ jobs:
 
       # visited.json を復元して差分スクレイピング
       - name: Restore scraping state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             visited.json
@@ -56,7 +56,7 @@ jobs:
       # スクレイピング状態を保存（失敗時も保存）
       - name: Save scraping state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             visited.json
