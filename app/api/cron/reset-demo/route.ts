@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { DEMO_ACCOUNTS } from '@/lib/demo';
+import {
+  generateDemoGoals,
+  generateDemoFocusPoints,
+  generateDemoXpHistory,
+  generateDemoBarrelBookmarks,
+  generateDemoShopBookmarks,
+  generateDemoDarts,
+  generateDemoDiscussions,
+} from '@/lib/demo-seed-data';
 
 export const maxDuration = 60;
 
@@ -20,6 +29,8 @@ const USER_SUBCOLLECTIONS = [
   'shopBookmarks',
   'shopLists',
   'pushSubscriptions',
+  'focusPoints',
+  'healthMetrics',
 ];
 
 async function deleteSubcollection(parentPath: string, subcollection: string) {
@@ -81,10 +92,15 @@ function makeUserDoc(account: (typeof DEMO_ACCOUNT_LIST)[number]) {
     subscriptionStatus: account.role === 'pro' ? 'active' : null,
     subscriptionCurrentPeriodEnd: null,
     subscriptionTrialEnd: null,
-    xp: account.role === 'admin' ? 3500 : account.role === 'pro' ? 1250 : 0,
-    level: account.role === 'admin' ? 15 : account.role === 'pro' ? 8 : 1,
-    rank: account.role === 'admin' ? 'シルバー' : account.role === 'pro' ? 'ブロンズ' : 'ビギナー',
-    achievements: [],
+    xp: account.role === 'admin' ? 5200 : account.role === 'pro' ? 2800 : 0,
+    level: account.role === 'admin' ? 22 : account.role === 'pro' ? 14 : 1,
+    rank: account.role === 'admin' ? 'ゴールド' : account.role === 'pro' ? 'シルバー' : 'ビギナー',
+    achievements:
+      account.role === 'admin'
+        ? ['first_rating', 'weekly_active', 'monthly_active']
+        : account.role === 'pro'
+          ? ['first_rating']
+          : [],
     highestRating: account.role === 'admin' ? 10.15 : account.role === 'pro' ? 8.52 : null,
     dartsHistory: '3年',
     homeShop: 'Bee 渋谷道玄坂店',
@@ -198,6 +214,66 @@ export async function GET(request: NextRequest) {
         }
         await batch.commit();
         await adminDb.doc(`users/${account.uid}/dartsliveCache/latest`).set(getCacheLatest());
+      }
+
+      // 5. 全アカウント共通: goals, focusPoints 投入
+      {
+        const goalsBatch = adminDb.batch();
+        for (const goal of generateDemoGoals()) {
+          const ref = adminDb.collection(`users/${account.uid}/goals`).doc();
+          goalsBatch.set(ref, goal);
+        }
+        for (const fp of generateDemoFocusPoints()) {
+          const ref = adminDb.collection(`users/${account.uid}/focusPoints`).doc();
+          goalsBatch.set(ref, fp);
+        }
+        await goalsBatch.commit();
+      }
+
+      // 6-8. PRO/admin: xpHistory, barrelBookmarks, shopBookmarks, darts, discussions
+      if (account.role !== 'general') {
+        const seedBatch = adminDb.batch();
+
+        // 6. xpHistory, barrelBookmarks, shopBookmarks
+        for (const xp of generateDemoXpHistory()) {
+          const ref = adminDb.collection(`users/${account.uid}/xpHistory`).doc();
+          seedBatch.set(ref, xp);
+        }
+        for (const bm of generateDemoBarrelBookmarks()) {
+          const bmData = bm as { id: string; barrelId: string; createdAt: unknown };
+          const ref = adminDb.doc(`users/${account.uid}/barrelBookmarks/${bmData.id}`);
+          seedBatch.set(ref, { barrelId: bmData.barrelId, createdAt: bmData.createdAt });
+        }
+        for (const sb of generateDemoShopBookmarks()) {
+          const ref = adminDb.collection(`users/${account.uid}/shopBookmarks`).doc();
+          seedBatch.set(ref, sb);
+        }
+        await seedBatch.commit();
+
+        // 7. darts（トップレベルコレクション）
+        const displayName = account.role === 'admin' ? 'デモ（Admin）' : 'デモ（Pro）';
+        const dartsBatch = adminDb.batch();
+        for (const dart of generateDemoDarts(account.uid, displayName)) {
+          const ref = adminDb.collection('darts').doc();
+          dartsBatch.set(ref, dart);
+        }
+        await dartsBatch.commit();
+
+        // 8. discussions + replies（トップレベルコレクション）
+        const { discussions, replies } = generateDemoDiscussions(account.uid, displayName);
+        const discIds: string[] = [];
+        for (const disc of discussions) {
+          const ref = adminDb.collection('discussions').doc();
+          await ref.set(disc);
+          discIds.push(ref.id);
+        }
+        const replyBatch = adminDb.batch();
+        for (const r of replies) {
+          const discId = discIds[r.discussionIndex];
+          const ref = adminDb.collection(`discussions/${discId}/replies`).doc();
+          replyBatch.set(ref, r.data);
+        }
+        await replyBatch.commit();
       }
 
       results.push({ uid: account.uid, status: 'reset' });

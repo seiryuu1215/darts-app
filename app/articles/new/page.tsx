@@ -28,6 +28,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
 import { canWriteArticles, isAdmin } from '@/lib/permissions';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import type { ArticleType } from '@/types';
 
 function toSlug(title: string): string {
@@ -44,6 +45,7 @@ function NewArticleContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isDemo, guardedAction } = useDemoGuard();
   const userRole = session?.user?.role;
 
   const initialType = (searchParams.get('type') as ArticleType) || 'article';
@@ -85,7 +87,12 @@ function NewArticleContent() {
     setError('');
   };
 
-  const handleSubmit = async (isDraft: boolean) => {
+  const handleSubmit = (isDraft: boolean) => {
+    if (!session?.user?.id) return;
+    guardedAction(() => doSubmit(isDraft));
+  };
+
+  const doSubmit = async (isDraft: boolean) => {
     if (!session?.user?.id) return;
     if (!title.trim() || !slug.trim()) {
       setError('タイトルとスラッグは必須です');
@@ -296,7 +303,7 @@ function NewArticleContent() {
         <Button
           variant="outlined"
           onClick={() => handleSubmit(true)}
-          disabled={loading}
+          disabled={loading || isDemo}
           size="large"
         >
           {loading ? '保存中...' : '下書き保存'}
@@ -304,7 +311,7 @@ function NewArticleContent() {
         <Button
           variant="contained"
           onClick={() => handleSubmit(false)}
-          disabled={loading}
+          disabled={loading || isDemo}
           size="large"
         >
           {loading ? '保存中...' : '公開'}

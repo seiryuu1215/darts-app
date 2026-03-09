@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 interface ReplyFormProps {
   discussionId: string;
@@ -21,6 +22,7 @@ interface ReplyFormProps {
 
 export default function ReplyForm({ discussionId, onReplyAdded }: ReplyFormProps) {
   const { data: session } = useSession();
+  const { isDemo, guardedAction } = useDemoGuard();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -54,9 +56,14 @@ export default function ReplyForm({ discussionId, onReplyAdded }: ReplyFormProps
 
   if (!session) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !session.user?.id) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
+    if (!text.trim() || !session?.user?.id) return;
     setLoading(true);
 
     try {
@@ -93,7 +100,7 @@ export default function ReplyForm({ discussionId, onReplyAdded }: ReplyFormProps
         minRows={3}
         sx={{ mb: 1 }}
       />
-      <Button type="submit" variant="contained" disabled={loading || !text.trim()}>
+      <Button type="submit" variant="contained" disabled={loading || !text.trim() || isDemo}>
         {loading ? '投稿中...' : '返信する'}
       </Button>
     </Box>

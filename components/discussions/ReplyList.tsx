@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import UserAvatar from '@/components/UserAvatar';
 import type { DiscussionReply } from '@/types';
 
@@ -26,38 +27,41 @@ interface ReplyListProps {
 
 export default function ReplyList({ discussionId, replies, onReplyDeleted }: ReplyListProps) {
   const { data: session } = useSession();
+  const { guardedAction } = useDemoGuard();
   const isAdmin = session?.user?.role === 'admin';
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
-  const handleReport = async (replyId: string) => {
-    if (!session?.user?.id) return;
-    if (!confirm('この返信を通報しますか？')) return;
-    try {
-      await addDoc(collection(db, 'reports'), {
-        userId: session.user.id,
-        targetId: replyId,
-        targetType: 'reply',
-        discussionId,
-        reason: '',
-        createdAt: serverTimestamp(),
-      });
-      setReportedIds((prev) => new Set(prev).add(replyId));
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const handleReport = (replyId: string) =>
+    guardedAction(async () => {
+      if (!session?.user?.id) return;
+      if (!confirm('この返信を通報しますか？')) return;
+      try {
+        await addDoc(collection(db, 'reports'), {
+          userId: session.user.id,
+          targetId: replyId,
+          targetType: 'reply',
+          discussionId,
+          reason: '',
+          createdAt: serverTimestamp(),
+        });
+        setReportedIds((prev) => new Set(prev).add(replyId));
+      } catch (err) {
+        console.error(err);
+      }
+    });
 
-  const handleDelete = async (replyId: string) => {
-    try {
-      await deleteDoc(doc(db, 'discussions', discussionId, 'replies', replyId));
-      await updateDoc(doc(db, 'discussions', discussionId), {
-        replyCount: increment(-1),
-      });
-      onReplyDeleted();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const handleDelete = (replyId: string) =>
+    guardedAction(async () => {
+      try {
+        await deleteDoc(doc(db, 'discussions', discussionId, 'replies', replyId));
+        await updateDoc(doc(db, 'discussions', discussionId), {
+          replyCount: increment(-1),
+        });
+        onReplyDeleted();
+      } catch (err) {
+        console.error(err);
+      }
+    });
 
   if (replies.length === 0) {
     return (

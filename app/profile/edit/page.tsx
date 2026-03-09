@@ -25,10 +25,12 @@ import UserAvatar from '@/components/UserAvatar';
 import PushOptIn from '@/components/notifications/PushOptIn';
 import LineLinkSection from '@/components/profile/LineLinkSection';
 import AccountDeleteSection from '@/components/profile/AccountDeleteSection';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
   const isAdmin = session?.user?.role === 'admin';
 
   const [displayName, setDisplayName] = useState('');
@@ -102,8 +104,13 @@ export default function ProfileEditPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user?.id) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
     if (!session?.user?.id) return;
     setError('');
     setSuccess('');
@@ -260,7 +267,13 @@ export default function ProfileEditPage() {
           sx={{ mb: 3, display: 'block' }}
         />
 
-        <Button type="submit" variant="contained" fullWidth disabled={saving} size="large">
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={saving || isDemo}
+          size="large"
+        >
           {saving ? '保存中...' : '保存'}
         </Button>
 

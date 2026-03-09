@@ -28,6 +28,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 const MAX_FOCUS_POINTS = 3;
 
@@ -42,6 +43,7 @@ interface FocusPointsCardProps {
 }
 
 export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
+  const { isDemo, guardedAction } = useDemoGuard();
   const [points, setPoints] = useState<FocusPoint[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [newText, setNewText] = useState('');
@@ -64,30 +66,32 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
     return unsub;
   }, [userId]);
 
-  const handleAdd = async () => {
-    if (!newText.trim() || points.length >= MAX_FOCUS_POINTS) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await addDoc(collection(db, `users/${userId}/focusPoints`), {
-        text: newText.trim(),
-        order: points.length,
-        createdAt: serverTimestamp(),
-      });
-      setNewText('');
-      setAddOpen(false);
-    } catch (e) {
-      console.error('focusPoints addDoc error:', e);
-      setError('保存に失敗しました。再度お試しください。');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleAdd = () =>
+    guardedAction(async () => {
+      if (!newText.trim() || points.length >= MAX_FOCUS_POINTS) return;
+      setSaving(true);
+      setError(null);
+      try {
+        await addDoc(collection(db, `users/${userId}/focusPoints`), {
+          text: newText.trim(),
+          order: points.length,
+          createdAt: serverTimestamp(),
+        });
+        setNewText('');
+        setAddOpen(false);
+      } catch (e) {
+        console.error('focusPoints addDoc error:', e);
+        setError('保存に失敗しました。再度お試しください。');
+      } finally {
+        setSaving(false);
+      }
+    });
 
-  const handleDelete = async (id: string) => {
-    setConfirmDeleteId(null);
-    await deleteDoc(doc(db, `users/${userId}/focusPoints`, id));
-  };
+  const handleDelete = (id: string) =>
+    guardedAction(async () => {
+      setConfirmDeleteId(null);
+      await deleteDoc(doc(db, `users/${userId}/focusPoints`, id));
+    });
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -96,7 +100,7 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
           <TrackChangesIcon color="primary" />
           <Typography variant="h5">意識ポイント</Typography>
         </Box>
-        {points.length < MAX_FOCUS_POINTS && (
+        {points.length < MAX_FOCUS_POINTS && !isDemo && (
           <Button size="small" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
             追加
           </Button>

@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import type { Comment } from '@/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useToast } from '@/components/ToastProvider';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 interface CommentListProps {
   dartId: string;
@@ -18,15 +19,17 @@ interface CommentListProps {
 export default function CommentList({ dartId, comments, onCommentDeleted }: CommentListProps) {
   const { data: session } = useSession();
   const { showToast } = useToast();
+  const { guardedAction } = useDemoGuard();
 
-  const handleDelete = async (commentId: string) => {
-    try {
-      await deleteDoc(doc(db, 'darts', dartId, 'comments', commentId));
-      onCommentDeleted();
-    } catch {
-      showToast('コメントの削除に失敗しました');
-    }
-  };
+  const handleDelete = (commentId: string) =>
+    guardedAction(async () => {
+      try {
+        await deleteDoc(doc(db, 'darts', dartId, 'comments', commentId));
+        onCommentDeleted();
+      } catch {
+        showToast('コメントの削除に失敗しました');
+      }
+    });
 
   if (comments.length === 0) {
     return (

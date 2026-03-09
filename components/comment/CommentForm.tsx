@@ -5,6 +5,7 @@ import { TextField, Button, Box } from '@mui/material';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 interface CommentFormProps {
   dartId: string;
@@ -13,14 +14,19 @@ interface CommentFormProps {
 
 export default function CommentForm({ dartId, onCommentAdded }: CommentFormProps) {
   const { data: session } = useSession();
+  const { isDemo, guardedAction } = useDemoGuard();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!session) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
     setLoading(true);
 
     try {
@@ -48,7 +54,7 @@ export default function CommentForm({ dartId, onCommentAdded }: CommentFormProps
         size="small"
         fullWidth
       />
-      <Button type="submit" variant="contained" disabled={loading || !text.trim()}>
+      <Button type="submit" variant="contained" disabled={loading || !text.trim() || isDemo}>
         投稿
       </Button>
     </Box>

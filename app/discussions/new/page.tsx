@@ -21,12 +21,14 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import MarkdownContent from '@/components/articles/MarkdownContent';
 import ProPaywall from '@/components/ProPaywall';
 import { canCreateDiscussion } from '@/lib/permissions';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import { DISCUSSION_CATEGORIES, CATEGORY_LABELS } from '@/types';
 import type { DiscussionCategory } from '@/types';
 
 function NewDiscussionContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<DiscussionCategory>('general');
@@ -81,7 +83,12 @@ function NewDiscussionContent() {
     );
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    if (!session?.user?.id) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
     if (!session?.user?.id) return;
     if (!title.trim()) {
       setError('タイトルは必須です');
@@ -215,7 +222,7 @@ function NewDiscussionContent() {
         </Alert>
       )}
 
-      <Button variant="contained" onClick={handleSubmit} disabled={loading} size="large">
+      <Button variant="contained" onClick={handleSubmit} disabled={loading || isDemo} size="large">
         {loading ? '投稿中...' : '投稿する'}
       </Button>
     </Container>

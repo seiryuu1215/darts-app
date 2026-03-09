@@ -36,6 +36,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import type { Dart } from '@/types';
 import {
   TIPS,
@@ -64,6 +65,7 @@ export default function DartForm({
 }: DartFormProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
   const isEdit = !!dartId;
 
   // バレル
@@ -356,8 +358,13 @@ export default function DartForm({
     setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user?.id) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
     if (!session?.user?.id) return;
     setError('');
     setLoading(true);
@@ -1003,7 +1010,7 @@ export default function DartForm({
         <input type="file" hidden accept="image/*" multiple onChange={handleImageSelect} />
       </Button>
 
-      <Button type="submit" variant="contained" fullWidth disabled={loading} size="large">
+      <Button type="submit" variant="contained" fullWidth disabled={loading || isDemo} size="large">
         {loading ? '保存中...' : isEdit ? '更新' : '登録'}
       </Button>
 

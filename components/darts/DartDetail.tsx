@@ -58,6 +58,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { getShopLinks } from '@/lib/affiliate';
 import AffiliateBanner from '@/components/affiliate/AffiliateBanner';
 import { useToast } from '@/components/ToastProvider';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 interface DartDetailProps {
   dart: Dart;
@@ -68,6 +69,7 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDemo, guardedAction } = useDemoGuard();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [liked, setLiked] = useState(false);
@@ -134,57 +136,60 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
     checkStatus();
   }, [session, dartId, isOwner, activeField]);
 
-  const handleLike = async () => {
-    if (!session?.user?.id) return;
-    const likeRef = doc(db, 'users', session.user.id, 'likes', dartId);
-    const dartRef = doc(db, 'darts', dartId);
-    if (liked) {
-      await deleteDoc(likeRef);
-      await updateDoc(dartRef, { likeCount: increment(-1) });
-      setLikeCount((p) => p - 1);
-    } else {
-      await setDoc(likeRef, { dartId, createdAt: serverTimestamp() });
-      await updateDoc(dartRef, { likeCount: increment(1) });
-      setLikeCount((p) => p + 1);
-    }
-    setLiked(!liked);
-  };
-
-  const handleBookmark = async () => {
-    if (!session?.user?.id) return;
-    const bmRef = doc(db, 'users', session.user.id, 'bookmarks', dartId);
-    if (bookmarked) {
-      await deleteDoc(bmRef);
-    } else {
-      await setDoc(bmRef, { dartId, createdAt: serverTimestamp() });
-    }
-    setBookmarked(!bookmarked);
-  };
-
-  const handleToggleActive = async () => {
-    if (!session?.user?.id || !isOwner) return;
-    if (isActiveDart) {
-      // 使用中を解除 → 現在の履歴エントリを閉じる
-      const histRef = collection(db, 'users', session.user.id, 'settingHistory');
-      const q = query(histRef, orderBy('startedAt', 'desc'));
-      const snap = await getDocs(q);
-      const current = snap.docs.find(
-        (d) => d.data().dartId === dartId && d.data().endedAt === null,
-      );
-      if (current) {
-        await updateDoc(doc(db, 'users', session.user.id, 'settingHistory', current.id), {
-          endedAt: serverTimestamp(),
-        });
+  const handleLike = () =>
+    guardedAction(async () => {
+      if (!session?.user?.id) return;
+      const likeRef = doc(db, 'users', session.user.id, 'likes', dartId);
+      const dartRef = doc(db, 'darts', dartId);
+      if (liked) {
+        await deleteDoc(likeRef);
+        await updateDoc(dartRef, { likeCount: increment(-1) });
+        setLikeCount((p) => p - 1);
+      } else {
+        await setDoc(likeRef, { dartId, createdAt: serverTimestamp() });
+        await updateDoc(dartRef, { likeCount: increment(1) });
+        setLikeCount((p) => p + 1);
       }
-      await setDoc(doc(db, 'users', session.user.id), { [activeField]: null }, { merge: true });
-      setIsActiveDart(false);
-    } else {
-      // 使用中にする → ダイアログを開く
-      setHistoryMemo('');
-      setHistoryStartDate(new Date().toISOString().slice(0, 10));
-      setHistoryDialogOpen(true);
-    }
-  };
+      setLiked(!liked);
+    });
+
+  const handleBookmark = () =>
+    guardedAction(async () => {
+      if (!session?.user?.id) return;
+      const bmRef = doc(db, 'users', session.user.id, 'bookmarks', dartId);
+      if (bookmarked) {
+        await deleteDoc(bmRef);
+      } else {
+        await setDoc(bmRef, { dartId, createdAt: serverTimestamp() });
+      }
+      setBookmarked(!bookmarked);
+    });
+
+  const handleToggleActive = () =>
+    guardedAction(async () => {
+      if (!session?.user?.id || !isOwner) return;
+      if (isActiveDart) {
+        // 使用中を解除 → 現在の履歴エントリを閉じる
+        const histRef = collection(db, 'users', session.user.id, 'settingHistory');
+        const q = query(histRef, orderBy('startedAt', 'desc'));
+        const snap = await getDocs(q);
+        const current = snap.docs.find(
+          (d) => d.data().dartId === dartId && d.data().endedAt === null,
+        );
+        if (current) {
+          await updateDoc(doc(db, 'users', session.user.id, 'settingHistory', current.id), {
+            endedAt: serverTimestamp(),
+          });
+        }
+        await setDoc(doc(db, 'users', session.user.id), { [activeField]: null }, { merge: true });
+        setIsActiveDart(false);
+      } else {
+        // 使用中にする → ダイアログを開く
+        setHistoryMemo('');
+        setHistoryStartDate(new Date().toISOString().slice(0, 10));
+        setHistoryDialogOpen(true);
+      }
+    });
 
   const handleConfirmActivate = async () => {
     if (!session?.user?.id) return;
@@ -267,31 +272,34 @@ export default function DartDetail({ dart, dartId }: DartDetailProps) {
     }
   };
 
-  const handleAddMemo = async () => {
-    if (!session?.user?.id || !newMemoText.trim()) return;
-    await addDoc(collection(db, 'darts', dartId, 'memos'), {
-      userId: session.user.id,
-      text: newMemoText.trim(),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+  const handleAddMemo = () =>
+    guardedAction(async () => {
+      if (!session?.user?.id || !newMemoText.trim()) return;
+      await addDoc(collection(db, 'darts', dartId, 'memos'), {
+        userId: session.user.id,
+        text: newMemoText.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setNewMemoText('');
+      fetchMemos();
     });
-    setNewMemoText('');
-    fetchMemos();
-  };
 
-  const handleDeleteMemo = async (memoId: string) => {
-    await deleteDoc(doc(db, 'darts', dartId, 'memos', memoId));
-    fetchMemos();
-  };
+  const handleDeleteMemo = (memoId: string) =>
+    guardedAction(async () => {
+      await deleteDoc(doc(db, 'darts', dartId, 'memos', memoId));
+      fetchMemos();
+    });
 
-  const handleDelete = async () => {
-    try {
-      await deleteDoc(doc(db, 'darts', dartId));
-      router.push('/');
-    } catch {
-      showToast('ダーツの削除に失敗しました');
-    }
-  };
+  const handleDelete = () =>
+    guardedAction(async () => {
+      try {
+        await deleteDoc(doc(db, 'darts', dartId));
+        router.push('/');
+      } catch {
+        showToast('ダーツの削除に失敗しました');
+      }
+    });
 
   return (
     <Box>

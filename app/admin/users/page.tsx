@@ -25,6 +25,7 @@ import { useSession } from 'next-auth/react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import { UserRole } from '@/types';
 
 interface UserRow {
@@ -41,6 +42,7 @@ const ITEMS_PER_PAGE = 20;
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,29 +113,30 @@ export default function AdminUsersPage() {
     setPage(1);
   }, [searchQuery, roleFilter]);
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    setError('');
-    setSuccess('');
+  const handleRoleChange = (userId: string, newRole: UserRole) =>
+    guardedAction(async () => {
+      setError('');
+      setSuccess('');
 
-    try {
-      const res = await fetch('/api/admin/update-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: newRole }),
-      });
+      try {
+        const res = await fetch('/api/admin/update-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, role: newRole }),
+        });
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || '権限変更に失敗しました');
-        return;
+        if (!res.ok) {
+          const data = await res.json();
+          setError(data.error || '権限変更に失敗しました');
+          return;
+        }
+
+        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+        setSuccess('権限を変更しました');
+      } catch {
+        setError('権限変更に失敗しました');
       }
-
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      setSuccess('権限を変更しました');
-    } catch {
-      setError('権限変更に失敗しました');
-    }
-  };
+    });
 
   if (status === 'loading' || loading) {
     return (
@@ -153,6 +156,11 @@ export default function AdminUsersPage() {
         ユーザ管理
       </Typography>
 
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          デモアカウントではユーザー管理操作はできません
+        </Alert>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
@@ -217,6 +225,7 @@ export default function AdminUsersPage() {
                   <Select
                     value={user.role}
                     size="small"
+                    disabled={isDemo}
                     onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                   >
                     <MenuItem value="admin">admin</MenuItem>

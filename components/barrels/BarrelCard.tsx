@@ -20,6 +20,7 @@ import { doc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 import type { BarrelProduct } from '@/types';
 import { getBarrelImageUrl } from '@/lib/image-proxy';
 
@@ -31,6 +32,7 @@ interface BarrelCardProps {
 const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: BarrelCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { guardedAction } = useDemoGuard();
   // localOverride: ユーザーがローカルで操作した場合のみ値が入る
   const [localOverride, setLocalOverride] = useState<boolean | null>(null);
   const [fetched, setFetched] = useState<boolean | null>(null);
@@ -49,20 +51,21 @@ const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: Barr
   // 優先順位: ローカル操作 > 親prop > fetch結果 > false
   const bookmarked = localOverride ?? isBookmarked ?? fetched ?? false;
 
-  const handleBookmark = async () => {
-    if (!session?.user?.id || !barrel.id) return;
-    const bmRef = doc(db, 'users', session.user.id, 'barrelBookmarks', barrel.id);
-    try {
-      if (bookmarked) {
-        await deleteDoc(bmRef);
-      } else {
-        await setDoc(bmRef, { barrelId: barrel.id, createdAt: serverTimestamp() });
+  const handleBookmark = () =>
+    guardedAction(async () => {
+      if (!session?.user?.id || !barrel.id) return;
+      const bmRef = doc(db, 'users', session.user.id, 'barrelBookmarks', barrel.id);
+      try {
+        if (bookmarked) {
+          await deleteDoc(bmRef);
+        } else {
+          await setDoc(bmRef, { barrelId: barrel.id, createdAt: serverTimestamp() });
+        }
+        setLocalOverride(!bookmarked);
+      } catch (err) {
+        console.error(err);
       }
-      setLocalOverride(!bookmarked);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    });
 
   const handleDraft = () => {
     if (!barrel.id) return;

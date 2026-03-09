@@ -21,6 +21,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import { collection, doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 async function grantXp(action: string, detail?: string, count?: number) {
   try {
@@ -48,6 +49,7 @@ function grantStatsXp({ hatTricks }: { hatTricks: number }) {
 export default function StatsNewPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
 
   const [date, setDate] = useState(() => {
     const now = new Date();
@@ -122,8 +124,13 @@ export default function StatsNewPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user?.id) return;
+    guardedAction(doSubmit);
+  };
+
+  const doSubmit = async () => {
     if (!session?.user?.id) return;
     if (!rating || !ppd || !mpr) {
       setError('レーティング、PPD、MPRは必須です');
@@ -335,7 +342,13 @@ export default function StatsNewPage() {
           <Button variant="outlined" fullWidth onClick={() => router.push('/stats')}>
             キャンセル
           </Button>
-          <Button type="submit" variant="contained" fullWidth disabled={loading} size="large">
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={loading || isDemo}
+            size="large"
+          >
             {loading ? '保存中...' : '保存'}
           </Button>
         </Box>

@@ -18,6 +18,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ConfirmDialog from './ConfirmDialog';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 interface LineLinkSectionProps {
   userId: string;
@@ -42,6 +43,7 @@ export default function LineLinkSection({
   onSuccess,
   onError,
 }: LineLinkSectionProps) {
+  const { guardedAction } = useDemoGuard();
   const [linkCode, setLinkCode] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
@@ -258,12 +260,14 @@ export default function LineLinkSection({
               control={
                 <Switch
                   checked={lineNotifyEnabled}
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const enabled = e.target.checked;
-                    onLineNotifyChange(enabled);
-                    await updateDoc(doc(db, 'users', userId), {
-                      lineNotifyEnabled: enabled,
-                      updatedAt: serverTimestamp(),
+                    guardedAction(async () => {
+                      onLineNotifyChange(enabled);
+                      await updateDoc(doc(db, 'users', userId), {
+                        lineNotifyEnabled: enabled,
+                        updatedAt: serverTimestamp(),
+                      });
                     });
                   }}
                 />

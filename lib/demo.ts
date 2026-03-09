@@ -33,6 +33,8 @@ export const DEMO_BLOCKED_ROUTES = new Set([
   '/api/line/link',
   '/api/line/save-dl-credentials',
   '/api/line/save-px-credentials',
+  '/api/upload',
+  '/api/health/sync',
 ]);
 
 /** admin デモ専用ブロック対象 */
@@ -44,4 +46,8 @@ export const DEMO_ADMIN_BLOCKED_ROUTES = new Set([
   '/api/admin/dartslive-history',
   '/api/admin/phoenix-stats',
   '/api/admin/line-test',
+  '/api/admin/users',
+  '/api/admin/delete-user',
+  '/api/admin/articles',
+  '/api/admin/barrel-scrape',
 ]);

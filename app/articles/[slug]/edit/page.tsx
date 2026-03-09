@@ -36,12 +36,14 @@ import { useRouter } from 'next/navigation';
 import MarkdownContent from '@/components/articles/MarkdownContent';
 import type { Article, ArticleType } from '@/types';
 import { canEditArticle, isAdmin } from '@/lib/permissions';
+import { useDemoGuard } from '@/hooks/useDemoGuard';
 
 export default function EditArticlePage() {
   const params = useParams();
   const slug = params.slug as string;
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isDemo, guardedAction } = useDemoGuard();
   const userRole = session?.user?.role;
 
   const [article, setArticle] = useState<Article | null>(null);
@@ -123,7 +125,12 @@ export default function EditArticlePage() {
     setError('');
   };
 
-  const handleSubmit = async (isDraft: boolean) => {
+  const handleSubmit = (isDraft: boolean) => {
+    if (!session?.user?.id) return;
+    guardedAction(() => doSubmit(isDraft));
+  };
+
+  const doSubmit = async (isDraft: boolean) => {
     if (!session?.user?.id) return;
     if (!title.trim() || !newSlug.trim()) {
       setError('タイトルとスラッグは必須です');
@@ -314,7 +321,7 @@ export default function EditArticlePage() {
         <Button
           variant="outlined"
           onClick={() => handleSubmit(true)}
-          disabled={loading}
+          disabled={loading || isDemo}
           size="large"
         >
           {loading ? '保存中...' : '下書き保存'}
@@ -322,7 +329,7 @@ export default function EditArticlePage() {
         <Button
           variant="contained"
           onClick={() => handleSubmit(false)}
-          disabled={loading}
+          disabled={loading || isDemo}
           size="large"
         >
           {loading ? '保存中...' : '公開'}
