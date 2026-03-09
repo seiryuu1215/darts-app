@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Paper, Typography, Box, Chip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ResponsiveContainer,
   LineChart,
@@ -31,6 +32,7 @@ function filterLastMonth(plays: CountUpPlay[]): CountUpPlay[] {
 }
 
 export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardProps) {
+  const theme = useTheme();
   const ct = useChartTheme();
 
   const filtered = useMemo(() => filterLastMonth(countupPlays), [countupPlays]);
@@ -104,7 +106,7 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           <Typography variant="caption" color="text.secondary">
             ピークゲーム
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
             {optimalLength.peakGameNumber}G目
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -116,7 +118,7 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
             <Typography variant="caption" color="text.secondary">
               集中力低下
             </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#f44336' }}>
+            <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'error.main' }}>
               {optimalLength.dropoffGameNumber}G目〜
             </Typography>
           </Box>
@@ -125,7 +127,7 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           <Typography variant="caption" color="text.secondary">
             推奨セッション長
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
             {optimalLength.optimalLength}G
           </Typography>
         </Box>
@@ -162,16 +164,20 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
           />
           <ReferenceLine
             y={Math.round(overallAvg)}
-            stroke="#FF9800"
+            stroke={theme.palette.warning.main}
             strokeDasharray="5 5"
-            label={{ value: `全体平均 ${Math.round(overallAvg)}`, fill: '#FF9800', fontSize: 10 }}
+            label={{
+              value: `全体平均 ${Math.round(overallAvg)}`,
+              fill: theme.palette.warning.main,
+              fontSize: 10,
+            }}
           />
           {optimalLength.dropoffGameNumber && (
             <ReferenceLine
               x={optimalLength.dropoffGameNumber}
-              stroke="#f44336"
+              stroke={theme.palette.error.main}
               strokeDasharray="3 3"
-              label={{ value: '低下開始', fill: '#f44336', fontSize: 10 }}
+              label={{ value: '低下開始', fill: theme.palette.error.main, fontSize: 10 }}
             />
           )}
           <Line
@@ -192,7 +198,7 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
                   cx={cx}
                   cy={cy}
                   r={isPeak ? 6 : 4}
-                  fill={isPeak ? '#4caf50' : COLOR_COUNTUP}
+                  fill={isPeak ? theme.palette.success.main : COLOR_COUNTUP}
                   stroke={isPeak ? '#fff' : 'none'}
                   strokeWidth={isPeak ? 2 : 0}
                 />
@@ -250,9 +256,9 @@ export default function SessionFatigueCard({ countupPlays }: SessionFatigueCardP
                     key={idx}
                     fill={
                       bestHour && entry.hour === bestHour.hour
-                        ? '#4caf50'
+                        ? theme.palette.success.main
                         : worstHour && entry.hour === worstHour.hour
-                          ? '#f44336'
+                          ? theme.palette.error.main
                           : COLOR_COUNTUP
                     }
                   />

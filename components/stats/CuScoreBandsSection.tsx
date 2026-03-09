@@ -1,6 +1,7 @@
 'use client';
 
 import { Typography, Box } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ResponsiveContainer,
   BarChart,
@@ -82,6 +83,7 @@ export default function CuScoreBandsSection({
   performanceRatio,
 }: CuScoreBandsSectionProps) {
   const ct = useChartTheme();
+  const theme = useTheme();
 
   const centerScore = expectedScore ?? stats.avg;
   const { bands: ratingBands, centerRt } = generateRatingBands(centerScore);
@@ -119,7 +121,7 @@ export default function CuScoreBandsSection({
                 variant="body1"
                 sx={{
                   fontWeight: 'bold',
-                  color: stats.avg >= expectedScore ? '#4caf50' : '#ff9800',
+                  color: stats.avg >= expectedScore ? 'success.main' : 'warning.main',
                 }}
               >
                 {stats.avg.toFixed(1)}
@@ -134,7 +136,9 @@ export default function CuScoreBandsSection({
                 sx={{
                   fontWeight: 'bold',
                   color:
-                    performanceRatio != null && performanceRatio >= 100 ? '#4caf50' : '#ff9800',
+                    performanceRatio != null && performanceRatio >= 100
+                      ? 'success.main'
+                      : 'warning.main',
                 }}
               >
                 {performanceRatio}%
@@ -157,7 +161,7 @@ export default function CuScoreBandsSection({
           />
           <Bar dataKey="count" name="回数" radius={[4, 4, 0, 0]}>
             {ratingBands.map((b, i) => (
-              <Cell key={i} fill={b.rt === centerRt ? '#ff9800' : COLOR_COUNTUP} />
+              <Cell key={i} fill={b.rt === centerRt ? theme.palette.warning.main : COLOR_COUNTUP} />
             ))}
           </Bar>
         </BarChart>
@@ -173,16 +177,24 @@ export default function CuScoreBandsSection({
           <Tooltip contentStyle={ct.tooltipStyle} />
           <ReferenceLine
             y={stats.avg}
-            stroke="#ff9800"
+            stroke={theme.palette.warning.main}
             strokeDasharray="5 5"
-            label={{ value: `平均 ${stats.avg.toFixed(0)}`, fill: '#ff9800', fontSize: 10 }}
+            label={{
+              value: `平均 ${stats.avg.toFixed(0)}`,
+              fill: theme.palette.warning.main,
+              fontSize: 10,
+            }}
           />
           {expectedScore != null && (
             <ReferenceLine
               y={expectedScore}
-              stroke="#2196f3"
+              stroke={theme.palette.info.main}
               strokeDasharray="3 3"
-              label={{ value: `期待 ${expectedScore}`, fill: '#2196f3', fontSize: 10 }}
+              label={{
+                value: `期待 ${expectedScore}`,
+                fill: theme.palette.info.main,
+                fontSize: 10,
+              }}
             />
           )}
           <Line

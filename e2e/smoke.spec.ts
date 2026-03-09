@@ -13,37 +13,36 @@ test.describe('公開ページ スモークテスト', () => {
 
   test('料金プランページが表示される', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.getByText(/Pro/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: '料金プラン' })).toBeVisible();
   });
 
   test('利用規約ページが表示される', async ({ page }) => {
     await page.goto('/terms');
-    await expect(page.getByText(/利用規約/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /利用規約/i })).toBeVisible();
   });
 
   test('プライバシーポリシーが表示される', async ({ page }) => {
     await page.goto('/privacy');
-    await expect(page.getByText(/プライバシー/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /プライバシー/i })).toBeVisible();
   });
 });
 
 test.describe('認証リダイレクト', () => {
   test('未ログインでスタッツページにアクセスするとログインへリダイレクト', async ({ page }) => {
     await page.goto('/stats');
-    await page.waitForURL(/\/(login|stats)/);
-    // ログインページまたはスタッツページ（認証状態による）が表示される
+    await page.waitForURL(/\/(login|stats)/, { timeout: 10000 });
   });
 
   test('未ログインでプロフィールにアクセスするとログインへリダイレクト', async ({ page }) => {
     await page.goto('/profile');
-    await page.waitForURL(/\/(login|profile)/);
+    await page.waitForURL(/\/(login|profile)/, { timeout: 10000 });
   });
 });
 
 test.describe('バレル検索', () => {
   test('バレル一覧ページが表示される', async ({ page }) => {
     await page.goto('/barrels');
-    await expect(page.getByText(/バレル/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /バレル/i })).toBeVisible();
   });
 
   test('バレル検索フォームが存在する', async ({ page }) => {

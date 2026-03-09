@@ -18,6 +18,8 @@ import StarIcon from '@mui/icons-material/Star';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
+import DownloadIcon from '@mui/icons-material/Download';
+import { Button } from '@mui/material';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import CalendarGrid from '@/components/stats/CalendarGrid';
 import DayDetailPanel from '@/components/stats/DayDetailPanel';
@@ -34,6 +36,17 @@ interface CalendarRecord {
   challenge: string;
   dBull: number | null;
   sBull: number | null;
+  bullRate: number | null;
+  avg01: number | null;
+  highOff: number | null;
+  cricketHighScore: number | null;
+  ton80: number;
+  lowTon: number;
+  highTon: number;
+  hatTrick: number;
+  threeInABed: number;
+  threeInABlack: number;
+  whiteHorse: number;
 }
 
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
@@ -66,6 +79,7 @@ export default function CalendarPage() {
   const [records, setRecords] = useState<CalendarRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -114,6 +128,26 @@ export default function CalendarPage() {
 
   const isCurrentMonth = year === jstNow.year && month === jstNow.month;
 
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+      const res = await fetch(`/api/export-pdf?month=${monthStr}`);
+      if (!res.ok) throw new Error('PDF生成に失敗しました');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `darts-lab-report-${monthStr}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // エラーハンドリング
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   // 選択日のレコード
   const selectedRecords = selectedDate
     ? records.filter((r) => {
@@ -154,6 +188,16 @@ export default function CalendarPage() {
         >
           <ChevronRightIcon />
         </IconButton>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={handleDownloadPdf}
+          disabled={pdfLoading || records.length === 0}
+          sx={{ ml: 1 }}
+        >
+          {pdfLoading ? '生成中...' : 'PDF'}
+        </Button>
       </Box>
 
       {loading ? (

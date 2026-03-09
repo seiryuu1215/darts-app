@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import {
   collection,
@@ -25,6 +27,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  writeBatch,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -87,6 +90,18 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
       }
     });
 
+  const handleReorder = (index: number, direction: 'up' | 'down') =>
+    guardedAction(async () => {
+      const swapIndex = direction === 'up' ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex >= points.length) return;
+      const batch = writeBatch(db);
+      const a = points[index];
+      const b = points[swapIndex];
+      batch.update(doc(db, `users/${userId}/focusPoints`, a.id), { order: b.order });
+      batch.update(doc(db, `users/${userId}/focusPoints`, b.id), { order: a.order });
+      await batch.commit();
+    });
+
   const handleDelete = (id: string) =>
     guardedAction(async () => {
       setConfirmDeleteId(null);
@@ -94,7 +109,7 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
     });
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 3 }} data-tour-id="focus-points">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TrackChangesIcon color="primary" />
@@ -143,6 +158,30 @@ export default function FocusPointsCard({ userId }: FocusPointsCardProps) {
                 <Typography variant="body2" sx={{ flex: 1 }}>
                   {point.text}
                 </Typography>
+                {!isDemo && points.length > 1 && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    {idx > 0 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleReorder(idx, 'up')}
+                        aria-label="上に移動"
+                        sx={{ p: 0, fontSize: 16 }}
+                      >
+                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                    {idx < points.length - 1 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleReorder(idx, 'down')}
+                        aria-label="下に移動"
+                        sx={{ p: 0, fontSize: 16 }}
+                      >
+                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </Box>
+                )}
                 <IconButton
                   size="small"
                   onClick={() => setConfirmDeleteId(point.id)}

@@ -53,15 +53,27 @@ export const GET = withErrorHandler(
       challenge: string;
       dBull: number | null;
       sBull: number | null;
+      bullRate: number | null;
+      avg01: number | null;
+      highOff: number | null;
+      cricketHighScore: number | null;
+      ton80: number;
+      lowTon: number;
+      highTon: number;
+      hatTrick: number;
+      threeInABed: number;
+      threeInABlack: number;
+      whiteHorse: number;
     }> = [];
 
     snapshot.forEach((doc) => {
       const d = doc.data();
       const dateVal = d.date?.toDate?.() ?? (d.date ? new Date(d.date) : null);
+      const rawRating = d.rating;
       records.push({
         id: doc.id,
         date: dateVal ? dateVal.toISOString() : '',
-        rating: d.rating ?? null,
+        rating: rawRating != null ? parseFloat(String(rawRating)) : null,
         ppd: d.zeroOneStats?.ppd ?? null,
         mpr: d.cricketStats?.mpr ?? null,
         gamesPlayed: d.gamesPlayed ?? 0,
@@ -70,6 +82,17 @@ export const GET = withErrorHandler(
         challenge: d.challenge ?? '',
         dBull: d.bullStats?.dBull ?? null,
         sBull: d.bullStats?.sBull ?? null,
+        bullRate: d.bullRate ?? null,
+        avg01: d.zeroOneStats?.avg ?? null,
+        highOff: d.zeroOneStats?.highOff ?? null,
+        cricketHighScore: d.cricketStats?.highScore ?? null,
+        ton80: d.ton80 ?? 0,
+        lowTon: d.lowTon ?? 0,
+        highTon: d.highTon ?? 0,
+        hatTrick: d.hatTricks ?? 0,
+        threeInABed: d.threeInABed ?? 0,
+        threeInABlack: d.threeInABlack ?? 0,
+        whiteHorse: d.whiteHorse ?? 0,
       });
     });
 

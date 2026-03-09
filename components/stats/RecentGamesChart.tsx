@@ -51,7 +51,7 @@ export default function RecentGamesChart({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const ct = useChartTheme();
-  const chartAvgLine = isDark ? '#90caf9' : '#1565c0';
+  const chartAvgLine = isDark ? theme.palette.info.light : theme.palette.info.dark;
 
   const playableGames = games.filter((g) => g.scores.length >= 5);
 
@@ -76,9 +76,10 @@ export default function RecentGamesChart({
   const excellentThreshold = isCountUpCategory ? excellentCountUp : null;
 
   const getBarColor = (score: number) => {
-    if (excellentThreshold != null && score >= excellentThreshold) return '#2e7d32';
-    if (score >= threshold) return '#4caf50';
-    if (dangerThreshold != null && score <= dangerThreshold) return '#f44336';
+    if (excellentThreshold != null && score >= excellentThreshold)
+      return theme.palette.success.dark;
+    if (score >= threshold) return theme.palette.success.main;
+    if (dangerThreshold != null && score <= dangerThreshold) return theme.palette.error.main;
     return `${baseColor}66`;
   };
 
@@ -137,12 +138,12 @@ export default function RecentGamesChart({
             {isCountUpCategory && expectedCountUp != null && (
               <ReferenceLine
                 y={expectedCountUp}
-                stroke="#ff9800"
+                stroke={theme.palette.warning.main}
                 strokeDasharray="6 3"
                 label={{
                   value: `Rt期待値 ${expectedCountUp}`,
                   position: 'right',
-                  fill: '#ff9800',
+                  fill: theme.palette.warning.main,
                   fontSize: 10,
                 }}
               />
@@ -194,7 +195,13 @@ export default function RecentGamesChart({
           const stabilityLabel =
             cv < 0.08 ? '非常に安定' : cv < 0.15 ? '安定' : cv < 0.25 ? 'やや不安定' : '不安定';
           const stabilityColor =
-            cv < 0.08 ? '#4caf50' : cv < 0.15 ? '#8bc34a' : cv < 0.25 ? '#ff9800' : '#f44336';
+            cv < 0.08
+              ? theme.palette.success.main
+              : cv < 0.15
+                ? theme.palette.success.light
+                : cv < 0.25
+                  ? theme.palette.warning.main
+                  : theme.palette.error.main;
 
           return (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5, mb: 0.5 }}>
@@ -204,7 +211,7 @@ export default function RecentGamesChart({
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: 'bold', color: lastAbove ? '#4caf50' : '#f44336' }}
+                  sx={{ fontWeight: 'bold', color: lastAbove ? 'success.main' : 'error.main' }}
                 >
                   {streakLabel}
                 </Typography>
@@ -234,21 +241,21 @@ export default function RecentGamesChart({
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1, mb: 0.5 }}>
           {excellentCountUp != null && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#2e7d32' }} />
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.dark' }} />
               <Typography variant="caption" color="text.secondary">
                 Rt+2以上 ({excellentCountUp}+)
               </Typography>
             </Box>
           )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#4caf50' }} />
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} />
             <Typography variant="caption" color="text.secondary">
               期待値以上 ({expectedCountUp}+)
             </Typography>
           </Box>
           {dangerCountUp != null && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f44336' }} />
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'error.main' }} />
               <Typography variant="caption" color="text.secondary">
                 Rt-2以下 ({dangerCountUp}以下)
               </Typography>
@@ -266,11 +273,11 @@ export default function RecentGamesChart({
             const isGood = !isExcellent && s >= threshold;
             const isDanger = chipDanger != null && s <= chipDanger;
             const chipColor = isExcellent
-              ? '#2e7d32'
+              ? theme.palette.success.dark
               : isGood
-                ? '#4caf50'
+                ? theme.palette.success.main
                 : isDanger
-                  ? '#f44336'
+                  ? theme.palette.error.main
                   : undefined;
             return (
               <Chip

@@ -16,25 +16,27 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { useTheme } from '@mui/material/styles';
 import { RATING_BENCHMARKS, getRatingFromPpd } from '@/lib/dartslive-reference';
 
 interface RatingBenchmarkCardProps {
   currentPpd?: number | null;
 }
 
-const FLIGHT_COLORS: Record<string, string> = {
-  N: '#9e9e9e',
-  C: '#90caf9',
-  CC: '#ce93d8',
-  B: '#f48fb1',
-  BB: '#ef5350',
-  A: '#ffa726',
-  AA: '#ffee58',
-  SA: '#66bb6a',
-};
-
 export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardProps) {
   const [open, setOpen] = useState(false);
+  const theme = useTheme();
+
+  const FLIGHT_COLORS: Record<string, string> = {
+    N: theme.palette.text.secondary,
+    C: theme.palette.info.light,
+    CC: '#ce93d8',
+    B: '#f48fb1',
+    BB: theme.palette.error.light,
+    A: '#ffa726',
+    AA: '#ffee58',
+    SA: theme.palette.success.light,
+  };
   const currentRating = useMemo(
     () => (currentPpd != null ? getRatingFromPpd(currentPpd) : null),
     [currentPpd],
@@ -122,13 +124,13 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
                     key={b.rating}
                     sx={{
                       bgcolor: isCurrent ? 'rgba(255,152,0,0.15)' : 'transparent',
-                      '& td': { borderColor: '#333' },
+                      '& td': { borderColor: 'text.primary' },
                     }}
                   >
                     <TableCell
                       sx={{
                         fontWeight: isCurrent ? 'bold' : 'normal',
-                        color: isCurrent ? '#FF9800' : '#ccc',
+                        color: isCurrent ? 'warning.main' : 'divider',
                         fontSize: 12,
                         px: 1,
                       }}
@@ -140,37 +142,39 @@ export default function RatingBenchmarkCard({ currentPpd }: RatingBenchmarkCardP
                         variant="caption"
                         sx={{
                           fontWeight: 'bold',
-                          color: FLIGHT_COLORS[b.flight] ?? '#ccc',
+                          color: FLIGHT_COLORS[b.flight] ?? theme.palette.divider,
                           fontSize: 11,
                         }}
                       >
                         {b.flight}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>{b.ppdMin}~</TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
+                      {b.ppdMin}~
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.bullRatePerThrow}%
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.noBullRate}%
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.oneBullRate}%
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.lowTonRate}%
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.hatTrickRate}%
                       <Typography
                         component="span"
                         variant="caption"
-                        sx={{ color: '#666', fontSize: 9, ml: 0.3 }}
+                        sx={{ color: 'text.secondary', fontSize: 9, ml: 0.3 }}
                       >
                         ({b.hatTrickFrequency})
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ color: '#aaa', fontSize: 11, px: 1 }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: 11, px: 1 }}>
                       {b.avgRange}mm
                     </TableCell>
                   </TableRow>

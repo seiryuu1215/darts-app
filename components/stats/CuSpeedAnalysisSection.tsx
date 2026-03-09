@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Typography, Box, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -26,6 +27,7 @@ function SpeedChartTooltip({
   payload?: Array<{ payload: Record<string, unknown> }>;
   label?: string;
 }) {
+  const theme = useTheme();
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload;
   if (!data) return null;
@@ -33,7 +35,8 @@ function SpeedChartTooltip({
     <Box
       sx={{
         bgcolor: 'background.paper',
-        border: '1px solid #444',
+        border: 1,
+        borderColor: 'text.primary',
         borderRadius: 1,
         p: 1,
         minWidth: 120,
@@ -45,11 +48,11 @@ function SpeedChartTooltip({
       <Typography variant="caption" sx={{ color: '#CE93D8', display: 'block' }}>
         スコア: {data.avgScore as number}点
       </Typography>
-      <Typography variant="caption" sx={{ color: '#FF9800', display: 'block' }}>
+      <Typography variant="caption" sx={{ color: 'warning.main', display: 'block' }}>
         ブル率: {data.bullRate as number}%
       </Typography>
       {data.primaryMissDir !== '-' && (
-        <Typography variant="caption" sx={{ color: '#aaa', display: 'block' }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           主ミス方向: {data.primaryMissDir as string}
         </Typography>
       )}
@@ -62,6 +65,7 @@ interface CuSpeedAnalysisSectionProps {
 }
 
 export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSectionProps) {
+  const theme = useTheme();
   const ct = useChartTheme();
   const speedSegments = useMemo(() => analyzeSpeedSegments(filtered), [filtered]);
 
@@ -89,7 +93,7 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
           <Typography variant="caption" color="text.secondary">
             ベスト速度帯
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
             {speedSegments.bestSegment?.label}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -100,7 +104,7 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
           <Typography variant="caption" color="text.secondary">
             最高ブル率帯
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
             {speedSegments.bestBullSegment?.label}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -144,7 +148,11 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
               {speedSegments.segments.map((s, i) => (
                 <Cell
                   key={i}
-                  fill={s.label === speedSegments.bestSegment?.label ? '#4caf50' : '#7B1FA2'}
+                  fill={
+                    s.label === speedSegments.bestSegment?.label
+                      ? theme.palette.success.main
+                      : '#7B1FA2'
+                  }
                 />
               ))}
             </Bar>
@@ -153,9 +161,9 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
               type="monotone"
               dataKey="bullRate"
               name="ブル率"
-              stroke="#FF9800"
+              stroke={theme.palette.warning.main}
               strokeWidth={2}
-              dot={{ r: 3, fill: '#FF9800' }}
+              dot={{ r: 3, fill: theme.palette.warning.main }}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -180,13 +188,13 @@ export default function CuSpeedAnalysisSection({ filtered }: CuSpeedAnalysisSect
           <Box />
           <Typography
             variant="caption"
-            sx={{ textAlign: 'center', fontWeight: 'bold', color: '#64B5F6' }}
+            sx={{ textAlign: 'center', fontWeight: 'bold', color: 'info.light' }}
           >
             遅い帯({speedSegments.slowVsFast.slowLabel})
           </Typography>
           <Typography
             variant="caption"
-            sx={{ textAlign: 'center', fontWeight: 'bold', color: '#EF5350' }}
+            sx={{ textAlign: 'center', fontWeight: 'bold', color: 'error.light' }}
           >
             速い帯({speedSegments.slowVsFast.fastLabel})
           </Typography>

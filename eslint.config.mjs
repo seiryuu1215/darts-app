@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     // Generated service worker
     'public/sw.js',
+    // Playwright
+    'playwright-report/**',
+    'test-results/**',
   ]),
   ...storybook.configs['flat/recommended'],
 ]);

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Paper, Typography, Box } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,6 +27,7 @@ interface CountUpRoundAnalysisCardProps {
 
 export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundAnalysisCardProps) {
   const ct = useChartTheme();
+  const theme = useTheme();
   const analysis = useMemo(() => {
     const playLogs = countupPlays.map((p) => p.playLog).filter((l) => l && l.length > 0);
     return analyzeRounds(playLogs);
@@ -84,7 +86,7 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           <Typography variant="caption" color="text.secondary">
             ベストR
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
             R{bestRound}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -95,7 +97,7 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           <Typography variant="caption" color="text.secondary">
             ワーストR
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#f44336' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'error.main' }}>
             R{worstRound}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9 }}>
@@ -114,7 +116,7 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           <Typography variant="caption" color="text.secondary">
             最高1R
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
             {maxSingleRound}
           </Typography>
         </Box>
@@ -132,9 +134,13 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           />
           <ReferenceLine
             y={Math.round(overallAvg * 10) / 10}
-            stroke="#FF9800"
+            stroke={theme.palette.warning.main}
             strokeDasharray="5 5"
-            label={{ value: `全体平均 ${overallAvg.toFixed(1)}`, fill: '#FF9800', fontSize: 10 }}
+            label={{
+              value: `全体平均 ${overallAvg.toFixed(1)}`,
+              fill: theme.palette.warning.main,
+              fontSize: 10,
+            }}
           />
           <Bar dataKey="avgScore" name="avgScore" radius={[4, 4, 0, 0]}>
             {chartData.map((_, idx) => (
@@ -142,9 +148,9 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
                 key={idx}
                 fill={
                   idx + 1 === bestRound
-                    ? '#4caf50'
+                    ? theme.palette.success.main
                     : idx + 1 === worstRound
-                      ? '#f44336'
+                      ? theme.palette.error.main
                       : COLOR_COUNTUP
                 }
               />
@@ -163,7 +169,7 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           <Line
             type="monotone"
             dataKey="maxScore"
-            stroke="#4caf50"
+            stroke={theme.palette.success.main}
             strokeWidth={1}
             strokeDasharray="4 4"
             dot={false}
@@ -180,7 +186,7 @@ export default function CountUpRoundAnalysisCard({ countupPlays }: CountUpRoundA
           <Line
             type="monotone"
             dataKey="minScore"
-            stroke="#f44336"
+            stroke={theme.palette.error.main}
             strokeWidth={1}
             strokeDasharray="4 4"
             dot={false}

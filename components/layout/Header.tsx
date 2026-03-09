@@ -41,6 +41,7 @@ import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 import { ColorModeContext } from '@/components/Providers';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import LocaleSwitcher from '@/components/LocaleSwitcher';
 
 interface NavGroup {
   label: string;
@@ -105,7 +106,6 @@ export default function Header() {
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
-            { label: 'レポート', href: '/reports' },
             { label: 'カレンダー', href: '/stats/calendar' },
             { label: 'ヘルスケア', href: '/health' },
           ],
@@ -145,7 +145,6 @@ export default function Header() {
           icon: <BarChartIcon />,
           items: [
             { label: 'スタッツ記録', href: '/stats' },
-            { label: 'レポート', href: '/reports' },
             { label: 'カレンダー', href: '/stats/calendar' },
             { label: 'ヘルスケア', href: '/health' },
           ],
@@ -206,6 +205,7 @@ export default function Header() {
                 size="small"
                 endIcon={<ArrowDropDownIcon />}
                 onClick={(e) => openNavMenu(group.label, e.currentTarget)}
+                data-tour-id={`nav-${group.label}`}
               >
                 {group.label}
               </Button>
@@ -252,6 +252,7 @@ export default function Header() {
               size="small"
               sx={{ ml: 0.5 }}
               aria-label="テーマ切替"
+              data-tour-id="theme-toggle"
             >
               {theme.palette.mode === 'dark' ? (
                 <Brightness7Icon fontSize="small" />
@@ -259,6 +260,8 @@ export default function Header() {
                 <Brightness4Icon fontSize="small" />
               )}
             </IconButton>
+
+            <LocaleSwitcher />
 
             {session && <NotificationBell />}
 

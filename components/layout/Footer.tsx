@@ -31,7 +31,7 @@ function FooterSection({ title, links }: { title: string; links: FooterLink[] })
               target="_blank"
               rel="noopener noreferrer"
               underline="hover"
-              color="text.secondary"
+              color="textSecondary"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -50,7 +50,7 @@ function FooterSection({ title, links }: { title: string; links: FooterLink[] })
               component={NextLink}
               href={link.href}
               underline="hover"
-              color="text.secondary"
+              color="textSecondary"
               sx={{ fontSize: 14, transition: 'color 0.2s', '&:hover': { color: 'primary.main' } }}
             >
               {link.label}
@@ -74,7 +74,6 @@ export default function Footer() {
     { label: '記事', href: '/articles' },
     { label: 'ディスカッション', href: '/discussions' },
     { label: 'おすすめツール', href: '/tools' },
-    { label: 'レポート', href: '/reports' },
     { label: 'ショップ', href: '/shops' },
   ];
 
@@ -134,7 +133,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   underline="hover"
-                  color="text.secondary"
+                  color="textSecondary"
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
@@ -151,7 +150,7 @@ export default function Footer() {
             </Box>
             <Typography
               variant="caption"
-              color="text.secondary"
+              color="textSecondary"
               sx={{ display: 'block', mt: 1.5, fontSize: 10, lineHeight: 1.5 }}
             >
               ※

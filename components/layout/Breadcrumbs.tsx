@@ -19,7 +19,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
       <MuiLink
         component={NextLink}
         href="/"
-        color="text.secondary"
+        color="textSecondary"
         sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
         underline="hover"
       >
@@ -32,7 +32,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             key={i}
             component={NextLink}
             href={item.href}
-            color="text.secondary"
+            color="textSecondary"
             underline="hover"
           >
             {item.label}

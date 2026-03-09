@@ -11,6 +11,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      include: ['lib/**/*.ts', 'app/api/**/*.ts'],
+      exclude: ['**/*.test.ts', '**/*.d.ts', 'lib/firebase.ts', 'lib/firebase-admin.ts'],
+    },
     projects: [
       // Unit tests (existing)
       {

@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import withSerwistInit from '@serwist/next';
 import { withSentryConfig } from '@sentry/nextjs';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const withSerwist = withSerwistInit({
   swSrc: 'app/sw.ts',
@@ -14,6 +15,7 @@ const nextConfig: NextConfig = {
     '/api/dartslive-stats': ['./node_modules/@sparticuz/chromium/bin/**'],
     '/api/cron/daily-stats': ['./node_modules/@sparticuz/chromium/bin/**'],
     '/api/line/webhook': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/export-pdf': ['./node_modules/@sparticuz/chromium/bin/**'],
   },
   images: {
     remotePatterns: [
@@ -36,11 +38,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com https://wsrv.nl",
-              "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://*.stripe.com https://*.sentry.io https://px.a8.net",
+              "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://*.stripe.com https://*.sentry.io https://px.a8.net https://va.vercel-scripts.com https://vitals.vercel-insights.com",
               'frame-src https://js.stripe.com https://*.firebaseapp.com',
               "object-src 'none'",
               "base-uri 'self'",
@@ -52,6 +54,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(withSerwist(nextConfig), {
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
+export default withSentryConfig(withNextIntl(withSerwist(nextConfig)), {
   silent: true,
 });

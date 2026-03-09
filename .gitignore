@@ -64,3 +64,12 @@ next-env.d.ts
 
 *storybook.log
 storybook-static
+
+# Claude Code 一時ファイル
+.claude/current-session-id
+.claude/tool-start-ts
+docs/logs/env-debug.json
+
+# Playwright
+playwright-report/
+test-results/

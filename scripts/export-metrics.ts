@@ -59,16 +59,12 @@ function countDirs(dir: string): number {
 }
 
 function countApiRoutes(): number {
-  const result = run(
-    `find app/api -name "route.ts" -o -name "route.tsx" 2>/dev/null | wc -l`,
-  );
+  const result = run(`find app/api -name "route.ts" -o -name "route.tsx" 2>/dev/null | wc -l`);
   return parseInt(result.trim(), 10) || 0;
 }
 
 function countPages(): number {
-  const result = run(
-    `find app -name "page.tsx" -not -path "*/api/*" 2>/dev/null | wc -l`,
-  );
+  const result = run(`find app -name "page.tsx" -not -path "*/api/*" 2>/dev/null | wc -l`);
   return parseInt(result.trim(), 10) || 0;
 }
 
@@ -117,7 +113,8 @@ function main() {
     components: countComponents(),
     commits: countCommits(),
     testFiles: countFiles('*.test.ts') + countFiles('*.test.tsx'),
-    scripts: countFiles('*.ts') + countFiles('*.mjs') - countFiles('*.test.ts') - countFiles('*.test.tsx'),
+    scripts:
+      countFiles('*.ts') + countFiles('*.mjs') - countFiles('*.test.ts') - countFiles('*.test.tsx'),
     version: getVersion(),
     updatedAt: new Date().toISOString().slice(0, 10),
   };

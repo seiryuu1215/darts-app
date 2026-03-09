@@ -2,6 +2,7 @@
 
 import { Paper, Box, Typography, Chip } from '@mui/material';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine } from 'recharts';
+import { useTheme } from '@mui/material/styles';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
@@ -65,6 +66,7 @@ function linearRegression(points: { x: number; y: number }[]): {
 }
 
 export default function RatingTrendCard({ periodRecords, currentRating }: RatingTrendCardProps) {
+  const theme = useTheme();
   if (currentRating == null) return null;
 
   const withRating = periodRecords.filter((r) => r.rating != null);
@@ -128,24 +130,32 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
           <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={slope > 0 ? '#4caf50' : '#f44336'} stopOpacity={0.4} />
+                <stop
+                  offset="5%"
+                  stopColor={slope > 0 ? theme.palette.success.main : theme.palette.error.main}
+                  stopOpacity={0.4}
+                />
                 <stop
                   offset="95%"
-                  stopColor={slope > 0 ? '#4caf50' : '#f44336'}
+                  stopColor={slope > 0 ? theme.palette.success.main : theme.palette.error.main}
                   stopOpacity={0.05}
                 />
               </linearGradient>
             </defs>
-            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
+              tickLine={false}
+            />
             <YAxis
               domain={['auto', 'auto']}
-              tick={{ fontSize: 10, fill: '#888' }}
+              tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
               tickLine={false}
             />
             <Area
               type="monotone"
               dataKey="rating"
-              stroke={slope > 0 ? '#4caf50' : '#f44336'}
+              stroke={slope > 0 ? theme.palette.success.main : theme.palette.error.main}
               fill="url(#ratingGrad)"
               strokeWidth={2}
               dot={false}
@@ -158,7 +168,7 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
                   y: chartData[chartData.length - 1]?.trend,
                 },
               ]}
-              stroke="#ff9800"
+              stroke={theme.palette.warning.main}
               strokeDasharray="6 3"
               strokeWidth={1.5}
             />
@@ -175,7 +185,7 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
             variant="h6"
             sx={{
               fontWeight: 'bold',
-              color: slope > 0 ? '#4caf50' : slope < 0 ? '#f44336' : 'text.primary',
+              color: slope > 0 ? 'success.main' : slope < 0 ? 'error.main' : 'text.primary',
             }}
           >
             {slope >= 0 ? '+' : ''}
@@ -190,7 +200,8 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
             variant="h6"
             sx={{
               fontWeight: 'bold',
-              color: totalChange > 0 ? '#4caf50' : totalChange < 0 ? '#f44336' : 'text.primary',
+              color:
+                totalChange > 0 ? 'success.main' : totalChange < 0 ? 'error.main' : 'text.primary',
             }}
           >
             {totalChange >= 0 ? '+' : ''}
@@ -202,7 +213,7 @@ export default function RatingTrendCard({ periodRecords, currentRating }: Rating
             <Typography variant="caption" color="text.secondary">
               Rt.{nextIntRt}まで
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
               {estimatedDays <= 1 ? '1日以内' : `約${estimatedDays}日`}
             </Typography>
           </Paper>

@@ -25,7 +25,7 @@ import { db } from '@/lib/firebase';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DartCard from '@/components/darts/DartCard';
-import OnboardingDialog from '@/components/OnboardingDialog';
+import OnboardingTour from '@/components/OnboardingTour';
 import XpBar from '@/components/progression/XpBar';
 import GoalSection from '@/components/goals/GoalSection';
 import XpNotificationDialog from '@/components/notifications/XpNotificationDialog';
@@ -292,10 +292,10 @@ export default function HomePage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {session?.user?.id && (
-        <OnboardingDialog
-          open={showOnboarding}
+        <OnboardingTour
+          run={showOnboarding}
           userId={session.user.id}
-          onClose={() => setShowOnboarding(false)}
+          onComplete={() => setShowOnboarding(false)}
         />
       )}
 

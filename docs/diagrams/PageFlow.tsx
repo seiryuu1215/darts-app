@@ -579,17 +579,6 @@ export default function PageFlowDiagram() {
             color={C.blue}
           />
           <PageNode
-            x={25}
-            y={445}
-            w={130}
-            h={36}
-            label="レポート"
-            path="/reports"
-            icon="📈"
-            color={C.pink}
-            role="PRO"
-          />
-          <PageNode
             x={165}
             y={445}
             w={128}

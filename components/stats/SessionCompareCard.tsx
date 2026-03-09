@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   BarChart,
   Bar,
@@ -36,6 +37,7 @@ function MiniMissBoard({
   bullRate: number;
   primaryDir: string;
 }) {
+  const theme = useTheme();
   const maxPct = Math.max(...directions.map((d) => d.percentage), 1);
   const size = 180;
   const cx = size / 2;
@@ -56,7 +58,14 @@ function MiniMissBoard({
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#333" strokeWidth="0.5" />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={outerR}
+        fill="none"
+        stroke={theme.palette.text.primary}
+        strokeWidth="0.5"
+      />
       {directions.map((d) => {
         const angle = dirAngles[d.direction];
         if (angle == null) return null;
@@ -100,9 +109,9 @@ function MiniMissBoard({
           <g key={d.direction}>
             <path
               d={pathD}
-              fill={isPrimary ? '#f44336' : '#ef5350'}
+              fill={isPrimary ? theme.palette.error.main : theme.palette.error.light}
               fillOpacity={0.15 + intensity * 0.55}
-              stroke={isPrimary ? '#f44336' : '#444'}
+              stroke={isPrimary ? theme.palette.error.main : theme.palette.text.primary}
               strokeWidth={isPrimary ? 1 : 0.5}
             />
             <text
@@ -110,7 +119,7 @@ function MiniMissBoard({
               y={ty}
               textAnchor="middle"
               dominantBaseline="central"
-              fill={isPrimary ? '#f44336' : '#999'}
+              fill={isPrimary ? theme.palette.error.main : theme.palette.text.secondary}
               fontSize="9"
               fontWeight={isPrimary ? 'bold' : 'normal'}
             >
@@ -121,7 +130,7 @@ function MiniMissBoard({
               y={py}
               textAnchor="middle"
               dominantBaseline="central"
-              fill={isPrimary ? '#f44336' : '#777'}
+              fill={isPrimary ? theme.palette.error.main : theme.palette.text.secondary}
               fontSize="8"
               fontWeight={isPrimary ? 'bold' : 'normal'}
               opacity={intensity > 0.1 ? 1 : 0.5}
@@ -135,14 +144,21 @@ function MiniMissBoard({
         cx={cx}
         cy={cy}
         r={innerR}
-        fill="rgba(76,175,80,0.2)"
-        stroke="#4caf50"
+        fill={`${theme.palette.success.main}33`}
+        stroke={theme.palette.success.main}
         strokeWidth="1.5"
       />
-      <text x={cx} y={cy - 3} textAnchor="middle" fill="#4caf50" fontSize="11" fontWeight="bold">
+      <text
+        x={cx}
+        y={cy - 3}
+        textAnchor="middle"
+        fill={theme.palette.success.main}
+        fontSize="11"
+        fontWeight="bold"
+      >
         {bullRate}%
       </text>
-      <text x={cx} y={cy + 10} textAnchor="middle" fill="#888" fontSize="8">
+      <text x={cx} y={cy + 10} textAnchor="middle" fill={theme.palette.text.secondary} fontSize="8">
         BULL
       </text>
     </svg>
@@ -150,10 +166,14 @@ function MiniMissBoard({
 }
 
 /** 値の増減色 */
-function valColor(delta: number, inverse?: boolean): string | undefined {
+function valColor(
+  delta: number,
+  palette: { success: { main: string }; error: { main: string } },
+  inverse?: boolean,
+): string | undefined {
   if (Math.abs(delta) < 0.01) return undefined;
   const positive = inverse ? delta < 0 : delta > 0;
-  return positive ? '#4caf50' : '#f44336';
+  return positive ? palette.success.main : palette.error.main;
 }
 
 function formatDate(dateStr: string): string {
@@ -177,6 +197,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ─── メイン ────────────────────────────────────
 
 export default function SessionCompareCard({ countupPlays }: SessionCompareCardProps) {
+  const theme = useTheme();
   const ct = useChartTheme();
 
   const { comparison, bandData, heatmaps } = useMemo(() => {
@@ -474,7 +495,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
         </thead>
         <tbody>
           {metrics.map((m) => {
-            const color = valColor(m.delta, m.inverse);
+            const color = valColor(m.delta, theme.palette, m.inverse);
             const arrow = m.delta > 0 ? '↑' : m.delta < 0 ? '↓' : '';
             const deltaStr = `${m.delta > 0 ? '+' : ''}${!Number.isInteger(m.delta) ? m.delta.toFixed(1) : m.delta}${m.unit}`;
             return (
@@ -484,7 +505,7 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
                   {m.benchmarkLabel && (
                     <Box
                       component="span"
-                      sx={{ display: 'block', fontSize: 9, color: '#888', mt: 0.2 }}
+                      sx={{ display: 'block', fontSize: 9, color: 'text.secondary', mt: 0.2 }}
                     >
                       ({m.benchmarkLabel})
                     </Box>
@@ -525,7 +546,12 @@ export default function SessionCompareCard({ countupPlays }: SessionCompareCardP
                   fillOpacity={0.6}
                   radius={[2, 2, 0, 0]}
                 />
-                <Bar dataKey="current" name="今回" fill="#43A047" radius={[2, 2, 0, 0]} />
+                <Bar
+                  dataKey="current"
+                  name="今回"
+                  fill={theme.palette.success.dark}
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </Box>

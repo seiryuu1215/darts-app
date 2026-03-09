@@ -1,0 +1,65 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run format*)",
+      "Bash(npm run test*)",
+      "Bash(npm run build)",
+      "Bash(npm run metrics)",
+      "Bash(npm run logs:*)",
+      "Bash(npx tsc --noEmit*)",
+      "Bash(npx tsx scripts/*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git status*)",
+      "Bash(git add*)",
+      "Bash(git commit*)"
+    ],
+    "deny": ["Bash(rm -rf*)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsx scripts/agent-logger.ts pre \"$CLAUDE_TOOL_NAME\" \"$CLAUDE_AGENT\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsx scripts/agent-logger.ts post \"$CLAUDE_TOOL_NAME\" \"$CLAUDE_AGENT\" 2>/dev/null || true",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$CLAUDE_FILE_PATH\" == *.ts || \"$CLAUDE_FILE_PATH\" == *.tsx ]]; then npx tsc --noEmit 2>&1 | head -20; fi",
+            "timeout": 30000
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.test.*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run test:unit 2>&1 | tail -15",
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}

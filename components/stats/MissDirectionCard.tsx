@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Paper, Typography, Box, Chip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { analyzeMissDirection } from '@/lib/stats-math';
 import type { MissDirectionResult, DirectionLabel } from '@/lib/stats-math';
 import type { CountUpPlay } from './countup-deep-shared';
@@ -23,6 +24,7 @@ const DIR_ANGLES: Record<DirectionLabel, number> = {
 };
 
 function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
+  const theme = useTheme();
   const maxPct = Math.max(...result.directions.map((d) => d.percentage), 1);
   const size = 260;
   const cx = size / 2;
@@ -33,9 +35,30 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 1 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#333" strokeWidth="1" />
-        <circle cx={cx} cy={cy} r={outerR * 0.66} fill="none" stroke="#222" strokeWidth="0.5" />
-        <circle cx={cx} cy={cy} r={outerR * 0.33} fill="none" stroke="#222" strokeWidth="0.5" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={outerR}
+          fill="none"
+          stroke={theme.palette.text.primary}
+          strokeWidth="1"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={outerR * 0.66}
+          fill="none"
+          stroke={theme.palette.text.primary}
+          strokeWidth="0.5"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={outerR * 0.33}
+          fill="none"
+          stroke={theme.palette.text.primary}
+          strokeWidth="0.5"
+        />
 
         {result.directions.map((d) => {
           const angle = DIR_ANGLES[d.label];
@@ -78,16 +101,16 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
             <g key={d.label}>
               <path
                 d={pathD}
-                fill={isPrimary ? '#f44336' : '#ef5350'}
+                fill={isPrimary ? theme.palette.error.main : theme.palette.error.light}
                 fillOpacity={fillOpacity}
-                stroke={isPrimary ? '#f44336' : '#444'}
+                stroke={isPrimary ? theme.palette.error.main : theme.palette.text.primary}
                 strokeWidth={isPrimary ? 1.5 : 0.5}
               />
               <text
                 x={tx}
                 y={ty - 6}
                 textAnchor="middle"
-                fill={isPrimary ? '#f44336' : '#aaa'}
+                fill={isPrimary ? theme.palette.error.main : theme.palette.text.secondary}
                 fontSize="10"
                 fontWeight={isPrimary ? 'bold' : 'normal'}
               >
@@ -97,7 +120,7 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
                 x={tx}
                 y={ty + 8}
                 textAnchor="middle"
-                fill={isPrimary ? '#ff8a80' : '#ccc'}
+                fill={isPrimary ? theme.palette.error.light : theme.palette.divider}
                 fontSize="12"
                 fontWeight="bold"
               >
@@ -111,17 +134,37 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
           cx={cx}
           cy={cy}
           r={innerR}
-          fill="rgba(76,175,80,0.25)"
-          stroke="#4caf50"
+          fill={`${theme.palette.success.main}40`}
+          stroke={theme.palette.success.main}
           strokeWidth="2"
         />
-        <text x={cx} y={cy - 8} textAnchor="middle" fill="#4caf50" fontSize="9" fontWeight="bold">
+        <text
+          x={cx}
+          y={cy - 8}
+          textAnchor="middle"
+          fill={theme.palette.success.main}
+          fontSize="9"
+          fontWeight="bold"
+        >
           BULL
         </text>
-        <text x={cx} y={cy + 6} textAnchor="middle" fill="#4caf50" fontSize="14" fontWeight="bold">
+        <text
+          x={cx}
+          y={cy + 6}
+          textAnchor="middle"
+          fill={theme.palette.success.main}
+          fontSize="14"
+          fontWeight="bold"
+        >
           {result.bullRate}%
         </text>
-        <text x={cx} y={cy + 18} textAnchor="middle" fill="#888" fontSize="8">
+        <text
+          x={cx}
+          y={cy + 18}
+          textAnchor="middle"
+          fill={theme.palette.text.secondary}
+          fontSize="8"
+        >
           BB:{result.doubleBullRate}%
         </text>
 
@@ -140,7 +183,7 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
                 y1={cy}
                 x2={ax}
                 y2={ay}
-                stroke="#ff9800"
+                stroke={theme.palette.warning.main}
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 markerEnd="url(#miss-arrowhead)"
@@ -157,7 +200,7 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
             refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 8 3, 0 6" fill="#ff9800" />
+            <polygon points="0 0, 8 3, 0 6" fill={theme.palette.warning.main} />
           </marker>
         </defs>
       </svg>
@@ -166,6 +209,7 @@ function MissDirectionBoard({ result }: { result: MissDirectionResult }) {
 }
 
 export default function MissDirectionCard({ countupPlays }: MissDirectionCardProps) {
+  const theme = useTheme();
   const [excludeOuter, setExcludeOuter] = useState(false);
 
   const playLogs = useMemo(
@@ -224,7 +268,7 @@ export default function MissDirectionCard({ countupPlays }: MissDirectionCardPro
           主傾向:{' '}
           <Box
             component="span"
-            sx={{ color: missDirection.directionStrength > 0.1 ? '#f44336' : '#ff9800' }}
+            sx={{ color: missDirection.directionStrength > 0.1 ? 'error.main' : 'warning.main' }}
           >
             {missDirection.directionStrength > 0.05
               ? `${missDirection.primaryDirection}方向にミスしやすい`
@@ -255,7 +299,7 @@ export default function MissDirectionCard({ countupPlays }: MissDirectionCardPro
               variant="body2"
               sx={{
                 fontWeight: 'bold',
-                color: Math.abs(avgDl3.vectorX) > 5 ? '#ff9800' : '#4caf50',
+                color: Math.abs(avgDl3.vectorX) > 5 ? 'warning.main' : 'success.main',
               }}
             >
               {avgDl3.vectorX > 0 ? '右' : '左'} {Math.abs(avgDl3.vectorX).toFixed(1)}
@@ -269,7 +313,7 @@ export default function MissDirectionCard({ countupPlays }: MissDirectionCardPro
               variant="body2"
               sx={{
                 fontWeight: 'bold',
-                color: Math.abs(avgDl3.vectorY) > 5 ? '#ff9800' : '#4caf50',
+                color: Math.abs(avgDl3.vectorY) > 5 ? 'warning.main' : 'success.main',
               }}
             >
               {avgDl3.vectorY > 0 ? '下' : '上'} {Math.abs(avgDl3.vectorY).toFixed(1)}

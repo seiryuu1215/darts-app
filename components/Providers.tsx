@@ -6,6 +6,8 @@ import { ThemeProvider, createTheme, CssBaseline, useMediaQuery } from '@mui/mat
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase';
 import ToastProvider from '@/components/ToastProvider';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -133,6 +135,8 @@ export default function Providers({ children }: { children: ReactNode }) {
     <SessionProvider>
       <FirebaseAuthSync />
       <HealthKitAutoSync />
+      <Analytics />
+      <SpeedInsights />
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />

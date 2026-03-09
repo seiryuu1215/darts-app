@@ -39,10 +39,14 @@ function DiffArrow({ current, prev }: { current: number | null; prev: number | n
   if (current == null || prev == null) return null;
   const diff = current - prev;
   if (diff === 0) return null;
-  return diff > 0 ? (
-    <ArrowUpwardIcon sx={{ fontSize: 14, color: 'success.main' }} />
-  ) : (
-    <ArrowDownwardIcon sx={{ fontSize: 14, color: 'error.main' }} />
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+      {diff > 0 ? (
+        <ArrowUpwardIcon sx={{ fontSize: 14, color: 'success.main' }} />
+      ) : (
+        <ArrowDownwardIcon sx={{ fontSize: 14, color: 'error.main' }} />
+      )}
+    </Box>
   );
 }
 
@@ -62,10 +66,32 @@ function PerDayDiffArrow({
   const prevPerDay = prev / prevDays;
   const diff = currentPerDay - prevPerDay;
   if (Math.abs(diff) < 0.01) return null;
-  return diff > 0 ? (
-    <ArrowUpwardIcon sx={{ fontSize: 12, color: 'success.main' }} />
-  ) : (
-    <ArrowDownwardIcon sx={{ fontSize: 12, color: 'error.main' }} />
+  const color = diff > 0 ? 'success.main' : 'error.main';
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+      {diff > 0 ? (
+        <ArrowUpwardIcon sx={{ fontSize: 12, color }} />
+      ) : (
+        <ArrowDownwardIcon sx={{ fontSize: 12, color }} />
+      )}
+      <Typography variant="caption" sx={{ fontSize: '0.6rem', color, lineHeight: 1 }}>
+        {diff > 0 ? '+' : ''}
+        {diff.toFixed(1)}
+      </Typography>
+    </Box>
+  );
+}
+
+function MonthlyDiff({ current, prev }: { current: number; prev: number | undefined }) {
+  if (prev == null) return null;
+  const diff = current - prev;
+  if (diff === 0) return null;
+  const color = diff > 0 ? 'success.main' : 'error.main';
+  return (
+    <Typography variant="caption" sx={{ fontSize: '0.65rem', color, fontWeight: 'bold', ml: 0.5 }}>
+      {diff > 0 ? '+' : ''}
+      {diff}
+    </Typography>
   );
 }
 
@@ -131,22 +157,24 @@ export default function StatsOverviewCard({
     {
       label: 'BULL',
       value: bullTotal,
-      prevValue: prevMonthStats ? prevMonthStats.dBullMonthly + prevMonthStats.sBullMonthly : 0,
+      prevValue: prevMonthStats
+        ? prevMonthStats.dBullMonthly + prevMonthStats.sBullMonthly
+        : undefined,
     },
     {
       label: 'LOW TON',
       value: lowTonMonthly,
-      prevValue: prevMonthStats?.lowTonMonthly ?? 0,
+      prevValue: prevMonthStats?.lowTonMonthly,
     },
     {
       label: 'HAT TRICK',
       value: hatTricksMonthly,
-      prevValue: prevMonthStats?.hatTricksMonthly ?? 0,
+      prevValue: prevMonthStats?.hatTricksMonthly,
     },
   ];
 
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box sx={{ mb: 4 }} data-tour-id="stats-overview">
       <Box
         sx={{
           display: 'flex',
@@ -306,47 +334,62 @@ export default function StatsOverviewCard({
         {/* 下段: 今月の実績 */}
         <Box
           sx={{
-            display: 'flex',
-            gap: 2,
-            justifyContent: 'space-around',
             px: 2,
             py: 1.5,
             borderTop: '1px solid',
             borderColor: 'divider',
           }}
         >
-          {monthlyItems.map((item) => (
-            <Box key={item.label} sx={{ textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                {item.label}
-              </Typography>
-              <Typography variant="body1" fontWeight="bold">
-                {item.value}
-              </Typography>
-              {perDay && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 0.3,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    {perDay(item.value)}/日
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', textAlign: 'center', mb: 1, fontWeight: 'bold' }}
+          >
+            今月の実績
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'space-around',
+            }}
+          >
+            {monthlyItems.map((item) => (
+              <Box key={item.label} sx={{ textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  {item.label}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                  <Typography variant="body1" fontWeight="bold">
+                    {item.value}
                   </Typography>
-                  {prevMonthStats && prevMonthStats.playDays > 0 && (
-                    <PerDayDiffArrow
-                      current={item.value}
-                      currentDays={currentMonthPlayDays}
-                      prev={item.prevValue}
-                      prevDays={prevMonthStats.playDays}
-                    />
-                  )}
+                  <MonthlyDiff current={item.value} prev={item.prevValue} />
                 </Box>
-              )}
-            </Box>
-          ))}
+                {perDay && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.3,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {perDay(item.value)}/日
+                    </Typography>
+                    {prevMonthStats && prevMonthStats.playDays > 0 && item.prevValue != null && (
+                      <PerDayDiffArrow
+                        current={item.value}
+                        currentDays={currentMonthPlayDays}
+                        prev={item.prevValue}
+                        prevDays={prevMonthStats.playDays}
+                      />
+                    )}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Card>
     </Box>
