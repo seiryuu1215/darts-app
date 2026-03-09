@@ -644,10 +644,8 @@ export const POST = withErrorHandler(
 **レートリミット:**
 
 ```typescript
-// インメモリMap（Vercelのサーバーレス環境ではインスタンス間で共有されない）
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-// → 60リクエスト/分/IP
-// → 本格運用ではRedisベースに変更すべき（後述の懸念点参照）
+// Upstash Redis による分散レートリミット（60リクエスト/分/IP）
+// サーバーレス環境でもインスタンス間で共有される
 ```
 
 ### 7-3. レーティング計算（`lib/dartslive-rating.ts`）
@@ -720,9 +718,9 @@ function ppdForRating(targetRt: number): number {
 | `monthly_active`      | 150 | 月間アクティブボーナス |
 | `n01_import`          | 5   | n01データ取り込み      |
 
-**ランク体系（20段階）:**
+**ランク体系（50段階）:**
 
-Lv.1 Rookie 🎯 → Lv.10 AA Player 💎 → Lv.15 Champion ⭐ → Lv.20 THE GOD 🏆
+Lv.1 Rookie 🎯 → Lv.10 AA Player 💎 → Lv.20 Champion ⭐ → Lv.30 Master 🏅 → Lv.42 THE GOD 🏆 → Lv.50 BEYOND GOD 🌟
 
 各ランクに `icon`（絵文字）と `color`（UIアクセント色）が定義されている。`XpBar` コンポーネントはランクの色で左ボーダーを表示し、タップで詳細（次レベルまでのXP、XP獲得条件カテゴリ別一覧）が展開される。
 
@@ -824,7 +822,7 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 | **グローバル状態管理なし（Redux/Zustand不使用）**  | ページ単位でデータが完結するため、propsとContextで十分。スタッツページは複雑だが、データの流れは上→下の一方向                          |
 | **Recharts**                                       | MUI公式のチャートライブラリ（MUI X Charts）より軽量で、カスタマイズ自由度が高い。SSR非対応だが全ページがClient Componentなので問題なし |
 | **サーバーサイドブラウザ自動化（puppeteer-core）** | DARTSLIVE公式APIが存在しないため唯一の手段。法的リスクは利用規約の範囲内（個人データの自己取得）                                       |
-| **インメモリレートリミット**                       | 外部依存（Redis等）なしでシンプル。サーバーレス環境ではインスタンス間で共有されないが、個人アプリの規模では十分                        |
+| **Upstash Redis レートリミット**                    | 分散環境でもインスタンス間で共有可能。IP ベース 60 req/min で API を保護                                                               |
 
 ### 知っておくべき懸念点
 
@@ -842,14 +840,13 @@ recommendFromQuizWithAnalysis(answers); // 6問の診断クイズから
 
 **3. セキュリティルールの複雑性**
 
-- `firestore.rules` が約170行で、ロール判定のためにユーザードキュメントを `get()` する箇所がある
+- `firestore.rules` が約256行で、ロール判定のためにユーザードキュメントを `get()` する箇所がある
 - このFirestore読み取りも課金対象（セキュリティルール内の `get()` は1回の読み取りとしてカウント）
 
-**4. レートリミットの限界**
+**4. レートリミット**
 
-- `lib/api-middleware.ts` のレートリミットはインメモリMapベース
-- Vercelのサーバーレス関数は複数インスタンスが独立に起動するため、**インスタンス間でリミットが共有されない**
-- 本格運用時は Vercel KV や Upstash Redis への移行を検討
+- Upstash Redis による分散レートリミットを導入済み（IP ベース 60 req/min）
+- サーバーレス環境でもインスタンス間でリミットが共有される
 
 **5. 画像アップロードパスの注意**
 

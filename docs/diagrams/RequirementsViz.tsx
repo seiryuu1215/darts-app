@@ -155,8 +155,8 @@ const featureGroups: FeatureGroup[] = [
     icon: '⭐',
     color: COLORS.pink,
     features: [
-      { name: 'XP / 14種ルール', role: 'auth' },
-      { name: '30段階ランク', role: 'auth' },
+      { name: 'XP / 21種ルール', role: 'auth' },
+      { name: '50段階ランク', role: 'auth' },
       { name: '12種の実績', role: 'auth' },
       { name: '目標トラッキング', role: 'pro' },
       { name: '紙吹雪演出', role: 'auth' },

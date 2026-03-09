@@ -516,7 +516,7 @@ found 0 vulnerabilities
 | 3   | `.env.example` 作成      | **完了** | 全環境変数のテンプレート                             |
 | 4   | `ADMIN_EMAIL` 環境変数化 | **完了** | `lib/auth.ts` で `process.env.ADMIN_EMAIL` 使用      |
 | 5   | Sentry エラー監視        | **完了** | `@sentry/nextjs` 導入済み                            |
-| 6   | Rate Limiting            | **完了** | インメモリ実装（規模相応）                           |
+| 6   | Rate Limiting            | **完了** | Upstash Redis（IP ベース 60 req/min）                |
 | 7   | Webhook署名検証          | **完了** | Stripe + LINE 両方実装済み                           |
 | 8   | DL認証情報暗号化         | **完了** | AES-256-GCM（Cron用）                                |
 
