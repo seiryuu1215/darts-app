@@ -17,7 +17,10 @@ test.describe('アクセシビリティ監査', () => {
       await page.waitForLoadState('networkidle');
 
       // CI環境ではFirestore未接続のためエラー表示になるページをスキップ
-      const hasAlert = await page.getByRole('alert').isVisible().catch(() => false);
+      const hasAlert = await page
+        .getByRole('alert')
+        .isVisible()
+        .catch(() => false);
       if (hasAlert && process.env.CI) {
         test.skip();
         return;
