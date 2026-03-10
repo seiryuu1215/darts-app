@@ -48,29 +48,21 @@
 | :--------------------------------: | :--------------------------------------: | :----------------------------------: |
 | ![Home](docs/screenshots/home.png) | ![Barrels](docs/screenshots/barrels.png) | ![Stats](docs/screenshots/stats.png) |
 
-|             スタッツ（深掘り）             |                 カレンダー                 |               PHOENIX 換算               |
-| :----------------------------------------: | :----------------------------------------: | :--------------------------------------: |
-| ![Deep](docs/screenshots/stats-scroll.png) | ![Calendar](docs/screenshots/calendar.png) | ![Phoenix](docs/screenshots/phoenix.png) |
+|             スタッツ（深掘り）             |                 カレンダー                 |           セッティング登録           |
+| :----------------------------------------: | :----------------------------------------: | :----------------------------------: |
+| ![Deep](docs/screenshots/stats-scroll.png) | ![Calendar](docs/screenshots/calendar.png) | ![Setup](docs/screenshots/setup.png) |
 
-|           セッティング登録           |             セッティング比較             |             バレルシミュレーター             |
-| :----------------------------------: | :--------------------------------------: | :------------------------------------------: |
-| ![Setup](docs/screenshots/setup.png) | ![Compare](docs/screenshots/compare.png) | ![Simulator](docs/screenshots/simulator.png) |
+|             セッティング比較             |             マイショップ             |                 ディスカッション                 |
+| :--------------------------------------: | :----------------------------------: | :----------------------------------------------: |
+| ![Compare](docs/screenshots/compare.png) | ![Shops](docs/screenshots/shops.png) | ![Discussions](docs/screenshots/discussions.png) |
 
-|             診断クイズ             |                おすすめバレル                |             マイショップ             |
-| :--------------------------------: | :------------------------------------------: | :----------------------------------: |
-| ![Quiz](docs/screenshots/quiz.png) | ![Recommend](docs/screenshots/recommend.png) | ![Shops](docs/screenshots/shops.png) |
+|                    記事                    |               プロフィール               |                 リファレンス                 |
+| :----------------------------------------: | :--------------------------------------: | :------------------------------------------: |
+| ![Articles](docs/screenshots/articles.png) | ![Profile](docs/screenshots/profile.png) | ![Reference](docs/screenshots/reference.png) |
 
-|                 ディスカッション                 |                    記事                    |                 ブックマーク                 |
-| :----------------------------------------------: | :----------------------------------------: | :------------------------------------------: |
-| ![Discussions](docs/screenshots/discussions.png) | ![Articles](docs/screenshots/articles.png) | ![Bookmarks](docs/screenshots/bookmarks.png) |
-
-|               ヘルスケア               |               プロフィール               |                料金プラン                |
-| :------------------------------------: | :--------------------------------------: | :--------------------------------------: |
-| ![Health](docs/screenshots/health.png) | ![Profile](docs/screenshots/profile.png) | ![Pricing](docs/screenshots/pricing.png) |
-
-|               ログイン               |
-| :----------------------------------: |
-| ![Login](docs/screenshots/login.png) |
+|                料金プラン                |               ログイン               |
+| :--------------------------------------: | :----------------------------------: |
+| ![Pricing](docs/screenshots/pricing.png) | ![Login](docs/screenshots/login.png) |
 
 ---
 

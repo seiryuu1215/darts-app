@@ -453,6 +453,134 @@ export function generateDemoDiscussions(
   return { discussions, replies };
 }
 
+/** デモ用記事 (3件) — トップレベル articles コレクションに投入 */
+export function generateDemoArticles(userId: string, userName: string): Record<string, unknown>[] {
+  const d1 = new Date(now);
+  d1.setDate(d1.getDate() - 10);
+  const d2 = new Date(now);
+  d2.setDate(d2.getDate() - 6);
+  const d3 = new Date(now);
+  d3.setDate(d3.getDate() - 2);
+  const ts = (d: Date) => ({ _seconds: Math.floor(d.getTime() / 1000), _nanoseconds: 0 });
+
+  return [
+    {
+      slug: `demo-analytics-guide-${userId}`,
+      title: 'DARTSLIVEスタッツ分析の活用ガイド',
+      content: [
+        '## スタッツ分析でレーティングを効率的に上げよう',
+        '',
+        'Darts Labのスタッツ分析機能を使えば、自分のプレイの傾向を客観的に把握できます。',
+        '',
+        '### 1. レーティング推移を確認する',
+        '',
+        'まず「スタッツ」ページでレーティングの推移グラフを確認しましょう。',
+        '上昇トレンドが出ているか、停滞しているかを把握することが大切です。',
+        '',
+        '### 2. 01とCricketのバランス',
+        '',
+        '01のPPDとCricketのMPRのバランスを見ることで、自分の得意・不得意が分かります。',
+        '',
+        '- **PPDが高くMPRが低い** → ブル力はあるがマーク力が課題',
+        '- **MPRが高くPPDが低い** → マーク力はあるがフィニッシュ力が課題',
+        '',
+        '### 3. コンディション相関',
+        '',
+        '睡眠時間やコンディション評価とスタッツの相関を分析すると、',
+        '自分のベストコンディションのパターンが見えてきます。',
+      ].join('\n'),
+      coverImageUrl: null,
+      tags: ['分析', 'スタッツ', 'レーティング'],
+      isDraft: false,
+      isFeatured: true,
+      articleType: 'article',
+      userId,
+      userName,
+      createdAt: ts(d1),
+      updatedAt: ts(d1),
+    },
+    {
+      slug: `demo-barrel-selection-${userId}`,
+      title: '初めてのバレル選び — 体格とプレースタイルから考える',
+      content: [
+        '## バレル選びで迷ったら',
+        '',
+        'ダーツを始めて最初に悩むのがバレル選び。',
+        '価格帯も種類も多く、どれを選べばいいか分からない方も多いはず。',
+        '',
+        '### 体格による選び方',
+        '',
+        '| 体格 | おすすめ重量 | おすすめ長さ |',
+        '|------|------------|------------|',
+        '| 小柄 | 18-20g | 40-44mm |',
+        '| 中肉中背 | 20-22g | 42-46mm |',
+        '| 大柄 | 22-26g | 44-50mm |',
+        '',
+        '### カットの種類',
+        '',
+        '- **マイクログルーヴ** — 繊細なグリップ感。指離れが良い',
+        '- **シャークカット** — 強いグリップ力。しっかり握りたい方向け',
+        '- **リングカット** — バランスの良い引っかかり。万能型',
+        '',
+        '### おすすめの試し方',
+        '',
+        'ダーツショップでの試投が一番確実です。',
+        'Darts Labの「バレル検索」でスペックを比較してから、',
+        'ショップで実際に投げてみましょう。',
+      ].join('\n'),
+      coverImageUrl: null,
+      tags: ['バレル', '初心者', 'セッティング'],
+      isDraft: false,
+      isFeatured: false,
+      articleType: 'article',
+      userId,
+      userName,
+      createdAt: ts(d2),
+      updatedAt: ts(d2),
+    },
+    {
+      slug: `demo-practice-routine-${userId}`,
+      title: 'Rt.10を目指す練習ルーティン',
+      content: [
+        '## 毎日30分でRt.10に到達するための練習メニュー',
+        '',
+        'Rt.8からRt.10への壁を突破するには、質の高い練習が必要です。',
+        '',
+        '### ウォームアップ (5分)',
+        '',
+        '1. ブルに向かって10スロー — フォームの確認',
+        '2. 20トリプルに5スロー — 精度の確認',
+        '',
+        '### メイン練習 (20分)',
+        '',
+        '#### BULL練習 (10分)',
+        '- 3本連続ブルを目標に、入るまで繰り返す',
+        '- D-BULLに入ったら声に出してカウント',
+        '',
+        '#### カウントアップ (10分)',
+        '- 目標500点以上を2回連続',
+        '- 1ラウンドずつ集中。前のラウンドの結果は忘れる',
+        '',
+        '### クールダウン (5分)',
+        '- 01を1ゲーム。アレンジを意識して',
+        '- 今日の良かった点・改善点をメモ',
+        '',
+        '> 大事なのは毎日続けること。',
+        '> 短い時間でも集中して投げれば、必ず結果はついてきます。',
+      ].join('\n'),
+      coverImageUrl: null,
+      tags: ['練習', 'レーティング', '上達'],
+      isDraft: false,
+      isFeatured: false,
+      articleType: 'article',
+      userId,
+      userName,
+      createdAt: ts(d3),
+      updatedAt: ts(d3),
+    },
+  ];
+}
+
 /** dartsliveCache/latest ドキュメント */
 export function generateDemoCacheLatest(): Record<string, unknown> {
   return {

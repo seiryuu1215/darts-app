@@ -10,6 +10,7 @@ import {
   generateDemoShopBookmarks,
   generateDemoDarts,
   generateDemoDiscussions,
+  generateDemoArticles,
 } from '@/lib/demo-seed-data';
 
 export const maxDuration = 60;
@@ -59,6 +60,12 @@ async function deleteUserCreatedDocs(userId: string) {
   for (const discDoc of discussionsSnap.docs) {
     await deleteSubcollection(`discussions/${discDoc.id}`, 'replies');
     await adminDb.doc(`discussions/${discDoc.id}`).delete();
+  }
+
+  // articles
+  const articlesSnap = await adminDb.collection('articles').where('userId', '==', userId).get();
+  for (const artDoc of articlesSnap.docs) {
+    await adminDb.doc(`articles/${artDoc.id}`).delete();
   }
 }
 
@@ -274,6 +281,14 @@ export async function GET(request: NextRequest) {
           replyBatch.set(ref, r.data);
         }
         await replyBatch.commit();
+
+        // 9. articles（トップレベルコレクション）
+        const articlesBatch = adminDb.batch();
+        for (const article of generateDemoArticles(account.uid, displayName)) {
+          const ref = adminDb.collection('articles').doc();
+          articlesBatch.set(ref, article);
+        }
+        await articlesBatch.commit();
       }
 
       results.push({ uid: account.uid, status: 'reset' });
