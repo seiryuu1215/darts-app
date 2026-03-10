@@ -191,12 +191,21 @@ function getCacheLatest() {
   };
 }
 
+/** バレル画像URLを表示可能な形式に正規化（wsrv.nlプロキシ経由） */
+function normalizeBarrelImageUrl(raw: string): string {
+  let url = raw;
+  if (url.startsWith('//')) url = `https:${url}`;
+  if (url.startsWith('/')) url = `https://www.dartshive.jp${url}`;
+  url = url.replace(/^http:\/\//, 'https://');
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&n=-1`;
+}
+
 /** バレルコレクションから画像付きバレルを取得（ダーツ画像・ブックマーク用） */
 async function fetchRealBarrels(limit: number) {
   const snap = await adminDb.collection('barrels').where('imageUrl', '!=', null).limit(limit).get();
   return snap.docs.map((d) => ({
     id: d.id,
-    imageUrl: d.data().imageUrl as string,
+    imageUrl: normalizeBarrelImageUrl(d.data().imageUrl as string),
     name: (d.data().name as string) || '',
     brand: (d.data().brand as string) || '',
   }));
