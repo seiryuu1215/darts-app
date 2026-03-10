@@ -191,15 +191,6 @@ function getCacheLatest() {
   };
 }
 
-/** バレル画像URLを表示可能な形式に正規化（wsrv.nlプロキシ経由） */
-function normalizeBarrelImageUrl(raw: string): string {
-  let url = raw;
-  if (url.startsWith('//')) url = `https:${url}`;
-  if (url.startsWith('/')) url = `https://www.dartshive.jp${url}`;
-  url = url.replace(/^http:\/\//, 'https://');
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&n=-1`;
-}
-
 /** バレルコレクションから画像付きバレルを取得（ダーツ画像・ブックマーク用） */
 async function fetchRealBarrels(limit: number) {
   const snap = await adminDb.collection('barrels').where('imageUrl', '!=', null).limit(limit).get();
@@ -210,16 +201,15 @@ async function fetchRealBarrels(limit: number) {
     })
     .map((d) => {
       const raw = (d.data().imageUrl as string) || '';
-      // プロトコル相対URL・相対パスをフルHTTPSに変換（wsrv.nlプロキシなし）
+      // プロトコル相対URL・相対パスをフルHTTPSに変換
       let url = raw;
       if (url.startsWith('//')) url = `https:${url}`;
       if (url.startsWith('/')) url = `https://www.dartshive.jp${url}`;
       url = url.replace(/^http:\/\//, 'https://');
-      // /api/proxy-image 経由でsame-originとして配信（CSP・CORS問題を回避）
+      // /api/proxy-image 経由でsame-originとして配信（CSP問題を回避）
       const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
       return {
         id: d.id,
-        rawImageUrl: raw,
         imageUrl: proxyUrl,
         name: (d.data().name as string) || '',
         brand: (d.data().brand as string) || '',
@@ -354,16 +344,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    results,
-    debug: {
-      realBarrelsCount: realBarrels.length,
-      realBarrels: realBarrels.map((b) => ({
-        id: b.id,
-        rawImageUrl: b.rawImageUrl,
-        normalizedImageUrl: b.imageUrl,
-        name: b.name,
-      })),
-    },
-  });
+  return NextResponse.json({ results });
 }
