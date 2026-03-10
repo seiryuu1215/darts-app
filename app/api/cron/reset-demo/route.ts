@@ -203,13 +203,26 @@ function normalizeBarrelImageUrl(raw: string): string {
 /** バレルコレクションから画像付きバレルを取得（ダーツ画像・ブックマーク用） */
 async function fetchRealBarrels(limit: number) {
   const snap = await adminDb.collection('barrels').where('imageUrl', '!=', null).limit(limit).get();
-  return snap.docs.map((d) => ({
-    id: d.id,
-    rawImageUrl: (d.data().imageUrl as string) || '',
-    imageUrl: normalizeBarrelImageUrl(d.data().imageUrl as string),
-    name: (d.data().name as string) || '',
-    brand: (d.data().brand as string) || '',
-  }));
+  return snap.docs
+    .filter((d) => {
+      const url = (d.data().imageUrl as string) || '';
+      return url.length > 0;
+    })
+    .map((d) => {
+      const raw = (d.data().imageUrl as string) || '';
+      // プロトコル相対URL・相対パスをフルHTTPSに変換（wsrv.nlプロキシなし）
+      let url = raw;
+      if (url.startsWith('//')) url = `https:${url}`;
+      if (url.startsWith('/')) url = `https://www.dartshive.jp${url}`;
+      url = url.replace(/^http:\/\//, 'https://');
+      return {
+        id: d.id,
+        rawImageUrl: raw,
+        imageUrl: url,
+        name: (d.data().name as string) || '',
+        brand: (d.data().brand as string) || '',
+      };
+    });
 }
 
 export async function GET(request: NextRequest) {

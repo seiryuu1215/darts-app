@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**.dartshive.jp' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      { protocol: 'https', hostname: 'makeshop-multi-images.akamaized.net' },
     ],
   },
   async headers() {
@@ -41,7 +42,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com https://wsrv.nl",
+              "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com https://wsrv.nl https://makeshop-multi-images.akamaized.net",
               "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://*.stripe.com https://*.sentry.io https://px.a8.net https://va.vercel-scripts.com https://vitals.vercel-insights.com",
               'frame-src https://js.stripe.com https://*.firebaseapp.com',
               "object-src 'none'",
