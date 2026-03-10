@@ -23,7 +23,7 @@ TSXソースは [`diagrams/`](./diagrams/) に収録。
 | [ROLES-AND-PLANS.md](./ROLES-AND-PLANS.md)         | **ロール・権限管理（SSOT）** — 3ロール・機能別マトリクス・プラン設計 | 企画・開発者 |
 | [DEVELOPER-REFERENCE.md](./DEVELOPER-REFERENCE.md) | 開発者リファレンス — コードウォークスルー・実装パターン              | 開発者       |
 | [CRON.md](./CRON.md)                               | Cronバッチ設計 — 日次自動処理パイプライン                            | 開発者・運用 |
-| [ARCHITECTURE.md](./ARCHITECTURE.md)               | ~~旧アーキテクチャ設計書~~ → 02-basic-design.md に統合済み           | —            |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)               | アーキテクチャ概要 → 設計図ビューアへの入口                          | 全員         |
 
 ---
 
