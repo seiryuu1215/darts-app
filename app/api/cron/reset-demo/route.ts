@@ -191,11 +191,25 @@ function getCacheLatest() {
   };
 }
 
+/** バレルコレクションから画像付きバレルを取得（ダーツ画像・ブックマーク用） */
+async function fetchRealBarrels(limit: number) {
+  const snap = await adminDb.collection('barrels').where('imageUrl', '!=', null).limit(limit).get();
+  return snap.docs.map((d) => ({
+    id: d.id,
+    imageUrl: d.data().imageUrl as string,
+    name: (d.data().name as string) || '',
+    brand: (d.data().brand as string) || '',
+  }));
+}
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // 実在するバレル画像を事前取得
+  const realBarrels = await fetchRealBarrels(8);
 
   const results: { uid: string; status: string }[] = [];
 
@@ -237,19 +251,26 @@ export async function GET(request: NextRequest) {
         await goalsBatch.commit();
       }
 
-      // 6-8. PRO/admin: xpHistory, barrelBookmarks, shopBookmarks, darts, discussions
+      // 6. PRO/admin: xpHistory
       if (account.role !== 'general') {
-        const seedBatch = adminDb.batch();
-
-        // 6. xpHistory, barrelBookmarks, shopBookmarks
+        const xpBatch = adminDb.batch();
         for (const xp of generateDemoXpHistory()) {
           const ref = adminDb.collection(`users/${account.uid}/xpHistory`).doc();
-          seedBatch.set(ref, xp);
+          xpBatch.set(ref, xp);
         }
-        for (const bm of generateDemoBarrelBookmarks()) {
-          const bmData = bm as { id: string; barrelId: string; createdAt: unknown };
-          const ref = adminDb.doc(`users/${account.uid}/barrelBookmarks/${bmData.id}`);
-          seedBatch.set(ref, { barrelId: bmData.barrelId, createdAt: bmData.createdAt });
+        await xpBatch.commit();
+      }
+
+      // 7-11. 全アカウント共通: barrelBookmarks, shopBookmarks, darts, discussions, articles
+      {
+        const seedBatch = adminDb.batch();
+        // バレルブックマーク: 実在するバレルIDを使用
+        for (const rb of realBarrels.slice(0, 5)) {
+          const ref = adminDb.doc(`users/${account.uid}/barrelBookmarks/${rb.id}`);
+          seedBatch.set(ref, {
+            barrelId: rb.id,
+            createdAt: FieldValue.serverTimestamp(),
+          });
         }
         for (const sb of generateDemoShopBookmarks()) {
           const ref = adminDb.collection(`users/${account.uid}/shopBookmarks`).doc();
@@ -257,16 +278,26 @@ export async function GET(request: NextRequest) {
         }
         await seedBatch.commit();
 
-        // 7. darts（トップレベルコレクション）
-        const displayName = account.role === 'admin' ? 'デモ（Admin）' : 'デモ（Pro）';
+        // darts（トップレベルコレクション）— 実バレル画像を付与
+        const displayName =
+          account.role === 'admin'
+            ? 'デモ（Admin）'
+            : account.role === 'pro'
+              ? 'デモ（Pro）'
+              : 'デモ（General）';
         const dartsBatch = adminDb.batch();
-        for (const dart of generateDemoDarts(account.uid, displayName)) {
+        const demoDarts = generateDemoDarts(account.uid, displayName);
+        for (let i = 0; i < demoDarts.length; i++) {
+          const dart = demoDarts[i];
+          if (realBarrels[i]?.imageUrl) {
+            dart.imageUrls = [realBarrels[i].imageUrl];
+          }
           const ref = adminDb.collection('darts').doc();
           dartsBatch.set(ref, dart);
         }
         await dartsBatch.commit();
 
-        // 8. discussions + replies（トップレベルコレクション）
+        // discussions + replies（トップレベルコレクション）
         const { discussions, replies } = generateDemoDiscussions(account.uid, displayName);
         const discIds: string[] = [];
         for (const disc of discussions) {
@@ -282,7 +313,7 @@ export async function GET(request: NextRequest) {
         }
         await replyBatch.commit();
 
-        // 9. articles（トップレベルコレクション）
+        // articles（トップレベルコレクション）
         const articlesBatch = adminDb.batch();
         for (const article of generateDemoArticles(account.uid, displayName)) {
           const ref = adminDb.collection('articles').doc();
