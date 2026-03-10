@@ -26,7 +26,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "metrics": "tsx scripts/export-metrics.ts",
-    "logs:analyze": "tsx scripts/analyze-logs.ts --days=7"
+    "logs:analyze": "tsx scripts/analyze-logs.ts --days=7",
+    "screenshots": "tsx scripts/capture-screenshots.ts"
   },
   "dependencies": {
     "@capacitor/cli": "^8.1.0",
