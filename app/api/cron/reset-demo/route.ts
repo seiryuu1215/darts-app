@@ -205,6 +205,7 @@ async function fetchRealBarrels(limit: number) {
   const snap = await adminDb.collection('barrels').where('imageUrl', '!=', null).limit(limit).get();
   return snap.docs.map((d) => ({
     id: d.id,
+    rawImageUrl: (d.data().imageUrl as string) || '',
     imageUrl: normalizeBarrelImageUrl(d.data().imageUrl as string),
     name: (d.data().name as string) || '',
     brand: (d.data().brand as string) || '',
@@ -338,5 +339,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ results });
+  return NextResponse.json({
+    results,
+    debug: {
+      realBarrelsCount: realBarrels.length,
+      realBarrels: realBarrels.map((b) => ({
+        id: b.id,
+        rawImageUrl: b.rawImageUrl,
+        normalizedImageUrl: b.imageUrl,
+        name: b.name,
+      })),
+    },
+  });
 }
