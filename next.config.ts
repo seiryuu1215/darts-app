@@ -35,16 +35,18 @@ const nextConfig: NextConfig = {
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+          // CSP は proxy.ts（ミドルウェア）が nonce 方式で動的に設定するため、
+          // ここではフォールバック用の最小限ポリシーのみ定義する。
+          // proxy.ts の matcher に該当しないリクエスト（prefetch 等）向け。
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io https://va.vercel-scripts.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.dartshive.jp https://firebasestorage.googleapis.com https://*.stripe.com https://api.dicebear.com https://wsrv.nl https://makeshop-multi-images.akamaized.net",
-              "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://*.stripe.com https://*.sentry.io https://px.a8.net https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-              'frame-src https://js.stripe.com https://*.firebaseapp.com',
+              "script-src 'self'",
+              "style-src 'self' 'unsafe-inline'",
+              "font-src 'self'",
+              "img-src 'self' data: blob:",
+              "connect-src 'self'",
               "object-src 'none'",
               "base-uri 'self'",
             ].join('; '),

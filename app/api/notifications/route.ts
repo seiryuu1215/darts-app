@@ -41,8 +41,11 @@ export const PATCH = withErrorHandler(
     const body = await req.json();
     const { ids } = body as { ids: string[] };
 
-    if (!ids || ids.length === 0) {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'IDが必要です' }, { status: 400 });
+    }
+    if (ids.length > 500) {
+      return NextResponse.json({ error: '一度に処理できるIDは500件までです' }, { status: 400 });
     }
 
     const batch = adminDb.batch();

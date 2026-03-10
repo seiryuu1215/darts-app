@@ -35,6 +35,11 @@ export const DEMO_BLOCKED_ROUTES = new Set([
   '/api/line/save-px-credentials',
   '/api/upload',
   '/api/health/sync',
+  '/api/progression',
+  '/api/goals',
+  '/api/goals/achieve',
+  '/api/n01-import',
+  '/api/export-pdf',
 ]);
 
 /** admin デモ専用ブロック対象 */

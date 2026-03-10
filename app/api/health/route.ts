@@ -13,8 +13,8 @@ async function checkFirestore(): Promise<ServiceStatus> {
   try {
     await adminDb.doc('_health/ping').get();
     return { status: 'ok', latencyMs: Date.now() - start };
-  } catch (e) {
-    return { status: 'error', latencyMs: Date.now() - start, error: String(e) };
+  } catch {
+    return { status: 'error', latencyMs: Date.now() - start };
   }
 }
 
@@ -30,8 +30,8 @@ async function checkRedis(): Promise<ServiceStatus> {
     const redis = new Redis({ url, token });
     await redis.ping();
     return { status: 'ok', latencyMs: Date.now() - start };
-  } catch (e) {
-    return { status: 'error', latencyMs: Date.now() - start, error: String(e) };
+  } catch {
+    return { status: 'error', latencyMs: Date.now() - start };
   }
 }
 

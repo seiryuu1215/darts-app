@@ -79,6 +79,17 @@ export const GET = withErrorHandler(
  * POST /api/progression — XP付与
  * Body: { action: string, detail?: string, count?: number }
  */
+/** クライアントから直接呼び出し可能なアクション（Cronバッチ専用は除外） */
+const CLIENT_ALLOWED_ACTIONS = new Set([
+  'stats_record',
+  'discussion_post',
+  'condition_record',
+  'n01_import',
+]);
+
+/** count の上限（不正な大量XP付与を防止） */
+const MAX_COUNT = 100;
+
 export const POST = withErrorHandler(
   withAuth(async (req: NextRequest, { userId }) => {
     const body = await req.json();
@@ -88,12 +99,27 @@ export const POST = withErrorHandler(
       count?: number;
     };
 
+    if (!action || typeof action !== 'string') {
+      return NextResponse.json({ error: 'actionが必要です' }, { status: 400 });
+    }
+
     const rule = XP_RULES[action];
     if (!rule) {
       return NextResponse.json({ error: '不明なアクションです' }, { status: 400 });
     }
 
-    const multiplier = count && count > 0 ? count : 1;
+    // クライアントから直接呼び出せるアクションを制限
+    // award_* や rating_milestone 等はCronバッチからのみ付与される
+    if (!CLIENT_ALLOWED_ACTIONS.has(action)) {
+      return NextResponse.json({ error: '許可されていないアクションです' }, { status: 403 });
+    }
+
+    // count のバリデーション（整数・1以上・上限チェック）
+    const rawCount = count ?? 1;
+    if (typeof rawCount !== 'number' || !Number.isInteger(rawCount) || rawCount < 1) {
+      return NextResponse.json({ error: 'countが不正です' }, { status: 400 });
+    }
+    const multiplier = Math.min(rawCount, MAX_COUNT);
     const xpGained = rule.xp * multiplier;
 
     const userRef = adminDb.doc(`users/${userId}`);
