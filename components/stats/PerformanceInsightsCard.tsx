@@ -88,12 +88,12 @@ export default function PerformanceInsightsCard({
       }
     }
 
-    // 80% vs 100% 比較
-    if (s01?.avg != null && s01?.avg100 != null && s01.avg > 0) {
-      const ratio = s01.avg100 / s01.avg;
+    // 80% vs 100% 比較（Cricketのみ。01は80%=ラウンド平均、100%=PPDで単位が異なるため比較不可）
+    if (sCri?.avg != null && sCri?.avg100 != null && sCri.avg > 0) {
+      const ratio = sCri.avg100 / sCri.avg;
       if (ratio > 1.15) {
         result.push({
-          message: '好調時のパフォーマンスは高いです。安定性向上が鍵になります。',
+          message: '好調時のCricketパフォーマンスは高いです。安定性向上が鍵になります。',
           severity: 'info',
         });
       }

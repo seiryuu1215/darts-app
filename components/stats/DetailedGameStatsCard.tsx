@@ -175,8 +175,7 @@ export default function DetailedGameStatsCard({
           percentile={stats01?.avg != null ? { type: 'ppd', value: stats01.avg } : null}
         />
         <StatRow label="ベスト" value={stats01?.best ?? null} />
-        <StatRow label="100%平均" value={stats01?.avg100 ?? null} />
-        <DiffRow label="80%→100%差分" avg={stats01?.avg ?? null} avg100={stats01?.avg100 ?? null} />
+        <StatRow label="100%平均 (PPD)" value={stats01?.avg100 ?? null} />
         <Divider sx={{ my: 1 }} />
         <StatRow label="勝率" value={stats01?.winRate ?? null} unit="%" />
         <StatRow label="Bull率" value={stats01?.bullRate ?? null} unit="%" />
