@@ -215,10 +215,12 @@ async function fetchRealBarrels(limit: number) {
       if (url.startsWith('//')) url = `https:${url}`;
       if (url.startsWith('/')) url = `https://www.dartshive.jp${url}`;
       url = url.replace(/^http:\/\//, 'https://');
+      // /api/proxy-image 経由でsame-originとして配信（CSP・CORS問題を回避）
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
       return {
         id: d.id,
         rawImageUrl: raw,
-        imageUrl: url,
+        imageUrl: proxyUrl,
         name: (d.data().name as string) || '',
         brand: (d.data().brand as string) || '',
       };

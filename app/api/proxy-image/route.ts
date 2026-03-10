@@ -4,6 +4,7 @@ const ALLOWED_HOSTS = [
   'dartshive.jp',
   'www.dartshive.jp',
   'image.dartshive.jp',
+  'makeshop-multi-images.akamaized.net',
   'firebasestorage.googleapis.com',
   'dl.cdn.dartslive.com',
 ];
