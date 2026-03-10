@@ -17,6 +17,7 @@ export function proxy(request: NextRequest) {
       'https://api.dicebear.com',
       'https://pbs.twimg.com',
       'https://platform.twitter.com',
+      'https://makeshop-multi-images.akamaized.net',
     ].join(' '),
     "font-src 'self'",
     [
