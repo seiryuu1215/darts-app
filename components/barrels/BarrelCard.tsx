@@ -33,6 +33,7 @@ const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: Barr
   const { data: session } = useSession();
   const router = useRouter();
   const { guardedAction } = useDemoGuard();
+  const [imgError, setImgError] = useState(false);
   // localOverride: ユーザーがローカルで操作した場合のみ値が入る
   const [localOverride, setLocalOverride] = useState<boolean | null>(null);
   const [fetched, setFetched] = useState<boolean | null>(null);
@@ -110,12 +111,13 @@ const BarrelCard = React.memo(function BarrelCard({ barrel, isBookmarked }: Barr
           }}
         />
       )}
-      {barrel.imageUrl ? (
+      {barrel.imageUrl && !imgError ? (
         <CardMedia
           component="img"
           height="160"
           image={getBarrelImageUrl(barrel.imageUrl) ?? ''}
           alt={barrel.name}
+          onError={() => setImgError(true)}
           sx={{ objectFit: 'cover', ...(barrel.isDiscontinued && { opacity: 0.6 }) }}
         />
       ) : (

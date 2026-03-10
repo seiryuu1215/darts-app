@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardMedia, Typography, Box, Chip } from '@mui/material';
 import Link from 'next/link';
 import type { Dart } from '@/types';
@@ -14,6 +14,7 @@ interface DartCardProps {
 
 const DartCard = React.memo(function DartCard({ dart }: DartCardProps) {
   const { data: session } = useSession();
+  const [imgError, setImgError] = useState(false);
   const isOwner = session?.user?.id === dart.userId;
   const totals = calcDartTotals(dart);
   const showTotals = hasCompleteSpecs(dart);
@@ -30,12 +31,13 @@ const DartCard = React.memo(function DartCard({ dart }: DartCardProps) {
         '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
       }}
     >
-      {dart.imageUrls.length > 0 ? (
+      {dart.imageUrls.length > 0 && !imgError ? (
         <CardMedia
           component="img"
           height="140"
           image={dart.imageUrls[0]}
           alt={dart.title}
+          onError={() => setImgError(true)}
           sx={{ objectFit: 'cover' }}
         />
       ) : (

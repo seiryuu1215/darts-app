@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardMedia, Typography, Box, Chip } from '@mui/material';
 import Link from 'next/link';
 import type { Article } from '@/types';
@@ -9,6 +10,7 @@ interface ArticleCardProps {
 }
 
 export default function ArticleCard({ article }: ArticleCardProps) {
+  const [imgError, setImgError] = useState(false);
   const dateStr = article.createdAt?.toDate
     ? article.createdAt.toDate().toLocaleDateString('ja-JP')
     : '';
@@ -25,12 +27,13 @@ export default function ArticleCard({ article }: ArticleCardProps) {
         '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
       }}
     >
-      {article.coverImageUrl ? (
+      {article.coverImageUrl && !imgError ? (
         <CardMedia
           component="img"
           height="160"
           image={article.coverImageUrl}
           alt={article.title}
+          onError={() => setImgError(true)}
           sx={{ objectFit: 'cover' }}
         />
       ) : (
