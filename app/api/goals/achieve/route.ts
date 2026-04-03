@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
+
+const AchieveGoalSchema = z.object({
+  goalId: z.string().min(1),
+});
 import { FieldValue } from 'firebase-admin/firestore';
 import { calculateGoalCurrent, calculateScaledGoalXp, type StatsRecord } from '@/lib/goals';
 import type { GoalType } from '@/types';
@@ -67,11 +72,11 @@ function getMonthlyAwardsFromCache(cacheData: FirebaseFirestore.DocumentData | n
 export const POST = withErrorHandler(
   withAuth(async (req: NextRequest, { userId }) => {
     const body = await req.json();
-    const { goalId } = body as { goalId: string };
-
-    if (!goalId) {
-      return NextResponse.json({ error: '目標IDが必要です' }, { status: 400 });
+    const parsed = AchieveGoalSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: '目標IDが不正です' }, { status: 400 });
     }
+    const { goalId } = parsed.data;
 
     // 対象目標を取得
     const goalDoc = await adminDb.doc(`users/${userId}/goals/${goalId}`).get();

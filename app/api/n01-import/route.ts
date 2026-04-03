@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue } from 'firebase-admin/firestore';
 import { parseN01Csv } from '@/lib/n01-parser';
 import { calculateLevel } from '@/lib/progression/xp-engine';
+
+const N01ImportSchema = z.object({
+  csvText: z.string().min(1).max(1_000_000),
+});
 
 /**
  * POST /api/n01-import — n01 CSVデータをインポート
@@ -13,18 +18,11 @@ import { calculateLevel } from '@/lib/progression/xp-engine';
 export const POST = withErrorHandler(
   withAuth(async (req: NextRequest, { userId }) => {
     const body = await req.json();
-    const { csvText } = body as { csvText: string };
-
-    if (!csvText || typeof csvText !== 'string') {
-      return NextResponse.json({ error: 'CSVデータが必要です' }, { status: 400 });
+    const parsed = N01ImportSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'CSVデータが不正です' }, { status: 400 });
     }
-
-    if (csvText.length > 1_000_000) {
-      return NextResponse.json(
-        { error: 'ファイルサイズが大きすぎます（1MB上限）' },
-        { status: 400 },
-      );
-    }
+    const { csvText } = parsed.data;
 
     const result = parseN01Csv(csvText);
 

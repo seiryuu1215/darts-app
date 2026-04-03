@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+
+const CreateGoalSchema = z.object({
+  type: z.string().min(1),
+  period: z.enum(['daily', 'monthly', 'yearly']),
+  target: z.number().positive(),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+});
 import {
   calculateGoalCurrent,
   calculateHealthGoalCurrent,
@@ -353,17 +362,11 @@ export const GET = withErrorHandler(
 export const POST = withErrorHandler(
   withAuth(async (req: NextRequest, { userId }) => {
     const body = await req.json();
-    const { type, period, target, startDate, endDate } = body as {
-      type: string;
-      period: string;
-      target: number;
-      startDate: string;
-      endDate: string;
-    };
-
-    if (!type || !period || !target || !startDate || !endDate) {
-      return NextResponse.json({ error: '必須フィールドが不足しています' }, { status: 400 });
+    const parsed = CreateGoalSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: '目標データが不正です' }, { status: 400 });
     }
+    const { type, period, target, startDate, endDate } = parsed.data;
 
     // アクティブ目標数の上限チェック
     const now = new Date();

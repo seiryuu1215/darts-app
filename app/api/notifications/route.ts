@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { withAuth, withErrorHandler } from '@/lib/api-middleware';
+
+const MarkReadSchema = z.object({
+  ids: z.array(z.string()).min(1).max(500),
+});
 
 /**
  * GET /api/notifications — 未読通知を取得
@@ -39,14 +44,11 @@ export const GET = withErrorHandler(
 export const PATCH = withErrorHandler(
   withAuth(async (req: NextRequest, { userId }) => {
     const body = await req.json();
-    const { ids } = body as { ids: string[] };
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'IDが必要です' }, { status: 400 });
+    const parsed = MarkReadSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'IDが不正です' }, { status: 400 });
     }
-    if (ids.length > 500) {
-      return NextResponse.json({ error: '一度に処理できるIDは500件までです' }, { status: 400 });
-    }
+    const { ids } = parsed.data;
 
     const batch = adminDb.batch();
     for (const id of ids) {

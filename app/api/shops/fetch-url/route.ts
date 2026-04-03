@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandler, withAuth } from '@/lib/api-middleware';
 
+const FetchUrlSchema = z.object({
+  url: z.string().url(),
+});
+
 async function handler(req: NextRequest) {
-  const { url } = await req.json();
-
-  if (!url || typeof url !== 'string') {
-    return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+  const body = await req.json();
+  const parsed = FetchUrlSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'URLが不正です' }, { status: 400 });
   }
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
-  }
+  const parsedUrl = new URL(parsed.data.url);
 
   // DARTSLIVEドメインのみ許可（SSRF対策 — evil-dartslive.com を防ぐため完全一致）
   if (parsedUrl.hostname !== 'dartslive.com' && !parsedUrl.hostname.endsWith('.dartslive.com')) {

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
 import { canAutoImportShops } from '@/lib/permissions';
 import { withPermission, withErrorHandler } from '@/lib/api-middleware';
+
+const ImportByLineSchema = z.object({
+  lineName: z.string().min(1),
+});
 import { LINE_STATIONS, STATION_TO_LINES } from '@/lib/line-stations';
 import {
   sleep,
@@ -18,7 +23,11 @@ export const maxDuration = 120;
 export const POST = withErrorHandler(
   withPermission(canAutoImportShops, 'PROプラン以上が必要です', async (req, { userId }) => {
     const body = await req.json();
-    const lineName: string = body.lineName;
+    const parsed = ImportByLineSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: '路線名が不正です' }, { status: 400 });
+    }
+    const { lineName } = parsed.data;
 
     const stations = LINE_STATIONS[lineName];
     if (!stations) {
