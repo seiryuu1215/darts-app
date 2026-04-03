@@ -43,9 +43,10 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self'",
+              // MUIが実行時にインラインスタイルを注入するためunsafe-inlineが必要
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
-              "img-src 'self' data: blob:",
+              "img-src 'self' https: blob:",
               "connect-src 'self'",
               "object-src 'none'",
               "base-uri 'self'",

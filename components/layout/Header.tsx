@@ -375,6 +375,7 @@ export default function Header() {
               edge="end"
               onClick={() => setDrawerOpen(true)}
               aria-label="メニューを開く"
+              aria-expanded={drawerOpen}
             >
               <MenuIcon />
             </IconButton>
