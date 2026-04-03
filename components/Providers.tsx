@@ -21,7 +21,9 @@ function HealthKitAutoSync() {
 
       const onVisible = () => {
         if (document.visibilityState === 'visible') {
-          autoSyncIfNeeded().catch(() => {});
+          autoSyncIfNeeded().catch((err) => {
+            console.error('[HealthKit] 自動同期エラー:', err);
+          });
         }
       };
       document.addEventListener('visibilitychange', onVisible);
