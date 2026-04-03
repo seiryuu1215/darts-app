@@ -86,7 +86,7 @@ describe('POST /api/goals', () => {
     );
     const body = await res.json();
     expect(res.status).toBe(400);
-    expect(body.error).toContain('必須フィールド');
+    expect(body.error).toContain('目標データが不正です');
   });
 
   it('creates goal with valid fields', async () => {

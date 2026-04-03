@@ -94,7 +94,7 @@ describe('PATCH /api/notifications', () => {
     );
     const body = await res.json();
     expect(res.status).toBe(400);
-    expect(body.error).toBe('IDが必要です');
+    expect(body.error).toBe('IDが不正です');
   });
 
   it('marks notifications as read', async () => {
