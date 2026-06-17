@@ -51,13 +51,16 @@ async function scrapePeriod(
 ): Promise<RankedBarrel[]> {
   const url = PERIOD_URLS[period];
   console.log(`\n[${period}] スクレイプ中... ${url}`);
-  await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  // 商品リストが描画されるまで待機（ギフトラッピング以外のshopdetailリンク）
+  await page.waitForSelector('[class*="product"] a[href*="shopdetail"]', { timeout: 30000 });
 
   const items = await page.evaluate(() => {
     const results: { name: string; imageUrl: string | null; productUrl: string; price: string }[] =
       [];
     const seen = new Set<string>();
 
+    // 商品リンクを取得（画像を含むリンクのみ = 重複回避）
     document.querySelectorAll('a[href*="shopdetail"]').forEach((a) => {
       const href = a.getAttribute('href');
       if (!href || href.includes('12076')) return;
@@ -66,12 +69,11 @@ async function scrapePeriod(
       seen.add(cleanHref);
 
       const img = a.querySelector('img');
-      const nameEl = a
-        .closest('.item, .itemBox, li, [class*="product"]')
-        ?.querySelector('[class*="name"], [class*="title"], p, h3');
-      const priceEl = a
-        .closest('.item, .itemBox, li, [class*="product"]')
-        ?.querySelector('[class*="price"], .price');
+      const container = a.closest('[class*="product"], .itemBox, li');
+      const nameEl = container?.querySelector(
+        '[class*="name"], [class*="title"], .itemName a, p, h3',
+      );
+      const priceEl = container?.querySelector('[class*="price"], .price');
 
       results.push({
         name: nameEl?.textContent?.trim() || img?.getAttribute('alt')?.trim() || '',
